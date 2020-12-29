@@ -1,0 +1,43 @@
+﻿configuration
+
+	include	${global}\fsadmin.config.txt
+
+	lexxys
+		check
+			referenceCache
+				:capacity	100
+
+	logging
+		:exclude		DC-Timing
+		:turnSleep		500
+		:batchSize		8
+		:flushBound		8
+
+		%logger	name		class
+		%logger/rule		level
+
+//		logger Log			NullLogWriter
+		logger Log			TextFileLogWriter
+			:file	X{MD}.log
+			:format {SeqNumber:00000000} {TimeStamp:HH:mm:ss.fffff} {Message}
+			overwrite
+			rule	VERBOSE
+
+		logger Log2			TextFileLogWriter
+			:file	X{MD}-d.log
+			overwrite
+			rule	VERBOSE
+				:include	DC-Timing
+	/logging
+
+	database
+		connection
+			:server				red\d
+			:database			CharityPlanner
+			:user				sa
+			:password			post+Office2
+			:app				Fs.Admin
+			:commandTimeout		10m
+			:connectionTimeout	10s
+		driver	SqlDataAdapter
+	/database

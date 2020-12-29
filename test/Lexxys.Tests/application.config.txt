@@ -1,0 +1,10 @@
+﻿configuration
+	lexxys
+		factory
+			synonyms
+				Cardinal	long
+				ID			int
+				X			void
+				FT			Lexxys.Tests.Tools.FactoryTest
+				Z			Lexxys.Tests.Tools.FactoryTest+ZeroElement
+				Z0			Lexxys.Tests.Tools.FactoryTest+PrivateZeroElement

@@ -1,0 +1,4 @@
+configuration
+  database
+    connection  (server=DB1, database=Students)
+	driver      SqlDataAdapter

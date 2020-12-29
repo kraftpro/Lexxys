@@ -1,0 +1,537 @@
+// Lexxys Infrastructural library.
+// file: OrderedDictionary.cs
+//
+// Copyright (c) 2001-2014, Kraft Pro Utilities.
+// You may use this code under the terms of the MIT license
+//
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Collections;
+using System.Threading;
+using System.Runtime.CompilerServices;
+
+namespace Lexxys
+{
+	public class OrderedDictionary<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary, IList<KeyValuePair<TKey, TValue>>, IReadOnlyList<KeyValuePair<TKey, TValue>>
+	{
+		protected List<KeyValuePair<TKey, TValue>> List;
+		protected IEqualityComparer<TKey> Comparer;
+
+		public OrderedDictionary(IEqualityComparer<TKey> comparer)
+			: this(0, comparer)
+		{
+		}
+
+		public OrderedDictionary(int capacity = 0, IEqualityComparer<TKey> comparer = null)
+		{
+			if (capacity < 0)
+				throw new ArgumentOutOfRangeException(nameof(capacity), capacity, null);
+			List = capacity > 0 ? new List<KeyValuePair<TKey, TValue>>(capacity): new List<KeyValuePair<TKey, TValue>>();
+			Comparer = comparer ?? EqualityComparer<TKey>.Default;
+		}
+
+		public OrderedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer = null)
+		{
+			if (collection == null)
+				throw new ArgumentNullException(nameof(collection));
+			Comparer = comparer ?? EqualityComparer<TKey>.Default;
+			List = new List<KeyValuePair<TKey, TValue>>(collection);
+		}
+
+
+		public ICollection<TKey> Keys
+		{
+			get { return new KeyCollection(this); }
+		}
+
+		public ICollection<TValue> Values
+		{
+			get { return new ValueCollection(this); }
+		}
+
+		public TValue this[TKey key]
+		{
+			get
+			{
+				int i = IndexOf(key);
+				if (i < 0)
+					throw new KeyNotFoundException();
+				return List[i].Value;
+			}
+			set
+			{
+				int i = IndexOf(key);
+				if (i < 0)
+					List.Add(new KeyValuePair<TKey, TValue>(key, value));
+				else
+					List[i] = new KeyValuePair<TKey, TValue>(key, value);
+			}
+		}
+
+		public KeyValuePair<TKey, TValue> GetAt(int index)
+		{
+			return List[index];
+		}
+
+		public void SetAt(int index, KeyValuePair<TKey, TValue> value)
+		{
+			List[index] = value;
+		}
+
+		public void SetAt(int index, TKey key, TValue value)
+		{
+			List[index] = new KeyValuePair<TKey,TValue>(key, value);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private int IndexOf(TKey key)
+		{
+			for (int i = 0; i < List.Count; ++i)
+			{
+				if (Comparer.Equals(List[i].Key, key))
+					return i;
+			}
+			return -1;
+		}
+
+		public void Add(TKey key, TValue value)
+		{
+			int i = IndexOf(key);
+			if (i >= 0)
+				throw new ArgumentOutOfRangeException(nameof(key), key, null);
+			List.Add(new KeyValuePair<TKey, TValue>(key, value));
+		}
+
+		public bool ContainsKey(TKey key)
+		{
+			return IndexOf(key) >= 0;
+		}
+
+		public bool Remove(TKey key)
+		{
+			int i = IndexOf(key);
+			if (i < 0)
+				return false;
+			List.RemoveAt(i);
+			return true;
+		}
+
+		public bool TryGetValue(TKey key, out TValue value)
+		{
+			int i = IndexOf(key);
+			if (i < 0)
+			{
+				value = default;
+				return false;
+			}
+			value = List[i].Value;
+			return true;
+		}
+
+		public TValue TryGetValue(TKey key, TValue defaultValue = default)
+		{
+			int i = IndexOf(key);
+			return i < 0 ? defaultValue: List[i].Value;
+		}
+
+		public void Add(KeyValuePair<TKey, TValue> item)
+		{
+			List.Add(item);
+		}
+
+		public void Clear()
+		{
+			List.Clear();
+		}
+
+		public bool Contains(KeyValuePair<TKey, TValue> item)
+		{
+			return IndexOf(item.Key) >= 0;
+		}
+
+		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+		{
+			List.CopyTo(array, arrayIndex);
+		}
+
+		public int Count
+		{
+			get { return List.Count; }
+		}
+
+		public bool IsFixedSize
+		{
+			get { return false; }
+		}
+
+		public bool IsReadOnly
+		{
+			get { return false; }
+		}
+
+		public bool IsSynchronized
+		{
+			get { return false; }
+		}
+
+		public object SyncRoot
+		{
+			get { return this; }
+		}
+
+		public bool Remove(KeyValuePair<TKey, TValue> item)
+		{
+			int i = IndexOf(item.Key);
+			if (i < 0)
+				return false;
+			List.RemoveAt(i);
+			return true;
+		}
+
+		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+		{
+			return List.GetEnumerator();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return List.GetEnumerator();
+		}
+
+		public int IndexOf(KeyValuePair<TKey, TValue> item)
+		{
+			return List.IndexOf(item);
+		}
+
+		public void Insert(int index, KeyValuePair<TKey, TValue> item)
+		{
+			if (index < 0 || index > List.Count)
+				throw new ArgumentOutOfRangeException(nameof(index), index, null);
+			List.Insert(index, item);
+		}
+
+		public void RemoveAt(int index)
+		{
+			List.RemoveAt(index);
+		}
+
+		KeyValuePair<TKey, TValue> IList<KeyValuePair<TKey, TValue>>.this[int index]
+		{
+			get { return List[index]; }
+			set { List[index] = value; }
+		}
+
+		#region Internal classes
+
+		protected class KeyCollection: ICollection<TKey>, ICollection
+		{
+			protected OrderedDictionary<TKey, TValue> Dictionary;
+
+			public KeyCollection(OrderedDictionary<TKey, TValue> dictionary)
+			{
+				Dictionary = dictionary;
+			}
+
+			public void Add(TKey item)
+			{
+				throw new NotImplementedException();
+			}
+
+			public bool Remove(TKey item)
+			{
+				throw new NotImplementedException();
+			}
+
+			public void Clear()
+			{
+				throw new NotImplementedException();
+			}
+
+			public bool Contains(TKey item)
+			{
+				return Dictionary.IndexOf(item) >= 0;
+			}
+
+			public void CopyTo(TKey[] array, int index)
+			{
+				if (array == null)
+					throw new ArgumentNullException(nameof(array));
+				if (index < 0)
+					throw new ArgumentOutOfRangeException(nameof(index), index, null);
+				if (array.Length - index < Dictionary.Count)
+					throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+
+				for (int i = 0; i < Dictionary.List.Count; ++i)
+				{
+					array[index++] = Dictionary.List[i].Key;
+				}
+			}
+
+			public void CopyTo(Array array, int index)
+			{
+				if (array == null)
+					throw new ArgumentNullException(nameof(array));
+				if (index < 0)
+					throw new ArgumentOutOfRangeException(nameof(index), index, null);
+				if (array.Length - index < Dictionary.Count)
+					throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+
+				for (int i = 0; i < Dictionary.List.Count; ++i)
+				{
+					array.SetValue(Dictionary.List[i].Key, index++);
+				}
+			}
+
+			public int Count
+			{
+				get { return Dictionary.Count; }
+			}
+
+			public bool IsReadOnly
+			{
+				get { return true; }
+			}
+
+			public bool IsSynchronized
+			{
+				get { return false; }
+			}
+
+			public object SyncRoot
+			{
+				get { return false; }
+			}
+
+			public IEnumerator<TKey> GetEnumerator()
+			{
+				foreach (var item in Dictionary.List)
+				{
+					yield return item.Key;
+				}
+			}
+
+			IEnumerator IEnumerable.GetEnumerator()
+			{
+				foreach (var item in Dictionary.List)
+				{
+					yield return item.Key;
+				}
+			}
+		}
+
+		protected class ValueCollection: ICollection<TValue>, ICollection
+		{
+			protected OrderedDictionary<TKey, TValue> Dictionary;
+
+			public ValueCollection(OrderedDictionary<TKey, TValue> dictionary)
+			{
+				Dictionary = dictionary;
+			}
+
+			public void Add(TValue item)
+			{
+				throw new NotImplementedException();
+			}
+
+			public bool Remove(TValue item)
+			{
+				throw new NotImplementedException();
+			}
+
+			public void Clear()
+			{
+				throw new NotImplementedException();
+			}
+
+			public bool Contains(TValue item)
+			{
+				return Dictionary.List.FindIndex(o => Object.Equals(o.Value, item)) >= 0;
+			}
+
+			public void CopyTo(TValue[] array, int index)
+			{
+				if (array == null)
+					throw new ArgumentNullException(nameof(array));
+				if (index < 0)
+					throw new ArgumentOutOfRangeException(nameof(index), index, null);
+				if (array.Length - index < Dictionary.Count)
+					throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+
+				for (int i = 0; i < Dictionary.List.Count; ++i)
+				{
+					array[index++] = Dictionary.List[i].Value;
+				}
+			}
+
+			public void CopyTo(Array array, int index)
+			{
+				if (array == null)
+					throw new ArgumentNullException(nameof(array));
+				if (index < 0)
+					throw new ArgumentOutOfRangeException(nameof(index), index, null);
+				if (array.Length - index < Dictionary.Count)
+					throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+
+				for (int i = 0; i < Dictionary.List.Count; ++i)
+				{
+					array.SetValue(Dictionary.List[i].Value, index++);
+				}
+			}
+
+			public int Count
+			{
+				get { return Dictionary.Count; }
+			}
+
+			public bool IsReadOnly
+			{
+				get { return true; }
+			}
+
+			public bool IsSynchronized
+			{
+				get { return false; }
+			}
+
+			public object SyncRoot
+			{
+				get { return this; }
+			}
+
+			public IEnumerator<TValue> GetEnumerator()
+			{
+				foreach (var item in Dictionary.List)
+				{
+					yield return item.Value;
+				}
+			}
+
+			IEnumerator IEnumerable.GetEnumerator()
+			{
+				foreach (var item in Dictionary.List)
+				{
+					yield return item.Value;
+				}
+			}
+		}
+
+		private sealed class DictionaryEnumerator: IDictionaryEnumerator
+		{
+			private readonly IEnumerator<KeyValuePair<TKey, TValue>> _parent;
+
+			public DictionaryEnumerator(OrderedDictionary<TKey, TValue> dictionary)
+			{
+				_parent = dictionary.List.GetEnumerator();
+			}
+
+			public DictionaryEntry Entry
+			{
+				get { return new DictionaryEntry(_parent.Current.Key, _parent.Current.Value); }
+			}
+
+			public object Key
+			{
+				get { return _parent.Current.Key; }
+			}
+
+			public object Value
+			{
+				get { return _parent.Current.Value; }
+			}
+
+			public object Current
+			{
+				get { return new DictionaryEntry(_parent.Current.Key, _parent.Current.Value); }
+			}
+
+			public bool MoveNext()
+			{
+				return _parent.MoveNext();
+			}
+
+			public void Reset()
+			{
+				_parent.Reset();
+			}
+		}
+		#endregion
+
+		void IDictionary.Add(object key, object value)
+		{
+			Add((TKey)key, (TValue)value);
+		}
+
+		bool IDictionary.Contains(object key)
+		{
+			return ContainsKey((TKey)key);
+		}
+
+		IDictionaryEnumerator IDictionary.GetEnumerator()
+		{
+			return new DictionaryEnumerator(this);
+		}
+
+		void IDictionary.Remove(object key)
+		{
+			Remove((TKey)key);
+		}
+
+		object IDictionary.this[object key]
+		{
+			get
+			{
+				return this[(TKey)key];
+			}
+			set
+			{
+				this[(TKey)key] = (TValue)value;
+			}
+		}
+
+		void ICollection.CopyTo(Array array, int index)
+		{
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
+			if (index < 0)
+				throw new ArgumentOutOfRangeException(nameof(index), index, null);
+			if (array.Rank != 1)
+				throw new ArgumentOutOfRangeException(nameof(array.Rank), array.Rank, null);
+			if (array.Length - index < List.Count)
+				throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+
+			for (int i = 0; i < List.Count; ++i)
+			{
+				array.SetValue(new DictionaryEntry(List[i].Key, List[i].Value), index++);
+			}
+		}
+
+		ICollection IDictionary.Keys
+		{
+			get { return new KeyCollection(this); }
+		}
+
+		ICollection IDictionary.Values
+		{
+			get { return new ValueCollection(this); }
+		}
+
+		IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values
+		{
+			get { return Values; }
+		}
+
+		IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys
+		{
+			get { return Keys; }
+		}
+
+		KeyValuePair<TKey, TValue> IReadOnlyList<KeyValuePair<TKey, TValue>>.this[int index]
+		{
+			get { return List[index]; }
+		}
+	}
+}
+
+

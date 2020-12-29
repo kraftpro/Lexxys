@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Lexxys.Tokenizer.LexicalContext">
+    <Position X="3" Y="6" Width="2.25" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAIIAACAAIQAAAAUAgIAAAAAACAAAAEAAgAJAAAAABg=</HashCode>
+      <FileName>Tokenizer\TokenStcanner.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.TokenScanner" BaseTypeListCollapsed="true">
+    <Position X="0.5" Y="6" Width="2" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <NestedTypes>
+      <Enum Name="Lexxys.Tokenizer.TokenScanner.Point" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Tokenizer\TokenStcanner.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+      <Class Name="Lexxys.Tokenizer.TokenScanner.Enumerator" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Tokenizer\TokenStcanner.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+      <Class Name="Lexxys.Tokenizer.TokenScanner.Marker" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Tokenizer\TokenStcanner.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>CwBCAAAIBIAANBAEIgCCAAAAAAAAAAAEIRCIBAAAQBQ=</HashCode>
+      <FileName>Tokenizer\TokenStcanner.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Lexxys.Tokenizer.LexicalToken">
+    <Position X="6" Y="6.25" Width="2.25" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAQACEAAAAAAIEAADAAEAIAQAACAAAAgA=</HashCode>
+      <FileName>Tokenizer\LexicalToken.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="TokenType" />
+    </ShowAsAssociation>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.CharStream">
+    <Position X="9" Y="12" Width="2.25" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AEAAAgAgAMCAYAAFKAAAAABABJCAAIAJARABAAABgBI=</HashCode>
+      <FileName>Tokenizer\CharStream.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.LexicalTokenRule">
+    <Position X="4.75" Y="0.5" Width="2" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>CIAAAAAAAAAAAACEBAAAAAAAAAAAAAAAAAAgAAAAAgA=</HashCode>
+      <FileName>Tokenizer\LexicalTokenRule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.IdentifierTokenRule" Collapsed="true">
+    <Position X="8.25" Y="4.5" Width="1.75" />
+    <InheritanceLine Type="Lexxys.Tokenizer.LexicalTokenRule" FixedToPoint="true">
+      <Path>
+        <Point X="5.75" Y="3.276" />
+        <Point X="5.75" Y="4.125" />
+        <Point X="9.125" Y="4.125" />
+        <Point X="9.125" Y="4.5" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>CIIAAAAAAABAAAAABACAAAAAAAAAAAAIAAAgQAAAAAA=</HashCode>
+      <FileName>Tokenizer\IdentifierTokenRule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.NameTokenRule" Collapsed="true">
+    <Position X="0.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CICAAAAAAAAAABAABAAAAAEBEAAEApEAAAAoAAAAKAA=</HashCode>
+      <FileName>Tokenizer\NameTokenRule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.StringTokenRule" Collapsed="true">
+    <Position X="6.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CIAAAAAAAAAAAAAAAAAAIAAASBAAAAAAAQEgAAAAAAA=</HashCode>
+      <FileName>Tokenizer\StringTokenRule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.SequenceTokenRule" Collapsed="true">
+    <Position X="10.25" Y="4.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>CIIAAAAAAAAAAAAAIAASAAAAAAAAAIAIBAAgAAAAAAA=</HashCode>
+      <FileName>Tokenizer\SequenceTokenRule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.CommentsTokenRule" Collapsed="true">
+    <Position X="2.25" Y="4.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>CIAAAAAAAAAAAAAAAAAAAAAAIAAAAIAAgAAgAAAAAQA=</HashCode>
+      <FileName>Tokenizer\CommentsTokenRule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.CppCommentsTokenRule" Collapsed="true">
+    <Position X="4.25" Y="4.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>CIAAAAAAAAAAAAAAAAABIAAAAAAAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Tokenizer\CommentsTokenRule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Lexxys.Tokenizer.LexicalToken&lt;T&gt;">
+    <Position X="6" Y="10" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Tokenizer\LexicalToken.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="Lexxys.Tokenizer.LexicalTokenType">
+    <Position X="9.5" Y="7.5" Width="2.5" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AQBAIEQABAAggAAEgAGgBAUEABBAYIABAAAAQIAAAiA=</HashCode>
+      <FileName>Tokenizer\LexicalTokenType.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Enum Name="Lexxys.Tokenizer.LexicalContextModes">
+    <Position X="3" Y="10" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAgAAAAQAAAAAAAAAAAAAAAAAAAAQAAAAAIAAEAAAA=</HashCode>
+      <FileName>Tokenizer\TokenStcanner.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

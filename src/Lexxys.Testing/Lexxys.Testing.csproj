@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net48</TargetFrameworks>
+    <LangVersion>8.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- version format: major.minor.revision[-beta+MMDD.i] -->
+    <VersionPrefix>1.2.17</VersionPrefix>
+    <VersionSuffix></VersionSuffix>
+    <!--Build>0$([System.DateTime]::Today.ToString("MMdd"))</Build-->
+    <Build>0</Build>
+    <FileVersion>$(VersionPrefix).$(Build)</FileVersion>
+    <Description>Testing Support Library</Description>
+    <Copyright>Copyright © 2001-2016</Copyright>
+    <Authors>Kraft Pro Utilities</Authors>
+    <AssemblyName>Lexxys.Testing</AssemblyName>
+    <RootNamespace>Lexxys.Testing</RootNamespace>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Lexxys.Testing.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lexxys\Lexxys.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

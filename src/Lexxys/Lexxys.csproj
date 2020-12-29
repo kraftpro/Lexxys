@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net48</TargetFrameworks>
+    <LangVersion>8.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <VersionPrefix>2.5.4</VersionPrefix>
+    <VersionSuffix>betta1-0527.1</VersionSuffix>
+    <!--Build>0$([System.DateTime]::Today.ToString("MMdd"))</Build-->
+    <Build>0</Build>
+    <FileVersion>$(VersionPrefix).$(Build)</FileVersion>
+    <Description>Common Infrastructure Library</Description>
+    <Copyright>Copyright © 2001-2016</Copyright>
+    <Authors>Kraft Pro Utilities</Authors>
+    <AssemblyName>Lexxys</AssemblyName>
+    <RootNamespace>Lexxys</RootNamespace>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <AnalysisLevel>5</AnalysisLevel>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Lexxys.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>NETCORE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="AssocNode.cs" />
+    <Compile Remove="Configuration\SystemWebConfigurationProvider.cs" />
+    <Compile Remove="Configuration\XmlConfigurationProvider.cs" />
+    <Compile Remove="Enums.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="mimemap.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="4.7.0" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="System.Runtime.Caching" Version="4.7.0" />
+    <PackageReference Include="System.Security.Permissions" Version="4.7.0" />
+  </ItemGroup>
+
+</Project>
