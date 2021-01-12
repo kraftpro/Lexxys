@@ -22,37 +22,23 @@ namespace Lexxys
 
 		public bool Exists(string argument, bool missingValue = false) => Value(argument, (p, d) => p.Length == 0 || p.AsBoolean(d), true, missingValue);
 
-		public string Value(string argument, string defaultValue) => Value(argument, (o, d) => o.TrimToNull() ?? d, defaultValue, defaultValue);
+		public bool? Option(string argument, bool? missingValue = null) => Value(argument, (p, d) => p.Length == 0 || p.AsBoolean(d) == true, true, missingValue);
 
-		public string Value(string argument, string defaultValue, string missingValue) => Value(argument, (o, d) => o.TrimToNull() ?? d, defaultValue, missingValue);
+		public string Value(string argument, string defaultValue, string missingValue = null) => Value(argument, (o, d) => o.TrimToNull() ?? d, defaultValue, missingValue);
 
-		public int Value(string argument, int defaultValue) => Value(argument, (o, d) => o.AsInt32(d), defaultValue, defaultValue);
+		public int? Value(string argument, int? defaultValue, int? missingValue = null) => Value(argument, (o, d) => o.AsInt32(d), defaultValue, missingValue);
 
-		public int Value(string argument, int defaultValue, int missingValue) => Value(argument, (o, d) => o.AsInt32(d), defaultValue, missingValue);
+		public decimal? Value(string argument, decimal? defaultValue, decimal? missingValue = null) => Value(argument, (o, d) => o.AsDecimal(d), defaultValue, missingValue);
 
-		public decimal Value(string argument, decimal defaultValue) => Value(argument, (o, d) => o.AsDecimal(d), defaultValue, defaultValue);
+		public double? Value(string argument, double? defaultValue, double? missingValue = null) => Value(argument, (o, d) => o.AsDouble(d), defaultValue, missingValue);
 
-		public decimal Value(string argument, decimal defaultValue, decimal missingValue) => Value(argument, (o, d) => o.AsDecimal(d), defaultValue, missingValue);
+		public DateTime? Value(string argument, DateTime? defaultValue, DateTime? missingValue = null) => Value(argument, (o, d) => o.AsDateTime(d), defaultValue, missingValue);
 
-		public double Value(string argument, double defaultValue) => Value(argument, (o, d) => o.AsDouble(d), defaultValue, defaultValue);
+		public TimeSpan? Value(string argument, TimeSpan? defaultValue, TimeSpan? missingValue = null) => Value(argument, (o, d) => o.AsTimeSpan(d), defaultValue, missingValue);
 
-		public double Value(string argument, double defaultValue, double missingValue) => Value(argument, (o, d) => o.AsDouble(d), defaultValue, missingValue);
+		public T Value<T>(string argument, T defaultValue, T missingValue = default) => Value(argument, (p, d) => p.AsValue(d), defaultValue, missingValue);
 
-		public DateTime Value(string argument, DateTime defaultValue) => Value(argument, (o, d) => o.AsDateTime(d), defaultValue, defaultValue);
-
-		public DateTime Value(string argument, DateTime defaultValue, DateTime missingValue) => Value(argument, (o, d) => o.AsDateTime(d), defaultValue, missingValue);
-
-		public TimeSpan Value(string argument, TimeSpan defaultValue) => Value(argument, (o, d) => o.AsTimeSpan(d), defaultValue, defaultValue);
-
-		public TimeSpan Value(string argument, TimeSpan defaultValue, TimeSpan missingValue) => Value(argument, (o, d) => o.AsTimeSpan(d), defaultValue, missingValue);
-
-		public T Value<T>(string argument, T defaultValue) => Value(argument, (p, d) => p.AsValue(d), defaultValue, defaultValue);
-
-		public T Value<T>(string argument, T defaultValue, T missingValue) => Value(argument, (p, d) => p.AsValue(d), defaultValue, missingValue);
-
-		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue) => Value(argument, parser, defaultValue, defaultValue);
-
-		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue, T missingValue)
+		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue, T missingValue = default)
 		{
 			foreach (var item in Args)
 			{
