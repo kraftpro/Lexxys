@@ -8,3 +8,5 @@
 				FT			Lexxys.Tests.Tools.FactoryTest
 				Z			Lexxys.Tests.Tools.FactoryTest+ZeroElement
 				Z0			Lexxys.Tests.Tools.FactoryTest+PrivateZeroElement
+	include test.db.config.txt
+	include test.config.txt

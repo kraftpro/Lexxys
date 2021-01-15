@@ -164,15 +164,15 @@ namespace Lexxys.Tests.Configuration
 Setting
 	:intItem		100
 	:dateTimeItem	2010-01-12
-	stringItem		Aa Bb ## my comms
+	stringItem		Aa Bb # my comms
 	intBasedItem	200
 	intArray
-		item	1 ## comments
+		item	1 # comments
 		item	2 // comments
 		item	3
-	newIntArray [1, 2, 3] ##<
+	newIntArray [1, 2, 3] #<
 	params (p1=1, p2:""pe = p2
-	>##
+	>#
 	params (p1=1, p2:""pe = p2""
 		p3:true,
 		p5:false)

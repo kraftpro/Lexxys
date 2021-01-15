@@ -20,8 +20,8 @@ namespace Lexxys.Tests.Data
 	{
 		private readonly string[] goodURLs =
 		{
-			"http://www.lostandfoundstation.com:8081/Charity/login.asp?name=Ivan&pass=12%34_Sdf$#top",
-			"HttpS://admin:pass@lostandfoundstation.uz",
+			"http://www.lostand.com:8081/master/login?name=Ivan&pass=12%34_Sdf$#top",
+			"HttpS://admin:pass@lostand.uz",
 			"foo.com",
 			"foo.com/",
 			"www.foo-bar.kg/%20dir%21/here",
@@ -39,9 +39,9 @@ namespace Lexxys.Tests.Data
 
 		private readonly string[] badURLs =
 		{
-			"http://www.lostandfoundstation.com:80810/Charity/login.asp?name=Ivan&pass=12%34_Sdf$#top",
-			"HttpS://admin:pass@lostandfoundstation.u",
-			"admin:pass@foundationsource.com",
+			"http://www.lostandcontoso.com:80810/Chapter/login?name=Ivan&pass=12%34_Sdf$#top",
+			"HttpS://admin:pass@lostandcontoso.u",
+			"admin:pass@contoso.com",
 			"foo..com",
 			"foo.com\\/",
 			"www.foo-bar.kg/%2Odir%21/here",
@@ -99,13 +99,16 @@ namespace Lexxys.Tests.Data
 		[TestMethod]
 		public void TestSsn()
 		{
-			Assert.IsTrue(Check.SsnCode(R.Digit(9), false));
-			Assert.IsTrue(Check.SsnCode(R.Digit(4), false));
+			const string IsSsn = "value {0} is valid SSN";
+			const string IsNotSsn = "value {0} is not valid SSN";
+			string v;
+			v = R.Digit(9); Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
+			v = R.Digit(4); Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
 
-			Assert.IsFalse(Check.SsnCode(R.Digit(4+1), false));
-			Assert.IsFalse(Check.SsnCode(R.Digit(4-1), false));
-			Assert.IsFalse(Check.SsnCode(R.Digit(9+1), false));
-			Assert.IsFalse(Check.SsnCode(R.Digit(9-1), false));
+			v = R.Digit(4+1); Assert.IsFalse(Check.SsnCode(v, false), IsSsn, v);
+			v = R.Digit(4-1); Assert.IsFalse(Check.SsnCode(v, false), IsSsn, v);
+			v = R.Digit(9+1); Assert.IsFalse(Check.SsnCode(v, false), IsSsn, v);
+			v = R.Digit(9-1); Assert.IsFalse(Check.SsnCode(v, false), IsSsn, v);
 		}
 	}
 }

@@ -1,10 +1,4 @@
-﻿// FoundationSource Financial System.
-// file: Application.cs
-//
-// Copyright (c) 2001-2013 Foundation Source Philanthropic Services Inc.  All rights reserved.
-//
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,14 +13,14 @@ namespace Lexxys.Test.Con
 		{
 			var cc = Array.Empty<int>().FirstOrDefault();
 
-			var p = new DomainFileStorageProbider("Documents", "C:\\Data\\Docs", new LocalFileStorageProvider());
-			using (var file = File.OpenRead(@"C:\Projects\Dev\T1\bin\Debug\data.config.txt"))
+			var p = new DomainFileStorageProbider("Documents", "./Docs", new LocalFileStorageProvider());
+			using (var file = File.OpenRead(@"application.config.txt"))
 			{
 				var s = p.CreateFileAsync(12345, "ttt", file).Result;
 				Console.WriteLine(s);
 			}
 			string temp = null;
-			using (var file = File.OpenRead(@"C:\Projects\Dev\T1\bin\Debug\data.config.txt"))
+			using (var file = File.OpenRead(@"application.config.txt"))
 			{
 				temp = p.CreateFileAsync(null, null, file).Result;
 				Console.WriteLine(temp);
@@ -42,7 +36,8 @@ namespace Lexxys.Test.Con
 {
 	public class DomainFileStorageProbider
 	{
-		private static readonly Logger Log = new Logger("DomainFileStorageProbider");
+		private static Logger Log => __log ??= new Logger("DomainFileStorageProbider");
+		private static Logger __log;
 
 		public const int MaxTryCount = 12;
 

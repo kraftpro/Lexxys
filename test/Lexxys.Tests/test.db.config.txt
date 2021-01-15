@@ -1,4 +1,4 @@
 configuration
   database
-    connection  (server=DB1, database=Students)
+    connection  (server="(local)", database=School)
 	driver      SqlDataAdapter

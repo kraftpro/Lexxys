@@ -53,8 +53,8 @@ namespace Lexxys.Xml
 	///						text_value
 	///						parameter_value
 	///						array_value
-	///	eol_value		:=	TEXT_WITHOUT_EOL [cpp_comment] EOL
-	///	text_value		:=	'&lt;&lt;' [NAME] [cpp_comment] EOL TEXT EOL [SPACE] '&gt;&gt;' [NAME] [comment] EOL
+	///	eol_value		:=	TEXT_WITHOUT_EOL [comment] EOL
+	///	text_value		:=	'&lt;&lt;' [NAME] [comment] EOL TEXT EOL [SPACE] '&gt;&gt;' [NAME] [comment] EOL
 	///	parameter_value	:=	[simple_value [delimiter simple_value]*] [TEXT_WITHOUT_EOL] EOL
 	///	array_value		:=	'[' [array_items] ']'
 	///	array_items		:=	array_item [',' array_items]
@@ -62,9 +62,11 @@ namespace Lexxys.Xml
 	///	simple_value	:=	STRING
 	///						TOKEN
 	///	
-	///	cpp_comment		:=	'//' TEXT_WITHOUT_EOL
-	///	comment			:=	cpp_comment
+	///	comment			:=	'//' TEXT_WITHOUT_EOL
+	///	comment			:=	'#' TEXT_WITHOUT_EOL
+	///	comment			:=	comment
 	///						'/*' TEXT '*/'
+	///						'#&lt;' TEXT '&gt;#'
 	/// 
 	/// line_value		:=	'..' eol_value
 	///						text_value
@@ -380,25 +382,48 @@ namespace Lexxys.Xml
 
 			public override LexicalToken TryParse(CharStream stream)
 			{
-				if (stream[0] == '\n')
-					return null;
-
 				int n = stream.IndexOf('\n', 0);
 				if (n < 0)
 					n = stream.Length;
+				if (n == 0)
+					return null;
 
-				string s = stream[0] == '`' ? stream.Substring(1, n): stream.Substring(0, n);
+				if (stream[0] == '`')
+					return stream.Token(TokenType, n, stream.Substring(1, n - 1).Trim());
+
+				string s = stream.Substring(0, n);
 				int i = s.IndexOfAny(BeginComments);
 				while (i >= 0)
 				{
 					if (i == 0 || IsWhiteSpace(s[i - 1]))
 					{
-						if (i + 1 >= s.Length)
-							break;
 						var c = s[i];
-						var c2 = s[i + 1];
-						if (c == '/')
+						if (c == '#')
 						{
+							if (i + 1 < s.Length && s[i + 1] == '<')
+							{
+								int k = s.IndexOf(">#", i + 2, StringComparison.Ordinal);
+								if (k < 0)  // Multiline comments in value
+								{
+									n -= s.Length - i;
+									s = s.Substring(0, i);
+									break;
+								}
+								s = s.Substring(0, i) + s.Substring(k + 2);
+								--i;
+							}
+							else
+							{
+								s = s.Substring(0, i);
+								break;
+							}
+
+						}
+						else // if (c == '/')
+						{
+							if (i + 1 >= s.Length)
+								break;
+							var c2 = s[i + 1];
 							if (c2 == '/')
 							{
 								s = s.Substring(0, i);
@@ -415,26 +440,6 @@ namespace Lexxys.Xml
 								}
 								s = s.Substring(0, i) + s.Substring(k + 2);
 								--i;
-							}
-						}
-						else if (c2 == '#')
-						{
-							if (i + 2 < s.Length && s[i + 2] == '<')
-							{
-								int k = s.IndexOf(">##", i + 3, StringComparison.Ordinal);
-								if (k < 0)  // Multiline comments in value
-								{
-									n -= s.Length - i;
-									s = s.Substring(0, i);
-									break;
-								}
-								s = s.Substring(0, i) + s.Substring(k + 3);
-								--i;
-							}
-							else
-							{
-								s = s.Substring(0, i);
-								break;
 							}
 						}
 					}

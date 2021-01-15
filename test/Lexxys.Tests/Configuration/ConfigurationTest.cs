@@ -17,18 +17,20 @@ using Lexxys.Configuration;
 namespace Lexxys.Tests.Configuration
 {
 	[TestClass]
-	[DeploymentItem("test.subscription.config.txt")]
+	[DeploymentItem("test.config.txt")]
 	public class ConfiguraitionTest
 	{
-		private static readonly IValue<object> SharedConfiguration = Config.GetSection<object>("subscription.categories");
+		private IValue<object> SharedConfiguration => __config ??= Config.GetSection<object>("scattergories.lists");
+		private IValue<object> __config;
 
-		static ConfiguraitionTest()
+		[TestInitialize]
+		public void Initializw()
 		{
-			string configFile = "test.subscription.config.txt";
+			string configFile = "test.config.txt";
 			if (!File.Exists(configFile))
 				throw new ArgumentOutOfRangeException(nameof(configFile), configFile, null);
 			Config.AddConfiguration(configFile);
-			var nodes = Config.GetValue<System.Xml.XmlNode[]>("subscription.categories");
+			var nodes = Config.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
 			if (nodes == null)
 				throw new ArgumentNullException(nameof(nodes));
 		}

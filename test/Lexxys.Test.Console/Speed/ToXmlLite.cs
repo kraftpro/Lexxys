@@ -33,8 +33,8 @@ namespace Lexxys.Test.Con.Speed
 		private static FileValue B { get; } = new FileValue(@"C:\Temp\netstandard.xml");
 		private static FileValue C { get; } = new FileValue(@"C:\Temp\proforma.xml");
 		private static FileValue D { get; } = new FileValue(@"C:\Temp\Sessions.xml");
-		private static FileValue E { get; } = new FileValue(@"C:\Temp\Windows.Foundation.UniversalApiContract.xml");
-		private static FileValue F { get; } = new FileValue(@"C:\Temp\Fs.base.config.xml");
+		private static FileValue E { get; } = new FileValue(@"C:\Temp\Windows.UniversalApiContract.xml");
+		private static FileValue F { get; } = new FileValue(@"C:\Temp\database.config.xml");
 
 		public static FileValue[] Abcd => new[] { B };
 

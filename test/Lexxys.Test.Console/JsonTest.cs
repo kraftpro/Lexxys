@@ -16,10 +16,10 @@ namespace Lexxys.Test.Con
 ""eto"":""null"",
 ""to"":"""",
 ""se"":null,
-""attributes"":{""last"":""test""},""included"":[{""type"":""foundcontact"",""id"":""890564"",""attributes"":{""extid"":37657,""contextdata"":null,""foundationid"":35588}}]},""header"":{""action"":""update"",""origin"":""management-1"",""millis"":1565289637981,""session"":{""id"":""1vkm8xrxe0"",""userid"":19,""roleid"":301,""name"":""Darin Smith"",""type"":[""cs&s"",""foundation source"",""foundation source/admin""],""adminuserid"":null,""agentuserid"":null,""agentname"":"""",""foundation"":""Harvest Family Demo Foundation"",""foundationid"":35588,""account"":1290}}}";
+""attributes"":{""last"":""test""},""included"":[{""type"":""contact"",""id"":""890564"",""attributes"":{""xid"":37657,""contextdata"":null,""cid"":35588}}]},""header"":{""action"":""update"",""origin"":""application-1"",""millis"":1565289637981,""session"":{""id"":""1vkm8xrxe0"",""userid"":19,""roleid"":301,""name"":""Jhon Doe"",""type"":[""cs&s"",""contoso"",""contoso/admin""],""adminuserid"":null,""agentuserid"":null,""agentname"":"""",""company"":""Contoso Inc."",""cid"":35588,""account"":1290}}}";
 
 		static string Data2 = @"
-{""data"":{""type"":""Contact"",""id"":""890564"",""attributes"":{""addresses"":[{""id"":0,""address1"":""3344"",""address2"":"""",""category"":""Primary"",""city"":""33"",""country"":""US"",""state"":""AK"",""postal"":""33333"",""version"":0,""countryname"":"""",""address"":""3344 ""}],""version"":0},""included"":[{""type"":""foundcontact"",""id"":""890564"",""attributes"":{""extid"":37657,""contextdata"":null,""foundationid"":35588}}]},""header"":{""action"":""update"",""origin"":""management-1"",""millis"":1565300875827,""session"":{""id"":""1xezzfwi90"",""userid"":19,""roleid"":301,""name"":""Darin Smith"",""type"":[""cs&s"",""foundation source"",""foundation source/admin""],""adminuserid"":null,""agentuserid"":null,""agentname"":"""",""foundation"":""Harvest Family Demo Foundation"",""foundationid"":35588,""account"":1290}}}
+{""data"":{""type"":""Contact"",""id"":""890564"",""attributes"":{""addresses"":[{""id"":0,""address1"":""3344"",""address2"":"""",""category"":""Primary"",""city"":""33"",""country"":""US"",""state"":""AK"",""postal"":""33333"",""version"":0,""countryname"":"""",""address"":""3344 ""}],""version"":0},""included"":[{""type"":""contact"",""id"":""890564"",""attributes"":{""xid"":37657,""contextdata"":null,""cid"":35588}}]},""header"":{""action"":""update"",""origin"":""application-1"",""millis"":1565300875827,""session"":{""id"":""1xezzfwi90"",""userid"":19,""roleid"":301,""name"":""Jhon Doe"",""type"":[""cs&s"",""contoso"",""contoso/admin""],""adminuserid"":null,""agentuserid"":null,""agentname"":"""",""company"":""Contoso Inc."",""cid"":35588,""account"":1290}}}
 ";
 
 		public static void Go()
@@ -27,8 +27,8 @@ namespace Lexxys.Test.Con
 			var j = JsonParser.Parse(Data);
 			var d = j["data"];
 			var a = d["attributes"];
-			var extIdValue = d["included"][0]["attributes"]["extId"].Text;
-			Console.WriteLine(extIdValue);
+			var xIdValue = d["included"][0]["attributes"]["xId"].Text;
+			Console.WriteLine(xIdValue);
 			var p = PersonRequest.FromJson(JsonParser.Parse(Data2)["data"]["attributes"]);
 			Console.WriteLine(p.Addresses.HasValue);
 		}

@@ -105,7 +105,7 @@ namespace Lexxys.Tests.Xml
 			<source name=""Backend"" provider=""SqlServer"">
 				<connection
 					server=""(local)""
-					catalogue=""CharityPlanner""
+					catalogue=""School""
 					>
 					<option name=""commandTimeout"" value=""60"" />
 				</connection>
@@ -135,7 +135,7 @@ configuration
 				=provider	SqlServer
 				connection
 					=server	(local)
-					=catalogue	CharityPlanner
+					=catalogue	School
 					option
 						=name	commandTimeout
 						=value	60
@@ -241,8 +241,8 @@ stateMachines
 		<reference	source='Fx'		value='Fxs.ID'	type='int' />
 		<reference	source='FxId'	value='Fxs.ID'	type='int' />
 
-		<type		field='ZipPlus4'				value='zip(9)'		table='CharityResponses' />
-		<type		field='NoteForEmail'			value='string({0})'	table='GrantDetails' />
+		<type		field='Zip'						value='zip(9)'		table='Students' />
+		<type		field='Note'					value='string({0})'	table='Courses' />
 		<type		field='(Phone|Fax)(?![a-z])'	value='phone({0})'	original='char' />
 	</seedgen>
 </configuration>
@@ -263,8 +263,8 @@ configuration
 
 		// Set fields types
 		%*			field						value			original	table
-		type		ZipPlus4					zip(9)			,		,	CharityResponses
-		type		NoteForEmail				string({0})		,		,	GrantDetails
+		type		Zip							zip(9)			,		,	Students
+		type		Note						string({0})		,		,	Courses
 
 		type		(Phone|Fax)(?![a-z])		phone({0})		char
 ",
@@ -272,10 +272,10 @@ configuration
 <configuration>
 	<crypto>
 		<providers>
-			<encriptor name='DES' class='Lexxys.Crypting.Cryptors.DesCryptor' assembly='C:\Application\Common\StdCryptors.dll' />
-			<encriptor name='RSA' class='Lexxys.Crypting.Cryptors.RsaEncryptor' assembly='C:\Application\Common\StdCryptors.dll' />
-			<decryptor name='DES' class='Lexxys.Crypting.Cryptors.DesCryptor' assembly='C:\Application\Common\StdCryptors.dll' />
-			<decryptor name='RSA' class='Lexxys.Crypting.Cryptors.RsaDecryptor' assembly='C:\Application\Common\StdCryptors.dll' />
+			<encriptor name='DES' class='Lexxys.Crypting.Cryptors.DesCryptor' assembly='.\Common\StdCryptors.dll' />
+			<encriptor name='RSA' class='Lexxys.Crypting.Cryptors.RsaEncryptor' assembly='.\Common\StdCryptors.dll' />
+			<decryptor name='DES' class='Lexxys.Crypting.Cryptors.DesCryptor' assembly='.\Common\StdCryptors.dll' />
+			<decryptor name='RSA' class='Lexxys.Crypting.Cryptors.RsaDecryptor' assembly='.\Common\StdCryptors.dll' />
 		</providers>
 	</crypto>
 </configuration>
@@ -285,11 +285,11 @@ configuration
 	crypto
 		providers
 			%encriptor	name class									assembly
-			.DES 		Lexxys.Crypting.Cryptors.DesCryptor 		C:\Application\Common\StdCryptors.dll
-			.RSA 		Lexxys.Crypting.Cryptors.RsaEncryptor 		C:\Application\Common\StdCryptors.dll
+			.DES 		Lexxys.Crypting.Cryptors.DesCryptor 		.\Common\StdCryptors.dll
+			.RSA 		Lexxys.Crypting.Cryptors.RsaEncryptor 		.\Common\StdCryptors.dll
 			%decryptor	name class									assembly
-			.DES 		Lexxys.Crypting.Cryptors.DesCryptor 		C:\Application\Common\StdCryptors.dll
-			.RSA 		Lexxys.Crypting.Cryptors.RsaDecryptor 		C:\Application\Common\StdCryptors.dll
+			.DES 		Lexxys.Crypting.Cryptors.DesCryptor 		.\Common\StdCryptors.dll
+			.RSA 		Lexxys.Crypting.Cryptors.RsaDecryptor 		.\Common\StdCryptors.dll
 ",
 			};
 		}

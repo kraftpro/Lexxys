@@ -1,0 +1,56 @@
+scattergories
+  lists
+    %list name
+    %list/item id level name displayName
+    - 1st List
+      - 1  Old-fashioned boy's name
+      - 2  Items that are frozen
+      - 3  Television shows from 2000
+      - 4  Rivers
+      - 5  Vegetables
+      - 6  Things that are yellow
+      - 7  Trees
+      - 8  Marching band instruments
+      - 9  College subjects
+      - 10 Dishes made from pasta
+      - 11 Books about animals
+      - 12 Insects    
+
+    - 2nd List
+      - 1  Types of sports
+      - 2  Poems
+      - 3  Parts of the human body
+      - 4  Old fashioned girl's name
+      - 5  Ethnic dishes
+      - 6  Types of transportation
+      - 7  School supplies
+      - 8  Items found in a library
+      - 9  Types of birds
+      - 10 Flowers
+      - 11 Types of shoes
+      - 12 Halloween costumes
+
+    - 3rd List
+      - 1  Foods found in a submarine
+      - 2  Politicians
+      - 3  Flavors of ice cream
+      - 4  Reasons a child is grounded
+      - 5  Television actors
+      - 6  Semi-precious gemstones
+      - 7  Country foods
+      - 8  Types of balls
+      - 9  Animals in zoos
+      - 10 Things in the circus
+      - 11 Things found in a park
+      - 12 Types of cats
+
+  groups
+    %item name
+    - 1st Group 
+      [2,3]
+    - 2nd Group
+      [1,14,15]
+    - 3rd Group
+      [4,5,12,13,16,17]
+    - 4th Group
+      [6,7,19]

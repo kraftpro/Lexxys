@@ -1,7 +1,4 @@
 ﻿configuration
-
-	include	${global}\fsadmin.config.txt
-
 	lexxys
 		check
 			referenceCache
@@ -32,11 +29,9 @@
 
 	database
 		connection
-			:server				red\d
-			:database			CharityPlanner
-			:user				sa
-			:password			post+Office2
-			:app				Fs.Admin
+			:server				(local)
+			:database			School
+			:app				Lexxys.TestConsole
 			:commandTimeout		10m
 			:connectionTimeout	10s
 		driver	SqlDataAdapter

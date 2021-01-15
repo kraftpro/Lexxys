@@ -14,10 +14,10 @@ namespace Lexxys.Test.Con
 	{
 		public static void Go()
 		{
-			var a = new PublicToken(1, SixBitsCoder.GenerateSessionId(), PublicTokenScope.Private, TimeSpan.FromMinutes(10), "expenses.vew", 94, "//db1n1//FsData/Documents/01/03/120103456-crest.pdf");
+			var a = new PublicToken(1, SixBitsCoder.GenerateSessionId(), PublicTokenScope.Private, TimeSpan.FromMinutes(10), "view.documents", 94, @"c:\documents\11\22\101122345-wiouyer.pdf");
 			var token = a.ToTokenValue();
 			var b = PublicToken.FromTokenValue(token);
-			var d = new Document {Id = 123, Name = "Name of the doc;;sw;tr", Extension = null, StorageLocation = @"c:\documents\11\22\101122345-wiouyer.pdf", FoundationId = 123};
+			var d = new Document {Id = 123, Name = "Name of the doc;;sw;tr", Extension = null, StorageLocation = @"c:\documents\11\22\101122345-wiouyer.pdf", OwnerId = 123};
 			//var t1 = d.GetAccessToken(PublicTokenScope.Protected, "found/me");
 			var p1 = d.GetAccessToken2(PublicTokenScope.Protected, "found/me");
 			d.Extension = "pdf";
@@ -43,18 +43,18 @@ namespace Lexxys.Test.Con
 		public string Name { get; set; }
 		public string Extension { get; set; }
 		public string StorageLocation { get; set; }
-		public int FoundationId { get; set; }
+		public int OwnerId { get; set; }
 
 		//public PublicToken GetAccessToken(PublicTokenScope scope, string authorizationKey = null, TimeSpan timeout = default)
 		//{
 		//	var jss = new JavaScriptSerializer();
 		//	var data = jss.Serialize(new object[] { Id, Name, Extension, StorageLocation });
-		//	return new PublicToken(scope, timeout, authorizationKey, FoundationId, data);
+		//	return new PublicToken(scope, timeout, authorizationKey, OwnerId, data);
 		//}
 
 		public PublicToken GetAccessToken2(PublicTokenScope scope, string authorizationKey = null, TimeSpan timeout = default)
 		{
-			return new PublicToken(scope, timeout, authorizationKey, FoundationId, $"{Id};{Pack(Name)};{Pack(Extension)};{Pack(StorageLocation)}");
+			return new PublicToken(scope, timeout, authorizationKey, OwnerId, $"{Id};{Pack(Name)};{Pack(Extension)};{Pack(StorageLocation)}");
 		}
 
 		private static string Pack(string value)
@@ -144,7 +144,7 @@ namespace Lexxys.Test.Con
 		public DateTime? DateExpired => Timeout == default ? (DateTime?)null : DateCreated + Timeout;
 		/// <summary>AKA Authorization Key / Resource Code</summary>
 		public string Key { get; }
-		/// <summary>Foundation ID</summary>
+		/// <summary>Client ID</summary>
 		public int? ClientId { get; }
 		public string Data { get; }
 
@@ -204,12 +204,13 @@ namespace Lexxys.Test.Con
 		}
 		private static readonly char[] _semic = new[] { ';' };
 
-		private static readonly byte[] TokenKey = new byte[] { 12, 115, 134, 178, 31, 105, 236, 141, 56, 114, 139, 115, 61, 122, 38, 129, 180, 222, 150, 177, 162, 250, 177, 112 };
+		private static readonly byte[] TokenKey = new MD5CryptoServiceProvider() // 16 bytes
+			.ComputeHash(Encoding.UTF8.GetBytes("One Man had 5 tabby gabby black cats!"));
 
 		public string ToTokenValue()
 		{
 			var s = ToString();
-			var des = Crypto.Encryptor("TripleDes", TokenKey); //"One Man had 5 tabby gabby black cats!");
+			var des = Crypto.Encryptor("TripleDes", TokenKey);
 			return SixBitsCoder.Encode(des.EncryptString(s, Encoding.UTF8));
 		}
 
@@ -222,7 +223,7 @@ namespace Lexxys.Test.Con
 				return null;
 			try
 			{
-				var des = Crypto.Decryptor("TripleDes", TokenKey); //"One Man had 5 tabby gabby black cats!");
+				var des = Crypto.Decryptor("TripleDes", TokenKey);
 				var s = des.DecryptString(bits, Encoding.UTF8);
 				return FromString(s);
 			}

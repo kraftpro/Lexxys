@@ -66,21 +66,6 @@ namespace Lexxys.Test.Con
 							Speed.CharArr.Go();
 							break;
 						}
-					case "Cfg":
-						{
-							Config.AddConfiguration(@"C:\Application\Config\fsadmin.config.txt");
-							List<SubscriptionGroup> cg = Config.GetValue("FsAdmin.email.subscription.groups", new List<SubscriptionGroup>());
-							Console.WriteLine(DumpWriter.ToString(cg));
-							break;
-						}
-
-					case "Xml2":
-						Core.Xml2.Test.Go();
-						return;
-
-					case "Tokenizer-1":
-						Tokenizer2Test.Go();
-						return;
 
 					case "Dump1":
 						{
@@ -145,13 +130,13 @@ namespace Lexxys.Test.Con
 						{
 							var ii = new[] { new ErrorAttrib("min", 1), new ErrorAttrib("max", 2), new ErrorAttrib("value", 123) };
 							string xx = ErrorInfo.FormatMessage(new[] {
-										"Fiscal year end should be a number between {min}.",
-										"Fiscal year end  is out of range.",
-										"Fiscal year end should be a number between {min} and {max} at {bound}.",
-										"Fiscal year end should be a number between {min} and {max}.",
+										"Month number should be a number between {min}.",
+										"Month number is out of range.",
+										"Month number should be a number between {min} and {max} at {bound}.",
+										"Month number should be a number between {min} and {max}.",
 										}, ii);
 							var ii2 = new[] { new ErrorAttrib("size", 33), new ErrorAttrib("value", "aaaaaa") };
-							string x1 = ErrorInfo.FormatMessage("{field} should not be longer than {size} characters.", ii2, field: "Foundation name");
+							string x1 = ErrorInfo.FormatMessage("{field} should not be longer than {size} characters.", ii2, field: "Company name");
 							var a1 = Lexxys.Data.FieldValidator.EmailAddress("abs@aaa", 5, "EM");
 							var b1 = ValidationResults.Create("TEST2");
 							var c1 = a1 && b1;
@@ -205,10 +190,6 @@ namespace Lexxys.Test.Con
 					case "XmlBuilder":
 						XmlBuilderTest.Go();
 						return;
-
-					case "Dc":
-						Dat.TestDc();
-						return;
 				}
 
 				// Core.Xml.StrCmp.Go();
@@ -227,24 +208,12 @@ namespace Lexxys.Test.Con
 			// string s = Crypto.Decryptor("DES3", TokenKey).DecryptString(b, Encoding.UTF8);
 			// Js.Utf8Test.Go();
 			// return;
-			// var sec = Config.GetValue("FsAdmin.rabbitMq.email", XmlLiteNode.Empty);
-			// Console.WriteLine(sec.Value);
-			// Js.Utf8Test.Go();
-			// return;
 			// ConfigTest.Go();
 			// return;
 			// 
-			// Js.Jsb.Test();
-			// //Speed.ToCsStr.Go();
-			// //return;
-			// ConfigText.Go();
-			// var config = TextToXmlConverter.ConvertLite(File.ReadAllText(@"C:\Application\Config\fsadmin.config.txt"));
-			// Console.WriteLine(config.Count);
-			// return;
-
 			//Dump.Test();
 			//return;
-
+			// 
 			//TokenTest.Go();
 			//return;
 			//Strings2.Go();
@@ -282,8 +251,8 @@ namespace Lexxys.Test.Con
 
 			// return;
 
-			//var zz = Dc.GetList(new { id = 0 }, "select top 100 id from users");
-			//var yy = Dc.GetList<decimal?>("select top 100 cast(id as money) from users");
+			//var zz = Dc.GetList(new { id = 0 }, "select top 100 id from persons");
+			//var yy = Dc.GetList<decimal?>("select top 100 cast(id as money) from persons");
 			//Console.WriteLine(zz.Count);
 			//Console.WriteLine(yy.Count);
 			//Cnstrctr.Go();
@@ -291,7 +260,7 @@ namespace Lexxys.Test.Con
 
 			//Dat.Run();
 
-			//var xx = ValueValidator.IsEmail("ab@fs.com");
+			//var xx = ValueValidator.IsEmail("ab@google.com");
 			//var a1 = Lingua.Plural("genus");
 			//var a2 = Lingua.Plural("opus");
 			//var a3 = Lingua.Plural("magnum opus");
