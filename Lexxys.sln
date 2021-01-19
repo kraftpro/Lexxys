@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys", "src\Lexxys\Lexxys
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Tests", "test\Lexxys.Tests\Lexxys.Tests.csproj", "{99A4523F-29D5-498D-ACF0-D608FE5446F2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Test.Console", "test\Lexxys.Test.Console\Lexxys.Test.Console.csproj", "{79EB3F4C-A50F-46C3-A12A-F54F21A7175A}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{3D2BC3C9-109E-4D7A-B954-09B4E8B2A2A2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Testing", "src\Lexxys.Testing\Lexxys.Testing.csproj", "{C90D61D0-C13F-49EC-B9DA-924CBDCD694A}"
@@ -27,10 +25,6 @@ Global
 		{99A4523F-29D5-498D-ACF0-D608FE5446F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{99A4523F-29D5-498D-ACF0-D608FE5446F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{99A4523F-29D5-498D-ACF0-D608FE5446F2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{79EB3F4C-A50F-46C3-A12A-F54F21A7175A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{79EB3F4C-A50F-46C3-A12A-F54F21A7175A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{79EB3F4C-A50F-46C3-A12A-F54F21A7175A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{79EB3F4C-A50F-46C3-A12A-F54F21A7175A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C90D61D0-C13F-49EC-B9DA-924CBDCD694A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C90D61D0-C13F-49EC-B9DA-924CBDCD694A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C90D61D0-C13F-49EC-B9DA-924CBDCD694A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -41,7 +35,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{99A4523F-29D5-498D-ACF0-D608FE5446F2} = {3D2BC3C9-109E-4D7A-B954-09B4E8B2A2A2}
-		{79EB3F4C-A50F-46C3-A12A-F54F21A7175A} = {3D2BC3C9-109E-4D7A-B954-09B4E8B2A2A2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3F38CE85-960B-40DB-8BC2-90E6112E3872}
