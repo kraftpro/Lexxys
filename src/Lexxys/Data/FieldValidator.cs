@@ -96,29 +96,29 @@ namespace Lexxys.Data
 				ValidationResults.Create(field, ErrorInfo.BadReference(value));
 		}
 
-		public static ValidationResults Range<T>(T value, Tuple<T, T>[] ranges, T[] values, string field)
+		public static ValidationResults Range<T>(T value, ValueTuple<T, T>[] ranges, string field)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
 			if (field == null || field.Length <= 0)
 				throw new ArgumentNullException(nameof(field));
 
-			if (Check.Range(value, ranges, values))
+			if (Check.Range(value, ranges))
 				return ValidationResults.Empty;
-			return ranges?.Length == 1 && (values?.Length ?? 0) == 0 ?
+			return ranges?.Length == 1 ?
 				ValidationResults.Create(field, ErrorInfo.OutOfRange((T?)value, ranges[0].Item1, ranges[0].Item2)):
 				ValidationResults.Create(field, ErrorInfo.OutOfRange(value));
 		}
 
-		public static ValidationResults Range<T>(T? value, Tuple<T, T>[] ranges, T[] values, string field)
+		public static ValidationResults Range<T>(T? value, ValueTuple<T, T>[] ranges, string field)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
 			if (field == null || field.Length <= 0)
 				throw new ArgumentNullException(nameof(field));
 
-			return Range(value, ranges, values, field, true);
+			return Range(value, ranges, field, true);
 		}
 
-		public static ValidationResults Range<T>(T? value, Tuple<T, T>[] ranges, T[] values, string field, bool nullable)
+		public static ValidationResults Range<T>(T? value, ValueTuple<T, T>[] ranges, string field, bool nullable)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
 			if (field == null || field.Length <= 0)
@@ -126,15 +126,48 @@ namespace Lexxys.Data
 
 			if (value == null)
 				return nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue());
-			if (Check.Range(value, ranges, values, nullable))
+			if (Check.Range(value, ranges, nullable))
 				return ValidationResults.Empty;
-			return ranges?.Length == 1 && (values?.Length ?? 0) == 0 ?
+			return ranges?.Length == 1 ?
 				ValidationResults.Create(field, ErrorInfo.OutOfRange(value, ranges[0].Item1, ranges[0].Item2)):
 				ValidationResults.Create(field, ErrorInfo.OutOfRange(value));
 		}
 
+		public static ValidationResults Range<T>(T value, T[] ranges, string field)
+			where T : struct, IComparable<T>, IEquatable<T>
+		{
+			if (field == null || field.Length <= 0)
+				throw new ArgumentNullException(nameof(field));
+
+			if (Check.Range(value, ranges))
+				return ValidationResults.Empty;
+			return ValidationResults.Create(field, ErrorInfo.OutOfRange(value));
+		}
+
+		public static ValidationResults Range<T>(T? value, T[] ranges, string field)
+			where T : struct, IComparable<T>, IEquatable<T>
+		{
+			if (field == null || field.Length <= 0)
+				throw new ArgumentNullException(nameof(field));
+
+			return Range(value, ranges, field, true);
+		}
+
+		public static ValidationResults Range<T>(T? value, T[] ranges, string field, bool nullable)
+			where T : struct, IComparable<T>, IEquatable<T>
+		{
+			if (field == null || field.Length <= 0)
+				throw new ArgumentNullException(nameof(field));
+
+			if (value == null)
+				return nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue());
+			if (Check.Range(value, ranges, nullable))
+				return ValidationResults.Empty;
+			return ValidationResults.Create(field, ErrorInfo.OutOfRange(value));
+		}
+
 		public static ValidationResults FieldValue<T>(T value, T min, T max, string field)
-			where T : class, IComparable<T>
+			where T: class, IComparable<T>
 		{
 			if (field == null || field.Length <= 0)
 				throw new ArgumentNullException(nameof(field));
@@ -159,12 +192,6 @@ namespace Lexxys.Data
 			return ValidationResults.Empty;
 		}
 
-		public static ValidationResults FieldValue<T>(T? value, T? min, T? max, string field)
-			where T: struct, IComparable<T>
-		{
-			return FieldValue(value, min, max, field, true);
-		}
-
 		public static ValidationResults FieldValue<T>(T? value, T? min, T? max, string field, bool nullable)
 			where T: struct, IComparable<T>
 		{
@@ -179,6 +206,24 @@ namespace Lexxys.Data
 			if (max.HasValue && v.CompareTo(max.GetValueOrDefault()) > 0)
 				return ValidationResults.Create(field, ErrorInfo.OutOfRange(v, min, max));
 			return ValidationResults.Empty;
+		}
+
+		public static ValidationResults FieldValue<T>(T? value, T? min, T? max, string field)
+			where T: struct, IComparable<T>
+		{
+			return FieldValue(value, min, max, field, true);
+		}
+
+		public static ValidationResults FieldValue<T>(T? value, T min, T max, string field)
+			where T: struct, IComparable<T>
+		{
+			return FieldValue(value, (T?)min, (T?)max, field, true);
+		}
+
+		public static ValidationResults FieldValue<T>(T? value, T min, T max, string field, bool nullable)
+			where T : struct, IComparable<T>
+		{
+			return FieldValue(value, (T?)min, (T?)max, field, nullable);
 		}
 
 		public static ValidationResults FieldValue(string value, int length, string field, bool nullable = false)
@@ -330,7 +375,34 @@ namespace Lexxys.Data
 
 			return !value.HasValue ? ValidationResults.Create(field, ErrorInfo.NullValue()) : ValidationResults.Empty;
 		}
+
+		public static ValidationResults ReferenceKeyDebug(int? value, string reference, string field) => ReferenceKey(value, field);
+
+		public static ValidationResults ReferenceKeyDebug(int value, string reference, string field) => ReferenceKey(value, field);
+
+		public static ValidationResults ReferenceKeyDebug(int? value, string reference, string field, bool nullable) => ReferenceKey(value, field, nullable);
+
+		public static ValidationResults UniqueFieldDebug(string value, int length, string table, string tableField, string keyField = null, int keyValue = 0, string field = null, bool nullable = false)
+		{
+			if (table == null || table.Length <= 0)
+				throw new ArgumentNullException(nameof(table));
+			if (tableField == null || tableField.Length <= 0)
+				throw new ArgumentNullException(nameof(tableField));
+			if (field == null || field.Length == 0)
+				field = tableField;
+			return FieldValue(value, length, field, nullable);
+		}
+
+		public static ValidationResults UniqueFieldDebug(int? value, string table, string tableField, string keyField = null, int keyValue = 0, string field = null, bool nullable = false)
+		{
+			if (table == null || table.Length <= 0)
+				throw new ArgumentNullException(nameof(table));
+			if (tableField == null || tableField.Length <= 0)
+				throw new ArgumentNullException(nameof(tableField));
+
+			if (field == null || field.Length == 0)
+				field = tableField;
+			return value == null && !nullable ? ValidationResults.Create(field, ErrorInfo.NullValue()) : ValidationResults.Empty;
+		}
 	}
 }
-
-

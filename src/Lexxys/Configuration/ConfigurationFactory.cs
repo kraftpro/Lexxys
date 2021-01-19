@@ -15,7 +15,7 @@ namespace Lexxys.Configuration
 		internal static IConfigurationProvider FindProvider(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
 			if (location == null)
-				throw EX.ArgumentNull("location");
+				throw EX.ArgumentNull(nameof(location));
 
 			var arguments = new object[] { location, parameters };
 			return Factory.Constructors(typeof(IConfigurationProvider), "Create", __locationType2)
@@ -36,14 +36,14 @@ namespace Lexxys.Configuration
 		//internal static IConfigurationProvider FindProvider(ConfigurationLocator location)
 		//{
 		//	if (location == null)
-		//		throw EX.ArgumentNull("location");
+		//		throw EX.ArgumentNull(nameof(location));
 		//	return Find<IConfigurationProvider>(location);
 		//}
 
 		//internal static IXmlConfigurationSource FindXmlSource(ConfigurationLocator location)
 		//{
 		//	if (location == null)
-		//		throw EX.ArgumentNull("location");
+		//		throw EX.ArgumentNull(nameof(location));
 		//	return Find<IXmlConfigurationSource>(location);
 		//}
 
@@ -57,5 +57,3 @@ namespace Lexxys.Configuration
 		//private static readonly Type[] __locationType = { typeof(ConfigurationLocator) };
 	}
 }
-
-

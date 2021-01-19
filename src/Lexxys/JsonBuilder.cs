@@ -560,7 +560,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public JsonBuilder Val(object value)
 		{
-			if (!(value is IDumpJson i))
+			if (value is not IDumpJson i)
 				return ValObj(value);
 			if (_state == State.Value)
 				Comma();
@@ -786,5 +786,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

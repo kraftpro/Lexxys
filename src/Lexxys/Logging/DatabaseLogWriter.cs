@@ -331,8 +331,7 @@ namespace Lexxys.Logging
 
 		private static void TestLogTables(SqlConnection connection, string schemaName, string logName)
 		{
-			using var command = new SqlCommand();
-			command.Connection = connection;
+			using var command = new SqlCommand { Connection = connection };
 			foreach (string statement in TestTablesCommandText)
 			{
 				command.CommandText = String.Format(CultureInfo.InvariantCulture, statement, schemaName, logName);
@@ -475,5 +474,3 @@ as
 		#endregion
 	}
 }
-
-

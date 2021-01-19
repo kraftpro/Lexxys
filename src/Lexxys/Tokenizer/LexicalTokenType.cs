@@ -16,7 +16,7 @@ namespace Lexxys.Tokenizer
 	/// <summary>
 	/// The type of the lexical token
 	/// </summary>
-	public struct LexicalTokenType
+	public readonly struct LexicalTokenType: IEquatable<LexicalTokenType>
 	{
 		public static readonly LexicalTokenType EOF			= new LexicalTokenType(0, 0, "eof");
 		public static readonly LexicalTokenType NUMERIC		= new LexicalTokenType(1, 0, "number");
@@ -198,7 +198,7 @@ namespace Lexxys.Tokenizer
 		{
 			return obj is LexicalTokenType ltt && this == ltt;
 		}
+
+		public bool Equals(LexicalTokenType other) => this == other;
 	}
 }
-
-

@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Lexxys.RL
 {
-	public struct VoteScore
+	public readonly struct VoteScore: IEquatable<VoteScore>
 	{
 		//private const float MaxScoreValue = 1.0f;
 		//private const float ScoreValueEpsilon = 5.960465e-8f;
@@ -93,6 +93,8 @@ namespace Lexxys.RL
 			return obj is VoteScore score && Value == score.Value;
 		}
 
+		public bool Equals(VoteScore other) => Value == other.Value;
+
 		public override int GetHashCode()
 		{
 			return Value.GetHashCode();
@@ -110,5 +112,3 @@ namespace Lexxys.RL
 		public static readonly VoteScore ProbablyNot = Maybe + No;
 	}
 }
-
-

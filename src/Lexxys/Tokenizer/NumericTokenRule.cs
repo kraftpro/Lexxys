@@ -105,7 +105,7 @@ namespace Lexxys.Tokenizer
 
 			if (ch >= '0' && ch <= '9')
 			{
-				if (ch == '0' && "oOxXbB".IndexOf(stream[i + 1]) >= 0)
+				if (ch == '0' && "oOxXbB".Contains(stream[i + 1]))
 					return TryParseBinary(stream);
 				while (ch == '0')
 				{
@@ -259,5 +259,3 @@ namespace Lexxys.Tokenizer
 		}
 	}
 }
-
-

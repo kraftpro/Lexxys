@@ -35,7 +35,7 @@ namespace Lexxys
 			if (field == null)
 				return Empty;
 
-			if (field.IndexOf(ErrorSeparator) >= 0)
+			if (field.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
 			return new ValidationResults(ReadOnly.Wrap(new[] { new ValidationResultsItem(field) }));
@@ -48,7 +48,7 @@ namespace Lexxys
 			if (field == null && message == null)
 				return Empty;
 
-			if (field != null && field.IndexOf(ErrorSeparator) >= 0)
+			if (field != null && field.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
 			return new ValidationResults(ReadOnly.Wrap(new[] { new ValidationResultsItem(field, message) }));
@@ -60,7 +60,7 @@ namespace Lexxys
 			if (field == null)
 				return Empty;
 
-			if (field.IndexOf(ErrorSeparator) >= 0)
+			if (field.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
 			return new ValidationResults(ReadOnly.Wrap(new[] { new ValidationResultsItem(field, null, errorInfo) }));
@@ -73,7 +73,7 @@ namespace Lexxys
 			if (field == null && message == null)
 				return Empty;
 
-			if (field != null && field.IndexOf(ErrorSeparator) >= 0)
+			if (field != null && field.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
 			return new ValidationResults(ReadOnly.Wrap(new[] { new ValidationResultsItem(field, message, errorInfo) }));
@@ -353,7 +353,7 @@ namespace Lexxys
 			if (value == null)
 				return this;
 
-			if (value.IndexOf(ErrorSeparator) >= 0)
+			if (value.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(value), value, null);
 
 			var items = new List<ValidationResultsItem>(_items.Count - 1);
@@ -376,9 +376,9 @@ namespace Lexxys
 			if (target == null)
 				return Remove(source);
 
-			if (source.IndexOf(ErrorSeparator) >= 0)
+			if (source.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(source), source, null);
-			if (target.IndexOf(ErrorSeparator) >= 0)
+			if (target.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(target), target, null);
 
 			var items = new ValidationResultsItem[_items.Count];
@@ -747,5 +747,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

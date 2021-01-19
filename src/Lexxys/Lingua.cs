@@ -702,7 +702,7 @@ namespace Lexxys
 				//}
 			}
 
-			struct Ending
+			readonly struct Ending
 			{
 				public readonly int Length;
 				public readonly string End;
@@ -1095,5 +1095,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

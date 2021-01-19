@@ -20,7 +20,7 @@ namespace Lexxys.Crypting.Cryptors
 		public RsaCryptoBase(object key, bool encryptor)
 		{
 			if (key == null)
-				throw EX.ArgumentNull("key");
+				throw EX.ArgumentNull(nameof(key));
 			_h = new RSACryptoServiceProvider();
 #if !NETSTANDARD
 			if (key is string s)
@@ -30,7 +30,7 @@ namespace Lexxys.Crypting.Cryptors
 			if (key is RSAParameters parameters)
 				_h.ImportParameters(parameters);
 			else
-				throw EX.ArgumentOutOfRange("key", key);
+				throw EX.ArgumentOutOfRange(nameof(key), key);
 			_bsize = encryptor ? _h.KeySize / 8 - 11 : _h.KeySize / 8;
 		}
 		public virtual void EncryptStream(System.IO.Stream bits, System.IO.Stream text)
@@ -110,5 +110,3 @@ namespace Lexxys.Crypting.Cryptors
 		}
 	}
 }
-
-

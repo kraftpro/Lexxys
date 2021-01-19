@@ -128,9 +128,9 @@ namespace Lexxys.Data
 		public RowsCollection(DataTable table)
 		{
 			if (table == null)
-				throw EX.ArgumentNull("table");
+				throw EX.ArgumentNull(nameof(table));
 			if (table == null)
-				throw EX.ArgumentNull("table");
+				throw EX.ArgumentNull(nameof(table));
 
 			_data = new object[table.Rows.Count][];
 			for (int i = 0; i < _data.Length; ++i)
@@ -191,7 +191,7 @@ namespace Lexxys.Data
 
 			public FieldsCollection(IList<DataTableField> fields)
 			{
-				_fields = fields ?? throw EX.ArgumentNull("fields");
+				_fields = fields ?? throw EX.ArgumentNull(nameof(fields));
 				_fildsDict = _fields.ToDictionary(f => f.Name, StringComparer.OrdinalIgnoreCase);
 			}
 
@@ -242,15 +242,11 @@ namespace Lexxys.Data
 
 			public DataTableField(string name, Type type, RowsCollection records, int columnIndex)
 			{
-				if (name == null)
-					throw EX.ArgumentNull("name");
 				if (type == null)
-					throw EX.ArgumentNull("type");
-				if (records == null)
-					throw EX.ArgumentNull("records");
-
-				_name = name;
-				_records = records;
+					throw EX.ArgumentNull(nameof(type));
+				
+				_name = name ?? throw EX.ArgumentNull(nameof(name));
+				_records = records ?? throw EX.ArgumentNull(nameof(records));
 
 				int c = (int)System.Type.GetTypeCode(type);
 				if (c > 2 && c < _typeCodeMap.Length)
@@ -374,5 +370,3 @@ namespace Lexxys.Data
 		}
 	}
 }
-
-

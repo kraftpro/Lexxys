@@ -80,7 +80,7 @@ namespace Lexxys
 		{
 			text.Append(tab)
 				.Append(ex.GetType())
-				.Append(" ")
+				.Append(' ')
 				.Append(ex.Message.Replace(Environment.NewLine, Environment.NewLine + tab));
 			foreach (var key in ex.Data.Keys)
 			{
@@ -380,5 +380,3 @@ namespace Lexxys
 	}
 
 }
-
-

@@ -28,9 +28,9 @@ namespace Lexxys.Configuration
 		public object GetValue(string reference, Type returnType)
 		{
 			if (returnType == null)
-				throw EX.ArgumentNull("returnType");
+				throw EX.ArgumentNull(nameof(returnType));
 			if (reference == null)
-				throw EX.ArgumentNull("reference");
+				throw EX.ArgumentNull(nameof(reference));
 
 			string value = ConfigurationManager.AppSettings[reference];
 			if (value != null && XmlTools.TryGetValue(value, returnType, out object result))
@@ -46,7 +46,7 @@ namespace Lexxys.Configuration
 		public List<T> GetList<T>(string reference)
 		{
 			if (reference == null)
-				throw EX.ArgumentNull("reference");
+				throw EX.ArgumentNull(nameof(reference));
 
 			string[] values = ConfigurationManager.AppSettings.GetValues(reference);
 			var result = new List<T>();
@@ -97,5 +97,3 @@ namespace Lexxys.Configuration
 	}
 }
 #endif
-
-

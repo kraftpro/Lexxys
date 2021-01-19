@@ -978,21 +978,11 @@ namespace Lexxys
 		{
 			if ((value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z') || (value >= '0' && value <= '9'))
 				return true;
-			switch (value)
+			return value switch
 			{
-				case '(':
-				case ')':
-				case '*':
-				case '-':
-				case '.':
-				case ':':
-				case '_':
-				case '!':
-				case '~':
-					return true;
-				default:
-					return false;
-			}
+				'(' or ')' or '*' or '-' or '.' or ':' or '_' or '!' or '~' => true,
+				_ => false,
+			};
 		}
 	}
 
@@ -1011,7 +1001,6 @@ namespace Lexxys
 			if (directory == null)
 				directory = Path.GetTempPath();
 
-#pragma warning disable 168, 219
 			const int LogThreshold = 20;
 			const int TotalLimit = 50;
 			int index = 0;
@@ -1374,4 +1363,3 @@ namespace Lexxys
 		public static readonly T[] Value = Array.Empty<T>();
 	}
 }
-

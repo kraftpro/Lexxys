@@ -446,6 +446,16 @@ namespace Lexxys
 
 			IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
 
+			public override bool Equals(object obj) => obj is DictionaryValueWrap<TKey, TValue> other && Equals(other);
+
+			public bool Equals(DictionaryValueWrap<TKey, TValue> other) => ReferenceEquals(_dictionary, other._dictionary);
+
+			public override int GetHashCode() => _dictionary.GetHashCode();
+
+			public static bool operator ==(DictionaryValueWrap<TKey, TValue> left, DictionaryValueWrap<TKey, TValue> right) => left.Equals(right);
+
+			public static bool operator !=(DictionaryValueWrap<TKey, TValue> left, DictionaryValueWrap<TKey, TValue> right) => !(left == right);
+
 			public override string ToString() => "RO:" + _dictionary.ToString();
 		}
 
@@ -556,6 +566,16 @@ namespace Lexxys
 
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
+
+			public override bool Equals(object obj) => obj is ListValueWrap<T> other && Equals(other);
+
+			public bool Equals(ListValueWrap<T> other) => ReferenceEquals(_list, other._list);
+
+			public override int GetHashCode() => _list.GetHashCode();
+
+			public static bool operator ==(ListValueWrap<T> left, ListValueWrap<T> right) => left.Equals(right);
+
+			public static bool operator !=(ListValueWrap<T> left, ListValueWrap<T> right) => !(left == right);
 
 			public override string ToString() => "RO:" + _list.ToString();
 		}
@@ -864,6 +884,16 @@ namespace Lexxys
 			public IEnumerator<T> GetEnumerator() => _collection.GetEnumerator();
 
 			IEnumerator IEnumerable.GetEnumerator() => _collection.GetEnumerator();
+
+			public override bool Equals(object obj) => obj is CollectionValueWrap<T> other && Equals(other);
+
+			public bool Equals(CollectionValueWrap<T> other) => ReferenceEquals(_collection, other._collection);
+
+			public override int GetHashCode() => _collection.GetHashCode();
+
+			public static bool operator ==(CollectionValueWrap<T> left, CollectionValueWrap<T> right) => left.Equals(right);
+
+			public static bool operator !=(CollectionValueWrap<T> left, CollectionValueWrap<T> right) => !(left == right);
 
 			public override string ToString() => "RO:" + _collection.ToString();
 		}
@@ -1266,6 +1296,16 @@ namespace Lexxys
 			}
 
 			public override string ToString() => $"RO({_start},{_end}):" + _list.ToString();
+
+			public override bool Equals(object obj) => obj is ListFragmentValueWrap<T> other && Equals(other);
+
+			public bool Equals(ListFragmentValueWrap<T> other) => ReferenceEquals(_list, other._list) && _start == other._start && _end == other._end;
+
+			public override int GetHashCode() => (_list, _start, _end).GetHashCode();
+
+			public static bool operator ==(ListFragmentValueWrap<T> left, ListFragmentValueWrap<T> right) => left.Equals(right);
+
+			public static bool operator !=(ListFragmentValueWrap<T> left, ListFragmentValueWrap<T> right) => !(left == right);
 		}
 
 		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
@@ -1363,5 +1403,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

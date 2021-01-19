@@ -115,7 +115,7 @@ namespace Lexxys.Data
 		{
 			if (_broadcast.TryGetValue(typeof(T), out var obj))
 			{
-				if (!(obj is T t))
+				if (obj is not T t)
 					throw new InvalidOperationException();
 				return t;
 			}
@@ -556,7 +556,7 @@ namespace Lexxys.Data
 		public List<RowsCollection> Records(int count, string query, params DbParameter[] parameters)
 		{
 			if (query == null || query.Length == 0)
-				throw EX.ArgumentNull("query");
+				throw EX.ArgumentNull(nameof(query));
 			if (_connectionsCount < 1)
 				throw EX.InvalidOperation();
 
@@ -601,4 +601,3 @@ namespace Lexxys.Data
 		private bool __disposed;
 	}
 }
-

@@ -58,7 +58,7 @@ namespace Lexxys
 				comma = separator;
 			}
 			if (comma != "(")
-				text.Append(")");
+				text.Append(')');
 			return text;
 		}
 
@@ -756,5 +756,3 @@ namespace Lexxys
 		public static JsonPair J(string name, IEnumerable<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.WrapCopy(value)));
 	}
 }
-
-

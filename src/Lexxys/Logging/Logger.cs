@@ -409,7 +409,7 @@ namespace Lexxys
 			if ((_levels & LogTypeMask.Trace) != 0)
 			{
 				if (messageFunction == null)
-					throw new ArgumentNullException("messageFounction");
+					throw new ArgumentNullException(nameof(messageFunction));
 				Write(new LogRecord(_source, messageFunction(), LogType.Trace, args));
 			}
 		}
@@ -720,7 +720,7 @@ namespace Lexxys
 			if ((_levels & LogTypeMask.Debug) != 0)
 			{
 				if (messageFunction == null)
-					throw new ArgumentNullException("messageFounction");
+					throw new ArgumentNullException(nameof(messageFunction));
 				Write(new LogRecord(_source, messageFunction(), LogType.Debug, args));
 			}
 		}
@@ -1026,7 +1026,7 @@ namespace Lexxys
 			if ((_levels & LogTypeMask.Information) != 0)
 			{
 				if (messageFunction == null)
-					throw new ArgumentNullException("messageFounction");
+					throw new ArgumentNullException(nameof(messageFunction));
 				Write(new LogRecord(_source, messageFunction(), LogType.Information, args));
 			}
 		}
@@ -1330,7 +1330,7 @@ namespace Lexxys
 			if ((_levels & LogTypeMask.Warning) != 0)
 			{
 				if (messageFunction == null)
-					throw new ArgumentNullException("messageFounction");
+					throw new ArgumentNullException(nameof(messageFunction));
 				Write(new LogRecord(_source, messageFunction(), LogType.Warning, args));
 			}
 		}
@@ -1634,7 +1634,7 @@ namespace Lexxys
 			if ((_levels & LogTypeMask.Error) != 0)
 			{
 				if (messageFunction == null)
-					throw new ArgumentNullException("messageFounction");
+					throw new ArgumentNullException(nameof(messageFunction));
 				Write(new LogRecord(_source, messageFunction(), LogType.Error, args));
 			}
 		}
@@ -1938,7 +1938,7 @@ namespace Lexxys
 			if ((_levels & LogTypeMask.Output) != 0)
 			{
 				if (messageFunction == null)
-					throw new ArgumentNullException("messageFounction");
+					throw new ArgumentNullException(nameof(messageFunction));
 				Write(new LogRecord(_source, messageFunction(), LogType.Output, args));
 			}
 		}
@@ -2204,5 +2204,3 @@ namespace Lexxys
 	}
 
 }
-
-

@@ -18,8 +18,6 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 
-#pragma warning disable 3002, 3001	// CLS-compliant
-
 namespace Lexxys.Xml
 {
 	public static class XmlTools
@@ -275,7 +273,7 @@ namespace Lexxys.Xml
 			if (collection == null)
 				return text;
 			if (braces)
-				text.Append("(");
+				text.Append('(');
 			string pad = "";
 			foreach (var item in collection)
 			{
@@ -288,7 +286,7 @@ namespace Lexxys.Xml
 				pad = ",";
 			}
 			if (braces)
-				text.Append(")");
+				text.Append(')');
 			return text;
 		}
 
@@ -3003,4 +3001,3 @@ namespace Lexxys.Xml
 		#endregion
 	}
 }
-

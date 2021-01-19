@@ -101,18 +101,12 @@ namespace Lexxys.Workflow
 
 		private StateMachine(string name, Type enumType, StateMachineState[] states, StateMachineTransition[] transitions)
 		{
-			if (name == null)
-				throw new ArgumentNullException(nameof(name));
-			if (states == null)
+			if (states == null || states.Length <= 0)
 				throw new ArgumentNullException(nameof(states));
-			if (transitions == null)
-				throw new ArgumentNullException(nameof(transitions));
-			if (states.Length == 0)
-				throw EX.ArgumentOutOfRange("states.Length", states.Length);
-			_name = name;
+			_name = name ?? throw new ArgumentNullException(nameof(name));
 			_enumType = enumType;
 			_states = states;
-			_transitions = transitions;
+			_transitions = transitions ?? throw new ArgumentNullException(nameof(transitions));
 			_currentState = states[0];
 		}
 
@@ -530,5 +524,3 @@ namespace Lexxys.Workflow
 		}
 	}
 }
-
-

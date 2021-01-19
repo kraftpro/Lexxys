@@ -118,23 +118,23 @@ namespace Lexxys
 
 		public static T GetValue<T>(string node)
 		{
-			return !(GetValue(node, typeof(T)) is T value) ? default: value;
+			return GetValue(node, typeof(T)) is T value ? value: default;
 		}
 
 		public static T GetValue<T>(string node, T defaultValue)
 		{
-			return !(GetValue(node, typeof(T)) is T value) ? defaultValue: value;
+			return GetValue(node, typeof(T)) is T value ? value: defaultValue;
 		}
 
 		public static T GetValue<T>(string node, Func<T> defaultValue)
 		{
-			return !(GetValue(node, typeof(T)) is T value) ? defaultValue() : value;
+			return GetValue(node, typeof(T)) is T value ? value : defaultValue();
 		}
 
 		public static T GetValue<T>(string node, T minValue, T maxValue, T defaultValue)
 			where T: IComparable<T>
 		{
-			return !(GetValue(node, typeof(T)) is T value) ? defaultValue:
+			return GetValue(node, typeof(T)) is not T value ? defaultValue:
 				value.CompareTo(minValue) <= 0 ? minValue:
 				value.CompareTo(maxValue) >= 0 ? maxValue: value;
 		}
@@ -658,5 +658,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

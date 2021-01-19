@@ -60,19 +60,19 @@ namespace Lexxys.Data
 			return 1 == dc.GetValue<int>("select top 1 1 from " + Dc.Name(table) + " where " + Dc.Name(key ?? "ID") + "=@I", Dc.Parameter("@I", value));
 		}
 
-		public static bool Range<T>(T? value, Tuple<T, T>[] ranges, T[] values)
+		public static bool Range<T>(T? value, ValueTuple<T, T>[] ranges)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
-			return value == null || Range(value.GetValueOrDefault(), ranges, values);
+			return value == null || Range(value.GetValueOrDefault(), ranges);
 		}
 
-		public static bool Range<T>(T? value, Tuple<T, T>[] ranges, T[] values, bool nullable)
+		public static bool Range<T>(T? value, ValueTuple<T, T>[] ranges, bool nullable)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
-			return value == null ? nullable: Range(value.GetValueOrDefault(), ranges, values);
+			return value == null ? nullable: Range(value.GetValueOrDefault(), ranges);
 		}
 
-		public static bool Range<T>(T value, Tuple<T, T>[] ranges, T[] values)
+		public static bool Range<T>(T value, ValueTuple<T, T>[] ranges)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
 			if (ranges != null)
@@ -83,11 +83,29 @@ namespace Lexxys.Data
 						return true;
 				}
 			}
-			if (values != null)
+			return false;
+		}
+
+		public static bool Range<T>(T? value, T[] ranges)
+			where T : struct, IComparable<T>, IEquatable<T>
+		{
+			return value == null || Range(value.GetValueOrDefault(), ranges);
+		}
+
+		public static bool Range<T>(T? value, T[] ranges, bool nullable)
+			where T : struct, IComparable<T>, IEquatable<T>
+		{
+			return value == null ? nullable : Range(value.GetValueOrDefault(), ranges);
+		}
+
+		public static bool Range<T>(T value, T[] ranges)
+			where T : struct, IComparable<T>, IEquatable<T>
+		{
+			if (ranges != null)
 			{
-				for (int i = 0; i < values.Length; ++i)
+				for (int i = 0; i < ranges.Length; ++i)
 				{
-					if (value.Equals(values[i]))
+					if (value.Equals(ranges[i]))
 						return true;
 				}
 			}
@@ -217,9 +235,9 @@ namespace Lexxys.Data
 		public static bool UniqueField(DataContext dc, string value, string table, string field, string keyField = null, int keyValue = 0)
 		{
 			if (table == null || table.Length == 0)
-				throw EX.ArgumentNull("table");
+				throw EX.ArgumentNull(nameof(table));
 			if (field == null || field.Length == 0)
-				throw EX.ArgumentNull("field");
+				throw EX.ArgumentNull(nameof(field));
 
 			string query = "select top 1 1 from " + Dc.Name(table) + " where " + Dc.Name(field) + Dc.Equal(value);
 			if (keyField != null)
@@ -231,9 +249,9 @@ namespace Lexxys.Data
 		public static bool UniqueField(DataContext dc, int value, string table, string field, string keyField = null, int keyValue = 0)
 		{
 			if (table == null || table.Length == 0)
-				throw EX.ArgumentNull("table");
+				throw EX.ArgumentNull(nameof(table));
 			if (field == null || field.Length == 0)
-				throw EX.ArgumentNull("field");
+				throw EX.ArgumentNull(nameof(field));
 
 			string query = "select top 1 1 from " + Dc.Name(table) + " where " + Dc.Name(field) + Dc.Equal(value);
 			if (keyField != null)

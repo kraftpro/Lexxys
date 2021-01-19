@@ -132,9 +132,9 @@ namespace Lexxys.RL
 					 */
 
 					text.Clear();
-					text.Append(Scheme).Append(":").Append(Host);
+					text.Append(Scheme).Append(':').Append(Host);
 					if (Port > 0)
-						text.Append(":").Append(Port);
+						text.Append(':').Append(Port);
 					if (Path != null)
 					{
 						if (!Path.StartsWith("/"))
@@ -155,7 +155,7 @@ namespace Lexxys.RL
 		{
 			var text = new StringBuilder();
 			if (Scheme != null)
-				text.Append(Scheme).Append(":");
+				text.Append(Scheme).Append(':');
 			if (UserId != null)
 			{
 				text.Append(UserId);
@@ -167,7 +167,7 @@ namespace Lexxys.RL
 			{
 				text.Append(Host);
 				if (Port > 0)
-					text.Append(":").Append(Port);
+					text.Append(':').Append(Port);
 			}
 			if (Path != null)
 			{
@@ -423,21 +423,11 @@ namespace Lexxys.RL
 		{
 			if ((value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z') || (value >= '0' && value <= '9'))
 				return true;
-			switch (value)
+			return value switch
 			{
-				case '(':
-				case ')':
-				case '*':
-				case '-':
-				case '.':
-				case '_':
-				case '!':
-					return true;
-				default:
-					return false;
-			}
+				'(' or ')' or '*' or '-' or '.' or '_' or '!' => true,
+				_ => false,
+			};
 		}
 	}
 }
-
-

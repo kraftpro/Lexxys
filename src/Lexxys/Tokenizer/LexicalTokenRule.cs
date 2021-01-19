@@ -51,8 +51,9 @@ namespace Lexxys.Tokenizer
 	/// </summary>
 	public class TokenRule: LexicalTokenRule
 	{
+		public delegate LexicalToken Parser(CharStream stream);
 		private readonly string _start;
-		private readonly Func<CharStream, LexicalToken> _parser;
+		private readonly Parser _parser;
 		private readonly Func<char, bool> _test;
 
 		/// <summary>
@@ -61,11 +62,9 @@ namespace Lexxys.Tokenizer
 		/// <param name="parser">Function that will be used to extract a token from a stream.</param>
 		/// <param name="start">List of the possible starting characters for the parsing token.</param>
 		/// <param name="test">Function that will be used to test that a character could be start of a new token.</param>
-		public TokenRule(Func<CharStream, LexicalToken> parser, string start = null, Func<char, bool> test = null)
+		public TokenRule(Parser parser, string start = null, Func<char, bool> test = null)
 		{
-			if (_parser == null)
-				throw new ArgumentNullException(nameof(_parser));
-			_parser = parser;
+			_parser = parser ?? throw new ArgumentNullException(nameof(parser));
 			_start = start;
 			_test = test;
 		}
@@ -86,5 +85,3 @@ namespace Lexxys.Tokenizer
 		}
 	}
 }
-
-

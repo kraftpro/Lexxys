@@ -159,16 +159,12 @@ namespace Lexxys.Logging
 
 		protected static EventLogEntryType LogEntryType(LogType logType)
 		{
-			switch (logType)
+			return logType switch
 			{
-				case LogType.Output:
-				case LogType.Error:
-					return EventLogEntryType.Error;
-				case LogType.Warning:
-					return EventLogEntryType.Warning;
-				default:
-					return EventLogEntryType.Information;
-			}
+				LogType.Output or LogType.Error => EventLogEntryType.Error,
+				LogType.Warning => EventLogEntryType.Warning,
+				_ => EventLogEntryType.Information,
+			};
 		}
 
 
@@ -261,5 +257,3 @@ namespace Lexxys.Logging
 		}
 	}
 }
-
-

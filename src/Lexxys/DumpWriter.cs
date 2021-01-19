@@ -992,43 +992,26 @@ namespace Lexxys
 
 			if (value is IConvertible ic)
 			{
-				switch (ic.GetTypeCode())
+				return ic.GetTypeCode() switch
 				{
-					case TypeCode.DBNull:
-					case TypeCode.Empty:
-						return Text(NullValue);
-					case TypeCode.Boolean:
-						return Dump((bool)value);
-					case TypeCode.Char:
-						return Dump((char)value);
-					case TypeCode.SByte:
-						return Dump((sbyte)value);
-					case TypeCode.Byte:
-						return Dump((byte)value);
-					case TypeCode.Int16:
-						return Dump((short)value);
-					case TypeCode.UInt16:
-						return Dump((ushort)value);
-					case TypeCode.Int32:
-						return Dump((int)value);
-					case TypeCode.UInt32:
-						return Dump((uint)value);
-					case TypeCode.Int64:
-						return Dump((long)value);
-					case TypeCode.UInt64:
-						return Dump((ulong)value);
-					case TypeCode.Single:
-						return Dump((float)value);
-					case TypeCode.Double:
-						return Dump((double)value);
-					case TypeCode.Decimal:
-						return Dump((Decimal)value);
-					case TypeCode.DateTime:
-						return Dump((DateTime)value);
-					case TypeCode.String:
-						return Dump((string)value);
-				}
-				return Text(ic.ToString(CultureInfo.InvariantCulture));
+					TypeCode.DBNull or TypeCode.Empty => Text(NullValue),
+					TypeCode.Boolean => Dump((bool)value),
+					TypeCode.Char => Dump((char)value),
+					TypeCode.SByte => Dump((sbyte)value),
+					TypeCode.Byte => Dump((byte)value),
+					TypeCode.Int16 => Dump((short)value),
+					TypeCode.UInt16 => Dump((ushort)value),
+					TypeCode.Int32 => Dump((int)value),
+					TypeCode.UInt32 => Dump((uint)value),
+					TypeCode.Int64 => Dump((long)value),
+					TypeCode.UInt64 => Dump((ulong)value),
+					TypeCode.Single => Dump((float)value),
+					TypeCode.Double => Dump((double)value),
+					TypeCode.Decimal => Dump((Decimal)value),
+					TypeCode.DateTime => Dump((DateTime)value),
+					TypeCode.String => Dump((string)value),
+					_ => Text(ic.ToString(CultureInfo.InvariantCulture)),
+				};
 			}
 
 			int count = Observed.Count;
@@ -1316,5 +1299,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

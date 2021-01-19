@@ -26,7 +26,7 @@ namespace Lexxys
 		public const string ConfigurationSynonyms = ConfigurationRoot + ".synonyms.*";
 
 		public static readonly object Void = new object();
-		public static readonly object[] NoArgs = new object[0];
+		public static readonly object[] NoArgs = Array.Empty<object>();
 #if !NETSTANDARD && DEBUG
 		public static readonly DebugInfoGenerator DebugInfo = DebugInfoGenerator.CreatePdbGenerator();
 #endif
@@ -1404,5 +1404,3 @@ namespace Lexxys
 		private static readonly ConcurrentDictionary<Tuple<Type, Type>, Func<object, object>> __stubs = new ConcurrentDictionary<Tuple<Type, Type>, Func<object, object>>();
 	}
 }
-
-

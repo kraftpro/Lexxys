@@ -29,7 +29,7 @@ namespace Lexxys
 
 		private FileWatcher(FileInfo fileInfo)
 		{
-			_fi = fileInfo ?? throw EX.ArgumentNull("fileInfo");
+			_fi = fileInfo ?? throw EX.ArgumentNull(nameof(fileInfo));
 			_fi.Refresh();
 			_watcher = new FileSystemWatcher(_fi.DirectoryName, _fi.Name)
 			{
@@ -123,5 +123,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

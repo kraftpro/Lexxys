@@ -25,7 +25,7 @@ namespace Lexxys.Configuration
 		private LocalFileConfigurationSource(FileInfo file, string sourceType, ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
 			if (file == null)
-				throw EX.ArgumentNull("file");
+				throw EX.ArgumentNull(nameof(file));
 			_file = file.Exists ? file: null;
 			_converter = XmlLiteConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
 			_location = location;
@@ -71,7 +71,7 @@ namespace Lexxys.Configuration
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is LocalFileConfigurationSource x))
+			if (obj is not LocalFileConfigurationSource x)
 				return false;
 			if (_file == null)
 				return x._file == null;
@@ -164,5 +164,3 @@ namespace Lexxys.Configuration
 		}
 	}
 }
-
-

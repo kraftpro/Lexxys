@@ -126,7 +126,7 @@ namespace Lexxys
 			Default.Remove(key);
 		}
 
-		private struct CollectionDefinition
+		private struct CollectionDefinition: IEquatable<CollectionDefinition>
 		{
 			public readonly Func<object> Constructor;
 			public readonly TimeSpan TimeToLive;
@@ -135,6 +135,22 @@ namespace Lexxys
 			{
 				Constructor = constructor;
 				TimeToLive = timeToLive;
+			}
+
+			public override bool Equals(object obj)
+			{
+				return obj is CollectionDefinition definition && Equals(definition);
+			}
+
+			public bool Equals(CollectionDefinition other)
+			{
+				return Object.ReferenceEquals(Constructor, other.Constructor) &&
+					TimeToLive == other.TimeToLive;
+			}
+
+			public override int GetHashCode()
+			{
+				return HashCode.Join(Constructor?.GetHashCode() ?? 0, TimeToLive.GetHashCode());
 			}
 		}
 		private static readonly ConcurrentDictionary<string, CollectionDefinition> __collectionDefinitions = new ConcurrentDictionary<string, CollectionDefinition>();
@@ -164,7 +180,7 @@ namespace Lexxys
 			value = definition.Constructor();
 			if (value == null)
 				throw new ArgumentOutOfRangeException(nameof(key), key.Value, $"Cannot construct collection {typeof(LocalCache<TKey, TValue>).FullName}.");
-			if (!(value is LocalCache<TKey, TValue> collection))
+			if (value is not LocalCache<TKey, TValue> collection)
 				throw new ArgumentOutOfRangeException(nameof(key), key.Value, $"Wrong constructed type. Expected: {typeof(LocalCache<TKey, TValue>).FullName}, actual: {value.GetType().FullName}.");
 			Default.Set(key.Value, collection, DateTime.UtcNow + definition.TimeToLive);
 			return collection;
@@ -190,5 +206,3 @@ namespace Lexxys
 		public CollectionKey(string value) => Value = value;
 	}
 }
-
-

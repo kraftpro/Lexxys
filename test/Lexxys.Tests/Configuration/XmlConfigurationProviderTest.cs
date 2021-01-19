@@ -6,7 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml;
@@ -18,8 +18,8 @@ using Lexxys.Xml;
 
 namespace Lexxys.Tests.Configuration
 {
-	
-	
+
+
 	/// <summary>
 	///This is a test class for XmlConfigurationProviderTest and is intended
 	///to contain all XmlConfigurationProviderTest Unit Tests
@@ -90,11 +90,11 @@ namespace Lexxys.Tests.Configuration
 			var test = obj as Setting;
 			Assert.AreEqual(100, test.IntItem);
 			Assert.AreEqual(new DateTime(2010, 1, 12), test.DateTimeItem);
-			Assert.AreEqual("Aa Bb", test.StringItem);
+			Assert.AreEqual("Aa Bb Cc", test.StringItem);
 			Assert.IsNotNull(test.IntBasedItem);
 			Assert.AreEqual(200, test.IntBasedItem.Value);
 			CollectionAssert.AreEqual(
-				new int[] { 1, 2, 3 }, 
+				new int[] { 1, 2, 3 },
 				test.IntArray);
 			CollectionAssert.AreEqual(
 				new int[] { 1, 2, 3 },
@@ -103,7 +103,7 @@ namespace Lexxys.Tests.Configuration
 				new int[] { 1, 2, 1 },
 				test.MoreIntArray);
 			CollectionAssert.AreEqual(
-				new Item2[] { new Item2("one", 1.1m), new Item2("two", 2.2m) }, 
+				new Item2[] { new Item2("one", 1.1m), new Item2("two", 2.2m) },
 				test.Item2s);
 			CollectionAssert.AreEqual(
 				new Item2[] { new Item2("ONE", 11.11m), new Item2("TWO", 22.22m) },
@@ -120,7 +120,7 @@ namespace Lexxys.Tests.Configuration
 			Setting test = obj as Setting2;
 			Assert.AreEqual(100, test.IntItem);
 			Assert.AreEqual(new DateTime(2010, 1, 12), test.DateTimeItem);
-			Assert.AreEqual("Aa Bb", test.StringItem);
+			Assert.AreEqual("Aa Bb Cc", test.StringItem);
 			Assert.IsNotNull(test.IntBasedItem);
 			Assert.AreEqual(200, test.IntBasedItem.Value);
 			CollectionAssert.AreEqual(
@@ -163,8 +163,8 @@ namespace Lexxys.Tests.Configuration
 %%ignore-case
 Setting
 	:intItem		100
-	:dateTimeItem	2010-01-12
-	stringItem		Aa Bb # my comms
+	:dateTimeItem	2010-01-12 #comment
+	stringItem		Aa Bb #<inline comment >#Cc
 	intBasedItem	200
 	intArray
 		item	1 # comments
@@ -191,6 +191,7 @@ Setting
 			1,
 			2,
 			1,
+# 345
 		]
 		
 			
@@ -201,7 +202,7 @@ Setting
 
 		class Setting2: Setting
 		{
-			public Setting2 ()
+			public Setting2()
 			{
 
 			}

@@ -112,7 +112,7 @@ namespace Lexxys.Cube
 		public void AppendDisjunctant(StringBuilder sb, string delimiter, string[] arguments)
 		{
 			if (sb == null)
-				throw EX.ArgumentNull("sb");
+				throw EX.ArgumentNull(nameof(sb));
 			if (arguments.Length >= 32)
 				throw EX.ArgumentOutOfRange("arguments.Length", arguments.Length);
 			uint m = 1;
@@ -162,5 +162,3 @@ namespace Lexxys.Cube
 		}
 	}
 }
-
-

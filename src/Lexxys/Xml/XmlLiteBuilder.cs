@@ -942,7 +942,7 @@ namespace Lexxys.Xml
 				return;
 			}
 
-			if (!(value is IEnumerable enumerable))
+			if (value is not IEnumerable enumerable)
 			{
 				Element(name);
 				Item(value, elements);
@@ -1159,5 +1159,3 @@ namespace Lexxys.Xml
 		}
 	}
 }
-
-

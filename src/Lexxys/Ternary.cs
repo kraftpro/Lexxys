@@ -8,7 +8,7 @@ using System;
 
 namespace Lexxys
 {
-	public struct Ternary
+	public struct Ternary: IEquatable<Ternary>
 	{
 		public static readonly Ternary True = new Ternary(true);
 		public static readonly Ternary False = new Ternary(false);
@@ -115,6 +115,11 @@ namespace Lexxys
 			};
 		}
 
+		public bool Equals(Ternary other)
+		{
+			return this._value == other._value;
+		}
+
 		public override int GetHashCode()
 		{
 			return _value;
@@ -173,5 +178,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

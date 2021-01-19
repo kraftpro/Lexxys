@@ -21,9 +21,9 @@ namespace Lexxys.Crypting
 		public Encryptor(IEncryptorAlgorythm algorithm)
 		{
 			if (algorithm == null)
-				throw EX.ArgumentNull("algorithm");
+				throw EX.ArgumentNull(nameof(algorithm));
 			if (!algorithm.SupportsStream && !algorithm.SupportsBlock)
-				throw EX.ArgumentOutOfRange("algorithm", algorithm);
+				throw EX.ArgumentOutOfRange(nameof(algorithm), algorithm);
 			_algorithm = algorithm;
 		}
 
@@ -35,9 +35,9 @@ namespace Lexxys.Crypting
 		public void Encrypt(Stream bits, Stream text)
 		{
 			if (bits == null)
-				throw EX.ArgumentNull("bits");
+				throw EX.ArgumentNull(nameof(bits));
 			if (text == null)
-				throw EX.ArgumentNull("text");
+				throw EX.ArgumentNull(nameof(text));
 			if (_algorithm.SupportsStream)
 			{
 				_algorithm.EncryptStream(bits, text);
@@ -77,7 +77,7 @@ namespace Lexxys.Crypting
 		public byte[] Encrypt(Stream text)
 		{
 			if (text == null)
-				throw EX.ArgumentNull("text");
+				throw EX.ArgumentNull(nameof(text));
 			
 			using var bits = new MemoryStream();
 			_algorithm.EncryptStream(bits, text);
@@ -86,29 +86,29 @@ namespace Lexxys.Crypting
 		public byte[] Encrypt(byte[] text)
 		{
 			if (text == null)
-				throw EX.ArgumentNull("text");
+				throw EX.ArgumentNull(nameof(text));
 			return Encrypt(text, 0, text.Length);
 		}
 		public byte[] EncryptString(string text)
 		{
 			if (text == null)
-				throw EX.ArgumentNull("text");
+				throw EX.ArgumentNull(nameof(text));
 			return Encrypt(Encoding.Unicode.GetBytes(text));
 		}
 		public byte[] EncryptString(string text, Encoding encoding)
 		{
 			if (text == null)
-				throw EX.ArgumentNull("text");
+				throw EX.ArgumentNull(nameof(text));
 			return Encrypt(encoding.GetBytes(text));
 		}
 		public byte[] Encrypt(byte[] text, int offset, int length)
 		{
 			if (text == null)
-				throw EX.ArgumentNull("text");
+				throw EX.ArgumentNull(nameof(text));
 			if (offset < 0 || offset >= text.Length)
-				throw EX.ArgumentOutOfRange("offset", offset);
+				throw EX.ArgumentOutOfRange(nameof(offset), offset);
 			if (length > text.Length - offset)
-				throw EX.ArgumentOutOfRange("length", length);
+				throw EX.ArgumentOutOfRange(nameof(length), length);
 			if (_algorithm.SupportsBlock && (_algorithm.BlockSize >= length || _algorithm.BlockSize == 0))
 				return _algorithm.Encrypt(text, offset, length);
 
@@ -119,5 +119,3 @@ namespace Lexxys.Crypting
 		}
 	}
 }
-
-

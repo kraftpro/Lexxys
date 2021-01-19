@@ -328,7 +328,7 @@ namespace Lexxys
 
 		#endregion
 
-		private Exception CollectionReadOnlyException()
+		private static Exception CollectionReadOnlyException()
 		{
 			return new NotSupportedException("The collection is readonly.");
 		}

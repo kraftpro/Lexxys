@@ -18,7 +18,7 @@ namespace Lexxys.Configuration
 		public DatabaseQuery(ConnectionStringInfo connection)
 		{
 			if (connection == null)
-				throw EX.ArgumentNull("connection");
+				throw EX.ArgumentNull(nameof(connection));
 			_connectionString = connection.GetConnectionString();
 		}
 
@@ -37,5 +37,3 @@ namespace Lexxys.Configuration
 		}
 	}
 }
-
-

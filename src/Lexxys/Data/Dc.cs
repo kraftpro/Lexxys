@@ -529,7 +529,7 @@ namespace Lexxys.Data
 				TypeCode.UInt32 => Value(((IConvertible)value).ToUInt32(CultureInfo.InvariantCulture)),
 				TypeCode.Int64 => Value(((IConvertible)value).ToInt64(CultureInfo.InvariantCulture)),
 				TypeCode.UInt64 => Value(((IConvertible)value).ToUInt64(CultureInfo.InvariantCulture)),
-				_ => throw EX.ArgumentOutOfRange("value", value),
+				_ => throw EX.ArgumentOutOfRange(nameof(value), value),
 			};
 		}
 		public static string Value(object value)
@@ -589,7 +589,7 @@ namespace Lexxys.Data
 					if (value is IEnum enm)
 						return Value(enm.Value);
 
-					throw EX.ArgumentWrongType("value", type);
+					throw EX.ArgumentWrongType(nameof(value), type);
 			}
 		}
 		#endregion
@@ -888,6 +888,8 @@ namespace Lexxys.Data
 				{ typeof(decimal), o => (decimal?)o[0] ?? default },
 				{ typeof(Money), o => (Money)((decimal?)o[0] ?? default) },
 				{ typeof(DateTime), o => (DateTime?)o[0] ?? default },
+				{ typeof(DateTimeOffset), o => (DateTimeOffset?)o[0] ?? default },
+				{ typeof(TimeSpan), o => (TimeSpan?)o[0] ?? default },
 				{ typeof(Guid), o => (Guid?)o[0] ?? default },
 				{ typeof(Ternary), o => new Ternary((bool?)o[0]) },
 				{ typeof(RowVersion), o =>
@@ -913,6 +915,8 @@ namespace Lexxys.Data
 				{ typeof(decimal?), o => (decimal?)o[0] },
 				{ typeof(Money?), o => (Money?)(decimal?)o[0] },
 				{ typeof(DateTime?), o => (DateTime?)o[0] },
+				{ typeof(DateTimeOffset?), o => (DateTimeOffset?)o[0] },
+				{ typeof(TimeSpan?), o => (TimeSpan?)o[0] },
 				{ typeof(Guid?), o => (Guid?)o[0] },
 				{ typeof(Ternary?), o => (Ternary?)new Ternary((bool?)o[0]) },
 				{ typeof(RowVersion?), o =>
@@ -1061,5 +1065,3 @@ namespace Lexxys.Data
 		#endregion
 	}
 }
-
-

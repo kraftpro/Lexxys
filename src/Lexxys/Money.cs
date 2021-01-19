@@ -30,7 +30,7 @@ namespace Lexxys
 		public Money(int value, Currency currency = null)
 		{
 			_currency = currency ?? Currency.ApplicationDefault;
-			_value = value * _currency.Multiplier;
+			_value = (long)value * _currency.Multiplier;
 		}
 
 		/// <summary>
@@ -52,7 +52,7 @@ namespace Lexxys
 		public Money(decimal value, Currency currency = null)
 		{
 			_currency = currency ?? Currency.ApplicationDefault;
-			_value = (long)(value * _currency.Multiplier);
+			_value = checked((long)(value * _currency.Multiplier));
 		}
 
 		/// <summary>
@@ -273,13 +273,13 @@ namespace Lexxys
 		public int CompareTo(Money other)
 		{
 			if (!Currency.Equals(other.Currency))
-				throw new ArgumentOutOfRangeException(nameof(other.Currency));
+				throw new ArgumentOutOfRangeException(nameof(other), other, null);
 			return Amount.CompareTo(other.Amount);
 		}
 
 		public int CompareTo(object obj)
 		{
-			if (!(obj is Money money))
+			if (obj is not Money money)
 				throw new ArgumentOutOfRangeException(nameof(obj));
 			return CompareTo(money);
 		}
@@ -539,7 +539,7 @@ namespace Lexxys
 		public static Money operator +(Money left, Money right)
 		{
 			if (left.Currency.Code != right.Currency.Code)
-				throw new ArgumentOutOfRangeException(nameof(right.Currency));
+				throw new ArgumentOutOfRangeException(nameof(right), right, null);
 			return Create(checked(left._value + right._value), left._currency);
 		}
 
@@ -581,7 +581,7 @@ namespace Lexxys
 		public static Money operator -(Money left, Money right)
 		{
 			if (left.Currency.Code != right.Currency.Code)
-				throw new ArgumentOutOfRangeException(nameof(right.Currency));
+				throw new ArgumentOutOfRangeException(nameof(right), right, null);
 			return Create(checked(left._value - right._value), left._currency);
 		}
 
@@ -844,5 +844,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

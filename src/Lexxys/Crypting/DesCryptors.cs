@@ -20,11 +20,11 @@ namespace Lexxys.Crypting.Cryptors
 		protected DesCryptoBase(object key, bool tripleDes)
 		{
 			if (key == null)
-				throw EX.ArgumentNull("key");
-			if (!(key is byte[] bk))
+				throw EX.ArgumentNull(nameof(key));
+			if (key is not byte[] bk)
 			{
-				if (!(key is string sk) || sk.Length == 0)
-					throw EX.ArgumentWrongType("key", key.GetType(), typeof(string));
+				if (key is not string sk || sk.Length == 0)
+					throw EX.ArgumentWrongType(nameof(key), key.GetType(), typeof(string));
 				using var h = new Sha1Hasher();
 				byte[] bytes = Encoding.Unicode.GetBytes(sk);
 				bytes = h.Hash(bytes, 0, bytes.Length);
@@ -142,5 +142,3 @@ namespace Lexxys.Crypting.Cryptors
 		public override int BlockSize => 16;
 	}
 }
-
-

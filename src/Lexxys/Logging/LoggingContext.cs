@@ -156,7 +156,7 @@ namespace Lexxys.Logging
 
 		private static void LogWatcher(object caller)
 		{
-			if (!(caller is Thread main))
+			if (caller is not Thread main)
 				return;
 			while (!_stopped && main.IsAlive)
 			{
@@ -339,5 +339,3 @@ namespace Lexxys.Logging
 		}
 	}
 }
-
-

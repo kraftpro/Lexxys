@@ -117,7 +117,7 @@ namespace Lexxys.Configuration
 			return _node;
 		}
 
-		private object ParseValue(XmlLiteNode node, Type type)
+		private static object ParseValue(XmlLiteNode node, Type type)
 		{
 			if (node == null)
 				return null;
@@ -137,5 +137,3 @@ namespace Lexxys.Configuration
 		}
 	}
 }
-
-

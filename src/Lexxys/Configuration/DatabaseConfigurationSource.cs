@@ -25,7 +25,7 @@ namespace Lexxys.Configuration
 		public DatabaseConfigurationSource(ConfigurationLocator location)
 		{
 			if (location == null)
-				throw EX.ArgumentNull("location");
+				throw EX.ArgumentNull(nameof(location));
 			if (location.SchemaType != ConfigLocatorSchema.Database)
 				throw EX.ArgumentOutOfRange("location.SchemaType", location.SchemaType);
 
@@ -100,5 +100,3 @@ namespace Lexxys.Configuration
 		#endregion
 	}
 }
-
-

@@ -23,7 +23,7 @@ namespace Lexxys.Configuration
 
 		private StringConfigurationSource(string sourceType, ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
-			_location = location ?? throw EX.ArgumentNull("location");
+			_location = location ?? throw EX.ArgumentNull(nameof(location));
 			_converter = XmlLiteConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
 		}
 
@@ -123,5 +123,3 @@ namespace Lexxys.Configuration
 		}
 	}
 }
-
-

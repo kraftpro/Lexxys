@@ -83,7 +83,7 @@ namespace Lexxys.RL
 		}
 	}
 
-	public struct Vote<T>
+	public struct Vote<T>: IEquatable<Vote<T>>
 	{
 		public static readonly Vote<T> Empty = new Vote<T>();
 
@@ -96,7 +96,15 @@ namespace Lexxys.RL
 		public T Value { get; }
 
 		public VoteScore Score { get; }
+
+		public override bool Equals(object obj) => obj is Vote<T> vote && Equals(vote);
+
+		public bool Equals(Vote<T> other) => Score == other.Score && EqualityComparer<T>.Default.Equals(Value, other.Value);
+
+		public override int GetHashCode() => HashCode.Join(Value?.GetHashCode() ?? 0, Score.GetHashCode());
+
+		public static bool operator ==(Vote<T> left, Vote<T> right) => left.Equals(right);
+
+		public static bool operator !=(Vote<T> left, Vote<T> right) => !(left == right);
 	}
 }
-
-

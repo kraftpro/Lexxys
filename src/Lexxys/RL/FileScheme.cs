@@ -23,7 +23,7 @@ namespace Lexxys.RL
 		public CurlBuilder Parse(string value, Vote<string> scheme)
 		{
 			if (scheme.Value != SchemeName)
-				throw new ArgumentOutOfRangeException(nameof(scheme.Value), scheme.Value, null);
+				throw new ArgumentOutOfRangeException(nameof(scheme), scheme, null);
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
 			value = value.Trim();
@@ -118,5 +118,3 @@ namespace Lexxys.RL
 		}
 	}
 }
-
-

@@ -18,7 +18,6 @@ namespace Lexxys
 		public const int DefaultTimingThreshold = 100;
 		public const int DefaultLockTimeout = 5 * 60 * 1000;
 
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", Justification="The instance of class is immutable")]
 		public static readonly ReadWriteSyncFat Null = new ReadWriteSyncFat(null);
 
 		public ReadWriteSyncFat()
@@ -183,5 +182,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

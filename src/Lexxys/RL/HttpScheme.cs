@@ -24,11 +24,11 @@ namespace Lexxys.RL
 		public CurlBuilder Parse(string value, Vote<string> scheme)
 		{
 			if (scheme.Value != SchemeName && scheme.Value != SecuredSchemeName)
-				throw new ArgumentOutOfRangeException(nameof(scheme.Value), scheme.Value, null);
+				throw new ArgumentOutOfRangeException(nameof(scheme), scheme, null);
 			if (value == null || (value = value.Trim()).Length == 0)
 				throw new ArgumentNullException(nameof(value));
 
-			CurlBuilder r = new CurlBuilder { Scheme = scheme.Value };
+			var r = new CurlBuilder { Scheme = scheme.Value };
 
 			if (value.StartsWith("//", StringComparison.Ordinal))
 			{
@@ -58,7 +58,7 @@ namespace Lexxys.RL
 			if (value.Length < 2)
 				return Vote<string>.Empty;
 
-			CurlBuilder r = new CurlBuilder();
+			var r = new CurlBuilder();
 			int i = value.IndexOf('/');
 			if (i >= 0)
 			{
@@ -132,7 +132,7 @@ namespace Lexxys.RL
 			if (value.Length != 4)
 				return null;
 
-			StringBuilder ip = new StringBuilder(20);
+			var ip = new StringBuilder(20);
 			for (int i = 0; i < value.Length; ++i)
 			{
 				if (value.Length > 3)
@@ -206,5 +206,3 @@ namespace Lexxys.RL
 		#endregion
 	}
 }
-
-

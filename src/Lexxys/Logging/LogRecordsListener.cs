@@ -10,7 +10,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-#pragma warning disable 0420
 
 namespace Lexxys.Logging
 {
@@ -352,5 +351,3 @@ namespace Lexxys.Logging
 		}
 	}
 }
-
-

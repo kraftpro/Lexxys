@@ -71,7 +71,7 @@ namespace Lexxys.Tokenizer
 
 		public override bool TestBeginning(char value)
 		{
-			return BeginningChars.IndexOf(value) >= 0;
+			return BeginningChars.Contains(value);
 		}
 
 		public override LexicalToken TryParse(CharStream stream)
@@ -129,7 +129,7 @@ namespace Lexxys.Tokenizer
 			}
 		}
 
-		private struct Element
+		private readonly struct Element
 		{
 			public readonly short Id;
 			public readonly string Text;
@@ -142,5 +142,3 @@ namespace Lexxys.Tokenizer
 		}
 	}
 }
-
-

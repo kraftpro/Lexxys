@@ -31,7 +31,7 @@ namespace Lexxys.RL
 			if (value == null || (value = value.Trim()).Length == 0)
 				throw new ArgumentNullException(nameof(value));
 			if (!_schemasDefinition.TryGetValue(scheme.Value, out var root))
-				throw new ArgumentOutOfRangeException(nameof(scheme.Value), scheme.Value, null);
+				throw new ArgumentOutOfRangeException(nameof(scheme), scheme, null);
 
 			var x = new CurlBuilder(root.Value);
 			var y = new CurlBuilder();
@@ -115,5 +115,3 @@ namespace Lexxys.RL
 		}
 	}
 }
-
-

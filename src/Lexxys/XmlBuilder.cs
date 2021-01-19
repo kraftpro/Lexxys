@@ -1167,7 +1167,7 @@ namespace Lexxys
 			}
 			_visited.Add(value);
 
-			if (!(value is IEnumerable enumerable))
+			if (value is not IEnumerable enumerable)
 			{
 				Element(name);
 				AppendProperties(value, elements);
@@ -1429,5 +1429,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

@@ -27,14 +27,12 @@ namespace Lexxys
 
 		public CircleCacheBuffer(int capacity, Func<TValue, TKey> extractKey, Func<TValue, bool> testDirty = null)
 		{
-			if (extractKey == null)
-				throw new ArgumentNullException(nameof(extractKey));
 			if (capacity < MinCapacity || capacity > MaxCapacity)
 				throw new ArgumentOutOfRangeException(nameof(capacity), capacity, null);
 			_map = new ConcurrentDictionary<TKey, int>(4 * Environment.ProcessorCount, capacity);
 			_buffer = new TValue[capacity];
 			_used = new BitArray(capacity);
-			_extractKey = extractKey;
+			_extractKey = extractKey ?? throw new ArgumentNullException(nameof(extractKey));
 			_testDirty = testDirty ?? AlwaysValid;
 		}
 
@@ -152,5 +150,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

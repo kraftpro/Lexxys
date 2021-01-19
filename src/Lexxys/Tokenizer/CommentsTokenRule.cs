@@ -63,7 +63,7 @@ namespace Lexxys.Tokenizer
 
 		public override bool TestBeginning(char value)
 		{
-			return _beginning.IndexOf(value) >= 0;
+			return _beginning.Contains(value);
 		}
 
 		public override LexicalToken TryParse(CharStream stream)
@@ -141,5 +141,3 @@ namespace Lexxys.Tokenizer
 		}
 	}
 }
-
-

@@ -43,7 +43,7 @@ namespace Lexxys.RL
 			if (location == null)
 				throw new ArgumentNullException(nameof(location));
 			if (location.Scheme != FileScheme.SchemeName)
-				throw new ArgumentOutOfRangeException(nameof(location.Scheme), location.Scheme, null);
+				throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
 			string path = Environment.ExpandEnvironmentVariables(location.FullPath);
 			_fileInfo = new FileInfo(path);
@@ -60,7 +60,7 @@ namespace Lexxys.RL
 
 		}
 
-		public IEnumerable<string> SupportedSchemas
+		public static IEnumerable<string> SupportedSchemas
 		{
 			get { return _schemas; }
 		}
@@ -86,5 +86,3 @@ namespace Lexxys.RL
 		}
 	}
 }
-
-

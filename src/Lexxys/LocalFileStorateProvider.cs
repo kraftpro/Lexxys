@@ -46,7 +46,7 @@ namespace Lexxys
 			stream.CopyTo(file);
 		}
 
-		private void CreateDirectory(string uri)
+		private static void CreateDirectory(string uri)
 		{
 			var dir = Path.GetDirectoryName(uri);
 			if (!String.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -123,9 +123,8 @@ namespace Lexxys
 		public void Dispose()
 		{
 			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 		#endregion
 	}
 }
-
-

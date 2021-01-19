@@ -211,6 +211,28 @@ namespace Lexxys
 			return ToString(false);
 		}
 
+		public override bool Equals(object obj)
+		{
+			return obj is ConnectionStringInfo other && Equals(other);
+		}
+
+		public override int GetHashCode()
+		{
+			return HashCode.Join(
+				Server?.GetHashCode() ?? 0,
+				Database?.GetHashCode() ?? 0,
+				Workstation?.GetHashCode() ?? 0,
+				Application?.GetHashCode() ?? 0,
+				UserId?.GetHashCode() ?? 0,
+				Password?.GetHashCode() ?? 0,
+				ConnectionTimeout.GetHashCode(),
+				ConnectionAuditThreshold.GetHashCode(),
+				CommandTimeout.GetHashCode(),
+				CommandAuditThreshold.GetHashCode(),
+				BatchAuditThreshold.GetHashCode()
+				);
+		}
+
 		public bool Equals(ConnectionStringInfo other)
 		{
 			if (other == null)
@@ -445,5 +467,3 @@ namespace Lexxys
 		#endregion
 	}
 }
-
-

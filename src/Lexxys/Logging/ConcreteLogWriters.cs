@@ -325,20 +325,12 @@ namespace Lexxys.Logging
 		{
 			try
 			{
-				EventLogEntryType entryType;
-				switch (record.LogType)
+				var entryType = record.LogType switch
 				{
-					case LogType.Output:
-					case LogType.Error:
-						entryType = EventLogEntryType.Error;
-						break;
-					case LogType.Warning:
-						entryType = EventLogEntryType.Warning;
-						break;
-					default:
-						entryType = EventLogEntryType.Information;
-						break;
-				}
+					LogType.Output or LogType.Error => EventLogEntryType.Error,
+					LogType.Warning => EventLogEntryType.Warning,
+					_ => EventLogEntryType.Information,
+				};
 				string message = Format(record);
 				if (message.Length > 32765)
 					message = message.Substring(0, 32765);
@@ -352,5 +344,3 @@ namespace Lexxys.Logging
 		}
 	}
 }
-
-

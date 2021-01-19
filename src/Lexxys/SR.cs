@@ -172,15 +172,15 @@ namespace Lexxys
 					if (item.Message == null)
 						continue;
 					else
-						text.Append(prefix).Append("\"").Append(item.Message).Append("\"");
+						text.Append(prefix).Append('"').Append(item.Message).Append('"');
 				else
 					if (item.Message == null)
 						text.Append(prefix).Append(item.Field);
 					else
-						text.Append(prefix).Append(item.Field).Append(": \"").Append(item.Message).Append("\"");
+						text.Append(prefix).Append(item.Field).Append(": \"").Append(item.Message).Append('"');
 				prefix = "; ";
 			}
-			text.Append("}");
+			text.Append('}');
 			return text.ToString();
 		}
 
@@ -571,5 +571,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

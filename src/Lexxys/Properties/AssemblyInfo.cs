@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("Common Infrastructure Library")]
 [assembly: AssemblyConfiguration("")]
 
-[assembly: AssemblyCopyright("Copyright � 2001-2016.")]
+[assembly: AssemblyCopyright("Copyright © 2001-2016.")]
 
 [assembly: AssemblyVersion("2.5.3.04261")] // format: major.minor.revision.MMDDi
 
@@ -34,5 +34,3 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("Lexxys.Explorables")]
 [assembly: InternalsVisibleTo("Lexxys.Tests1")]
 [assembly: InternalsVisibleTo("Lexxys.Test.Console")]
-
-

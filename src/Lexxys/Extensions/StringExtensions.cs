@@ -11,8 +11,6 @@ using System.Text.RegularExpressions;
 using Lexxys.Xml;
 using System.Globalization;
 
-#pragma warning disable 3002, 3001  // CLS-compliant
-
 namespace Lexxys
 {
 	public static class StringExtensions
@@ -471,5 +469,3 @@ namespace Lexxys
 		#endregion
 	}
 }
-
-

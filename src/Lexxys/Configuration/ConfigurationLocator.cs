@@ -52,7 +52,7 @@ namespace Lexxys.Configuration
 		public ConfigurationLocator(string value)
 		{
 			if (value == null)
-				throw EX.ArgumentNull("value");
+				throw EX.ArgumentNull(nameof(value));
 
 			value = Config.ExpandParameters(value);
 			Match m = __crlRex.Match(value);
@@ -250,9 +250,9 @@ namespace Lexxys.Configuration
 
 		public override string ToString()
 		{
-			StringBuilder text = new StringBuilder();
+			var text = new StringBuilder();
 			if (SourceType.Length > 0)
-				text.Append("[").Append(SourceType).Append("] ");
+				text.Append('[').Append(SourceType).Append("] ");
 			if (SchemaType != ConfigLocatorSchema.Undefined && SchemaType != ConfigLocatorSchema.File)
 				text.Append(SchemaType == ConfigLocatorSchema.DatabaseEnums ? "database-enums": SchemaType.ToString().ToLowerInvariant()).Append("://");
 
@@ -335,5 +335,3 @@ namespace Lexxys.Configuration
 		#endregion
 	}
 }
-
-

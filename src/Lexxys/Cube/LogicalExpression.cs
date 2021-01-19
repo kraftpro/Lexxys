@@ -379,7 +379,7 @@ namespace Lexxys.Cube
 		public static string ConvertBitsToDnf(BitArray result, string[] names)
 		{
 			if (result == null)
-				throw EX.ArgumentNull("result");
+				throw EX.ArgumentNull(nameof(result));
 			var dnf = new StringBuilder();
 			if (result.Length < 2)
 				return result.Length == 0 ? "FALSE":
@@ -475,9 +475,9 @@ namespace Lexxys.Cube
 		public static string CombineDnfByAnd(string exp1, string exp2)
 		{
 			if (exp1 == null)
-				throw EX.ArgumentNull("exp1");
+				throw EX.ArgumentNull(nameof(exp1));
 			if (exp2 == null)
-				throw EX.ArgumentNull("exp2");
+				throw EX.ArgumentNull(nameof(exp2));
 
 			if (exp1.Length == 0)
 				return exp2.Length == 0 ? "TRUE": exp2;
@@ -523,9 +523,9 @@ namespace Lexxys.Cube
 		public static string CombineDnfByOr(string exp1, string exp2)
 		{
 			if (exp1 == null)
-				throw EX.ArgumentNull("exp1");
+				throw EX.ArgumentNull(nameof(exp1));
 			if (exp2 == null)
-				throw EX.ArgumentNull("exp2");
+				throw EX.ArgumentNull(nameof(exp2));
 
 			if (exp1.Length == 0)
 				return exp2.Length == 0 ? "TRUE": exp2;
@@ -668,5 +668,3 @@ namespace Lexxys.Cube
 		private static readonly Regex __removeSpaceRex = new Regex(@"\s+");
 	}
 }
-
-

@@ -43,7 +43,7 @@ namespace Lexxys.Crypting
 			return _decryptorCache.GetOrAdd(new AlgKeyPair(algorithm, key), o => new Decryptor((IDecryptorAlgorythm)CreateInstance(CryptoProviderType.Decryptor, o.Algorithm, o.Key)));
 		}
 
-		private struct AlgKeyPair
+		private struct AlgKeyPair: IEquatable<AlgKeyPair>
 		{
 			public static readonly IEqualityComparer<AlgKeyPair> Comparer = new EqualityComparer();
 			public readonly string Algorithm;
@@ -51,20 +51,23 @@ namespace Lexxys.Crypting
 
 			public AlgKeyPair(string algorithm, object key)
 			{
-				Algorithm = algorithm ?? throw EX.ArgumentNull("algorithm");
+				Algorithm = algorithm ?? throw EX.ArgumentNull(nameof(algorithm));
 				Key = key;
 			}
 
 			public override bool Equals(object obj)
 			{
-				if (obj is AlgKeyPair ak)
-					return String.Equals(ak.Algorithm, Algorithm) && Object.Equals(ak.Key, Key);
-				return false;
+				return obj is AlgKeyPair akp && Equals(akp);
+			}
+
+			public bool Equals(AlgKeyPair other)
+			{
+				return Algorithm == other.Algorithm && EqualityComparer<object>.Default.Equals(Key, other.Key);
 			}
 
 			public override int GetHashCode()
 			{
-				return HashCode.Join(Algorithm?.GetHashCode() ?? 0, Key?.GetHashCode() ?? 0);
+				return HashCode.Join(Algorithm.GetHashCode(), Key?.GetHashCode() ?? 0);
 			}
 
 			public override string ToString()
@@ -74,15 +77,8 @@ namespace Lexxys.Crypting
 
 			private class EqualityComparer : IEqualityComparer<AlgKeyPair>
 			{
-				public bool Equals(AlgKeyPair x, AlgKeyPair y)
-				{
-					return String.Equals(x.Algorithm, y.Algorithm) && Object.Equals(x, y);
-				}
-
-				public int GetHashCode(AlgKeyPair obj)
-				{
-					return obj.GetHashCode();
-				}
+				public bool Equals(AlgKeyPair x, AlgKeyPair y) => x.Equals(y);
+				public int GetHashCode(AlgKeyPair obj) => obj.GetHashCode();
 			}
 		}
 
@@ -156,5 +152,3 @@ namespace Lexxys.Crypting
 		private static List<CryptoProviderSettingItem> __settings;
 	}
 }
-
-

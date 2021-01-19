@@ -26,10 +26,10 @@ namespace Lexxys.Cube
 		public BooleanCube(BitArray bits, int dimension)
 		{
 			if (bits == null)
-				throw EX.ArgumentNull("bits");
+				throw EX.ArgumentNull(nameof(bits));
 			int n = 1 << dimension;
 			if (n == 0)
-				throw EX.ArgumentOutOfRange("dimension", dimension);
+				throw EX.ArgumentOutOfRange(nameof(dimension), dimension);
 			_table = new Table();
 			_dimension = dimension;
 			for (int i = 0; i < n; ++i)

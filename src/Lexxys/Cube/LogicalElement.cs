@@ -64,10 +64,10 @@ namespace Lexxys.Cube
 		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
 		{
 			if (stack.Count < 1)
-				throw EX.Argument(SR.EXP_MissingParameters("NOT"), "stack");
+				throw EX.Argument(SR.EXP_MissingParameters("NOT"), nameof(stack));
 			PolishToken token = stack.Pop();
-			if (!(token is LogicalValue x))
-				throw EX.ArgumentWrongType("x)", token.GetType(), typeof(LogicalValue));
+			if (token is not LogicalValue x)
+				throw EX.ArgumentWrongType(nameof(x), token.GetType(), typeof(LogicalValue));
 
 			stack.Push((LogicalValue)(!x.Evaluate(context)));
 		}
@@ -81,13 +81,13 @@ namespace Lexxys.Cube
 		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
 		{
 			if (stack.Count < 2)
-				throw EX.Argument(SR.EXP_MissingParameters("AND"), "stack");
+				throw EX.Argument(SR.EXP_MissingParameters("AND"), nameof(stack));
 			PolishToken token = stack.Pop();
-			if (!(token is LogicalValue x))
-				throw EX.ArgumentWrongType("x", token.GetType(), typeof(LogicalValue));
+			if (token is not LogicalValue x)
+				throw EX.ArgumentWrongType(nameof(x), token.GetType(), typeof(LogicalValue));
 			token = stack.Pop();
-			if (!(token is LogicalValue y))
-				throw EX.ArgumentWrongType("y", token.GetType(), typeof(LogicalValue));
+			if (token is not LogicalValue y)
+				throw EX.ArgumentWrongType(nameof(y), token.GetType(), typeof(LogicalValue));
 
 			stack.Push((LogicalValue)(x.Evaluate(context) & y.Evaluate(context)));
 		}
@@ -101,13 +101,13 @@ namespace Lexxys.Cube
 		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
 		{
 			if (stack.Count < 2)
-				throw EX.Argument(SR.EXP_MissingParameters("OR"), "stack");
+				throw EX.Argument(SR.EXP_MissingParameters("OR"), nameof(stack));
 			PolishToken token = stack.Pop();
-			if (!(token is LogicalValue x))
-				throw EX.ArgumentWrongType("x", token.GetType(), typeof(LogicalValue));
+			if (token is not LogicalValue x)
+				throw EX.ArgumentWrongType(nameof(x), token.GetType(), typeof(LogicalValue));
 			token = stack.Pop();
-			if (!(token is LogicalValue y))
-				throw EX.ArgumentWrongType("y", token.GetType(), typeof(LogicalValue));
+			if (token is not LogicalValue y)
+				throw EX.ArgumentWrongType(nameof(y), token.GetType(), typeof(LogicalValue));
 
 			stack.Push((LogicalValue)(x.Evaluate(context) | y.Evaluate(context)));
 		}
@@ -121,17 +121,15 @@ namespace Lexxys.Cube
 		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
 		{
 			if (stack.Count < 2)
-				throw EX.Argument(SR.EXP_MissingParameters("XOR"), "stack");
+				throw EX.Argument(SR.EXP_MissingParameters("XOR"), nameof(stack));
 			PolishToken token = stack.Pop();
-			if (!(token is LogicalValue x))
-				throw EX.ArgumentWrongType("x", token.GetType(), typeof(LogicalValue));
+			if (token is not LogicalValue x)
+				throw EX.ArgumentWrongType(nameof(x), token.GetType(), typeof(LogicalValue));
 			token = stack.Pop();
-			if (!(token is LogicalValue y))
-				throw EX.ArgumentWrongType("y", token.GetType(), typeof(LogicalValue));
+			if (token is not LogicalValue y)
+				throw EX.ArgumentWrongType(nameof(y), token.GetType(), typeof(LogicalValue));
 
 			stack.Push((LogicalValue)(x.Evaluate(context) ^ y.Evaluate(context)));
 		}
 	}
 }
-
-

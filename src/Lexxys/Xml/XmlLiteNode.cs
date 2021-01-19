@@ -912,7 +912,7 @@ namespace Lexxys.Xml
 					var text = new StringBuilder();
 					text.Append("{ ");
 					if (_attrib)
-						text.Append(":");
+						text.Append(':');
 					text.Append(_text.Length == 0 ? "." : _text);
 					if (_condition != Op.None)
 					{
@@ -1158,5 +1158,3 @@ namespace Lexxys.Xml
 		#endregion
 	}
 }
-
-

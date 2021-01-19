@@ -15,17 +15,13 @@ namespace Lexxys.Xml
 	{
 		public XsdLiteNode(string name, XsdLiteValue value, int minCount, int maxCount, IEnumerable<KeyValuePair<string, XsdLiteValue>> attribute, IEnumerable<XsdLiteNode> descendant)
 		{
-			if (name == null)
-				throw new ArgumentNullException(nameof(name));
-			if (value == null)
-				throw new ArgumentNullException(nameof(value));
 			if (minCount < 0)
 				throw new ArgumentOutOfRangeException(nameof(minCount), minCount, null);
 			if (maxCount < minCount)
 				throw new ArgumentOutOfRangeException(nameof(maxCount), maxCount, null).Add(nameof(minCount), minCount);
 
-			Name = name;
-			Value = value;
+			Name = name ?? throw new ArgumentNullException(nameof(name));
+			Value = value ?? throw new ArgumentNullException(nameof(value));
 			Attribute = ReadOnly.WrapCopy(attribute, true);
 			Descendant = ReadOnly.WrapCopy(descendant, true);
 			MinCount = minCount;
