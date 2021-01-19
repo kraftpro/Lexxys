@@ -78,6 +78,11 @@ namespace Lexxys.Tests.Core.Xml
 			{
 				return obj is B b && b.ToString() == ToString();
 			}
+
+			public override int GetHashCode()
+			{
+				return ToString().GetHashCode();
+			}
 		}
 
 		public struct A
