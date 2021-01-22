@@ -160,26 +160,30 @@ namespace Lexxys.Data
 					cmd.ExecuteScalar();
 					long delta = long.MaxValue;
 					int c = 0;
+					var dd = new List<long>();
 					for (; ; )
 					{
 						now = DateTime.Now;
 						var dbnow = (DateTime)cmd.ExecuteScalar();
 						long duration = (DateTime.Now - now).Ticks;
+						offset = (dbnow - now).Ticks - duration / 2;
 						if (duration < delta)
 						{
-							offset = (dbnow - now).Ticks - duration;
 							delta = duration;
 							c = 0;
+							dd.Clear();
+							dd.Add(offset);
 						}
-						else if (++c >= 3)
+						else
 						{
-							break;
+							dd.Add(offset);
+							if (++c >= 3)
+								break;
 						}
 					}
+					offset = (long)(dd.Average() + 0.5);
 				}
-				sv = _timeSyncMap.GetOrAdd(syncKey, (now, offset));
-				if (sv.Stamp > now && !_timeSyncMap.TryUpdate(syncKey, (now, offset), sv)) // the value in the map was better than ours
-					sv = _timeSyncMap[syncKey];
+				sv = _timeSyncMap.AddOrUpdate(syncKey, (now, offset), (_, o) => o.Stamp > now ? o: (now, offset));
 			}
 			(_timeSyncStamp, _timeSyncOffset) = sv;
 		}
