@@ -384,25 +384,14 @@ namespace Lexxys.Data
 		{
 			if (value == null)
 				return null;
-			value = value.Trim();
-			Match m = __objectPartsRex.Match(value);
-			if (!m.Success)
-				return value;
-
-			return
-				(m.Groups["a"].Success ? NamePart(m.Groups["a"].Value) + ".": "") +
-					(m.Groups["b"].Success ? NamePart(m.Groups["b"].Value) + ".": m.Groups["a"].Success ? "[dbo].": "") +
-					NamePart(m.Groups["c"].Value);
+			Match m = __objectPartsRex.Match(value.Trim());
+			return String.Join("", m.Groups[1].Captures.Cast<Capture>().Select(o => NamePart(o.Value) + ".")) + NamePart(m.Groups[2].Value);
 		}
+		private static readonly Regex __objectPartsRex = new Regex(@"\A(?:(?<a>\[(?:[^\]]|]])*\]|[^\.\[]*)\.){0,3}(?<b>.*)?\z", RegexOptions.IgnoreCase);
 		private static string NamePart(string name)
 		{
 			return name == null || name.Length == 0 || (name[0] == '[' && name[name.Length - 1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
 		}
-		private const string ObjectNamePart = @"\[([^\]]|]])*\]|[A-Z0-9_@$]+";
-		private static readonly Regex __objectPartsRex = new Regex(@"\A\s*
-			(((?<a>" + ObjectNamePart + @")?\.)?
-			(?<b>" + ObjectNamePart + @")?\.)?
-			(?<c>.+?)\s*\z", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.IgnoreCase);
 		public static string TextValue(string value)
 		{
 			return "'" + value.Replace("'", "''") + "'";
