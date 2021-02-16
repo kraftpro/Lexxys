@@ -36,7 +36,7 @@ namespace Lexxys.Tests.Configuration
 		}
 
 
-		[TestMethod]
+		[TestMethod, DoNotParallelize]
 		public void GetSestionMultiThread()
 		{
 			Enumerable.Range(1, 10).AsParallel().ForAll(i =>

@@ -5,6 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
+using System.Collections.Generic;
 
 namespace Lexxys
 {
@@ -15,6 +16,17 @@ namespace Lexxys
 	}
 
 	public interface IOrderedEnum: IEnum
+	{
+		int Order { get; }
+	}
+
+	public interface IEnum<T>
+	{
+		T Value { get; }
+		string Name { get; }
+	}
+
+	public interface IOrderedEnum<T>: IEnum<T>
 	{
 		int Order { get; }
 	}

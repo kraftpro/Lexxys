@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Lexxys.Data
 {
-	public sealed class DataContext: IDisposable
+	public sealed class DataContext: IDataContext, IDisposable
 	{
 		private static readonly IOptions<ConnectionStringInfo> __globalConnetionString = Config.GetOptions<ConnectionStringInfo>(Dc.ConfigSection);
 

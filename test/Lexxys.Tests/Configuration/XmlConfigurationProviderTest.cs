@@ -80,7 +80,7 @@ namespace Lexxys.Tests.Configuration
 		/// <summary>
 		///A test for GetValue
 		///</summary>
-		[TestMethod()]
+		[TestMethod]
 		public void ReflectionParserTest()
 		{
 			var provider = GetConfiguration();
@@ -134,7 +134,7 @@ namespace Lexxys.Tests.Configuration
 				test.ItemsIList.ToArray());
 		}
 
-		[TestMethod()]
+		[TestMethod, DoNotParallelize]
 		public void PerformanceTest()
 		{
 			var provider = GetConfiguration();

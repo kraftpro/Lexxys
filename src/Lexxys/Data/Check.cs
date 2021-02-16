@@ -17,27 +17,27 @@ namespace Lexxys.Data
 		public static readonly DateTime MinDate = new DateTime(1901, 1, 1);
 		public static readonly DateTime MaxDate = new DateTime(2099, 12, 31);
 
-		public static bool ReferenceKey(DataContext dc, int? value, string table)
+		public static bool ReferenceKey(IDataContext dc, int? value, string table)
 		{
 			return value == null || ReferenceKey(dc, value.GetValueOrDefault(), table);
 		}
 
-		public static bool ReferenceKey(DataContext dc, int? value, string table, bool nullable)
+		public static bool ReferenceKey(IDataContext dc, int? value, string table, bool nullable)
 		{
 			return value == null ? nullable: ReferenceKey(dc, value.GetValueOrDefault(), table);
 		}
 
-		public static bool ReferenceKey(DataContext dc, int? value, string table, string key)
+		public static bool ReferenceKey(IDataContext dc, int? value, string table, string key)
 		{
 			return ReferenceKey(dc, value, table, key, true);
 		}
 
-		public static bool ReferenceKey(DataContext dc, int? value, string table, string key, bool nullable)
+		public static bool ReferenceKey(IDataContext dc, int? value, string table, string key, bool nullable)
 		{
 			return value == null ? nullable: ReferenceKey(dc, value.GetValueOrDefault(), table, key);
 		}
 
-		public static bool ReferenceKey(DataContext dc, int value, string table, string key = null)
+		public static bool ReferenceKey(IDataContext dc, int value, string table, string key = null)
 		{
 			if (dc == null)
 				throw new ArgumentNullException(nameof(dc));
@@ -55,7 +55,7 @@ namespace Lexxys.Data
 			capacity: Config.GetValue(ConfigReference + ":cacheCapacity", 16, 128 * 1024, 8 * 1024),
 			timeToLive: Config.GetValue(ConfigReference + ":cacheTimeout", new TimeSpan(0, 0, 10), new TimeSpan(1, 0, 0), new TimeSpan(0, 10, 0)));
 
-		private static bool IsReferenceKey(DataContext dc, int value, string table, string key)
+		private static bool IsReferenceKey(IDataContext dc, int value, string table, string key)
 		{
 			return 1 == dc.GetValue<int>("select top 1 1 from " + Dc.Name(table) + " where " + Dc.Name(key ?? "ID") + "=@I", Dc.Parameter("@I", value));
 		}
@@ -232,7 +232,7 @@ namespace Lexxys.Data
 		/// <param name="keyField">primary key field</param>
 		/// <param name="keyValue">value of primary key to skip</param>
 		/// <returns>true if the value is unique</returns>
-		public static bool UniqueField(DataContext dc, string value, string table, string field, string keyField = null, int keyValue = 0)
+		public static bool UniqueField(IDataContext dc, string value, string table, string field, string keyField = null, int keyValue = 0)
 		{
 			if (table == null || table.Length == 0)
 				throw EX.ArgumentNull(nameof(table));
@@ -246,7 +246,7 @@ namespace Lexxys.Data
 			return 0 == dc.GetValue<int>(query);
 		}
 
-		public static bool UniqueField(DataContext dc, int value, string table, string field, string keyField = null, int keyValue = 0)
+		public static bool UniqueField(IDataContext dc, int value, string table, string field, string keyField = null, int keyValue = 0)
 		{
 			if (table == null || table.Length == 0)
 				throw EX.ArgumentNull(nameof(table));

@@ -23,9 +23,9 @@ namespace Lexxys.Data
 			_ignoreReferenceKey = !Config.GetValue(Check.ConfigReference + ":validate", true);
 		}
 
-		public static ValidationResults ReferenceKey(DataContext dc, int? value, string reference, string field) => ReferenceKey(dc, value, reference, field, true);
+		public static ValidationResults ReferenceKey(IDataContext dc, int? value, string reference, string field) => ReferenceKey(dc, value, reference, field, true);
 
-		public static ValidationResults ReferenceKey(DataContext dc, int? value, string reference, string field, bool nullable)
+		public static ValidationResults ReferenceKey(IDataContext dc, int? value, string reference, string field, bool nullable)
 		{
 			if (reference == null || reference.Length <= 0)
 				throw new ArgumentNullException(nameof(reference));
@@ -39,7 +39,7 @@ namespace Lexxys.Data
 				ValidationResults.Create(field, ErrorInfo.BadReference(value, reference));
 		}
 
-		public static ValidationResults ReferenceKey(DataContext dc, int value, string reference, string field)
+		public static ValidationResults ReferenceKey(IDataContext dc, int value, string reference, string field)
 		{
 			if (reference == null || reference.Length <= 0)
 				throw new ArgumentNullException(nameof(reference));
@@ -51,11 +51,11 @@ namespace Lexxys.Data
 				ValidationResults.Create(field, ErrorInfo.BadReference(value, reference));
 		}
 
-		public static ValidationResults ReferenceKey(DataContext dc, int value, string table, string key, string field) => ReferenceKey(dc, value, table, key, field, false);
+		public static ValidationResults ReferenceKey(IDataContext dc, int value, string table, string key, string field) => ReferenceKey(dc, value, table, key, field, false);
 
-		public static ValidationResults ReferenceKey(DataContext dc, int? value, string table, string key, string field) => ReferenceKey(dc, value, table, key, field, true);
+		public static ValidationResults ReferenceKey(IDataContext dc, int? value, string table, string key, string field) => ReferenceKey(dc, value, table, key, field, true);
 
-		public static ValidationResults ReferenceKey(DataContext dc, int? value, string table, string key, string field, bool nullable)
+		public static ValidationResults ReferenceKey(IDataContext dc, int? value, string table, string key, string field, bool nullable)
 		{
 			if (table == null || table.Length <= 0)
 				throw new ArgumentNullException(nameof(table));
