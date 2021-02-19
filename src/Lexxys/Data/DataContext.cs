@@ -22,7 +22,7 @@ namespace Lexxys.Data
 		void Rollback();
 	}
 
-	class DataDriver: IDisposable
+	class DataContextImplementation: IDisposable
 	{
 		private static readonly TimeSpan SyncInterval = new TimeSpan(1, 0, 0);
 		private static readonly ConcurrentDictionary<string, (DateTime Stamp, long Offset)> _timeSyncMap = new ConcurrentDictionary<string, (DateTime, long)>();
@@ -33,7 +33,6 @@ namespace Lexxys.Data
 		private SqlTransaction _transaction;
 		private TimeSpan _commandTimeout;
 		private TimeSpan _defaultCommandTimeout;
-		private ConnectionStringInfo _pendingConnection;
 		private long _connectTime;
 		private long _transactTime;
 		private long _queryTime;
@@ -48,46 +47,20 @@ namespace Lexxys.Data
 
 		private Action _committed;
 		private Action _cancelled;
-		private readonly Dictionary<object, ICommitAction> _broadcast = new Dictionary<object, ICommitAction>();
+		private readonly Dictionary<object, ICommitAction> _broadcast;
 
-		public DataDriver(ConnectionStringInfo connectionString)
+		public DataContextImplementation(ConnectionStringInfo connectionInfo)
 		{
+			_connectionInfo = connectionInfo ?? throw new ArgumentNullException(nameof(connectionInfo));
 			_timingGroupItems = new List<TimingNode>();
-			Open(connectionString);
-		}
-
-		public void Open(ConnectionStringInfo connectionString)
-		{
-			if (connectionString == null)
-				throw new ArgumentNullException(nameof(connectionString));
-
-			var time = WatchTimer.Start();
-			if (_connection != null)
-			{
-				if (_connection.State != ConnectionState.Closed)
-				{
-					_pendingConnection = connectionString;
-					_connectTime += WatchTimer.Stop(time);
-					return;
-				}
-			}
-			_pendingConnection = null;
-			_connection = new SqlConnection(connectionString.GetConnectionString());
-			_committed = null;
-			_cancelled = null;
-			_commandTimeout = _defaultCommandTimeout = connectionString.CommandTimeout;
-			_connectionInfo = connectionString;
-
-			var syncKey = connectionString.ToString();
-			if (_timeSyncMap.TryGetValue(syncKey, out var sync))
+			_broadcast = new Dictionary<object, ICommitAction>();
+			_connection = new SqlConnection(connectionInfo.GetConnectionString());
+			_commandTimeout = _defaultCommandTimeout = connectionInfo.CommandTimeout;
+			if (_timeSyncMap.TryGetValue(connectionInfo.ToString(), out var sync))
 			{
 				_timeSyncStamp = sync.Stamp;
 				_timeSyncOffset = sync.Offset;
 			}
-
-			_connectTime += WatchTimer.Stop(time);
-			Connect();
-			Disconnect();
 		}
 
 		public event Action Committed
@@ -261,9 +234,6 @@ namespace Lexxys.Data
 
 			_connectTime += WatchTimer.Stop(time);
 
-			if (_pendingConnection != null)
-				Open(_pendingConnection);
-
 			return _connectionsCount;
 		}
 
@@ -288,8 +258,6 @@ namespace Lexxys.Data
 				if (_connection.State != ConnectionState.Closed)
 					_connection.Close();
 				_connectTime += WatchTimer.Stop(time);
-				if (_pendingConnection != null)
-					Open(_pendingConnection);
 			}
 		}
 

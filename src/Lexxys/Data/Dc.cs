@@ -923,10 +923,10 @@ namespace Lexxys.Data
 
 		internal class Connecting : IDisposable
 		{
-			private DataDriver _context;
+			private DataContextImplementation _context;
 			private readonly int _count;
 
-			public Connecting(DataDriver context)
+			public Connecting(DataContextImplementation context)
 			{
 				if (context != null)
 					_count = context.Connect();
@@ -934,7 +934,7 @@ namespace Lexxys.Data
 			}
 			public void Dispose()
 			{
-				DataDriver ctx = Interlocked.Exchange(ref _context, null);
+				DataContextImplementation ctx = Interlocked.Exchange(ref _context, null);
 				if (ctx != null)
 				{
 					Debug.Assert(ctx.ConnectionsCount == _count);
@@ -945,11 +945,11 @@ namespace Lexxys.Data
 
 		internal class Transacting: ITransactable
 		{
-			private DataDriver _context;
+			private DataContextImplementation _context;
 			private readonly int _count;
 			private readonly bool _autoCommit;
 
-			public Transacting(DataDriver context, bool autoCommit, IsolationLevel isolationLevel)
+			public Transacting(DataContextImplementation context, bool autoCommit, IsolationLevel isolationLevel)
 			{
 				if (context != null)
 					_count = context.Begin(isolationLevel);
@@ -974,7 +974,7 @@ namespace Lexxys.Data
 
 			private void Close(bool commit, bool dispose)
 			{
-				DataDriver ctx = Interlocked.Exchange(ref _context, null);
+				DataContextImplementation ctx = Interlocked.Exchange(ref _context, null);
 				if (ctx != null && ctx.TransactionsCount == _count)
 				{
 					if (commit)
@@ -993,10 +993,10 @@ namespace Lexxys.Data
 
 		internal class TimeoutLocker : IDisposable
 		{
-			private DataDriver _context;
+			private DataContextImplementation _context;
 			private readonly TimeSpan _timeout;
 
-			public TimeoutLocker(DataDriver context, TimeSpan timeout)
+			public TimeoutLocker(DataContextImplementation context, TimeSpan timeout)
 			{
 				if (context != null)
 				{
@@ -1007,7 +1007,7 @@ namespace Lexxys.Data
 			}
 			public void Dispose()
 			{
-				DataDriver ctx = Interlocked.Exchange(ref _context, null);
+				DataContextImplementation ctx = Interlocked.Exchange(ref _context, null);
 				if (ctx != null)
 					ctx.DefaultCommandTimeout = _timeout;
 			}
@@ -1015,9 +1015,9 @@ namespace Lexxys.Data
 
 		internal class TimingLocker: IDisposable
 		{
-			private readonly DataDriver _context;
+			private readonly DataContextImplementation _context;
 
-			public TimingLocker(DataDriver context)
+			public TimingLocker(DataContextImplementation context)
 			{
 				context?.LockTiming();
 				_context = context;
@@ -1033,10 +1033,10 @@ namespace Lexxys.Data
 
 		internal class TimeHolder: IDisposable
 		{
-			private readonly DataDriver _context;
+			private readonly DataContextImplementation _context;
 			private bool _disposed;
 
-			public TimeHolder(DataDriver context)
+			public TimeHolder(DataContextImplementation context)
 			{
 				_context = context;
 			}

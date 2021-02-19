@@ -11,6 +11,7 @@ using System.Data.Common;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Lexxys;
 
 namespace Lexxys.Data
 {
@@ -18,94 +19,93 @@ namespace Lexxys.Data
 	{
 		private static readonly IOptions<ConnectionStringInfo> __globalConnetionString = Config.GetOptions<ConnectionStringInfo>(Dc.ConfigSection);
 
-		private readonly ConnectionStringInfo _connectionInfo;
-		private DataDriver _context;
+		private DataContextImplementation _context;
 
-		public DataContext()
+
+		public DataContext(): this(__globalConnetionString.Value)
 		{
-			_connectionInfo = __globalConnetionString.Value;
 		}
 
 		public DataContext(ConnectionStringInfo connectionInfo)
 		{
-			_connectionInfo = connectionInfo;
+			if (connectionInfo == null)
+				throw new ArgumentNullException(nameof(connectionInfo));
+			_context = new DataContextImplementation(connectionInfo);
 		}
 
-		public TimeSpan ConnectTime => Driver.ConnectTime;
+		public TimeSpan ConnectTime => _context.ConnectTime;
 
-		public TimeSpan TransactTime => Driver.TransactTime;
+		public TimeSpan TransactTime => _context.TransactTime;
 
-		public TimeSpan QueryTime => Driver.QueryTime;
+		public TimeSpan QueryTime => _context.QueryTime;
 
-		public TimeSpan TotalTime => Driver.TotalTime;
-
-		private DataDriver Driver => _context ??= new DataDriver(_connectionInfo);
+		public TimeSpan TotalTime => _context.TotalTime;
 
 		public event Action Committed
 		{
-			add => Driver.Committed += value;
+			add => _context.Committed += value;
 			remove { }
 		}
 
 		public event Action Cancelled
 		{
-			add => Driver.Cancelled += value;
+			add => _context.Cancelled += value;
 			remove { }
 		}
 
-		public T SetCommitAction<T>(Func<T> factory) where T : ICommitAction => Driver.SetCommitAction(factory);
+		public T SetCommitAction<T>(Func<T> factory) where T : ICommitAction => _context.SetCommitAction(factory);
 
-		public ICommitAction SetCommitAction(object key, Func<ICommitAction> factory) => Driver.SetCommitAction(key, factory);
+		public ICommitAction SetCommitAction(object key, Func<ICommitAction> factory) => _context.SetCommitAction(key, factory);
 
-		public bool InTransation => Driver.TransactionsCount > 0;
+		public bool InTransation => _context.TransactionsCount > 0;
 
-		public DateTime Time => Driver.Time;
+		public DateTime Time => _context.Time;
 
-		public DateTime Now => Driver.Now;
+		public DateTime Now => _context.Now;
 
 		public IDisposable HoldTheMoment()
 		{
-			return Driver.LockNow(Driver.Time) ? new Dc.TimeHolder(Driver) : null;
+			return _context.LockNow(_context.Time) ? new Dc.TimeHolder(_context) : null;
 		}
 
 		public IDisposable Connection()
 		{
-			return new Dc.Connecting(Driver);
+			return new Dc.Connecting(_context);
 		}
 
 		public ITransactable Transaction(bool autoCommit = false, IsolationLevel isolation = default)
 		{
-			return new Dc.Transacting(Driver, autoCommit, isolation);
+			return new Dc.Transacting(_context, autoCommit, isolation);
 		}
 
 		public IDisposable NoTiming()
 		{
-			return new Dc.TimingLocker(Driver);
+			return new Dc.TimingLocker(_context);
 		}
 
 		public void Commit()
 		{
-			Driver.Commit();
+			_context.Commit();
 		}
 
 		public void Rollback()
 		{
-			Driver.Rollback();
+			_context.Rollback();
 		}
 
 		public void SetQueryTimeout(TimeSpan timeout)
 		{
-			Driver.CommandTimeout = timeout;
+			_context.CommandTimeout = timeout;
 		}
 
 		public IDisposable CommadTimeout(TimeSpan timeout, bool always = false)
 		{
-			return always || Driver.CommandTimeout < timeout ? new Dc.TimeoutLocker(Driver, timeout) : null;
+			return always || _context.CommandTimeout < timeout ? new Dc.TimeoutLocker(_context, timeout) : null;
 		}
 
 		public void ResetStatistics()
 		{
-			Driver.ResetStatistics();
+			_context.ResetStatistics();
 		}
 
 		public T GetValue<T>(string query, params DbParameter[] parameters)
@@ -163,9 +163,9 @@ namespace Lexxys.Data
 			long t = 0;
 			try
 			{
-				t = DataDriver.TimingBegin();
-				var result = Driver.Records(count, query, parameters);
-				Driver.TimingEnd(query, t);
+				t = DataContextImplementation.TimingBegin();
+				var result = _context.Records(count, query, parameters);
+				_context.TimingEnd(query, t);
 				return result;
 			}
 			catch (Exception flaw)
@@ -225,12 +225,12 @@ namespace Lexxys.Data
 			{
 				using (Connection())
 				{
-					using DbCommand cmd = Driver.Command(query);
+					using DbCommand cmd = _context.Command(query);
 					if (parameters != null && parameters.Length > 0)
 						cmd.Parameters.AddRange(parameters);
-					t = DataDriver.TimingBegin();
+					t = DataContextImplementation.TimingBegin();
 					T result = mapper(cmd);
-					Driver.TimingEnd(query, t);
+					_context.TimingEnd(query, t);
 					return result;
 				}
 			}
@@ -263,12 +263,12 @@ namespace Lexxys.Data
 			{
 				using (Connection())
 				{
-					using DbCommand cmd = Driver.Command(query);
+					using DbCommand cmd = _context.Command(query);
 					if (parameters != null && parameters.Length > 0)
 						cmd.Parameters.AddRange(parameters);
-					t = DataDriver.TimingBegin();
+					t = DataContextImplementation.TimingBegin();
 					var result = await mapper(cmd).ConfigureAwait(false);
-					Driver.TimingEnd(query, t);
+					_context.TimingEnd(query, t);
 					return result;
 				}
 			}
@@ -300,11 +300,11 @@ namespace Lexxys.Data
 			{
 				using (Connection())
 				{
-					command.Connection = Driver.Connection;
-					command.Transaction = Driver.Transaction;
-					t = DataDriver.TimingBegin();
+					command.Connection = _context.Connection;
+					command.Transaction = _context.Transaction;
+					t = DataContextImplementation.TimingBegin();
 					var result = command.ExecuteNonQuery();
-					Driver.TimingEnd(command.CommandText, t);
+					_context.TimingEnd(command.CommandText, t);
 					return result;
 				}
 			}
@@ -326,11 +326,11 @@ namespace Lexxys.Data
 			{
 				using (Connection())
 				{
-					command.Connection = Driver.Connection;
-					command.Transaction = Driver.Transaction;
-					t = DataDriver.TimingBegin();
+					command.Connection = _context.Connection;
+					command.Transaction = _context.Transaction;
+					t = DataContextImplementation.TimingBegin();
 					var result = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
-					Driver.TimingEnd(command.CommandText, t);
+					_context.TimingEnd(command.CommandText, t);
 					return result;
 				}
 			}
@@ -352,12 +352,12 @@ namespace Lexxys.Data
 			{
 				using (Connection())
 				{
-					using DbCommand cmd = Driver.Command(statement);
+					using DbCommand cmd = _context.Command(statement);
 					if (parameters != null && parameters.Length > 0)
 						cmd.Parameters.AddRange(parameters);
-					t = DataDriver.TimingBegin();
+					t = DataContextImplementation.TimingBegin();
 					int result = cmd.ExecuteNonQuery();
-					Driver.TimingEnd(statement, t);
+					_context.TimingEnd(statement, t);
 					return result;
 				}
 			}
@@ -387,12 +387,12 @@ namespace Lexxys.Data
 			{
 				using (Connection())
 				{
-					using DbCommand cmd = Driver.Command(statement);
+					using DbCommand cmd = _context.Command(statement);
 					if (parameters != null && parameters.Length > 0)
 						cmd.Parameters.AddRange(parameters);
-					t = DataDriver.TimingBegin();
+					t = DataContextImplementation.TimingBegin();
 					int result = await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-					Driver.TimingEnd(statement, t);
+					_context.TimingEnd(statement, t);
 					return result;
 				}
 			}
@@ -414,7 +414,7 @@ namespace Lexxys.Data
 
 		public void Dispose()
 		{
-			_context?.Dispose();
+			_context.Dispose();
 		}
 	}
 
