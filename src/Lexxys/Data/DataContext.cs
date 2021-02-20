@@ -63,100 +63,39 @@ namespace Lexxys.Data
 
 		public DateTime Now => _context.Now;
 
-		public IDisposable HoldTheMoment()
-		{
-			return _context.LockNow(_context.Time) ? new Dc.TimeHolder(_context) : null;
-		}
+		public IDisposable HoldTheMoment() => _context.LockNow(_context.Time) ? new Dc.TimeHolder(_context) : null;
 
-		public IDisposable Connection()
-		{
-			return new Dc.Connecting(_context);
-		}
+		public IDisposable Connection() => new Dc.Connecting(_context);
 
-		public ITransactable Transaction(bool autoCommit = false, IsolationLevel isolation = default)
-		{
-			return new Dc.Transacting(_context, autoCommit, isolation);
-		}
+		public ITransactable Transaction(bool autoCommit = false, IsolationLevel isolation = default) => new Dc.Transacting(_context, autoCommit, isolation);
 
-		public IDisposable NoTiming()
-		{
-			return new Dc.TimingLocker(_context);
-		}
+		public IDisposable NoTiming() => new Dc.TimingLocker(_context);
 
-		public void Commit()
-		{
-			_context.Commit();
-		}
+		public void Commit() => _context.Commit();
 
-		public void Rollback()
-		{
-			_context.Rollback();
-		}
+		public void Rollback() => _context.Rollback();
 
-		public void SetQueryTimeout(TimeSpan timeout)
-		{
-			_context.CommandTimeout = timeout;
-		}
+		public void SetQueryTimeout(TimeSpan timeout) => _context.CommandTimeout = timeout;
 
-		public IDisposable CommadTimeout(TimeSpan timeout, bool always = false)
-		{
-			return always || _context.CommandTimeout < timeout ? new Dc.TimeoutLocker(_context, timeout) : null;
-		}
+		public IDisposable CommadTimeout(TimeSpan timeout, bool always = false) => always || _context.CommandTimeout < timeout ? new Dc.TimeoutLocker(_context, timeout) : null;
 
-		public void ResetStatistics()
-		{
-			_context.ResetStatistics();
-		}
+		public void ResetStatistics() => _context.ResetStatistics();
 
-		public T GetValue<T>(string query, params DbParameter[] parameters)
-		{
-			return Map(Dc.ValueMapper<T>, query, parameters);
-		}
+		public T GetValue<T>(string query, params DbParameter[] parameters) => Map(Dc.ValueMapper<T>, query, parameters);
 
-		public Task<T> GetValueAsync<T>(string query, params DbParameter[] parameters)
-		{
-			return MapAsync(Dc.ValueMapperAsync<T>, query, parameters);
-		}
+		public Task<T> GetValueAsync<T>(string query, params DbParameter[] parameters) => MapAsync(Dc.ValueMapperAsync<T>, query, parameters);
 
-		public T GetValueOrDefault<T>(T @default, string query, params DbParameter[] parameters) where T: class
-		{
-			return GetValue<T>(query, parameters) ?? @default;
-		}
+		public List<T> GetList<T>(string query, params DbParameter[] parameters) => Map(Dc.ListMapper<T>, query, parameters);
 
-		public async Task<T> GetValueOrDefaultAsync<T>(T @default, string query, params DbParameter[] parameters) where T : class
-		{
-			return await GetValueAsync<T>(query, parameters).ConfigureAwait(false) ?? @default;
-		}
+		public Task<List<T>> GetListAsync<T>(string query, params DbParameter[] parameters) => MapAsync(Dc.ListMapperAsync<T>, query, parameters);
 
-		public List<T> GetList<T>(string query, params DbParameter[] parameters)
-		{
-			return Map(Dc.ListMapper<T>, query, parameters);
-		}
+		public bool ReadXmlText(TextWriter text, string query, params DbParameter[] parameters) => Map(o => Dc.XmlTextMapper(text, o), query, parameters);
 
-		public Task<List<T>> GetListAsync<T>(string query, params DbParameter[] parameters)
-		{
-			return MapAsync(Dc.ListMapperAsync<T>, query, parameters);
-		}
+		public Task<bool> ReadXmlTextAsync(TextWriter text, string query, params DbParameter[] parameters) => MapAsync(o => Dc.XmlTextMapperAsync(text, o), query, parameters);
 
-		public bool ReadXmlText(TextWriter text, string query, params DbParameter[] parameters)
-		{
-			return Map(o => Dc.XmlTextMapper(text, o), query, parameters);
-		}
+		public List<Xml.XmlLiteNode> ReadXml(string query, params DbParameter[] parameters) => Map(Dc.XmlMapper, query, parameters);
 
-		public Task<bool> ReadXmlTextAsync(TextWriter text, string query, params DbParameter[] parameters)
-		{
-			return MapAsync(o => Dc.XmlTextMapperAsync(text, o), query, parameters);
-		}
-
-		public List<Xml.XmlLiteNode> ReadXml(string query, params DbParameter[] parameters)
-		{
-			return Map(Dc.XmlMapper, query, parameters);
-		}
-
-		public Task<List<Xml.XmlLiteNode>> ReadXmlAsync(string query, params DbParameter[] parameters)
-		{
-			return MapAsync(Dc.XmlMapperAsync, query, parameters);
-		}
+		public Task<List<Xml.XmlLiteNode>> ReadXmlAsync(string query, params DbParameter[] parameters) => MapAsync(Dc.XmlMapperAsync, query, parameters);
 
 		public List<RowsCollection> Records(int count, string query, params DbParameter[] parameters)
 		{
@@ -171,8 +110,7 @@ namespace Lexxys.Data
 			catch (Exception flaw)
 			{
 				flaw.Add(nameof(count), count)
-					.Add(nameof(query), query)
-					.Add(t);
+					.Add(nameof(query), query);
 				if (parameters != null && parameters.Length > 0)
 				{
 					foreach (var item in parameters)
@@ -181,6 +119,7 @@ namespace Lexxys.Data
 							flaw.Add(item.ParameterName, $"{item.DbType}, {item.Value}.");
 					}
 				}
+				flaw.Add(t);
 				throw;
 			}
 		}
@@ -197,20 +136,6 @@ namespace Lexxys.Data
 			if (mapper == null)
 				throw new ArgumentNullException(nameof(mapper));
 			return MapAsync(o => Dc.ActionMapperAsync(o, limit, mapper), query, parameters);
-		}
-
-		public int Map(Action<IDataRecord> mapper, string query, params DbParameter[] parameters)
-		{
-			if (mapper == null)
-				throw new ArgumentNullException(nameof(mapper));
-			return Map(o => Dc.ActionMapper(o, Int32.MaxValue, mapper), query, parameters);
-		}
-
-		public Task<int> MapAsync(Action<IDataRecord> mapper, string query, params DbParameter[] parameters)
-		{
-			if (mapper == null)
-				throw new ArgumentNullException(nameof(mapper));
-			return MapAsync(o => Dc.ActionMapperAsync(o, Int32.MaxValue, mapper), query, parameters);
 		}
 
 		public T Map<T>(Func<DbCommand, T> mapper, string query, params DbParameter[] parameters)
@@ -237,8 +162,7 @@ namespace Lexxys.Data
 			catch (Exception flaw)
 			{
 				flaw.Add(nameof(query), query)
-					.Add("type", typeof(T))
-					.Add(t);
+					.Add("type", typeof(T));
 				if (parameters != null && parameters.Length > 0)
 				{
 					foreach (var item in parameters)
@@ -247,6 +171,7 @@ namespace Lexxys.Data
 							flaw.Add(item.ParameterName, $"{item.DbType}, {item.Value}.");
 					}
 				}
+				flaw.Add(t);
 				throw;
 			}
 		}
@@ -275,8 +200,7 @@ namespace Lexxys.Data
 			catch (Exception flaw)
 			{
 				flaw.Add(nameof(query), query)
-					.Add("type", typeof(T))
-					.Add(t);
+					.Add("type", typeof(T));
 				if (parameters != null && parameters.Length > 0)
 				{
 					foreach (var item in parameters)
@@ -285,6 +209,7 @@ namespace Lexxys.Data
 							flaw.Add(item.ParameterName, $"{item.DbType}, {item.Value}.");
 					}
 				}
+				flaw.Add(t);
 				throw;
 			}
 		}

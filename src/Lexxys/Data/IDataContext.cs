@@ -27,10 +27,17 @@ namespace Lexxys.Data
 		event Action Cancelled;
 		event Action Committed;
 
+		void ResetStatistics();
+		void SetQueryTimeout(TimeSpan timeout);
 		IDisposable CommadTimeout(TimeSpan timeout, bool always = false);
-		void Commit();
+		IDisposable NoTiming();
+		IDisposable HoldTheMoment();
 		IDisposable Connection();
-		void Dispose();
+		ITransactable Transaction(bool autoCommit = false, IsolationLevel isolation = 0);
+		void Commit();
+		void Rollback();
+		T SetCommitAction<T>(Func<T> factory) where T : ICommitAction;
+		ICommitAction SetCommitAction(object key, Func<ICommitAction> factory);
 		int Execute(DbCommand command);
 		int Execute(string statement, params DbParameter[] parameters);
 		Task<int> ExecuteAsync(DbCommand command);
@@ -39,26 +46,38 @@ namespace Lexxys.Data
 		Task<List<T>> GetListAsync<T>(string query, params DbParameter[] parameters);
 		T GetValue<T>(string query, params DbParameter[] parameters);
 		Task<T> GetValueAsync<T>(string query, params DbParameter[] parameters);
-		T GetValueOrDefault<T>(T @default, string query, params DbParameter[] parameters) where T : class;
-		Task<T> GetValueOrDefaultAsync<T>(T @default, string query, params DbParameter[] parameters) where T : class;
-		IDisposable HoldTheMoment();
-		int Map(Action<IDataRecord> mapper, string query, params DbParameter[] parameters);
 		int Map(int limit, Action<IDataRecord> mapper, string query, params DbParameter[] parameters);
-		T Map<T>(Func<DbCommand, T> mapper, string query, params DbParameter[] parameters);
-		Task<int> MapAsync(Action<IDataRecord> mapper, string query, params DbParameter[] parameters);
 		Task<int> MapAsync(int limit, Action<IDataRecord> mapper, string query, params DbParameter[] parameters);
+		T Map<T>(Func<DbCommand, T> mapper, string query, params DbParameter[] parameters);
 		Task<T> MapAsync<T>(Func<DbCommand, Task<T>> mapper, string query, params DbParameter[] parameters);
-		IDisposable NoTiming();
 		List<XmlLiteNode> ReadXml(string query, params DbParameter[] parameters);
 		Task<List<XmlLiteNode>> ReadXmlAsync(string query, params DbParameter[] parameters);
 		bool ReadXmlText(TextWriter text, string query, params DbParameter[] parameters);
 		Task<bool> ReadXmlTextAsync(TextWriter text, string query, params DbParameter[] parameters);
 		List<RowsCollection> Records(int count, string query, params DbParameter[] parameters);
-		void ResetStatistics();
-		void Rollback();
-		ICommitAction SetCommitAction(object key, Func<ICommitAction> factory);
-		T SetCommitAction<T>(Func<T> factory) where T : ICommitAction;
-		void SetQueryTimeout(TimeSpan timeout);
-		ITransactable Transaction(bool autoCommit = false, IsolationLevel isolation = 0);
+	}
+
+	public static class DataContextExtensions
+	{
+		public static T GetValueOrDefault<T>(this IDataContext context, T @default, string query, params DbParameter[] parameters) where T : class
+		{
+			return context.GetValue<T>(query, parameters) ?? @default;
+		}
+
+		public static async Task<T> GetValueOrDefaultAsync<T>(this IDataContext context, T @default, string query, params DbParameter[] parameters) where T : class
+		{
+			return await context.GetValueAsync<T>(query, parameters).ConfigureAwait(false) ?? @default;
+		}
+
+		public static int Map(this IDataContext context, Action<IDataRecord> mapper, string query, params DbParameter[] parameters)
+		{
+			return context.Map(Int32.MaxValue, mapper, query, parameters);
+		}
+
+		public static Task<int> MapAsync(this IDataContext context, Action<IDataRecord> mapper, string query, params DbParameter[] parameters)
+		{
+			return context.MapAsync(Int32.MaxValue, mapper, query, parameters);
+		}
+
 	}
 }
