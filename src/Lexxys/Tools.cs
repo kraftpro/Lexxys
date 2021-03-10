@@ -595,6 +595,53 @@ namespace Lexxys
 			return text.ToString();
 		}
 
+		public static string ToDashed(string value, bool pascalCase, params char[] dash)
+		{
+			if (String.IsNullOrEmpty(value))
+				return value;
+			if (dash == null || dash.Length == 0)
+				dash = __dasches;
+
+			var text = new StringBuilder(value.Length);
+			var c = dash[0];
+			foreach (var s0 in SplitByCapitals(value))
+			{
+				var s = s0.Trim(dash);
+				if (s.Length == 0 || s == "_")
+					continue;
+				if (text.Length > 0)
+					text.Append(c);
+				if (pascalCase)
+					text.Append(Char.ToUpperInvariant(s[0])).Append(s.Substring(1).ToLowerInvariant());
+				else
+					text.Append(s);
+			}
+			return text.ToString();
+		}
+		private static readonly char[] __dasches = new[] {'-'};
+
+		public static string ToNamingRule(string value, NamingCaseRule rule)
+		{
+			if (String.IsNullOrEmpty(value))
+				return value;
+			return (rule & ~NamingCaseRule.Force) switch
+			{
+				NamingCaseRule.PreferLowerCase => value.ToLowerInvariant(),
+				NamingCaseRule.PreferCamelCase => Strings.ToCamelCase(value),
+				NamingCaseRule.PreferPascalCase => Strings.ToPascalCase(value),
+				NamingCaseRule.PreferUpperCase => value.ToUpperInvariant(),
+				NamingCaseRule.PreferLowerCaseWithDashes => Strings.ToDashed(value, false, __dashChars).ToLowerInvariant(),
+				NamingCaseRule.PreferUpperCaseWithDashes => Strings.ToDashed(value, false, __dashChars).ToUpperInvariant(),
+				NamingCaseRule.PreferPascalCaseWithDashes => Strings.ToDashed(value, true, __dashChars),
+				NamingCaseRule.PreferLowerCaseWithUnserscores => Strings.ToDashed(value, false, __underscoreChars).ToLowerInvariant(),
+				NamingCaseRule.PreferUpperCaseWithUnserscores => Strings.ToDashed(value, false, __underscoreChars).ToUpperInvariant(),
+				NamingCaseRule.PreferPascalCaseWithUnserscores => Strings.ToDashed(value, true, __underscoreChars),
+				_ => value,
+			};
+		}
+		private static readonly char[] __dashChars = new[] { '-', '_' };
+		private static readonly char[] __underscoreChars = new[] { '_', '-' };
+
 		public static string Ellipsis(string value, int length, string pad = null)
 		{
 			if (pad == null)

@@ -106,16 +106,7 @@ namespace Lexxys
 		/// <returns>Renamed value</returns>
 		public string Rename(string value)
 		{
-			if (String.IsNullOrEmpty(value))
-				return value;
-			return ((NamingCaseRule)((int)NamingRule & 7)) switch
-			{
-				NamingCaseRule.PreferLowerCase => value.ToLowerInvariant(),
-				NamingCaseRule.PreferCamelCase => Strings.ToCamelCase(value),
-				NamingCaseRule.PreferPascalCase => Strings.ToPascalCase(value),
-				NamingCaseRule.PreferUpperCase => value.ToUpperInvariant(),
-				_ => value,
-			};
+			return Strings.ToNamingRule(value, NamingRule);
 		}
 
 		private static string ReferenceValue(object value)

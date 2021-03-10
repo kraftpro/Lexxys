@@ -211,7 +211,7 @@ Setting
 			{
 				if (node == null)
 					return null;
-				Setting2 x = new Setting2
+				var x = new Setting2
 				{
 					IntItem = XmlTools.GetInt32(node["IntItem"], 0),
 					DateTimeItem = XmlTools.GetDateTime(node["DateTimeItem"], DateTime.MinValue, DateTime.MinValue, DateTime.MaxValue),

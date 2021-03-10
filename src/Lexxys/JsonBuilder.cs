@@ -194,7 +194,7 @@ namespace Lexxys
 					case TypeCode.Int64:
 					case TypeCode.UInt64:
 						if (value is Enum)
-							return "\"" + PreferName(cn.ToString(CultureInfo.InvariantCulture)) + "\"";
+							return "\"" + Strings.ToNamingRule(cn.ToString(CultureInfo.InvariantCulture), NamingRule) + "\"";
 						else
 							return cn.ToString(CultureInfo.InvariantCulture);
 
@@ -227,28 +227,14 @@ namespace Lexxys
 			Obj();
 			foreach (DictionaryEntry item in value)
 			{
-				Item(PreferName(item.Key.ToString())).Val(item.Value);
+				Item(Strings.ToNamingRule(item.Key.ToString(), NamingRule)).Val(item.Value);
 			}
 			return End();
 		}
 
 		private string ForceName(string name)
 		{
-			return ((int)NamingRule & 8) == 0 ? name: PreferName(name);
-		}
-
-		private string PreferName(string name)
-		{
-			if (String.IsNullOrEmpty(name))
-				return name;
-			return ((NamingCaseRule)((int)NamingRule & 7)) switch
-			{
-				NamingCaseRule.PreferLowerCase => name.ToLowerInvariant(),
-				NamingCaseRule.PreferCamelCase => Strings.ToCamelCase(name),// name.Length == 1 || name == name.ToUpperInvariant() ? name.ToLowerInvariant(): Char.ToLowerInvariant(name[0]).ToString() + name.Substring(1);
-				NamingCaseRule.PreferPascalCase => Strings.ToPascalCase(name),// name.Length == 1 ? name.ToUpperInvariant(): Char.ToUpperInvariant(name[0]).ToString() + name.Substring(1);
-				NamingCaseRule.PreferUpperCase => name.ToUpperInvariant(),
-				_ => name,
-			};
+			return (NamingRule & NamingCaseRule.Force) == 0 ? name: Strings.ToNamingRule(name, NamingRule);
 		}
 
 		/// <summary>
@@ -600,7 +586,7 @@ namespace Lexxys
 			Type type = value.GetType();
 			foreach (var item in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetField))
 			{
-				Item(PreferName(item.Name)).Val(item.GetValue(value));
+				Item(Strings.ToNamingRule(item.Name, NamingRule)).Val(item.GetValue(value));
 			}
 			foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
 			{
@@ -613,7 +599,7 @@ namespace Lexxys
 					try
 					{
 						object v = item.GetValue(value);
-						Item(PreferName(item.Name)).Val(v);
+						Item(Strings.ToNamingRule(item.Name, NamingRule)).Val(v);
 					}
 					catch
 					{

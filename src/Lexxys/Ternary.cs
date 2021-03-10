@@ -117,7 +117,7 @@ namespace Lexxys
 
 		public bool Equals(Ternary other)
 		{
-			return this._value == other._value;
+			return _value == other._value;
 		}
 
 		public override int GetHashCode()

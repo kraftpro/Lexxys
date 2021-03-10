@@ -52,7 +52,11 @@ namespace Lexxys
 		public Money(decimal value, Currency currency = null)
 		{
 			_currency = currency ?? Currency.ApplicationDefault;
-			_value = checked((long)(value * _currency.Multiplier));
+			var v = value * _currency.Multiplier;
+			if (v < long.MinValue || v > long.MaxValue)
+				throw new OverflowException($"The computed value {v} overflows of the valid range.")
+					.Add(nameof(value), value);
+			_value = (long)v;
 		}
 
 		/// <summary>
@@ -63,7 +67,11 @@ namespace Lexxys
 		public Money(double value, Currency currency = null)
 		{
 			_currency = currency ?? Currency.ApplicationDefault;
-			_value = checked((long)(value * _currency.Multiplier));
+			var v = value * _currency.Multiplier;
+			if (!IsInRange(v))
+				throw new OverflowException($"The computed value {v} overflows of the valid range.")
+					.Add(nameof(value), value);
+			_value = (long)v;
 		}
 
 		private Money(ulong value, Currency currency = null)
@@ -102,8 +110,10 @@ namespace Lexxys
 		public (Money, Money) Split(double ratio)
 		{
 			var value = _value * ratio;
-			if (value > long.MaxValue || value < long.MinValue)
-				throw new ArgumentOutOfRangeException(nameof(value), value, null);
+			if (!IsInRange(value))
+				throw new OverflowException($"The computed value {value} overflows of the valid range.")
+					.Add(nameof(_value), _value)
+					.Add(nameof(ratio), ratio);
 			var first = Create((long)Math.Round(value), _currency);
 			return (first, Create(_value - first._value, _currency));
 		}
@@ -116,9 +126,15 @@ namespace Lexxys
 		/// <returns></returns>
 		public (Money, Money) Split(int numerator, int denominator)
 		{
+			if (denominator == 0)
+				throw new ArgumentOutOfRangeException(nameof(denominator), denominator, null);
+
 			var value = (decimal)_value * numerator / denominator;
-			if (value > long.MaxValue || value < long.MinValue)
-				throw new ArgumentOutOfRangeException(nameof(value), value, null);
+			if (value < long.MinValue || value > long.MaxValue)
+				throw new OverflowException($"The computed value {value} overflows of the valid range.")
+					.Add(nameof(_value), _value)
+					.Add(nameof(numerator), numerator)
+					.Add(nameof(denominator), denominator);
 			var first = Create((long)Math.Round(value), _currency);
 			return (first, Create(_value - first._value, _currency));
 		}
@@ -138,9 +154,11 @@ namespace Lexxys
 
 			double total = basket1 + basket2;
 			double value = _value * basket1 / total;
-			if (value > long.MaxValue || value < long.MinValue)
-				throw new ArgumentOutOfRangeException(nameof(total), total, null);
-
+			if (!IsInRange(value))
+				throw new OverflowException($"The computed value {value} overflows of the valid range.")
+					.Add(nameof(_value), _value)
+					.Add(nameof(basket1), basket1)
+					.Add(nameof(basket2), basket2);
 			var first = Create((long)Math.Round(value), _currency);
 			var second = Create(_value - first._value, _currency);
 			return new[] { first, second };
@@ -164,8 +182,12 @@ namespace Lexxys
 
 			double total = basket1 + basket2 + basket3;
 			double value = _value * basket1 / total;
-			if (value > long.MaxValue || value < long.MinValue)
-				throw new ArgumentOutOfRangeException(nameof(total), total, null);
+			if (!IsInRange(value))
+				throw new OverflowException($"The computed value {value} overflows of the valid range.")
+					.Add(nameof(_value), _value)
+					.Add(nameof(basket1), basket1)
+					.Add(nameof(basket2), basket2)
+					.Add(nameof(basket3), basket3);
 
 			var first = Create((long)Math.Round(value), _currency);
 			var second = Create((long)Math.Round((_value - first._value) * basket2 / (total - basket1)), _currency);
@@ -183,14 +205,14 @@ namespace Lexxys
 			if (baskets == null)
 				throw new ArgumentNullException(nameof(baskets));
 			if (baskets.Length < 2)
-				return baskets.Length == 0 ? EmptyArray<Money>.Value : new[] { this };
+				return baskets.Length == 0 ? Array.Empty<Money>(): new[] { this };
 
 			double total = 0;
 			for (int i = 0; i < baskets.Length; i++)
 			{
 				var basket = baskets[i];
 				if (!(basket >= 0) || double.IsPositiveInfinity(basket))
-					throw new ArgumentOutOfRangeException(nameof(baskets) + "[" + i + "]", basket, null);
+					throw new ArgumentOutOfRangeException($"{nameof(baskets)}[{i}]", basket, null);
 				total += basket;
 			}
 			var result = new Money[baskets.Length];
@@ -198,8 +220,10 @@ namespace Lexxys
 			for (int i = 0; i < baskets.Length - 1; ++i)
 			{
 				double value = rest * baskets[i] / total;
-				if (value > long.MaxValue || value < long.MinValue)
-					throw new ArgumentOutOfRangeException(nameof(total), total, null);
+				if (!IsInRange(value))
+					throw new OverflowException($"The computed value {value} overflows of the valid range.")
+						.Add(nameof(_value), _value)
+						.Add(nameof(baskets), "[" + String.Join(",", baskets) + "]");
 				var item = Create((long)Math.Round(value), _currency);
 				rest -= item._value;
 				total -= baskets[i];
@@ -234,6 +258,8 @@ namespace Lexxys
 			result[result.Length - 1] = Create(rest, _currency);
 			return result;
 		}
+
+		private static bool IsInRange(double value) => !double.IsNaN(value) && value >= long.MinValue && value <= long.MaxValue;
 
 		#region Object, IFormattable, IComparable, IComparable<Money>, IEquatable<Money>
 

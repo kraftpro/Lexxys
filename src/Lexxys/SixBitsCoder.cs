@@ -218,7 +218,7 @@ namespace Lexxys
 			if (bits == null)
 				throw new ArgumentNullException(nameof(bits));
 			if (bits.Length != 16)
-				throw new ArgumentOutOfRangeException(nameof(bits.Length), bits.Length, null);
+				throw new ArgumentOutOfRangeException(nameof(bits) + ".Length", bits.Length, null);
 
 			var result = new StringBuilder(24);
 			int rest = Encode(bits, result);

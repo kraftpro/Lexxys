@@ -212,7 +212,7 @@ namespace Lexxys
 			if (value == null)
 				return substituteNullValue ? Empty<T>(): null;
 			if (value is ICollection<T> collection)
-				return WrapCopy(collection);
+				return WrapCopy(collection, substituteNullValue);
 			var temp = new List<T>(value);
 			if (temp.Count == 0)
 				return Empty<T>();
@@ -1387,7 +1387,6 @@ namespace Lexxys
 		#endregion
 	}
 
-#pragma warning disable CA1032, CA2237 // Mark ISerializable types with serializable, Implement standard exception constructors
 	public class ReadOnlyException: NotSupportedException
 	{
 		public ReadOnlyException(): base(SR.ReadOnlyException())

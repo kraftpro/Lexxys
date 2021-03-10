@@ -145,7 +145,7 @@ namespace Lexxys
 				return WeeklySchedule.FromXml(xml);
 			if (xml["type"] == MonthlySchedule.Type)
 				return MonthlySchedule.FromXml(xml);
-			throw new ArgumentOutOfRangeException("xml.type", xml["type"], null);
+			throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null);
 		}
 
 		public static Schedule FromXml(string xml)

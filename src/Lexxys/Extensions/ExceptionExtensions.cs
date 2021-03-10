@@ -5,6 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 
@@ -30,6 +31,19 @@ namespace Lexxys
 				} while (exception.Data.Contains(name));
 			}
 			exception.Data[name] = value;
+			return exception;
+		}
+
+		public static T Add<T>(this T exception, IEnumerable<(string Name, object Value)>items)
+			where T: Exception
+		{
+			if (items != null)
+			{
+				foreach (var item in items)
+				{
+					Add(exception, item.Name, item.Value);
+				}
+			}
 			return exception;
 		}
 

@@ -2482,7 +2482,7 @@ namespace Lexxys.Xml
 					if (arguments == null)
 						throw new ArgumentNullException(nameof(arguments));
 					if (arguments.Count < _parameters.Length)
-						throw new ArgumentOutOfRangeException(nameof(arguments.Count), arguments.Count, null).Add("expected value", _parameters.Length);
+						throw new ArgumentOutOfRangeException(nameof(arguments) + ".Count", arguments.Count, null).Add("expected value", _parameters.Length);
 				}
 
 				var values = new object[_parameters.Length];

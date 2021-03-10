@@ -80,13 +80,11 @@ namespace Lexxys.Logging
 					CloseDatabaseCommection();
 				}
 			}
-			#pragma warning disable CA1031 // Do not catch general exception types
 			catch (Exception exception)
 			{
 				WriteErrorMessage("DatabaseLogWriter", exception);
 				WriteEventLogMessage(record);
 			}
-			#pragma warning restore CA1031
 		}
 		private static readonly ConcurrentDictionary<Tuple<string, string, string, int>, int> __instancesMap = new ConcurrentDictionary<Tuple<string, string, string, int>, int>();
 
@@ -136,12 +134,10 @@ namespace Lexxys.Logging
 					CloseDatabaseCommection();
 				}
 			}
-			#pragma warning disable CA1031 // Do not catch general exception types
 			catch (Exception exception)
 			{
 				WriteErrorMessage("DatabaseLogWriter", exception);
 			}
-			#pragma warning restore CA1031
 		}
 
 
@@ -189,7 +185,6 @@ namespace Lexxys.Logging
 				if (!_dedicatedConnection)
 					_connection.Close();
 			}
-			#pragma warning disable CA1031 // Do not catch general exception types
 			catch (Exception exception)
 			{
 				exception
@@ -199,7 +194,6 @@ namespace Lexxys.Logging
 				WriteErrorMessage("DatabaseLogWriter", exception);
 				DisposeResources();
 			}
-			#pragma warning restore CA1031
 		}
 
 		public override void Close()

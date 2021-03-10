@@ -995,12 +995,10 @@ namespace Lexxys.Xml
 					object v = item.GetValue(value);
 					Item(item.Name, v, elements, false);
 				}
-				#pragma warning disable CA1031 // Do not catch general exception types
 				catch
 				{
 					// ignore all internal exceptions
 				}
-				#pragma warning restore CA1031
 			}
 			foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
 			{
@@ -1015,12 +1013,10 @@ namespace Lexxys.Xml
 						object v = item.GetValue(value);
 						Item(item.Name, v, elements, false);
 					}
-					#pragma warning disable CA1031 // Do not catch general exception types
 					catch
 					{
 						// ignore all internal exceptions
 					}
-					#pragma warning restore CA1031
 				}
 			}
 		}

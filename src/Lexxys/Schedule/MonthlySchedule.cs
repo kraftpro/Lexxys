@@ -214,7 +214,7 @@ namespace Lexxys
 			if (xml == null || xml.IsEmpty)
 				return null;
 			if (xml["type"] != Type)
-				throw new ArgumentOutOfRangeException("xml.type", xml["type"], null);
+				throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null);
 			IEnumerable<int> months = xml["months"] != null ?
 				xml["months"]?.Split(',').Select(o => o.AsInt32(0)):
 				xml.Element("months").Elements.Select(o => o.Value.AsInt32());

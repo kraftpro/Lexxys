@@ -139,7 +139,7 @@ namespace Lexxys
 			if (xml == null || xml.IsEmpty)
 				return null;
 			if (xml["type"] != Type)
-				throw new ArgumentOutOfRangeException("xml.type", xml["type"], null);
+				throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null);
 			IEnumerable<DayOfWeek> days = xml["days"] != null ?
 				xml["days"]?.Split(',').Select(o => o.AsEnum(DayOfWeek.Friday)) :
 				xml.Element("days").Elements.Select(o => o.Value.AsEnum<DayOfWeek>());

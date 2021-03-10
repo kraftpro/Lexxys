@@ -115,7 +115,7 @@ namespace Lexxys
 			if (xml == null || xml.IsEmpty)
 				return null;
 			if (xml["type"] != Type)
-				throw new ArgumentOutOfRangeException("xml.type", xml["type"], null);
+				throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null);
 			return new DailySchedule(xml["day"].AsInt32(1), ScheduleReminder.FromXml(xml.Element("reminder")));
 		}
 

@@ -55,7 +55,6 @@ namespace Lexxys.Logging
 				Config.OnLoggerInitialized();
 			}
 
-			#pragma warning disable CA1031 // Do not catch general exception types
 			bool registered = false;
 			try
 			{
@@ -76,8 +75,6 @@ namespace Lexxys.Logging
 				// ignored
 			}
 			Lxx.UnhandledException += Lxx_UnhandledException;
-			#pragma warning restore CA1031
-
 			if (!registered)
 			{
 				var watcher = new Thread(LogWatcher) { Name = "LOG Watcher", Priority = ThreadPriority.Lowest };

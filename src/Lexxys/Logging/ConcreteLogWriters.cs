@@ -122,13 +122,11 @@ namespace Lexxys.Logging
 				_truncate = false;
 				return o;
 			}
-			#pragma warning disable CA1031 // Do not catch general exception types
 			catch
 			{
 				_truncate = false;
 				return null;
 			}
-			#pragma warning restore CA1031
 		}
 
 		private static string FileMaskToName(string logFileMask)

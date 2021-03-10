@@ -19,7 +19,7 @@ namespace Lexxys.Data
 	{
 		private static readonly IOptions<ConnectionStringInfo> __globalConnetionString = Config.GetOptions<ConnectionStringInfo>(Dc.ConfigSection);
 
-		private DataContextImplementation _context;
+		private readonly DataContextImplementation _context;
 
 
 		public DataContext(): this(__globalConnetionString.Value)

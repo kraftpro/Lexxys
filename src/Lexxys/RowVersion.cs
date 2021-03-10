@@ -52,7 +52,7 @@ namespace Lexxys
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
 			if (value.Length != sizeof(long))
-				throw new ArgumentOutOfRangeException(nameof(value.Length), value.Length, null);
+				throw new ArgumentOutOfRangeException(nameof(value) + ".Length", value.Length, null);
 
 			fixed (byte* p = value)
 			{
