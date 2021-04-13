@@ -610,6 +610,174 @@ namespace Lexxys
 			return End();
 		}
 
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, IDictionary value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, string value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, char value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, bool value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, byte value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, sbyte value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, short value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, ushort value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, int value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, uint value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, long value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, ulong value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, decimal value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, float value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, double value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, DateTime value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, DateTimeOffset value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, TimeSpan value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, Guid value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, byte[] value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, IEnumerable value) => Item(name).Val(value);
+		
+		/// <summary>
+		/// Writes item and value pair.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, IDumpJson value) => Item(name).Val(value);
+
+		/// <summary>
+		/// Writes item and value pair using <see cref="IDumpJson"/> implementation if it is present.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder Item(string name, object value) => Item(name).Val(value);
+
+		/// <summary>
+		/// Writes item and value pair ignoring <see cref="IDumpJson"/> implementation.
+		/// </summary>
+		/// <param name="name">name of the attribute</param>
+		/// <param name="value">value of the attribute</param>
+		public JsonBuilder ItemObj(string name, object value) => Item(name).ValObj(value);
+
 		public JsonBuilder Content(IDumpJson value)
 		{
 			value?.ToJsonContent(this);

@@ -137,15 +137,14 @@ namespace Lexxys
 		{
 			if (xml == null || xml.IsEmpty)
 				return null;
-			if (xml["type"] == Type)
-				return new Schedule(ScheduleReminder.FromXml(xml.Element("reminder")));
-			if (xml["type"] == DailySchedule.Type)
-				return DailySchedule.FromXml(xml);
-			if (xml["type"] == WeeklySchedule.Type)
-				return WeeklySchedule.FromXml(xml);
-			if (xml["type"] == MonthlySchedule.Type)
-				return MonthlySchedule.FromXml(xml);
-			throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null);
+			return xml["type"] switch
+			{
+				Type => new Schedule(ScheduleReminder.FromXml(xml.Element("reminder"))),
+				DailySchedule.Type => DailySchedule.FromXml(xml),
+				WeeklySchedule.Type => WeeklySchedule.FromXml(xml),
+				MonthlySchedule.Type => MonthlySchedule.FromXml(xml),
+				_ => throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null)
+			};
 		}
 
 		public static Schedule FromXml(string xml)
