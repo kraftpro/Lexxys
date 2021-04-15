@@ -232,7 +232,7 @@ namespace Lexxys.Logging
 				if (pattern == ".*" || pattern.Equals("all", StringComparison.OrdinalIgnoreCase))
 					return excludeAll ? null: __allSources;
 
-				return new Regex("\\A" + pattern + "\\z", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+				return new Regex("\\A(" + pattern + ")\\z", RegexOptions.IgnoreCase | RegexOptions.Singleline);
 			}
 		}
 	}
