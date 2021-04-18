@@ -979,12 +979,14 @@ namespace Lexxys.Data
 				{
 					if (commit)
 					{
+						if (dispose)
+							Log.Debug(SR.TransactionDisposedWithCommit());
 						ctx.Commit();
 					}
 					else
 					{
-						if (!dispose)
-							Log.Debug(SR.TransactionDisposedWithoutCommit());
+						if (dispose)
+							Log.Debug(SR.TransactionDisposedWithRollback());
 						ctx.Rollback();
 					}
 				}

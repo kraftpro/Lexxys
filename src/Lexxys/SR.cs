@@ -223,9 +223,14 @@ namespace Lexxys
 			return () => String.Format(Culture, "ConnectionString: {0}", connection);
 		}
 
-		internal static Func<string> TransactionDisposedWithoutCommit()
+		internal static Func<string> TransactionDisposedWithCommit()
 		{
-			return () => String.Format(Culture, "Transaction disposed.");
+			return () => String.Format(Culture, "Auto commit.");
+		}
+
+		internal static Func<string> TransactionDisposedWithRollback()
+		{
+			return () => String.Format(Culture, "Auto rollback.");
 		}
 
 		internal static string NothingToCommit()
