@@ -84,21 +84,6 @@ namespace Lexxys.Data
 			remove { }
 		}
 
-		public T SetCommitAction<T>(Func<T> factory) where T: ICommitAction
-		{
-			if (_broadcast.TryGetValue(typeof(T), out var obj))
-			{
-				if (obj is not T t)
-					throw new InvalidOperationException();
-				return t;
-			}
-			if (factory == null)
-				throw new ArgumentNullException(nameof(factory));
-			var r = factory();
-			_broadcast.Add(typeof(T), r);
-			return r;
-		}
-
 		public ICommitAction SetCommitAction(object key, Func<ICommitAction> factory)
 		{
 			if (key == null)

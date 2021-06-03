@@ -122,8 +122,10 @@ namespace Lexxys
 
 		private static bool IsSystemAssembly(Assembly asm)
 		{
+#if NETFRAMEWORK
 			if (asm.GlobalAssemblyCache)
 				return true;
+#endif
 			string name = asm.FullName;
 			return name.IndexOf("Version=0.0.0.0", StringComparison.OrdinalIgnoreCase) >= 0 || Array.FindIndex(__systemAssemblyNames, s => name.StartsWith(s, StringComparison.Ordinal)) >= 0;
 		}

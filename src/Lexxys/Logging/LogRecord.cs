@@ -114,7 +114,7 @@ namespace Lexxys.Logging
 			else
 			{
 				MethodBase method = exception.TargetSite;
-				Source = ((method == null) ? "Unknown": method.GetType().Name);
+				Source = ((method == null) ? exception.Source: method.GetType().Name);
 			}
 			Message = exception.Message;
 			_data = CopyDictionary(exception.Data);

@@ -17,9 +17,9 @@ namespace Lexxys.Tests
 		[DataRow("a\t\0b\"", @"a\t\0b""", '\0')]
 		[DataRow("a\v\x0b-ad", @"a\v\v-ad", '\0')]
 		[DataRow("a\t\f\v\0b\"\x0e-ad", @"a\t\f\v\0b""\x000e-ad", '\0')]
-		public void EscapeCsStringTest(string value, string escaped, char marker)
+		public void EscapeCsStringTest(string value, string escaped, string marker)
 		{
-			Assert.AreEqual(escaped, Strings.EscapeCsString(value, marker));
+			Assert.AreEqual(escaped, Strings.EscapeCsString(value, marker[0]));
 		}
 
 		[TestMethod]
@@ -103,8 +103,43 @@ namespace Lexxys.Tests
 		[TestMethod]
 		public void CutIndentsTest()
 		{
-			Assert.Inconclusive();
+			var lines = new []
+			{
+				"\t\tselect",
+				"\t\t\t1,",
+				"\t\t\t2,",
+				"\t\t\t3",
+				"\tfrom Here"
+			};
+			var expected = String.Join(Environment.NewLine, lines.Select(o => o.Substring(1).Replace("\t", "    ")));
+			var actual = Strings.CutIndents(lines, 4);
+			Assert.AreEqual(expected, actual);
+
+			lines = new[]
+			{
+				"  select",
+				"\t\t\t1,",
+				"\t\t\t2,",
+				"\t\t\t3",
+				"\tfrom Here"
+			};
+			expected = String.Join(Environment.NewLine, lines.Select(o => o.Substring(1).Replace("\t", "  "))).TrimStart();
+			actual = Strings.CutIndents(lines, 2);
+			Assert.AreEqual(expected, actual);
+
+			lines = new[]
+			{
+				"  select",
+				"\t\t1,",
+				"\tfrom Here"
+			};
+			expected = "select" + Environment.NewLine +
+				"      1," + Environment.NewLine +
+				"  from Here";
+			actual = Strings.CutIndents(lines, 4);
+			Assert.AreEqual(expected, actual);
 		}
+		private static readonly char[] Nls = { '\r', '\n' };
 
 		[TestMethod]
 		public void EncodeUrlTest()

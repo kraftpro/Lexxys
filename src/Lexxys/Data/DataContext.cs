@@ -47,13 +47,11 @@ namespace Lexxys.Data
 			remove { }
 		}
 
-		public event Action Cancelled
+		public event Action Canceled
 		{
 			add => _context.Cancelled += value;
 			remove { }
 		}
-
-		public T SetCommitAction<T>(Func<T> factory) where T : ICommitAction => _context.SetCommitAction(factory);
 
 		public ICommitAction SetCommitAction(object key, Func<ICommitAction> factory) => _context.SetCommitAction(key, factory);
 

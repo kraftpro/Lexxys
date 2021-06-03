@@ -197,7 +197,7 @@ namespace Lexxys.Logging
 
 			Random r = null;
 			TimeSpan delay = TimeSpan.Zero;
-			int bound = 32;
+			int bound = 128;
 			StreamWriter o = null;
 			do
 			{
@@ -321,24 +321,7 @@ namespace Lexxys.Logging
 
 		public override void Write(LogRecord record)
 		{
-			try
-			{
-				var entryType = record.LogType switch
-				{
-					LogType.Output or LogType.Error => EventLogEntryType.Error,
-					LogType.Warning => EventLogEntryType.Warning,
-					_ => EventLogEntryType.Information,
-				};
-				string message = Format(record);
-				if (message.Length > 32765)
-					message = message.Substring(0, 32765);
-				EventLog.WriteEntry(_eventSource, message, entryType);
-			}
-			#pragma warning disable CA1031 // Do not catch general exception types
-			catch
-			{
-				// ignored
-			}
+			WriteEventLogMessage(record);
 		}
 	}
 }

@@ -261,7 +261,7 @@ namespace Lexxys
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				if (array.Length - index < Dictionary.Count)
-					throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
 
 				for (int i = 0; i < Dictionary.List.Count; ++i)
 				{
@@ -276,7 +276,7 @@ namespace Lexxys
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				if (array.Length - index < Dictionary.Count)
-					throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
 
 				for (int i = 0; i < Dictionary.List.Count; ++i)
 				{
@@ -357,7 +357,7 @@ namespace Lexxys
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				if (array.Length - index < Dictionary.Count)
-					throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
 
 				for (int i = 0; i < Dictionary.List.Count; ++i)
 				{
@@ -372,7 +372,7 @@ namespace Lexxys
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				if (array.Length - index < Dictionary.Count)
-					throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
 
 				for (int i = 0; i < Dictionary.List.Count; ++i)
 				{
@@ -497,9 +497,9 @@ namespace Lexxys
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index), index, null);
 			if (array.Rank != 1)
-				throw new ArgumentOutOfRangeException(nameof(array.Rank), array.Rank, null);
+				throw new ArgumentOutOfRangeException(nameof(array) + ".Rank", array.Rank, null);
 			if (array.Length - index < List.Count)
-				throw new ArgumentOutOfRangeException(nameof(array.Length), array.Length, null);
+				throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
 
 			for (int i = 0; i < List.Count; ++i)
 			{

@@ -209,12 +209,12 @@ namespace Lexxys
 
 		public static string SqlQueryTiming(long timeValue, string query)
 		{
-			return "SQL Timing: " + WatchTimer.ToString(timeValue) + "\n" + Strings.CutIndents(query.Split(Nls, StringSplitOptions.RemoveEmptyEntries), 4);
+			return "SQL Timing: " + WatchTimer.ToString(timeValue) + "\n" + Strings.CutIndents(query.Split(Nls, StringSplitOptions.RemoveEmptyEntries), 4, "\n");
 		}
 
 		public static string SqlGroupQueryTiming(long timeValue, long timeOffset, string query)
 		{
-			return WatchTimer.ToString(timeValue) + " (+" + WatchTimer.ToString(timeOffset) + ")\n" + Strings.CutIndents(query.Split(Nls, StringSplitOptions.RemoveEmptyEntries), 4);
+			return WatchTimer.ToString(timeValue) + " (+" + WatchTimer.ToString(timeOffset) + ")\n" + Strings.CutIndents(query.Split(Nls, StringSplitOptions.RemoveEmptyEntries), 4, "\n");
 		}
 		private static readonly char[] Nls = { '\r', '\n' };
 

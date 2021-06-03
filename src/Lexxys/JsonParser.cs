@@ -6,6 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Lexxys
 {
@@ -67,6 +68,16 @@ namespace Lexxys
 
 
 		public static JsonItem Parse(string text, string sourceName = null)
+		{
+			if (text == null)
+				throw new ArgumentNullException(nameof(text));
+
+			var converter = new JsonParser(new CharStream(text), sourceName);
+			converter.Scanner.Next();
+			return converter.ParseItem();
+		}
+
+		public static JsonItem Parse(TextReader text, string sourceName = null)
 		{
 			if (text == null)
 				throw new ArgumentNullException(nameof(text));

@@ -647,9 +647,9 @@ namespace Lexxys
 
 		private static ConfigurationLocator GetConfigurationLocator(Assembly asm)
 		{
-			if (asm == null || asm.IsDynamic || !asm.CodeBase.StartsWith("file:///"))
+			if (asm == null || asm.IsDynamic || !asm.Location.StartsWith("file:///"))
 				return null;
-			string path = asm.CodeBase.Substring(8).Replace('/', '\\');
+			string path = asm.Location.Substring(8).Replace('/', '\\');
 			int i = path.LastIndexOf('.');
 			if (i > 0 && path.LastIndexOf('\\') < i)
 				path = path.Substring(0, i);

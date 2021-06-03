@@ -56,13 +56,13 @@ namespace Lexxys
 			MaxCapacity = maxCapacity <= 0 ? DefaultMaxCapacity : maxCapacity;
 			MaxDepth = maxDepth <= 0 ? DefaultMaxDepth : Math.Min(maxDepth, MaxMaxDepth);
 			Left = MaxCapacity;
-			Observed = new Stack();
+			Observed = new List<object>();
 			StringLimit = stringLimit <= 0 ? DefaultStringLimit: stringLimit;
 			BlobLimit = blobLimit <= 0 ? DefaultBlobLimit: blobLimit;
 			ArrayLimit = arrayLimit <= 0 ? DefaultArrayLimit: arrayLimit;
 		}
 
-		private Stack Observed { get; }
+		private List<object> Observed { get; }
 		/// <summary>
 		/// Maximum capacity in characters of the dumping stream.
 		/// </summary>
@@ -71,6 +71,10 @@ namespace Lexxys
 		/// Maximum depth of dumping objects.
 		/// </summary>
 		public int MaxDepth { get; private set; }
+		/// <summary>
+		/// Current depth of dumping objects.
+		/// </summary>
+		public int Depth { get; private set; }
 		/// <summary>
 		/// Maximum length of string to dump
 		/// </summary>
@@ -154,7 +158,7 @@ namespace Lexxys
 
 		public static string ToString(object value, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0, bool pretty = false)
 		{
-			return Create(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit).DumpIt(value, skipToString: true).Pretty(pretty, "  ").ToString();
+			return Create(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit).Pretty(pretty, "  ").DumpIt(value, skipToString: true).ToString();
 		}
 
 		/// <summary>
@@ -450,10 +454,10 @@ namespace Lexxys
 				return Dump(y);
 
 			if (Observed.Contains(value))
-				return Text('^');
+				return Text($"^{Observed.IndexOf(value) + 1}");
 
-			int count = Observed.Count;
-			Observed.Push(value);
+			Observed.Add(value);
+			var depth = Depth++;
 			try
 			{
 				int i = 0;
@@ -472,8 +476,7 @@ namespace Lexxys
 			}
 			finally
 			{
-				while (Observed.Count > count)
-					Observed.Pop();
+				Depth = depth;
 			}
 		}
 
@@ -488,10 +491,10 @@ namespace Lexxys
 				return Text(NullValue);
 
 			if (Observed.Contains(value))
-				return Text('^');
+				return Text($"^{Observed.IndexOf(value) + 1}");
 
-			int count = Observed.Count;
-			Observed.Push(value);
+			Observed.Add(value);
+			var depth = Depth++;
 			try
 			{
 				int i = 0;
@@ -510,8 +513,7 @@ namespace Lexxys
 			}
 			finally
 			{
-				while (Observed.Count > count)
-					Observed.Pop();
+				Depth = depth;
 			}
 		}
 
@@ -526,9 +528,9 @@ namespace Lexxys
 				return Text(NullValue);
 
 			if (Observed.Contains(value))
-				return Text('^');
-			int count = Observed.Count;
-			Observed.Push(value);
+				return Text($"^{Observed.IndexOf(value) + 1}");
+			Observed.Add(value);
+			var depth = Depth++;
 			try
 			{
 				int i = 0;
@@ -550,8 +552,7 @@ namespace Lexxys
 			}
 			finally
 			{
-				while (Observed.Count > count)
-					Observed.Pop();
+				Depth = depth;
 			}
 		}
 
@@ -961,28 +962,27 @@ namespace Lexxys
 		{
 			if (value == null)
 				return Text(NullValue);
-			if (Observed.Contains(value))
-				return Text('^');
-			if (MaxDepth < 0)
+			var byref = value.GetType().IsClass;
+			if (byref && Observed.Contains(value))
+				return Text($"^{Observed.IndexOf(value) + 1}");
+			if (Depth > MaxDepth)
 				return Text("...");
-			int depth = MaxDepth--;
-			int count = Observed.Count;
-			Observed.Push(value);
+			if (byref)
+				Observed.Add(value);
+			int depth = Depth++;
 			try
 			{
 				return contentOnly ? value.DumpContent(this): value.Dump(this);
 			}
 			finally
 			{
-				while (Observed.Count > count)
-					Observed.Pop();
-				MaxDepth = depth;
+				Depth = depth;
 			}
 		}
 
 		private DumpWriter DumpIt(object value, bool skipIDump = false, bool contentOnly = false, bool skipToString = false)
 		{
-			if (MaxDepth < 0)
+			if (Depth > MaxDepth)
 				return Text("...");
 			if (value == null)
 				return Text(NullValue);
@@ -992,6 +992,8 @@ namespace Lexxys
 
 			if (value is IConvertible ic)
 			{
+				if (value is Enum)
+					return Text(value.ToString());
 				return ic.GetTypeCode() switch
 				{
 					TypeCode.DBNull or TypeCode.Empty => Text(NullValue),
@@ -1014,30 +1016,27 @@ namespace Lexxys
 				};
 			}
 
-			int count = Observed.Count;
-			int depth = MaxDepth--;
+			if (value is IEnumerable e)
+				return Dump(e);
+			if (value is IEnumerator r)
+				return Dump(r);
+			if (value is TimeSpan span)
+				return Dump(span);
+			if (value is DictionaryEntry entry)
+				return Dump(entry);
+
+			int depth = Depth++;
 
 			try
 			{
-				if (value is IEnumerable e)
-					return Dump(e);
-				if (value is IEnumerator r)
-					return Dump(r);
-				if (value is TimeSpan span)
-					return Dump(span);
-				if (value is DictionaryEntry entry)
-					return Dump(entry);
-
-				//var t = value as Type;
-				//if (t != null)
-				//	return Text("{Type:" + GetTypeName(t) + "}");
-
-				if (Observed.Contains(value))
-					return Text('^');
-
-				Observed.Push(value);
-
 				Type type = value.GetType();
+				if (type.IsClass)
+				{
+					if (Observed.Contains(value))
+						return Text($"^{Observed.IndexOf(value) + 1}");
+					Observed.Add(value);
+				}
+
 				char pad;
 				if (contentOnly)
 				{
@@ -1113,16 +1112,14 @@ namespace Lexxys
 			}
 			finally
 			{
-				while (Observed.Count > count)
-					Observed.Pop();
-				MaxDepth = depth;
+				Depth = depth;
 			}
 		}
 
 		public DumpWriter NewLine()
 		{
 			if (Format)
-				Text(Environment.NewLine + Repeat(Tab, Observed.Count));
+				Text(Environment.NewLine + Repeat(Tab, Depth));
 			return this;
 		}
 

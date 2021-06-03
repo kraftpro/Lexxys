@@ -13,7 +13,7 @@ namespace Lexxys
 	{
 		public Arguments(IEnumerable<string> args)
 		{
-			Args = new List<string>(args);
+			Args = new List<string>(args ?? Array.Empty<string>());
 		}
 
 		public List<string> Args { get; }
@@ -22,50 +22,31 @@ namespace Lexxys
 
 		public bool Exists(string argument, bool missingValue = false) => Value(argument, (p, d) => p.Length == 0 || p.AsBoolean(d), true, missingValue);
 
-		public bool? Option(string argument, bool? missingValue = null) => Value(argument, (p, d) => p.Length == 0 || p.AsBoolean(d) == true, true, missingValue);
+		public bool? Option(string argument, bool? missingValue = null) => Value(argument, (p, d) => p.Length == 0 || p.AsBoolean(false) == true, true, missingValue);
 
-		public string Value(string argument, string defaultValue) => Value(argument, (o, d) => o.TrimToNull() ?? d, defaultValue);
-		public string Value(string argument, string defaultValue, string missingValue) => Value(argument, (o, d) => o.TrimToNull() ?? d, defaultValue, missingValue);
-
-		public int? Value(string argument, int? defaultValue) => Value(argument, (o, d) => o.AsInt32(d), defaultValue);
-		public int? Value(string argument, int? defaultValue, int? missingValue) => Value(argument, (o, d) => o.AsInt32(d), defaultValue, missingValue);
-
-		public decimal? Value(string argument, decimal? defaultValue) => Value(argument, (o, d) => o.AsDecimal(d), defaultValue);
-		public decimal? Value(string argument, decimal? defaultValue, decimal? missingValue) => Value(argument, (o, d) => o.AsDecimal(d), defaultValue, missingValue);
-
-		public double? Value(string argument, double? defaultValue) => Value(argument, (o, d) => o.AsDouble(d), defaultValue);
-		public double? Value(string argument, double? defaultValue, double? missingValue) => Value(argument, (o, d) => o.AsDouble(d), defaultValue, missingValue);
-
-		public DateTime? Value(string argument, DateTime? defaultValue) => Value(argument, (o, d) => o.AsDateTime(d), defaultValue);
-		public DateTime? Value(string argument, DateTime? defaultValue, DateTime? missingValue) => Value(argument, (o, d) => o.AsDateTime(d), defaultValue, missingValue);
-
-		public TimeSpan? Value(string argument, TimeSpan? defaultValue) => Value(argument, (o, d) => o.AsTimeSpan(d), defaultValue);
-		public TimeSpan? Value(string argument, TimeSpan? defaultValue, TimeSpan? missingValue) => Value(argument, (o, d) => o.AsTimeSpan(d), defaultValue, missingValue);
-
-		public T Value<T>(string argument, T defaultValue) => Value(argument, (p, d) => p.AsValue(d), defaultValue);
+		public T Value<T>(string argument, T defaultValue = default) => Value(argument, (p, d) => p.AsValue(d), defaultValue);
 		public T Value<T>(string argument, T defaultValue, T missingValue) => Value(argument, (p, d) => p.AsValue(d), defaultValue, missingValue);
 
 		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue) => Value(argument, parser, defaultValue, defaultValue);
 		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue, T missingValue = default)
 		{
-			foreach (var item in Args)
+			for (int i = 0; i < Args.Count; ++i)
 			{
-				string arg = item;
-				if (arg != null && (arg = arg.Trim()).Length > 0 && (arg[0] == '/' || arg[0] == '-'))
+				string arg = Args[i];
+				if (arg == null || (arg = arg.Trim()).Length <= 1 || arg[0] != '/' && arg[0] != '-')
+					continue;
+				arg = arg.Substring(1).TrimStart();
+				string v = null;
+				int k = arg.IndexOfAny(Separators);
+				if (k >= 0 && arg.Length > 1)
 				{
-					arg = arg.Substring(1).TrimStart();
-					if (arg.Length == 0)
-						arg = "-";
-					int i = arg.IndexOfAny(Separators);
-					string v = null;
-					if (i >= 0)
-					{
-						v = arg.Substring(i + 1);
-						arg = i == 0 ? ":": arg.Substring(0, i);
-					}
-					if (Match(arg, argument))
-						return v == null ? defaultValue: parser(v, defaultValue);
+					v = arg.Substring(k + 1);
+					arg = arg.Substring(0, k);
+					if (v.Length == 0 && i < Args.Count - 1)
+						v = Args[++i];
 				}
+				if (Match(arg, argument))
+					return v == null ? defaultValue: parser(v, defaultValue);
 			}
 			return missingValue;
 		}
@@ -75,22 +56,28 @@ namespace Lexxys
 
 		class PositionalArguments: IEnumerable<string>
 		{
-			private readonly Arguments _args;
+			private readonly List<string> Args;
 
 			public PositionalArguments(Arguments args)
 			{
-				_args = args;
+				Args = args.Args;
 			}
 
 			public IEnumerator<string> GetEnumerator()
 			{
-				foreach (var item in _args.Args)
+				for (int i = 0; i < Args.Count; ++i)
 				{
+					string item = Args[i];
 					if (item == null)
 						continue;
-					string arg = item.TrimStart();
-					if (arg.Length > 0 && (arg[0] == '-' || arg[0] == '/'))
+					string arg = item.Trim();
+					if (arg.Length > 1 && (arg[0] == '-' || arg[0] == '/'))
+					{
+						int k = arg.IndexOfAny(Separators);
+						if (k > 0 && k == arg.Length - 1 && i < Args.Count - 1)
+							++i;
 						continue;
+					}
 					yield return item;
 				}
 			}
@@ -103,44 +90,23 @@ namespace Lexxys
 
 		public string First(string defaultValue = null)
 		{
-			foreach (var item in Args)
+			for (int i = 0; i < Args.Count; ++i)
 			{
+				string item = Args[i];
 				if (item == null)
 					continue;
-				string arg = item.TrimStart();
-				if (arg.Length > 0 && (arg[0] == '-' || arg[0] == '/'))
+				string arg = item.Trim();
+				if (arg.Length > 1 && (arg[0] == '-' || arg[0] == '/'))
+				{
+					int k = arg.IndexOfAny(Separators);
+					if (k == arg.Length - 1 && i < Args.Count - 1)
+						++i;
 					continue;
+				}
 				return item;
 			}
 			return defaultValue;
 		}
-
-		//public static string Parameter(string value, params string[] variants)
-		//{
-		//	if (value == null || (value = value.Trim()).Length == 0 || !(value[0] == '/' || value[0] == '-'))
-		//		return null;
-
-		//	value = value.Substring(1).TrimStart();
-		//	if (value.Length == 0)
-		//		value = "-";
-
-		//	return Select(value, variants);
-		//}
-
-		//public static string[] Parameter(string value, char separator, params string[] variants)
-		//{
-		//	if (value == null || (value = value.Trim()).Length == 0 || !(value[0] == '/' || value[0] == '-'))
-		//		return new string[2];
-
-		//	value = value.Substring(1).TrimStart();
-		//	if (value.Length == 0)
-		//		value = "-";
-
-		//	var result = Split(value, separator);
-		//	result[0] = Select(result[0], variants);
-		//	return result;
-		//}
-
 
 		public static string Select(string value, params string[] variants)
 		{

@@ -441,6 +441,112 @@ namespace Lexxys
 		}
 		private static readonly char[] __hex = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
+		public static void EscapeUtf8CsString(MemoryStream memory, ReadOnlySpan<char> value, char marker = '"')
+		{
+			if (memory == null)
+				throw new ArgumentNullException(nameof(memory));
+			if (value == null)
+				throw new ArgumentNullException(nameof(value));
+
+			if (marker != '\0')
+				if (marker < 128)
+					memory.WriteByte((byte)marker);
+				else
+					WriteChar(memory, marker);
+			foreach (char c in value)
+			{
+				if (c < 128)
+				{
+					if (c >= ' ' && c < 127)
+					{
+						if (c == marker)
+						{
+							memory.WriteByte((byte)'\\');
+							memory.WriteByte((byte)c);
+						}
+						else if (c == '\\')
+						{
+							memory.WriteByte((byte)'\\');
+							memory.WriteByte((byte)'\\');
+						}
+						else
+						{
+							memory.WriteByte((byte)c);
+						}
+					}
+					else
+					{
+						memory.WriteByte((byte)'\\');
+						switch (c)
+						{
+							case '\n':
+								memory.WriteByte((byte)'n');
+								break;
+							case '\r':
+								memory.WriteByte((byte)'r');
+								break;
+							case '\t':
+								memory.WriteByte((byte)'t');
+								break;
+							case '\f':
+								memory.WriteByte((byte)'f');
+								break;
+							case '\v':
+								memory.WriteByte((byte)'v');
+								break;
+							case '\a':
+								memory.WriteByte((byte)'b');
+								break;
+							case '\b':
+								memory.WriteByte((byte)'b');
+								break;
+							case '\0':
+								memory.WriteByte((byte)'0');
+								break;
+							default:
+								memory.WriteByte((byte)'0');
+								memory.WriteByte((byte)'0');
+								memory.WriteByte(__hexB[(c & 0xF0) >> 4]);
+								memory.WriteByte(__hexB[c & 0xF]);
+								break;
+						}
+					}
+				}
+				else if (c >= '\xd800')
+				{
+					memory.WriteByte((byte)'\\');
+					memory.WriteByte((byte)'x');
+					memory.WriteByte(__hexB[(c & 0xF000) >> 12]);
+					memory.WriteByte(__hexB[(c & 0xF00) >> 8]);
+					memory.WriteByte(__hexB[(c & 0xF0) >> 4]);
+					memory.WriteByte(__hexB[c & 0xF]);
+				}
+				else if (c == marker)
+				{
+					memory.WriteByte((byte)'\\');
+					WriteChar(memory, marker);
+				}
+				else
+				{
+					WriteChar(memory, c);
+				}
+			}
+			if (marker != '\0')
+				if (marker < 128)
+					memory.WriteByte((byte)marker);
+				else
+					WriteChar(memory, marker);
+
+			unsafe static void WriteChar(MemoryStream memory, char value)
+			{
+				var bytes = stackalloc byte[4];
+				var count = Encoding.UTF8.GetBytes(&value, 1, bytes, 4);
+				while (--count >= 0)
+						memory.WriteByte(*bytes++);
+			}
+		}
+		private static readonly byte[] __hexB = { (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f' };
+
 		public static string RemoveExtraBraces(string value)
 		{
 			if (value == null)
@@ -792,11 +898,11 @@ namespace Lexxys
 			if (source == null || source.Length == 0)
 				return "";
 			if (source.Length == 1)
-				return source[0].Trim();
+				return source[0]?.Trim() ?? "";
 			if (newLine == null)
 				newLine = Environment.NewLine;
 			var result = new StringBuilder(source.Length * 80);
-			if (source[source.Length - 1].Length == 0)
+			if ((source[source.Length - 1]?.Length ?? 0) == 0)
 			{
 				for (int i = 0; i < source.Length - 1; ++i)
 				{
@@ -807,14 +913,13 @@ namespace Lexxys
 
 			int indent = Int32.MaxValue; // source[source.Length - 1].Length;
 
-			for (int i = 0; i < source.Length - 1; ++i)
+			for (int i = 0; i < source.Length; ++i)
 			{
 				string s = source[i];
-				if (s.Length > 0)
+				if (!String.IsNullOrWhiteSpace(s))
 				{
 					int column = 0;
-					int j;
-					for (j = 0; j < s.Length; ++j)
+					for (int j = 0; j < s.Length; ++j)
 					{
 						if (s[j] == '\t')
 							column += tabSize - (column % tabSize);
@@ -845,15 +950,17 @@ namespace Lexxys
 
 			for (int i = 0; i < source.Length; ++i)
 			{
-				string s = source[i];
+				string s = source[i]?.TrimEnd() ?? "";
 				int column = 0;
 				int j;
-				for (j = 0; j < s.Length && column < indent; ++j)
+				for (j = 0; j < s.Length; ++j)
 				{
 					if (s[j] == '\t')
 						column += tabSize - (column % tabSize);
 					else if (s[j] == ' ')
 						++column;
+					else
+						break;
 				}
 				if (column > indent)
 					result.Append(' ', column - indent);

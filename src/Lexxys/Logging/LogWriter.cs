@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.IO;
 
 using Lexxys.Xml;
+#pragma warning disable CA1416 // Validate platform compatibility
 
 namespace Lexxys.Logging
 {
@@ -159,7 +160,7 @@ namespace Lexxys.Logging
 
 		protected static EventLogEntryType LogEntryType(LogType logType)
 		{
-			return logType switch
+			return !UseSystemEventLog ? 0: logType switch
 			{
 				LogType.Output or LogType.Error => EventLogEntryType.Error,
 				LogType.Warning => EventLogEntryType.Warning,

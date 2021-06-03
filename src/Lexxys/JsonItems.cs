@@ -403,13 +403,9 @@ namespace Lexxys
 
 			static unsafe void ToBase64(byte[] data, Stream stream)
 			{
-				const int BufferSize = 128 * 4;
-#if NETSTANDARD
-				var staticBuffer = stackalloc byte[BufferSize];
-				var buffer = new Span<byte>(staticBuffer, BufferSize);
-#else
-				var buffer = new byte[BufferSize].AsSpan();
-#endif
+				const int BufferSize = 4096;
+				var base64 = new byte[BufferSize];
+				var buffer = base64.AsSpan();
 				int left = data.Length;
 				var bytes = data.AsSpan();
 				while (left > 0)
@@ -417,6 +413,7 @@ namespace Lexxys
 					Base64.EncodeToUtf8(bytes, buffer, out var count, out var writen);
 					left -= count;
 					bytes = bytes.Slice(count);
+					stream.Write(base64, 0, writen);
 				}
 			}
 		}

@@ -24,23 +24,93 @@ namespace Lexxys.Data
 		TimeSpan TotalTime { get; }
 		TimeSpan TransactTime { get; }
 
-		event Action Cancelled;
+		/// <summary>
+		/// Action to be executed when the database transaction is canceled.
+		/// </summary>
+		event Action Canceled;
+		/// <summary>
+		/// Action to be executed when the database transaction is committed.
+		/// </summary>
 		event Action Committed;
 
+		/// <summary>
+		/// Resets database statistics.
+		/// </summary>
 		void ResetStatistics();
+		/// <summary>
+		/// Sets timeout value for the next SQL command.
+		/// </summary>
+		/// <param name="timeout"></param>
 		void SetQueryTimeout(TimeSpan timeout);
+		/// <summary>
+		/// Sets timeout value for all SQL commands in the disposable region.
+		/// </summary>
+		/// <param name="timeout"></param>
+		/// <param name="always"></param>
+		/// <returns></returns>
 		IDisposable CommadTimeout(TimeSpan timeout, bool always = false);
+		/// <summary>
+		/// Stops timing calculation inside the disposable region.
+		/// </summary>
+		/// <returns></returns>
 		IDisposable NoTiming();
+		/// <summary>
+		/// Sets Dc.Now to be returning the same value inside the disposable region.
+		/// </summary>
+		/// <returns></returns>
 		IDisposable HoldTheMoment();
+		/// <summary>
+		/// Connects to the database and keeps the connection open inside the disposable region.
+		/// </summary>
+		/// <returns></returns>
 		IDisposable Connection();
+		/// <summary>
+		/// Opens a transaction context and optionally commits or rollbacks the transaction when the region has disposed of.
+		/// </summary>
+		/// <param name="autoCommit">Indicates that transaction should be committed when disposing</param>
+		/// <param name="isolation">Desired transaction isolation level</param>
+		/// <returns></returns>
 		ITransactable Transaction(bool autoCommit = false, IsolationLevel isolation = 0);
+		/// <summary>
+		/// Decreases the number of active transactions and commits the database transaction when the number of transactions becomes zero.
+		/// </summary>
 		void Commit();
+		/// <summary>
+		/// Rollbacks the database transaction.
+		/// </summary>
 		void Rollback();
-		T SetCommitAction<T>(Func<T> factory) where T : ICommitAction;
+		/// <summary>
+		/// Sets operation to be committed or rolled back along with the database transaction.
+		/// </summary>
+		/// <param name="key">Unique name of the operation.</param>
+		/// <param name="factory">Function to produce the operation.</param>
+		/// <returns></returns>
 		ICommitAction SetCommitAction(object key, Func<ICommitAction> factory);
+		/// <summary>
+		/// Executes database command command.
+		/// </summary>
+		/// <param name="command">The database comment to be executed.</param>
+		/// <returns>Number of records affected</returns>
 		int Execute(DbCommand command);
+		/// <summary>
+		/// Executes SQL statement.
+		/// </summary>
+		/// <param name="statement">SQL statement to be executed.</param>
+		/// <param name="parameters">Database parameters</param>
+		/// <returns>Number of records affected</returns>
 		int Execute(string statement, params DbParameter[] parameters);
+		/// <summary>
+		/// Executes database command command.
+		/// </summary>
+		/// <param name="command">The database comment to be executed.</param>
+		/// <returns>Number of records affected</returns>
 		Task<int> ExecuteAsync(DbCommand command);
+		/// <summary>
+		/// Executes SQL statement.
+		/// </summary>
+		/// <param name="statement">SQL statement to be executed.</param>
+		/// <param name="parameters">Database parameters</param>
+		/// <returns>Number of records affected</returns>
 		Task<int> ExecuteAsync(string statement, params DbParameter[] parameters);
 		List<T> GetList<T>(string query, params DbParameter[] parameters);
 		Task<List<T>> GetListAsync<T>(string query, params DbParameter[] parameters);
@@ -59,6 +129,24 @@ namespace Lexxys.Data
 
 	public static class DataContextExtensions
 	{
+		/// <summary>
+		/// Sets operation to be committed or rolled back along with the database transaction.
+		/// </summary>
+		/// <typeparam name="T">Unique type of the operation.</typeparam>
+		/// <param name="context">IDataContext</param>
+		/// <param name="factory">Function to produce the operation.</param>
+		/// <returns></returns>
+		public static T SetCommitAction<T>(this IDataContext context, Func<T> factory) where T: ICommitAction
+		{
+			if (context == null)
+				throw new ArgumentNullException(nameof(context));
+			if (factory == null)
+				throw new ArgumentNullException(nameof(factory));
+
+			var value = context.SetCommitAction(typeof(T), () => factory());
+			return value is T t ? t: throw new InvalidOperationException();
+		}
+
 		public static T GetValueOrDefault<T>(this IDataContext context, T @default, string query, params DbParameter[] parameters) where T : class
 		{
 			return context.GetValue<T>(query, parameters) ?? @default;

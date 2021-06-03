@@ -939,4 +939,80 @@ namespace Lexxys
 			_writer.Flush();
 		}
 	}
+
+	/// <summary>
+	/// Represents <see cref="JsonBuilder"/> that uses <see cref="MemoryStream"/> to write a JSON UTF8 stream.
+	/// </summary>
+	public class JsonUtf8Builder: JsonBuilder
+	{
+		private static new readonly byte[] NullValue = { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
+		private readonly MemoryStream _buffer;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="JsonUtf8Builder"/> class.
+		/// </summary>
+		public JsonUtf8Builder() : this(null)
+		{
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="JsonUtf8Builder"/> class.
+		/// </summary>
+		public JsonUtf8Builder(MemoryStream buffer)
+		{
+			_buffer = buffer ?? new MemoryStream();
+		}
+
+		/// <inheritdoc />
+		protected override void Text(string value)
+		{
+			if (String.IsNullOrEmpty(value))
+				return;
+			var bytes = Encoding.UTF8.GetBytes(value);
+			_buffer.Write(bytes, 0, bytes.Length);
+		}
+
+		/// <inheritdoc />
+		protected unsafe override void Text(char value)
+		{
+			if (value < 128)
+			{
+				_buffer.WriteByte((byte)value);
+				return;
+			}
+			var bytes = stackalloc byte[4];
+			var count = Encoding.UTF8.GetBytes(&value, 1, bytes, 4);
+			while (--count >= 0)
+				_buffer.WriteByte(*bytes++);
+		}
+
+		/// <inheritdoc />
+		protected override void Value(string value)
+		{
+			if (value == null)
+				_buffer.Write(NullValue);
+			else
+				Strings.EscapeUtf8CsString(_buffer, value.AsSpan());
+		}
+
+		/// <summary>
+		/// Returns internal <see cref="MemoryStream"/> buffer of the <see cref="JsonUtf8Builder"/>.
+		/// </summary>
+		/// <param name="json"></param>
+		/// <returns></returns>
+		public static explicit operator MemoryStream(JsonUtf8Builder json)
+		{
+			return json._buffer;
+		}
+
+		/// <summary>
+		/// Creates a new <see cref="JsonUtf8Builder"/> from <see cref="MemoryStream"/>.
+		/// </summary>
+		/// <param name="text"></param>
+		/// <returns></returns>
+		public static implicit operator JsonUtf8Builder(MemoryStream text)
+		{
+			return new JsonUtf8Builder(text);
+		}
+	}
 }

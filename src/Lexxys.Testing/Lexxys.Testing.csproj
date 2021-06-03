@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1;net48</TargetFrameworks>
+    <TargetFrameworks>net5;net48</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- version format: major.minor.revision[-beta+MMDD.i] -->
-    <VersionPrefix>1.2.17</VersionPrefix>
+    <VersionPrefix>1.2.18</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <!--Build>0$([System.DateTime]::Today.ToString("MMdd"))</Build-->
     <Build>0</Build>
