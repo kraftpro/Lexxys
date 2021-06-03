@@ -10,19 +10,6 @@ using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if !NETCORE
-[assembly: AssemblyTitle("Lexxys.dll")]
-[assembly: AssemblyDescription("Common Infrastructure Library")]
-[assembly: AssemblyConfiguration("")]
-
-[assembly: AssemblyCopyright("Copyright © 2001-2016.")]
-
-[assembly: AssemblyVersion("2.5.3.04261")] // format: major.minor.revision.MMDDi
-
-[assembly: Guid("00000009-9fc2-4682-aece-e76885fd83f3")]
-[assembly: ComVisible(false)]
-#endif
-
 #if DEBUG
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented")]
 #endif

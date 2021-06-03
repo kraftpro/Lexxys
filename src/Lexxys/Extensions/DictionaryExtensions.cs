@@ -18,7 +18,7 @@ namespace Lexxys
 		{
 			return that.TryGetValue(key, out var value) ? value : default;
 		}
-#if !NETSTANDARD
+#if NETFRAMEWORK
 		public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> that, TKey key)
 		{
 			return that.TryGetValue(key, out var value) ? value : default;
@@ -32,7 +32,7 @@ namespace Lexxys
 		{
 			return that.TryGetValue(key, out TValue value) ? value : @default;
 		}
-#if !NETSTANDARD
+#if NETFRAMEWORK
 		public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> that, TKey key, TValue @default)
 		{
 			return that.TryGetValue(key, out TValue value) ? value : @default;

@@ -568,7 +568,7 @@ namespace Lexxys
 					{
 						_initializing = true;
 						AddSystem(new ConfigurationLocator("System.Environment"), new EnvironmentConfigurationProvider());
-#if !NETSTANDARD
+#if NETFRAMEWORK
 						AddSystem(new ConfigurationLocator("System.Configuration"), new SystemConfigurationProvider());
 #endif
 
@@ -598,7 +598,7 @@ namespace Lexxys
 		private static IList<string> GetConfigurationDerectories()
 		{
 			var configurationDirectory = new List<string> { Lxx.HomeDirectory };
-#if !NETSTANDARD
+#if NETFRAMEWORK
 			string[] directories = ConfigurationManager.AppSettings.GetValues(ConfigurationDerectoryKey);
 			if (directories != null)
 			{
@@ -622,7 +622,7 @@ namespace Lexxys
 		private static IEnumerable<ConfigurationLocator> GetInitialConfigurationsLocations()
 		{
 			var cc = new OrderedSet<ConfigurationLocator>();
-#if !NETSTANDARD
+#if NETFRAMEWORK
 			string[] ss = ConfigurationManager.AppSettings.GetValues(InitialLocationKey);
 			if (ss != null)
 			{

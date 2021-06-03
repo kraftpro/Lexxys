@@ -27,7 +27,7 @@ namespace Lexxys
 
 		public static readonly object Void = new object();
 		public static readonly object[] NoArgs = Array.Empty<object>();
-#if !NETSTANDARD && DEBUG
+#if NETFRAMEWORK && DEBUG
 		public static readonly DebugInfoGenerator DebugInfo = DebugInfoGenerator.CreatePdbGenerator();
 #endif
 
@@ -659,7 +659,7 @@ namespace Lexxys
 					else
 						return null;
 				return Expression.Lambda<Func<object>>(Expression.TypeAs(Expression.Default(type), typeof(object)))
-#if !NETSTANDARD && DEBUG
+#if NETFRAMEWORK && DEBUG
 					.Compile(DebugInfo);
 #else
 					.Compile();
@@ -674,7 +674,7 @@ namespace Lexxys
 				else
 					return null;
 			return Expression.Lambda<Func<object>>(Expression.New(ci))
-#if !NETSTANDARD && DEBUG
+#if NETFRAMEWORK && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();
@@ -819,7 +819,7 @@ namespace Lexxys
 			return Expression.Lambda<Func<object[], object>>(
 				ConvertParameter(Expression.ArrayAccess(args, Expression.Constant(0)), parameterType),
 				args)
-#if !NETSTANDARD && DEBUG
+#if NETFRAMEWORK && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();
@@ -837,7 +837,7 @@ namespace Lexxys
 				call = Expression.TypeAs(call, typeof(object));
 
 			return Expression.Lambda<Func<object[], object>>(call, args)
-#if !NETSTANDARD && DEBUG
+#if NETFRAMEWORK && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();
@@ -1346,7 +1346,7 @@ namespace Lexxys
 				call = Expression.Block(call, Expression.Constant(null));
 
 			return Expression.Lambda<Func<object, object[], object>>(call, arg1, args)
-#if !NETSTANDARD && DEBUG
+#if NETFRAMEWORK && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();
@@ -1367,7 +1367,7 @@ namespace Lexxys
 				call = Expression.TypeAs(call, typeof(object));
 
 			return Expression.Lambda<Func<object, object[], object>>(call, instance, args)
-#if !NETSTANDARD && DEBUG
+#if NETFRAMEWORK && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();

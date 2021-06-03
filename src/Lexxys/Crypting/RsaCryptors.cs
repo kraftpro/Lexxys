@@ -22,7 +22,7 @@ namespace Lexxys.Crypting.Cryptors
 			if (key == null)
 				throw EX.ArgumentNull(nameof(key));
 			_h = new RSACryptoServiceProvider();
-#if !NETSTANDARD
+#if NETFRAMEWORK
 			if (key is string s)
 				_h.FromXmlString(s);
 			else

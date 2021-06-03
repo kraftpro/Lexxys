@@ -9,14 +9,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
-#if !NETSTANDARD
+#if NETFRAMEWORK
 using System.Security.Permissions;
 #endif
 using System.Threading;
 
 namespace Lexxys
 {
-#if !NETSTANDARD
+#if NETFRAMEWORK
 	[SecurityPermission(SecurityAction.LinkDemand, Flags=SecurityPermissionFlag.UnmanagedCode)]
 #endif
 	public sealed class FileWatcher: IDisposable
@@ -51,7 +51,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="fileName">Path to file to monitor</param>
 		/// <param name="watcher">Method that will hadle event of changing file</param>
-#if !NETSTANDARD
+#if NETFRAMEWORK
 		[SecurityPermission(SecurityAction.LinkDemand, Flags=SecurityPermissionFlag.UnmanagedCode)]
 #endif
 		public static void AddFileWatcher(string fileName, FileSystemEventHandler watcher)

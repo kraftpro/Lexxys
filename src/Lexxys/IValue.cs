@@ -16,14 +16,14 @@ namespace Lexxys
 		object Value { get; }
 	}
 
-#if NETSTANDARD
-	public interface IOptions<out T>: Microsoft.Extensions.Options.IOptions<T> where T: class, new()
-	{
-	}
-#else
-	public interface IOptions<out T> where T: class, new()
+#if NETFRAMEWORK
+	public interface IOptions<out T> where T : class, new()
 	{
 		T Value { get; }
+	}
+#else
+	public interface IOptions<out T>: Microsoft.Extensions.Options.IOptions<T> where T: class, new()
+	{
 	}
 #endif
 }
