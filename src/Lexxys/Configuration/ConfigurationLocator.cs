@@ -73,6 +73,7 @@ namespace Lexxys.Configuration
 			{
 				case "file":
 					SchemaType = ConfigLocatorSchema.File;
+					Path = Path?.Replace(System.IO.Path.AltDirectorySeparatorChar, System.IO.Path.DirectorySeparatorChar).TrimEnd(System.IO.Path.DirectorySeparatorChar);
 					break;
 
 				case "http":
@@ -165,7 +166,7 @@ namespace Lexxys.Configuration
 		public string Text { get; }
 		public bool IsLocated { get; }
 
-		public string DirectoryName => !IsLocated ? null: Path.Substring(0, Path.LastIndexOf('\\'));
+		public string DirectoryName => !IsLocated ? null: System.IO.Path.GetDirectoryName(Path);
 		public bool IsValid => SchemaType != ConfigLocatorSchema.Undefined || Host.Length > 0 || Path.Length > 0;
 
 		//public string Value
@@ -289,9 +290,9 @@ namespace Lexxys.Configuration
 				}
 			}
 
-			if (filePath[0] == '/' || filePath[0] == '\\')
+			if (filePath[0] == System.IO.Path.DirectorySeparatorChar || filePath[0] == System.IO.Path.AltDirectorySeparatorChar)
 				directory = null;
-			else if (filePath.Length > 1 && char.IsLetter(filePath, 0) && filePath[1] == ':')
+			else if (ContainsVolume(filePath))
 				directory = null;
 
 			if (directory == null)
@@ -312,18 +313,26 @@ namespace Lexxys.Configuration
 				.Where(File.Exists)
 				.Select(file => new FileInfo(file))
 				.FirstOrDefault();
+
+			static bool ContainsVolume(string path)
+			{
+				if (System.IO.Path.DirectorySeparatorChar == System.IO.Path.VolumeSeparatorChar)
+					return false;
+				var i = path.IndexOf(System.IO.Path.VolumeSeparatorChar);
+				return i > 0 && path.Substring(0, i).All(c => Char.IsLetter(c));
+			}
 		}
 
 		private static string GetExtension(string fileName)
 		{
 			if (fileName == null)
 				return "";
-			int i = fileName.LastIndexOf('.');
-			return i >= 0 && fileName.LastIndexOf('\\') < i && fileName.LastIndexOf('/') < i ? fileName.Substring(i + 1): "";
+			var ext = System.IO.Path.GetExtension(fileName);
+			return ext.Length > 0 ? ext.Substring(1) : ext;
 		}
 
 		private static readonly Regex __crlRex = new Regex(@"\A\s*" +
-			@"((?<schema>file|https?|ftps?|database|enums|database-?enums|string):/?/?)?" +
+			@"((?<schema>file|https?|ftps?|database|enums|database-?enums|string):/?/?/?)?" +
 			@"(\[(?<type>[a-zA-Z]*)\])?" +
 			@"(?<res>" +
 				@"(?<host>[^/\r\n\?\\]*)" +

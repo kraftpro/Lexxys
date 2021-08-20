@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace Lexxys
 {
+	/// <summary>
+	/// Provides helper to create an instance of the <see cref="SynchronizedCollection{T}"/>.
+	/// </summary>
 	public static class SynchronizedCollection
 	{
 		/// <summary>

@@ -182,18 +182,17 @@ namespace Lexxys.Data
 				throw new ArgumentNullException(nameof(query));
 
 			long t = 0;
+			bool connected = false;
 			try
 			{
-				using (Connection())
-				{
-					using DbCommand cmd = _context.Command(query);
-					if (parameters != null && parameters.Length > 0)
-						cmd.Parameters.AddRange(parameters);
-					t = DataContextImplementation.TimingBegin();
-					var result = await mapper(cmd).ConfigureAwait(false);
-					_context.TimingEnd(query, t);
-					return result;
-				}
+				await _context.ConnectAsync();
+				connected = true;
+				using DbCommand cmd = _context.Command(query);
+				if (parameters != null && parameters.Length > 0)
+					cmd.Parameters.AddRange(parameters);
+				t = DataContextImplementation.TimingBegin();
+				var result = await mapper(cmd).ConfigureAwait(false);
+				return result;
 			}
 			catch (Exception flaw)
 			{
@@ -210,8 +209,14 @@ namespace Lexxys.Data
 				flaw.Add(t);
 				throw;
 			}
+			finally
+			{
+				if (t != 0)
+					_context.TimingEnd(query, t);
+				if (connected)
+					_context.Disconnect();
+			}
 		}
-
 
 		public int Execute(DbCommand command)
 		{
@@ -245,23 +250,29 @@ namespace Lexxys.Data
 				throw new ArgumentNullException(nameof(command));
 
 			long t = 0;
+			bool connected = false;
 			try
 			{
-				using (Connection())
-				{
-					command.Connection = _context.Connection;
-					command.Transaction = _context.Transaction;
-					t = DataContextImplementation.TimingBegin();
-					var result = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
-					_context.TimingEnd(command.CommandText, t);
-					return result;
-				}
+				await _context.ConnectAsync();
+				connected = true;
+				command.Connection = _context.Connection;
+				command.Transaction = _context.Transaction;
+				t = DataContextImplementation.TimingBegin();
+				var result = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+				return result;
 			}
 			catch (Exception flaw)
 			{
 				flaw.Add(nameof(command), command)
 					.Add(t);
 				throw;
+			}
+			finally
+			{
+				if (t != 0)
+					_context.TimingEnd(command.CommandText, t);
+				if (connected)
+					_context.Disconnect();
 			}
 		}
 
@@ -306,18 +317,18 @@ namespace Lexxys.Data
 				throw new ArgumentNullException(nameof(statement));
 
 			long t = 0;
+			bool connected = false;
 			try
 			{
-				using (Connection())
-				{
-					using DbCommand cmd = _context.Command(statement);
-					if (parameters != null && parameters.Length > 0)
-						cmd.Parameters.AddRange(parameters);
-					t = DataContextImplementation.TimingBegin();
-					int result = await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-					_context.TimingEnd(statement, t);
-					return result;
-				}
+				await _context.ConnectAsync();
+				connected = true;
+				using DbCommand cmd = _context.Command(statement);
+				if (parameters != null && parameters.Length > 0)
+					cmd.Parameters.AddRange(parameters);
+				t = DataContextImplementation.TimingBegin();
+				int result = await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+				_context.TimingEnd(statement, t);
+				return result;
 			}
 			catch (Exception flaw)
 			{
@@ -332,6 +343,13 @@ namespace Lexxys.Data
 					}
 				}
 				throw;
+			}
+			finally
+			{
+				if (t != 0)
+					_context.TimingEnd(statement, t);
+				if (connected)
+					_context.Disconnect();
 			}
 		}
 

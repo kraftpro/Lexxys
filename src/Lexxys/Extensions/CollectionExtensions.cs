@@ -173,28 +173,28 @@ namespace Lexxys
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
-			return value is IList<T> list ? list : value.ToList();
+			return value as IList<T> ?? value.ToList();
 		}
 
 		public static IReadOnlyList<T> ToIReadOnlyList<T>(this IEnumerable<T> value)
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
-			return value is IReadOnlyList<T> list ? list : value.ToList();
+			return value as IReadOnlyList<T> ?? value.ToList();
 		}
 
 		public static ICollection<T> ToICollection<T>(this IEnumerable<T> value)
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
-			return value is ICollection<T> list ? list : value.ToList();
+			return value as ICollection<T> ?? value.ToList();
 		}
 
 		public static IReadOnlyCollection<T> ToIReadOnlyCollection<T>(this IEnumerable<T> value)
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
-			return value is IReadOnlyCollection<T> list ? list : value.ToList();
+			return value as IReadOnlyCollection<T> ?? value.ToList();
 		}
 
 		public static IReadOnlyList<TOut> ConvertAll<TIn, TOut>(this IReadOnlyList<TIn> value, Func<TIn, TOut> convert)

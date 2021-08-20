@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -17,7 +18,6 @@ using System.Threading;
 namespace Lexxys
 {
 	using Configuration;
-	using Lexxys;
 	using Logging;
 
 	public class ConfigurationEventArgs: EventArgs
@@ -372,7 +372,7 @@ namespace Lexxys
 		private static void ScanConfigurationFile(IConfigurationProvider provider, ConfigurationLocator location, int position)
 		{
 			if (provider.GetValue("applicationDirectory", typeof(string)) is string home)
-				Lxx.HomeDirectory = home.Trim().TrimEnd('\\').TrimToNull();
+				Lxx.HomeDirectory = home.Trim().TrimEnd(Path.DirectorySeparatorChar).TrimToNull();
 
 			List<string> ss = provider.GetList<string>("include");
 			if (ss != null)
@@ -606,7 +606,7 @@ namespace Lexxys
 				{
 					foreach (var item in entry.Split(__separators, StringSplitOptions.RemoveEmptyEntries))
 					{
-						string value = item.Trim().TrimEnd('\\');
+						string value = item.Trim().TrimEnd(Path.DirectorySeparatorChar);
 						if (value.Length > 0 && configurationDirectory.FindIndex(o => String.Equals(o, value, StringComparison.OrdinalIgnoreCase)) < 0)
 							configurationDirectory.Add(value);
 					}
@@ -636,10 +636,10 @@ namespace Lexxys
 #endif
 			cc.AddRange(Factory.DomainAssemblies.Select(GetConfigurationLocator).Where(o => o != null));
 
-			var locator = new ConfigurationLocator(Lxx.HomeDirectory + "\\" + Lxx.AnonymousConfigurationFile);
+			var locator = new ConfigurationLocator(Lxx.HomeDirectory + Environment.NewLine  + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile);
 			if (locator.IsValid)
 				cc.Add(locator);
-			locator = new ConfigurationLocator(Lxx.GlobalConfigurationDirectory + "\\" + Lxx.GlobalConfigurationFile);
+			locator = new ConfigurationLocator(Lxx.GlobalConfigurationDirectory + Path.DirectorySeparatorChar + Lxx.GlobalConfigurationFile);
 			if (locator.IsValid)
 				cc.Add(locator);
 			return cc;
@@ -647,13 +647,9 @@ namespace Lexxys
 
 		private static ConfigurationLocator GetConfigurationLocator(Assembly asm)
 		{
-			if (asm == null || asm.IsDynamic || !asm.Location.StartsWith("file:///"))
+			if (asm == null || asm.IsDynamic || String.IsNullOrEmpty(asm.Location))
 				return null;
-			string path = asm.Location.Substring(8).Replace('/', '\\');
-			int i = path.LastIndexOf('.');
-			if (i > 0 && path.LastIndexOf('\\') < i)
-				path = path.Substring(0, i);
-			var locator = new ConfigurationLocator(path);
+			var locator = new ConfigurationLocator(Path.ChangeExtension(asm.Location, null));
 			return locator.IsValid ? locator: null;
 		}
 	}

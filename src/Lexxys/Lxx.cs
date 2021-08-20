@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Configuration;
+using System.IO;
 
 namespace Lexxys
 {
@@ -144,12 +145,12 @@ namespace Lexxys
 			get
 			{
 				if (_appDirectory == null)
-					Interlocked.CompareExchange(ref _appDirectory, AppDomain.CurrentDomain.RelativeSearchPath ?? AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\'), null);
+					Interlocked.CompareExchange(ref _appDirectory, AppDomain.CurrentDomain.RelativeSearchPath ?? AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar), null);
 				return _appDirectory;
 			}
 			set
 			{
-				Interlocked.Exchange(ref _appDirectory, value?.TrimEnd('\\'));
+				Interlocked.Exchange(ref _appDirectory, value?.TrimEnd(Path.DirectorySeparatorChar));
 			}
 		}
 

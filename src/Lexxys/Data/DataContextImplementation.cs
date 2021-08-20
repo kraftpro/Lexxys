@@ -13,6 +13,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Lexxys.Data
 {
@@ -193,6 +194,33 @@ namespace Lexxys.Data
 				Debug.Assert(_connection.State == ConnectionState.Closed);
 
 				_connection.Open();
+				_connectionsCount = 1;
+				if (_timeSyncStamp + SyncInterval < DateTime.Now)
+					SyncTime();
+
+				var threshold = WatchTimer.Query(time);
+				if (threshold > _connectionInfo.ConnectionAuditThreshold.Ticks)
+					Dc.Log.Info(SR.ConnectionTiming(threshold));
+			}
+
+			_connectTime += WatchTimer.Stop(time);
+			return _connectionsCount;
+		}
+
+		public async Task<int> ConnectAsync()
+		{
+			var time = WatchTimer.Start();
+			if (_connectionsCount > 0)
+			{
+				Debug.Assert(_connection.State != ConnectionState.Closed);
+
+				++_connectionsCount;
+			}
+			else
+			{
+				Debug.Assert(_connection.State == ConnectionState.Closed);
+
+				await _connection.OpenAsync();
 				_connectionsCount = 1;
 				if (_timeSyncStamp + SyncInterval < DateTime.Now)
 					SyncTime();

@@ -41,15 +41,9 @@ namespace Lexxys
 		}
 
 
-		public ICollection<TKey> Keys
-		{
-			get { return new KeyCollection(this); }
-		}
+		public ICollection<TKey> Keys => new KeyCollection(this);
 
-		public ICollection<TValue> Values
-		{
-			get { return new ValueCollection(this); }
-		}
+		public ICollection<TValue> Values => new ValueCollection(this);
 
 		public TValue this[TKey key]
 		{
@@ -70,31 +64,14 @@ namespace Lexxys
 			}
 		}
 
-		public KeyValuePair<TKey, TValue> GetAt(int index)
-		{
-			return List[index];
-		}
+		public KeyValuePair<TKey, TValue> GetAt(int index) => List[index];
 
-		public void SetAt(int index, KeyValuePair<TKey, TValue> value)
-		{
-			List[index] = value;
-		}
+		public void SetAt(int index, KeyValuePair<TKey, TValue> value) => List[index] = value;
 
-		public void SetAt(int index, TKey key, TValue value)
-		{
-			List[index] = new KeyValuePair<TKey,TValue>(key, value);
-		}
+		public void SetAt(int index, TKey key, TValue value) => List[index] = new KeyValuePair<TKey, TValue>(key, value);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private int IndexOf(TKey key)
-		{
-			for (int i = 0; i < List.Count; ++i)
-			{
-				if (Comparer.Equals(List[i].Key, key))
-					return i;
-			}
-			return -1;
-		}
+		private int IndexOf(TKey key) => List.FindIndex(p => Comparer.Equals(p.Key, key));
 
 		public void Add(TKey key, TValue value)
 		{
@@ -104,10 +81,7 @@ namespace Lexxys
 			List.Add(new KeyValuePair<TKey, TValue>(key, value));
 		}
 
-		public bool ContainsKey(TKey key)
-		{
-			return IndexOf(key) >= 0;
-		}
+		public bool ContainsKey(TKey key) => IndexOf(key) >= 0;
 
 		public bool Remove(TKey key)
 		{
@@ -136,50 +110,25 @@ namespace Lexxys
 			return i < 0 ? defaultValue: List[i].Value;
 		}
 
-		public void Add(KeyValuePair<TKey, TValue> item)
-		{
-			List.Add(item);
-		}
+		public void Add(KeyValuePair<TKey, TValue> item) => List.Add(item);
 
-		public void Clear()
-		{
-			List.Clear();
-		}
+		public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection) => List.AddRange(collection);
 
-		public bool Contains(KeyValuePair<TKey, TValue> item)
-		{
-			return IndexOf(item.Key) >= 0;
-		}
+		public void Clear() => List.Clear();
 
-		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
-		{
-			List.CopyTo(array, arrayIndex);
-		}
+		public bool Contains(KeyValuePair<TKey, TValue> item) => IndexOf(item.Key) >= 0;
 
-		public int Count
-		{
-			get { return List.Count; }
-		}
+		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => List.CopyTo(array, arrayIndex);
 
-		public bool IsFixedSize
-		{
-			get { return false; }
-		}
+		public int Count => List.Count;
 
-		public bool IsReadOnly
-		{
-			get { return false; }
-		}
+		public bool IsFixedSize => false;
 
-		public bool IsSynchronized
-		{
-			get { return false; }
-		}
+		public bool IsReadOnly => false;
 
-		public object SyncRoot
-		{
-			get { return this; }
-		}
+		public bool IsSynchronized => false;
+
+		public object SyncRoot => this;
 
 		public bool Remove(KeyValuePair<TKey, TValue> item)
 		{
@@ -190,20 +139,11 @@ namespace Lexxys
 			return true;
 		}
 
-		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-		{
-			return List.GetEnumerator();
-		}
+		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => List.GetEnumerator();
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return List.GetEnumerator();
-		}
+		IEnumerator IEnumerable.GetEnumerator() => List.GetEnumerator();
 
-		public int IndexOf(KeyValuePair<TKey, TValue> item)
-		{
-			return List.IndexOf(item);
-		}
+		public int IndexOf(KeyValuePair<TKey, TValue> item) => List.IndexOf(item);
 
 		public void Insert(int index, KeyValuePair<TKey, TValue> item)
 		{
@@ -212,16 +152,9 @@ namespace Lexxys
 			List.Insert(index, item);
 		}
 
-		public void RemoveAt(int index)
-		{
-			List.RemoveAt(index);
-		}
+		public void RemoveAt(int index) => List.RemoveAt(index);
 
-		KeyValuePair<TKey, TValue> IList<KeyValuePair<TKey, TValue>>.this[int index]
-		{
-			get { return List[index]; }
-			set { List[index] = value; }
-		}
+		KeyValuePair<TKey, TValue> IList<KeyValuePair<TKey, TValue>>.this[int index] { get => List[index]; set => List[index] = value; }
 
 		#region Internal classes
 
@@ -229,30 +162,15 @@ namespace Lexxys
 		{
 			protected OrderedDictionary<TKey, TValue> Dictionary;
 
-			public KeyCollection(OrderedDictionary<TKey, TValue> dictionary)
-			{
-				Dictionary = dictionary;
-			}
+			public KeyCollection(OrderedDictionary<TKey, TValue> dictionary) => Dictionary = dictionary;
 
-			public void Add(TKey item)
-			{
-				throw new NotImplementedException();
-			}
+			public void Add(TKey item) => throw new NotImplementedException();
 
-			public bool Remove(TKey item)
-			{
-				throw new NotImplementedException();
-			}
+			public bool Remove(TKey item) => throw new NotImplementedException();
 
-			public void Clear()
-			{
-				throw new NotImplementedException();
-			}
+			public void Clear() => throw new NotImplementedException();
 
-			public bool Contains(TKey item)
-			{
-				return Dictionary.IndexOf(item) >= 0;
-			}
+			public bool Contains(TKey item) => Dictionary.IndexOf(item) >= 0;
 
 			public void CopyTo(TKey[] array, int index)
 			{
@@ -284,25 +202,13 @@ namespace Lexxys
 				}
 			}
 
-			public int Count
-			{
-				get { return Dictionary.Count; }
-			}
+			public int Count => Dictionary.Count;
 
-			public bool IsReadOnly
-			{
-				get { return true; }
-			}
+			public bool IsReadOnly => true;
 
-			public bool IsSynchronized
-			{
-				get { return false; }
-			}
+			public bool IsSynchronized => false;
 
-			public object SyncRoot
-			{
-				get { return false; }
-			}
+			public object SyncRoot => false;
 
 			public IEnumerator<TKey> GetEnumerator()
 			{
@@ -325,30 +231,15 @@ namespace Lexxys
 		{
 			protected OrderedDictionary<TKey, TValue> Dictionary;
 
-			public ValueCollection(OrderedDictionary<TKey, TValue> dictionary)
-			{
-				Dictionary = dictionary;
-			}
+			public ValueCollection(OrderedDictionary<TKey, TValue> dictionary) => Dictionary = dictionary;
 
-			public void Add(TValue item)
-			{
-				throw new NotImplementedException();
-			}
+			public void Add(TValue item) => throw new NotImplementedException();
 
-			public bool Remove(TValue item)
-			{
-				throw new NotImplementedException();
-			}
+			public bool Remove(TValue item) => throw new NotImplementedException();
 
-			public void Clear()
-			{
-				throw new NotImplementedException();
-			}
+			public void Clear() => throw new NotImplementedException();
 
-			public bool Contains(TValue item)
-			{
-				return Dictionary.List.FindIndex(o => Object.Equals(o.Value, item)) >= 0;
-			}
+			public bool Contains(TValue item) => Dictionary.List.FindIndex(o => Object.Equals(o.Value, item)) >= 0;
 
 			public void CopyTo(TValue[] array, int index)
 			{
@@ -380,25 +271,13 @@ namespace Lexxys
 				}
 			}
 
-			public int Count
-			{
-				get { return Dictionary.Count; }
-			}
+			public int Count => Dictionary.Count;
 
-			public bool IsReadOnly
-			{
-				get { return true; }
-			}
+			public bool IsReadOnly => true;
 
-			public bool IsSynchronized
-			{
-				get { return false; }
-			}
+			public bool IsSynchronized => false;
 
-			public object SyncRoot
-			{
-				get { return this; }
-			}
+			public object SyncRoot => this;
 
 			public IEnumerator<TValue> GetEnumerator()
 			{
@@ -421,74 +300,31 @@ namespace Lexxys
 		{
 			private readonly IEnumerator<KeyValuePair<TKey, TValue>> _parent;
 
-			public DictionaryEnumerator(OrderedDictionary<TKey, TValue> dictionary)
-			{
-				_parent = dictionary.List.GetEnumerator();
-			}
+			public DictionaryEnumerator(OrderedDictionary<TKey, TValue> dictionary) => _parent = dictionary.List.GetEnumerator();
 
-			public DictionaryEntry Entry
-			{
-				get { return new DictionaryEntry(_parent.Current.Key, _parent.Current.Value); }
-			}
+			public DictionaryEntry Entry => new DictionaryEntry(_parent.Current.Key, _parent.Current.Value);
 
-			public object Key
-			{
-				get { return _parent.Current.Key; }
-			}
+			public object Key => _parent.Current.Key;
 
-			public object Value
-			{
-				get { return _parent.Current.Value; }
-			}
+			public object Value => _parent.Current.Value;
 
-			public object Current
-			{
-				get { return new DictionaryEntry(_parent.Current.Key, _parent.Current.Value); }
-			}
+			public object Current => new DictionaryEntry(_parent.Current.Key, _parent.Current.Value);
 
-			public bool MoveNext()
-			{
-				return _parent.MoveNext();
-			}
+			public bool MoveNext() => _parent.MoveNext();
 
-			public void Reset()
-			{
-				_parent.Reset();
-			}
+			public void Reset() => _parent.Reset();
 		}
 		#endregion
 
-		void IDictionary.Add(object key, object value)
-		{
-			Add((TKey)key, (TValue)value);
-		}
+		void IDictionary.Add(object key, object value) => Add((TKey)key, (TValue)value);
 
-		bool IDictionary.Contains(object key)
-		{
-			return ContainsKey((TKey)key);
-		}
+		bool IDictionary.Contains(object key) => ContainsKey((TKey)key);
 
-		IDictionaryEnumerator IDictionary.GetEnumerator()
-		{
-			return new DictionaryEnumerator(this);
-		}
+		IDictionaryEnumerator IDictionary.GetEnumerator() => new DictionaryEnumerator(this);
 
-		void IDictionary.Remove(object key)
-		{
-			Remove((TKey)key);
-		}
+		void IDictionary.Remove(object key) => Remove((TKey)key);
 
-		object IDictionary.this[object key]
-		{
-			get
-			{
-				return this[(TKey)key];
-			}
-			set
-			{
-				this[(TKey)key] = (TValue)value;
-			}
-		}
+		object IDictionary.this[object key] { get => this[(TKey)key]; set => this[(TKey)key] = (TValue)value; }
 
 		void ICollection.CopyTo(Array array, int index)
 		{
@@ -507,31 +343,14 @@ namespace Lexxys
 			}
 		}
 
-		ICollection IDictionary.Keys
-		{
-			get { return new KeyCollection(this); }
-		}
+		ICollection IDictionary.Keys => new KeyCollection(this);
 
-		ICollection IDictionary.Values
-		{
-			get { return new ValueCollection(this); }
-		}
+		ICollection IDictionary.Values => new ValueCollection(this);
 
-		IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values
-		{
-			get { return Values; }
-		}
+		IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
 
-		IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys
-		{
-			get { return Keys; }
-		}
+		IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
 
-		KeyValuePair<TKey, TValue> IReadOnlyList<KeyValuePair<TKey, TValue>>.this[int index]
-		{
-			get { return List[index]; }
-		}
+		KeyValuePair<TKey, TValue> IReadOnlyList<KeyValuePair<TKey, TValue>>.this[int index] => List[index];
 	}
 }
-
-

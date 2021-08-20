@@ -17,6 +17,10 @@ namespace Lexxys.Tests.Tools
 	[DeploymentItem("application.config.txt")]
 	public class FactoryTest
 	{
+		public FactoryTest()
+		{
+			Config.AddConfiguration("application.config.txt");
+		}
 
 		public struct ZeroElement
 		{

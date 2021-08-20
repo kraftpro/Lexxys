@@ -187,13 +187,9 @@ namespace Lexxys.Logging
 			const int ErrorLockViolation = 33;
 
 			fileName = Environment.ExpandEnvironmentVariables(fileName);
-			int i = fileName.LastIndexOf('\\');
-			if (i > 0)
-			{
-				string dir = fileName.Substring(0, i);
-				if (!Directory.Exists(dir))
-					Directory.CreateDirectory(dir);
-			}
+			var directory = Path.GetDirectoryName(fileName);
+			if (!String.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+				Directory.CreateDirectory(directory);
 
 			Random r = null;
 			TimeSpan delay = TimeSpan.Zero;

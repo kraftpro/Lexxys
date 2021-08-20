@@ -17,9 +17,9 @@ namespace Lexxys.Tests
 		[DataRow("a\t\0b\"", @"a\t\0b""", '\0')]
 		[DataRow("a\v\x0b-ad", @"a\v\v-ad", '\0')]
 		[DataRow("a\t\f\v\0b\"\x0e-ad", @"a\t\f\v\0b""\x000e-ad", '\0')]
-		public void EscapeCsStringTest(string value, string escaped, string marker)
+		public void EscapeCsStringTest(string value, string escaped, char marker)
 		{
-			Assert.AreEqual(escaped, Strings.EscapeCsString(value, marker[0]));
+			Assert.AreEqual(escaped, Strings.EscapeCsString(value, marker));
 		}
 
 		[TestMethod]
