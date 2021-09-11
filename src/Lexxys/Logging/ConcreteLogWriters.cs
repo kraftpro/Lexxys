@@ -234,8 +234,10 @@ namespace Lexxys.Logging
 
 	public class ConsoleLogWriter: LogWriter
 	{
-		private static readonly TextFormatSetting Defaults = new TextFormatSetting("  ", ". ",
-			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}");
+		private static readonly TextFormatSetting Defaults = new TextFormatSetting(
+			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+			"  ",
+			". ");
 
 		protected override TextFormatSetting FormattingDefaults => Defaults;
 
@@ -250,8 +252,10 @@ namespace Lexxys.Logging
 
 	public class TraceLogWriter: LogWriter
 	{
-		private static readonly TextFormatSetting Defaults = new TextFormatSetting("  ", ". ",
-			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}");
+		private static readonly TextFormatSetting Defaults = new TextFormatSetting(
+			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+			"  ",
+			". ");
 
 		protected override TextFormatSetting FormattingDefaults => Defaults;
 
@@ -266,8 +270,10 @@ namespace Lexxys.Logging
 
 	public class DebuggerLogWriter: LogWriter
 	{
-		private static readonly TextFormatSetting Defaults = new TextFormatSetting("  ", ". ",
-			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}");
+		private static readonly TextFormatSetting Defaults = new TextFormatSetting(
+			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+			"  ",
+			". ");
 
 		protected override TextFormatSetting FormattingDefaults => Defaults;
 
@@ -288,8 +294,10 @@ namespace Lexxys.Logging
 	{
 		private string _eventSource;
 
-		private static readonly TextFormatSetting Defaults = new TextFormatSetting("", "",
-			"{MachineName} {ProcessID:X4}\nthread {ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyy-MM-ddTHH:mm:ss.fffff}\n{Source}: {Message}");
+		private static readonly TextFormatSetting Defaults = new TextFormatSetting(
+			"{MachineName} {ProcessID:X4}\nthread {ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyy-MM-ddTHH:mm:ss.fffff}\n{Source}: {Message}",
+			"",
+			"");
 
 		protected override TextFormatSetting FormattingDefaults => Defaults;
 

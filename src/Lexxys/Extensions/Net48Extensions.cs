@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -11,9 +12,17 @@ namespace Lexxys
 	{
 		public static void Write(this TextWriter writer, ReadOnlySpan<char> value)
 		{
-			for (int i = 0; i < value.Length; ++i)
+			if (value == null || value.Length == 0)
+				return;
+			char[] array = ArrayPool<char>.Shared.Rent(value.Length);
+			try
 			{
-				writer.Write(value[i]);
+				value.CopyTo(new Span<char>(array));
+				writer.Write(array, 0, value.Length);
+			}
+			finally
+			{
+				ArrayPool<char>.Shared.Return(array);
 			}
 		}
 	}

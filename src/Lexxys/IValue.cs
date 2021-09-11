@@ -4,6 +4,8 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+#nullable enable
+
 namespace Lexxys
 {
 	public interface IValue<T>: IValue
@@ -13,7 +15,7 @@ namespace Lexxys
 
 	public interface IValue
 	{
-		object Value { get; }
+		object? Value { get; }
 	}
 
 #if NETFRAMEWORK

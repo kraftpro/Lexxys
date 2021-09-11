@@ -522,8 +522,11 @@ namespace Lexxys.Xml
 		/// <param name="name">Name of subnode</param>
 		/// <param name="comparer">Equality comparer to compare nodes names</param>
 		/// <returns></returns>
-		public XmlLiteNode FirstOrDefault(string name, IEqualityComparer<string> comparer = null)
+		public XmlLiteNode FirstOrDefault(string name, IEqualityComparer<string> comparer)
 		{
+			if (comparer == null)
+				throw new ArgumentNullException(nameof(comparer));
+
 			for (int i = 0; i < _elements.Length; ++i)
 			{
 				if (comparer.Equals(_elements[i].Name, name))
@@ -539,6 +542,9 @@ namespace Lexxys.Xml
 		/// <returns></returns>
 		public XmlLiteNode FirstOrDefault(Func<XmlLiteNode, bool> predicate)
 		{
+			if (predicate == null)
+				throw new ArgumentNullException(nameof(predicate));
+
 			for (int i = 0; i < _elements.Length; i++)
 			{
 				if (predicate(_elements[i]))

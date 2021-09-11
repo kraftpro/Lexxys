@@ -9,28 +9,36 @@ using Lexxys.Xml;
 
 namespace Lexxys.Logging
 {
-	public class TextFormatSetting
+	public readonly struct TextFormatSetting
 	{
-		public string Format { get; set; }
-		public string Indent { get; set; }
-		public string Para { get; set; }
+		public string Format { get; }
+		public string Next { get; }
+		public string Indent { get; }
 
-		public TextFormatSetting()
+		public TextFormatSetting(string format, string next, string indent)
 		{
-		}
-
-		public TextFormatSetting(string para, string indent, string format)
-		{
-			Format = format;
-			Indent = indent;
-			Para = para;
+			Format = FixIndentMark(format);
+			Next = next;
+			Indent = indent ?? Next;
 		}
 
 		public TextFormatSetting(TextFormatSetting other)
 		{
 			Format = other.Format;
 			Indent = other.Indent;
-			Para = other.Para;
+			Next = other.Next;
+		}
+
+		private static string FixIndentMark(string value)
+		{
+			if (value == null || value.IndexOf("{IndentMark", StringComparison.OrdinalIgnoreCase) >= 0)
+				return value;
+			int i = value.IndexOf("{Source", StringComparison.OrdinalIgnoreCase);
+			if (i < 0)
+				i = value.IndexOf("{Message", StringComparison.OrdinalIgnoreCase);
+			if (i < 0)
+				i = 0;
+			return value.Substring(0, i) + "{IndentMark}" + value.Substring(i);
 		}
 
 		/// <summary>
@@ -46,13 +54,11 @@ namespace Lexxys.Logging
 		/// </remarks>
 		public TextFormatSetting Join(XmlLiteNode config)
 		{
-			if (config != null && !config.IsEmpty)
-			{
-				Format = XmlTools.GetString(config["format"], Format);
-				Indent = XmlTools.GetString(config["indent"], Indent);
-				Para = XmlTools.GetString(config["para"], Para);
-			}
-			return this;
+			return config == null || config.IsEmpty ? this:
+				new TextFormatSetting(
+					XmlTools.GetString(config["format"], Format),
+					XmlTools.GetString(config["indent"], Indent),
+					XmlTools.GetString(config["para"], Next));
 		}
 
 		/// <summary>
@@ -62,16 +68,10 @@ namespace Lexxys.Logging
 		/// <returns>this object</returns>
 		public TextFormatSetting Join(TextFormatSetting setting)
 		{
-			if (setting != null)
-			{
-				if (setting.Format != null)
-					Format = setting.Format;
-				if (setting.Indent != null)
-					Indent = setting.Indent;
-				if (setting.Para != null)
-					Para = setting.Para;
-			}
-			return this;
+			return new TextFormatSetting(
+				setting.Format ?? Format,
+				setting.Indent ?? Indent,
+				setting.Next ?? Next);
 		}
 	}
 }

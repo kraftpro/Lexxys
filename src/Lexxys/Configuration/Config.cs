@@ -72,7 +72,7 @@ namespace Lexxys
 		private const string ConfigurationDerectoryKey = "configurationDirectory";
 		private static readonly string[] Extensions = { ".config.xml", ".config.txt", ".config.ini", ".config.json" };
 
-		private static IList<string> _configurationDirectory;
+		private static IReadOnlyList<string> _configurationDirectory;
 		private static bool _initialized;
 		private static bool _initializing;
 		private static bool _cacheValues;
@@ -100,34 +100,39 @@ namespace Lexxys
 			}
 		}
 
-		public static IList<string> ConfigurationDirectories
+		public static IReadOnlyList<string> ConfigurationDirectories
 		{
 			get
 			{
-				if (_configurationDirectory == null)
-					_configurationDirectory = GetConfigurationDerectories();
-
-				Thread.MemoryBarrier();
-				return _configurationDirectory;
+				var cc = _configurationDirectory;
+				if (cc == null)
+					Interlocked.CompareExchange(ref _configurationDirectory, null, (cc = GetConfigurationDerectories()));
+				return cc;
 			}
 		}
 
 		public static bool IsInitialized => _initialized;
 
-		public static bool CacheValues => _cacheValues;
-
 		public static T GetValue<T>(string node)
 		{
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
 			return GetValue(node, typeof(T)) is T value ? value: default;
 		}
 
 		public static T GetValue<T>(string node, T defaultValue)
 		{
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
 			return GetValue(node, typeof(T)) is T value ? value: defaultValue;
 		}
 
 		public static T GetValue<T>(string node, Func<T> defaultValue)
 		{
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
+			if (defaultValue == null)
+				throw new ArgumentNullException(nameof(defaultValue));
 			return GetValue(node, typeof(T)) is T value ? value : defaultValue();
 		}
 
@@ -142,36 +147,52 @@ namespace Lexxys
 
 		public static IValue<T> GetSection<T>(string node)
 		{
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
 			var custom = new Custom<T>(node, () => default);
 			return new Out<T>(() => custom.Value);
 		}
 
 		public static IValue<T> GetSection<T>(string node, T defaultValue)
 		{
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
 			var custom = new Custom<T>(node, () => defaultValue);
 			return new Out<T>(() => custom.Value);
 		}
 
 		public static IValue<T> GetSection<T>(string node, Func<T> defaultValue)
 		{
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
+			if (defaultValue == null)
+				throw new ArgumentNullException(nameof(defaultValue));
 			var custom = new Custom<T>(node, defaultValue);
 			return new Out<T>(() => custom.Value);
 		}
 
 		public static IOptions<T> GetOptions<T>(string node) where T : class, new()
 		{
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
 			var custom = new Custom<T>(node, () => default);
 			return new OptOut<T>(() => custom.Value);
 		}
 
 		public static IOptions<T> GetOptions<T>(string node, T defaultValue) where T : class, new()
 		{
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
 			var custom = new Custom<T>(node, () => defaultValue);
 			return new OptOut<T>(() => custom.Value);
 		}
 
 		public static IOptions<T> GetOptions<T>(string node, Func<T> defaultValue) where T : class, new()
 		{
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
+			if (defaultValue == null)
+				throw new ArgumentNullException(nameof(defaultValue));
 			var custom = new Custom<T>(node, defaultValue);
 			return new OptOut<T>(() => custom.Value);
 		}
@@ -236,21 +257,21 @@ namespace Lexxys
 		}
 
 
-		public static IList<T> GetList<T>(string node, bool suppressNull = false)
+		public static IReadOnlyList<T> GetList<T>(string node, bool suppressNull = false)
 		{
-			if (node == null)
-				throw EX.ArgumentNull(nameof(node));
+			if (node == null || node.Length <= 0)
+				throw new ArgumentNullException(nameof(node));
 			if (!_initialized)
 				Initialize();
 
 			string key = node + "`List`" + typeof(T).ToString();
 			if (_cacheValues && Cache.TryGetValue(key, out object value))
-				return value is IList<T> tvalue ? tvalue: suppressNull ? EmptyArray<T>.Value : null;
+				return value is IReadOnlyList<T> tvalue ? tvalue: suppressNull ? EmptyArray<T>.Value : null;
 
 			lock (SyncRoot)
 			{
 				if (_cacheValues && Cache.TryGetValue(key, out value))
-					return value is IList<T> tvalue ? tvalue : suppressNull ? EmptyArray<T>.Value : null;
+					return value is IReadOnlyList<T> tvalue ? tvalue : suppressNull ? EmptyArray<T>.Value : null;
 
 				List<T> temp = null;
 				bool copy = false;
@@ -274,7 +295,7 @@ namespace Lexxys
 						}
 					}
 				}
-				IList<T> result = temp == null || temp.Count == 0 ? null: ReadOnly.Wrap(temp);
+				IReadOnlyList<T> result = temp == null || temp.Count == 0 ? null: ReadOnly.Wrap(temp);
 				if (_cacheValues)
 					Cache[key] = result;
 				return result == null && suppressNull ? EmptyArray<T>.Value: result;
@@ -296,20 +317,23 @@ namespace Lexxys
 
 		public static IConfigurationProvider GetConfiguration(string location)
 		{
+			if (location == null || location.Length <= 0)
+				throw new ArgumentNullException(nameof(location));
 			return GetConfiguration(new ConfigurationLocator(location));
 		}
 
 		public static IConfigurationProvider GetConfiguration(ConfigurationLocator location)
 		{
+			if (location == null)
+				throw new ArgumentNullException(nameof(location));
 			FindProvider(null, ref location, null, out IConfigurationProvider provider);
 			return provider;
 		}
 
 		public static IConfigurationProvider AddConfiguration(string location)
 		{
-			if (location == null)
-				throw EX.ArgumentNull(nameof(location));
-
+			if (location == null || location.Length <= 0)
+				throw new ArgumentNullException(nameof(location));
 			var x = SplitOptions(location);
 			return AddConfiguration(new ConfigurationLocator(x.Location), x.Parameters);
 		}
@@ -318,7 +342,7 @@ namespace Lexxys
 		public static IConfigurationProvider AddConfiguration(ConfigurationLocator location, IReadOnlyCollection<string> parameters) // = null)
 		{
 			if (location == null)
-				throw EX.ArgumentNull(nameof(location));
+				throw new ArgumentNullException(nameof(location));
 
 			lock (SyncRoot)
 			{
@@ -490,12 +514,12 @@ namespace Lexxys
 			if (item.Exception != null)
 			{
 				if (__log.ErrorEnabled)
-					__log.Write(new LogRecord(item.Source, LogType.Trace, item.Exception));
+					__log.Log(new LogRecord(LogType.Trace, item.Source, item.Exception));
 			}
 			else if (item.Message != null)
 			{
 				if (__log.TraceEnabled)
-					__log.Write(new LogRecord(item.Source, item.Message(), LogType.Trace, null));
+					__log.Log(new LogRecord(LogType.Trace, item.Source, item.Message(), null));
 			}
 		}
 
@@ -532,7 +556,7 @@ namespace Lexxys
 		{
 			if (objectType == null)
 				throw EX.ArgumentNull(nameof(objectType));
-			if (node == null)
+			if (node == null || node.Length <= 0)
 				throw EX.ArgumentNull(nameof(node));
 			if (!_initialized)
 				Initialize();
@@ -595,7 +619,7 @@ namespace Lexxys
 			ScanConfigurationFile(provider, locator, Providers.Count);
 		}
 
-		private static IList<string> GetConfigurationDerectories()
+		private static IReadOnlyList<string> GetConfigurationDerectories()
 		{
 			var configurationDirectory = new List<string> { Lxx.HomeDirectory };
 #if NETFRAMEWORK
@@ -615,7 +639,7 @@ namespace Lexxys
 #endif
 			if (configurationDirectory.FindIndex(o => String.Equals(o, Lxx.GlobalConfigurationDirectory, StringComparison.OrdinalIgnoreCase)) < 0)
 				configurationDirectory.Add(Lxx.GlobalConfigurationDirectory);
-			return configurationDirectory;
+			return ReadOnly.Wrap(configurationDirectory);
 		}
 		private static readonly char[] __separators = { ',', ';', ' ', '\t', '\n', '\r' };
 

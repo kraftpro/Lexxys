@@ -158,7 +158,7 @@ namespace Lexxys
 
 		public static string ToString(object value, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0, bool pretty = false)
 		{
-			return Create(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit).Pretty(pretty, "  ").DumpIt(value, skipToString: true).ToString();
+			return Create(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit).Pretty(pretty, "  ").DumpIt(value, ignoreToString: true).ToString();
 		}
 
 		/// <summary>
@@ -368,18 +368,17 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The value to dump.</param>
 		/// <returns></returns>
-		public DumpWriter Dump(byte[] value)
+		public DumpWriter Dump(IEnumerable<byte> value)
 		{
 			if (value == null)
 				return Text(NullValue);
 
 			Text("0x");
-			int n = Math.Min(value.Length, BlobLimit);
-			for (int i = 0; i < n; ++i)
+			int i = 0;
+			foreach (var v in value)
 			{
-				if (Left <= 0)
+				if (Left <= 0 || i >= BlobLimit)
 					return this;
-				var v = value[i];
 				Text(__hex[v >> 4]);
 				Text(__hex[v & 15]);
 			}
@@ -439,18 +438,19 @@ namespace Lexxys
 		/// Dumps the specified <paramref name="value"/> to the stream.
 		/// </summary>
 		/// <param name="value">The value to dump.</param>
+		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter Dump(IEnumerable value)
+		public DumpWriter Dump(IEnumerable value, bool ignoreToString = false)
 		{
 			if (value == null)
 				return Text(NullValue);
 			if (value is string s)
 				return Dump(s);
 			if (value is IDictionary d)
-				return Dump(d);
+				return Dump(d, ignoreToString);
 			if (value is BitArray b)
 				return Dump(b);
-			if (value is byte[] y)
+			if (value is IEnumerable<byte> y)
 				return Dump(y);
 
 			if (Observed.Contains(value))
@@ -469,7 +469,7 @@ namespace Lexxys
 					if (++i > ArrayLimit)
 						break;
 					Text(pad);
-					Dump(item);
+					Dump(item, ignoreToString);
 					pad = ',';
 				}
 				return Text(pad == '[' ? "[]": "]");
@@ -484,8 +484,9 @@ namespace Lexxys
 		/// Dumps the specified <paramref name="value"/> to the stream.
 		/// </summary>
 		/// <param name="value">The value to dump.</param>
+		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter Dump(IEnumerator value)
+		public DumpWriter Dump(IEnumerator value, bool ignoreToString = false)
 		{
 			if (value == null)
 				return Text(NullValue);
@@ -506,7 +507,7 @@ namespace Lexxys
 					if (++i > ArrayLimit)
 						break;
 					Text(pad);
-					Dump(value.Current);
+					Dump(value.Current, ignoreToString);
 					pad = ',';
 				}
 				return Text(pad == '[' ? "[]" : "]");
@@ -521,8 +522,9 @@ namespace Lexxys
 		/// Dumps the specified <paramref name="value"/> to the stream.
 		/// </summary>
 		/// <param name="value">The value to dump.</param>
+		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter Dump(IDictionary value)
+		public DumpWriter Dump(IDictionary value, bool ignoreToString = false)
 		{
 			if (value == null)
 				return Text(NullValue);
@@ -543,9 +545,9 @@ namespace Lexxys
 					if (++i > ArrayLimit)
 						break;
 					Text(pad);
-					Dump(enumerator.Key);
+					Dump(enumerator.Key, ignoreToString);
 					Text('=');
-					Dump(enumerator.Value);
+					Dump(enumerator.Value, ignoreToString);
 					pad = ',';
 				}
 				return Text(pad == '[' ? "[]": "]");
@@ -560,50 +562,55 @@ namespace Lexxys
 		/// Dumps the specified <paramref name="value"/> to the stream.
 		/// </summary>
 		/// <param name="value">The value to dump.</param>
+		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter Dump(DictionaryEntry value)
+		public DumpWriter Dump(DictionaryEntry value, bool ignoreToString = false)
 		{
-			return Text("{Key=").Dump(value.Key).Text(",Value=").Dump(value.Value).Text('}');
+			return Text("{Key=").Dump(value.Key, ignoreToString).Text(",Value=").Dump(value.Value, ignoreToString).Text('}');
 		}
 
 		/// <summary>
 		/// Dumps the object value using reflection or the <see cref="IDump"/> interface if it is implemented by the object.
 		/// </summary>
 		/// <param name="value">The value to dump</param>
+		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter Dump(object value)
+		public DumpWriter Dump(object value, bool ignoreToString = false)
 		{
-			return DumpIt(value);
+			return DumpIt(value, ignoreToString: ignoreToString);
 		}
 
 		/// <summary>
 		/// Dumps the object value using reflection only.
 		/// </summary>
 		/// <param name="value">The value to dump</param>
+		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter DumpObject(object value)
+		public DumpWriter DumpObject(object value, bool ignoreToString = false)
 		{
-			return DumpIt(value, skipIDump: true);
+			return DumpIt(value, skipIDump: true, ignoreToString: ignoreToString);
 		}
 
 		/// <summary>
 		/// Dumps only content (exclude header and footer) of the object value using reflection only.
 		/// </summary>
 		/// <param name="value">The value to dump</param>
+		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter DumpObjectContent(object value)
+		public DumpWriter DumpObjectContent(object value, bool ignoreToString = false)
 		{
-			return DumpIt(value, skipIDump: true, contentOnly: true);
+			return DumpIt(value, skipIDump: true, contentOnly: true, ignoreToString: ignoreToString);
 		}
 
 		/// <summary>
 		/// Dumps only content (exclude header and footer) of the object value using reflection or the <see cref="IDump"/> interface if it is implemented by the object.
 		/// </summary>
 		/// <param name="value">The value to dump</param>
+		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter DumpContent(object value)
+		public DumpWriter DumpContent(object value, bool ignoreToString = false)
 		{
-			return DumpIt(value, contentOnly: true);
+			return DumpIt(value, contentOnly: true, ignoreToString: ignoreToString);
 		}
 
 		/// <summary>
@@ -701,7 +708,7 @@ namespace Lexxys
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Item(string name, byte[] value) => Text(name).Text('=').Dump(value);
+		public DumpWriter Item(string name, IEnumerable<byte> value) => Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form Name=Value
 		/// </summary>
@@ -870,7 +877,7 @@ namespace Lexxys
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Then(string name, byte[] value) => Text(',').Text(name).Text('=').Dump(value);
+		public DumpWriter Then(string name, IEnumerable<byte> value) => Text(',').Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form: ,Name=Value
 		/// </summary>
@@ -980,7 +987,7 @@ namespace Lexxys
 			}
 		}
 
-		private DumpWriter DumpIt(object value, bool skipIDump = false, bool contentOnly = false, bool skipToString = false)
+		private DumpWriter DumpIt(object value, bool skipIDump = false, bool contentOnly = false, bool ignoreToString = false)
 		{
 			if (Depth > MaxDepth)
 				return Text("...");
@@ -1017,13 +1024,13 @@ namespace Lexxys
 			}
 
 			if (value is IEnumerable e)
-				return Dump(e);
+				return Dump(e, ignoreToString);
 			if (value is IEnumerator r)
-				return Dump(r);
+				return Dump(r, ignoreToString);
 			if (value is TimeSpan span)
 				return Dump(span);
 			if (value is DictionaryEntry entry)
-				return Dump(entry);
+				return Dump(entry, ignoreToString);
 
 			int depth = Depth++;
 
@@ -1045,13 +1052,15 @@ namespace Lexxys
 				else
 				{
 					var typeName = type.ToString();
-					var svalue = skipToString ? typeName: value.ToString();
 					string shortName = ShortName(typeName);
-					if (shortName.StartsWith("KeyValuePair<"))
-						svalue = typeName = "<>";
-					if (svalue != typeName)
-						return Text(shortName).Text(':').Text(svalue);
-
+					if (!ignoreToString)
+					{
+						var svalue = value.ToString();
+						if (shortName.StartsWith("KeyValuePair<"))
+							typeName = "<>";
+						else if (svalue != typeName)
+							return Text(shortName).Text(':').Text(svalue);
+					}
 					if (typeName.Contains("<>"))
 					{
 						pad = '{';
@@ -1071,7 +1080,7 @@ namespace Lexxys
 					NewLine();
 					Text(item.Name);
 					Text('=');
-					Dump(item.GetValue(value));
+					DumpIt(item.GetValue(value), skipIDump, false, ignoreToString);
 					pad = ',';
 				}
 				foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
@@ -1091,7 +1100,7 @@ namespace Lexxys
 							NewLine();
 							Text(item.Name);
 							Text('=');
-							Dump(v);
+							DumpIt(v, skipIDump, false, ignoreToString);
 							pad = ',';
 						}
 						catch

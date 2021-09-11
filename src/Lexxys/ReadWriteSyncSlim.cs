@@ -12,7 +12,8 @@ namespace Lexxys
 {
 	public sealed class ReadWriteSyncSlim: IReadWriteSync
 	{
-		private static readonly Logger Log = new Logger("Lexxys.ReadWriteSyncSlim");
+		private static Logger Log => _log ??= new Logger("Lexxys.ReadWriteSyncSlim");
+		private static Logger _log;
 		private ReaderWriterLockSlim _locker;
 		public const int DefaultTimingThreshold = 100;
 		public const int DefaultLockTimeout = 5 * 60 * 1000;
@@ -63,7 +64,7 @@ namespace Lexxys
 			else
 				source += ".LockRead";
 
-			using (Log.DebugTiming(source, timingThreshold))
+			using (Log.DebugTiming(source, new TimeSpan(timingThreshold * TimeSpan.TicksPerMillisecond)))
 			{
 				return new NewReader(locker, timeout);
 			}
@@ -101,7 +102,7 @@ namespace Lexxys
 			else
 				source += ".LockWrite";
 
-			using (Log.DebugTiming(source, timingThreshold))
+			using (Log.DebugTiming(source, new TimeSpan(timingThreshold * TimeSpan.TicksPerMillisecond)))
 			{
 				return new NewWriter(locker, timeout);
 			}

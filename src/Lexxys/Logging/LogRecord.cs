@@ -8,9 +8,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+
+#nullable enable
 
 namespace Lexxys.Logging
 {
@@ -32,124 +37,88 @@ namespace Lexxys.Logging
 		EndGroup=2
 	}
 
-	public enum FormatItemType
-	{
-		IndentMark = 0,
-		MachineName = 1,
-		DomainName = 2,
-		ProcessId = 3,
-		ProcessName = 4,
-		ThreadId = 5,
-		ThreadSysId = 6,
-		SequencialNumber = 7,
-		Timestamp = 8,
-
-		Source = 9,
-		Message = 10,
-		Type = 11,
-		Grouping = 12,
-		Indent = 13,
-
-		Empty = 14,
-	}
-
-	public class LogRecordFormatItem
-	{
-		public readonly FormatItemType Index;
-		public readonly string Left;
-		public readonly string Format;
-
-		public LogRecordFormatItem()
-		{
-		}
-
-		public LogRecordFormatItem(FormatItemType index, string left, string format)
-		{
-			Index = index;
-			Left = LogRecordTextFormatter.KeepLf(left);
-			Format = LogRecordTextFormatter.KeepLf(format);
-		}
-	}
-
 	public class LogRecord
 	{
-		private IDictionary _data;
+		private const string NullArg = "null";
+		private OrderedBag<string, object?>? _data;
+		private static AsyncLocal<int> _currentIndent = new();
 
-		[ThreadStatic]
-		private static int _currentIndent;
-
-		public LogRecord(string source, string message, LogType logType, IDictionary argument)
-			: this(LogGroupingType.Message, source, message, logType, argument)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public LogRecord(LogType logType, string? source, string? message, IDictionary? args)
+			: this(LogGroupingType.Message, logType, source, message, args)
 		{
 		}
 
-		public LogRecord(string source, LogType logType, Exception exception)
-			: this(source, logType, exception, _currentIndent)
-		{
-		}
-
-		public LogRecord(LogGroupingType recordType, string source, string message, LogType logType, IDictionary argument)
+		public LogRecord(LogGroupingType recordType, LogType logType, string? source, string? message, IDictionary? args)
 		{
 			Source = source;
 			Message = message;
-			_data = CopyDictionary(argument);
+			_data = CopyDictionary(args);
 			LogType = logType;
 			RecordType = recordType;
-			Indent = _currentIndent;
+			Indent = _currentIndent.Value;
 			if (RecordType == LogGroupingType.BeginGroup)
-				++_currentIndent;
+				++_currentIndent.Value;
 			else if (RecordType == LogGroupingType.EndGroup && Indent > 0)
-				--_currentIndent;
+				--_currentIndent.Value;
 			Context = new SystemContext();
 		}
 
-		public LogRecord(string source, LogType logType, Exception exception, int indent)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public LogRecord(LogType logType, string? source, Exception exception, int indent = 0)
+			: this(logType, source, null, exception, null)
 		{
-			if (exception == null)
-				throw EX.ArgumentNull(nameof(exception));
+			Indent += indent;
+		}
+
+		public LogRecord(LogType logType, string? source, string? message, Exception? exception, IDictionary? args)
+		{
 			if (source != null)
 			{
 				Source = source;
 			}
-			else
+			else if (exception != null)
 			{
-				MethodBase method = exception.TargetSite;
-				Source = ((method == null) ? exception.Source: method.GetType().Name);
+				MethodBase? method = exception.TargetSite;
+				Source = (method == null) ? exception.Source: method.GetType().Name;
 			}
-			Message = exception.Message;
-			_data = CopyDictionary(exception.Data);
-			StackTrace = exception.StackTrace;
+			Message =
+				exception == null ? message:
+				message == null ? exception.Message:
+				message + ": " + exception.Message;
+			_data = CopyDictionary(exception?.Data, CopyDictionary(args));
+			if (exception != null)
+				(_data ??= new OrderedBag<string, object?>(1)).Add("Stack trace", exception.StackTrace);
 			LogType = logType;
 			RecordType = LogGroupingType.Message;
-			Indent = indent;
+			Indent = _currentIndent.Value;
 			Context = new SystemContext();
 		}
 
-		private static IDictionary CopyDictionary(IDictionary data)
+		private static OrderedBag<string, object?>? CopyDictionary(IDictionary? data, OrderedBag<string, object?>? bag = null)
 		{
 			if (data == null)
-				return null;
-			var copy = new OrderedDictionary<object, object>(data.Count);
-			foreach (var obj in data)
+				return bag;
+			if (bag == null)
+				bag = new OrderedBag<string, object?>(data.Count);
+			var xx = data.GetEnumerator();
+			while (xx.MoveNext())
 			{
-				if (obj is DictionaryEntry item)
-					copy.Add(new KeyValuePair<object, object>(item.Key, item.Value));
+				bag.Add(new KeyValuePair<string, object?>(xx.Key?.ToString() ?? NullArg, xx.Value));
 			}
-			return copy;
+			return bag;
 		}
 
 		/// <summary>Name of class and method generated the log item</summary>
-		public string Source { get; }
+		public string? Source { get; }
 
 		/// <summary>Log message</summary>
-		public string Message { get; }
+		public string? Message { get; }
 
 		public int Indent { get; }
 
 		/// <summary>Actual parameters values</summary>
-		public IDictionary Data => _data;
-
-		public string StackTrace { get; set; }
+		public IDictionary? Data => _data;
 
 		/// <summary>Priority of the log item. (5 - critical, 0 - verbose)</summary>
 		public int Priority => (int)LogType.MaxValue - (int)LogType;
@@ -160,252 +129,51 @@ namespace Lexxys.Logging
 
 		public SystemContext Context { get; }
 
-		public void Add(string argName, object argValue)
+		public void Add(string argName, object? argValue)
 		{
-			if (_data == null)
-				_data = new Dictionary<string, object>(1);
-			AddInternal(argName, argValue);
+			(_data ??= new OrderedBag<string, object?>(1)).Add(argName ?? NullArg, argValue);
 		}
-		public void Add(string argName, object argValue, string argName2, object argValue2)
+
+		public void Add(string argName, object? argValue, string argName2, object? argValue2)
 		{
 			if (_data == null)
-				_data = new Dictionary<string, object>(2);
-			AddInternal(argName, argValue);
-			AddInternal(argName2, argValue2);
+				_data = new OrderedBag<string, object?>(2);
+			_data.Add(argName ?? NullArg, argValue);
+			_data.Add(argName2 ?? NullArg, argValue2);
 		}
-		public void Add(object[] args)
+
+		public void Add(object?[] args)
 		{
+			if (args == null)
+				throw new ArgumentNullException(nameof(args));
+
 			if (_data == null)
-				_data = new Dictionary<string, object>((args.Length + 1) / 2);
+				_data = new OrderedBag<string, object?>((args.Length + 1) / 2);
 			for (int i = 1; i < args.Length; i += 2)
 			{
-				AddInternal(args[i - 1]?.ToString(), args[i]);
+				_data.Add(args[i - 1]?.ToString() ?? NullArg, args[i]);
 			}
 			if (args.Length % 2 > 0)
 			{
-				AddInternal(null, args[args.Length - 1]);
+				_data.Add(NullArg, args[args.Length - 1]);
 			}
 		}
 
-		private void AddInternal(string key, object value)
-		{
-			if (key == null || key.Length == 0)
-				key = "argument";
-
-			if (_data.Contains(key))
-			{
-				int k = 2;
-				string key2 = String.Format(CultureInfo.InvariantCulture, "{0} ({1})", key, k);
-				while (_data.Contains(key))
-				{
-					++k;
-					key2 = String.Format(CultureInfo.InvariantCulture, "{0} ({1})", key, k);
-				}
-				key = key2;
-			}
-			_data.Add(key, value);
-		}
-
-		public static Dictionary<string, object> Args(params object[] args)
+		public static OrderedBag<string, object?>? Args(params object?[] args)
 		{
 			if (args == null || args.Length == 0)
 				return null;
 
-			int nn = args.Length - 1;
-			int n = (args.Length + 1) / 2;
-			var arg = new Dictionary<string, object>(n);
-			for (int i = 0; i < args.Length; ++i)
+			var arg = new OrderedBag<string, object?>((args.Length + 1) / 2);
+			int count = args.Length & ~1;
+			for (int i = 0; i < count; i += 2)
 			{
-				string name = (i == nn) ? "last": args[i++].ToString();
-				if (arg.ContainsKey(name))
-				{
-					int k = 1;
-					do
-					{
-						++k;
-					} while (arg.ContainsKey(String.Format(CultureInfo.CurrentCulture, "{0} ({1})", name, k)));
-					name = String.Format(CultureInfo.CurrentCulture, "{0} ({1})", name, k);
-				}
-				arg.Add(name, args[i]);
+				arg.Add(args[i]?.ToString() ?? NullArg, args[i + 1]);
 			}
+			if (count != args.Length)
+				arg.Add(NullArg, args[args.Length - 1]);
 			return arg;
 		}
-
-		public static List<LogRecordFormatItem> MapFormat(string format)
-		{
-			var result = new List<LogRecordFormatItem>();
-			MatchCollection mc = __formatRe.Matches(format);
-			int last = 0;
-			foreach (Match m in mc)
-			{
-				if (NamesMap.TryGetValue(m.Groups[1].Value.ToUpperInvariant(), out FormatItemType id))
-				{
-					string f = m.Groups[4].Value;
-					if (f.Length == 0)
-						f = null;
-					else if (id == FormatItemType.Timestamp)
-						if (f.Equals("yyyy-MM-ddTHH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
-							f = null;
-						else if (f.Equals("HH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
-							f = "t";
-					result.Add(new LogRecordFormatItem(id, format.Substring(last, m.Index - last), f));
-					last = m.Index + m.Length;
-				}
-			}
-			if (last < format.Length)
-				result.Add(new LogRecordFormatItem(FormatItemType.Empty, format.Substring(last), null));
-			return result;
-		}
-		private static readonly Regex __formatRe = new Regex(@"\{\s*([a-zA-Z]+)\s*(,\s*[0-9]*)?\s*(:(.*?))?\s*\}", RegexOptions.Compiled);
-		
-		public string ToString(LogRecordFormatItem[] format)
-		{
-			var text = new StringBuilder(256);
-			Format(text, format, null);
-			return text.ToString();
-		}
-
-		public int Format(StringBuilder text, LogRecordFormatItem[] format, string indentText)
-		{
-			int indent = -1;
-			foreach (LogRecordFormatItem item in format)
-			{
-				text.Append(item.Left);
-				switch (item.Index)
-				{
-					case FormatItemType.IndentMark:
-						if (indentText != null)
-							text.Append(indentText);
-						indent = text.Length;
-						break;
-					case FormatItemType.MachineName:
-						text.Append(Context.MachineName);
-						break;
-					case FormatItemType.DomainName:
-						text.Append(Context.DomainName);
-						break;
-					case FormatItemType.ProcessId:
-						text.Append(Context.ProcessId.ToString(item.Format));
-						break;
-					case FormatItemType.ProcessName:
-						text.Append(Context.ProcessName);
-						break;
-					case FormatItemType.ThreadId:
-						text.Append(Context.ThreadId.ToString(item.Format));
-						break;
-					case FormatItemType.ThreadSysId:
-						text.Append(Context.ThreadSysId.ToString(item.Format));
-						break;
-					case FormatItemType.SequencialNumber:
-						text.Append(Context.SequentialNumber.ToString(item.Format));
-						break;
-					case FormatItemType.Timestamp:
-						if (item.Format == null)
-							AppendTimeStamp(text, true);
-						else if (item.Format == "t")
-							AppendTimeStamp(text, false);
-						else
-							text.Append(Context.Timestamp.ToString(item.Format));
-						break;
-					case FormatItemType.Source:
-						text.Append(LogRecordTextFormatter.NormalizeWs(Source));
-						break;
-					case FormatItemType.Message:
-						text.Append(LogRecordTextFormatter.KeepLf(Message));
-						break;
-					case FormatItemType.Type:
-						if (item.Format == null)
-							text.Append(LogType.ToString());
-						else if (item.Format == "1")
-							text.Append(LogType >= LogType.Output && LogType <= LogType.MaxValue ? __severity1[(int)LogType]: LogType.ToString());
-						else if (item.Format == "3")
-							text.Append(LogType >= LogType.Output && LogType <= LogType.MaxValue ? __severity3[(int)LogType] : LogType.ToString());
-						else
-							text.Append(LogType.ToString(item.Format));
-						break;
-					case FormatItemType.Grouping:
-						text.Append(RecordType.ToString(item.Format));
-						break;
-					case FormatItemType.Indent:
-						text.Append(Indent.ToString(item.Format));
-						break;
-				}
-			}
-			return indent;
-		}
-		private static readonly string[] __severity1 = new[] { "O", "E", "W", "I", "T", "D" };
-		private static readonly string[] __severity3 = new[] { "OUT", "ERR", "WRN", "INF", "TRC", "DBG" };
-
-		private void AppendTimeStamp(StringBuilder text, bool date)
-		{
-			DateTime d = Context.Timestamp;
-			if (date)
-			{
-				AppendInt(text, d.Year, 4);
-				text.Append('-');
-				AppendInt(text, d.Month, 2);
-				text.Append('-');
-				AppendInt(text, d.Day, 2);
-				text.Append('T');
-			}
-
-			AppendInt(text, d.Hour, 2);
-			text.Append(':');
-			AppendInt(text, d.Minute, 2);
-			text.Append(':');
-			AppendInt(text, d.Second, 2);
-			text.Append('.');
-			AppendInt(text, (int)(d.Ticks % TicksPerSecond / TicksPerFraction), 5);
-		}
-		private const long TicksPerFraction = 100L;
-		private const long TicksPerSecond = 10000000L;
-
-		private static unsafe void AppendInt(StringBuilder text, int value, int width)
-		{
-			if (width > 4)
-			{
-				value %= 100000;
-				text.Append((char)(value / 10000 + '0'));
-			}
-			if (width > 3)
-			{
-				value %= 10000;
-				text.Append((char)(value / 1000 + '0'));
-			}
-			if (width > 2)
-			{
-				value %= 1000;
-				text.Append((char)(value / 100 + '0'));
-			}
-			if (width > 1)
-			{
-				value %= 100;
-				text.Append((char)(value / 10 + '0'));
-			}
-			value %= 10;
-			text.Append((char)(value + '0'));
-		}
-
-		private static readonly Dictionary<string, FormatItemType> NamesMap = new Dictionary<string, FormatItemType>(14)
-			{
-				{ "INDENTMARK", FormatItemType.IndentMark },
-
-				{ "MACHINENAME", FormatItemType.MachineName },
-				{ "DOMAINNAME", FormatItemType.DomainName },
-				{ "PROCESSID", FormatItemType.ProcessId },
-				{ "PROCESSNAME", FormatItemType.ProcessName },
-				{ "THREADID", FormatItemType.ThreadId },
-				{ "THREADSYSID", FormatItemType.ThreadSysId },
-				{ "SEQNUMBER", FormatItemType.SequencialNumber },
-				{ "TIMESTAMP", FormatItemType.Timestamp },
-
-				{ "SOURCE", FormatItemType.Source },
-				{ "MESSAGE", FormatItemType.Message },
-				{ "TYPE", FormatItemType.Type },
-				{ "GROUPING", FormatItemType.Grouping },
-				{ "INDENT", FormatItemType.Indent },
-			};
-
 	}
 }
 

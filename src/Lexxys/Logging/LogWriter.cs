@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.IO;
 
 using Lexxys.Xml;
-#pragma warning disable CA1416 // Validate platform compatibility
 
 namespace Lexxys.Logging
 {
@@ -25,32 +24,14 @@ namespace Lexxys.Logging
 
 		private static readonly string EventSource = "Lexxys";
 		private static readonly bool UseSystemEventLog = TestEventLog();
-		private static readonly TextFormatSetting Defaults = new TextFormatSetting("  ", ". ",
-			"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff} {IndentMark}{Source}: {Message}");
-
-
-		private static bool TestEventLog()
-		{
-			try
-			{
-				if (EventLog.SourceExists(EventSource))
-					return true;
-			}
-			catch
-			{
-				// ignored
-			}
-			try
-			{
-				EventLog.CreateEventSource(EventSource, "Application");
-				return true;
-			}
-			catch
-			{
-				// ignored
-			}
-			return false;
-		}
+		private static readonly TextFormatSetting Defaults = new TextFormatSetting(
+			"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+			"  ",
+			". ");
+		private static readonly TextFormatSetting EventLogDefaults = new TextFormatSetting(
+			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+			"  ",
+			". ");
 
 		/// <summary>
 		/// Get name of the <see cref="LogWriter"/>
@@ -158,9 +139,37 @@ namespace Lexxys.Logging
 
 		protected static string LogEventSource => EventSource;
 
+
+		#pragma warning disable CA1416 // Validate platform compatibility
+
+		private static readonly LogRecordTextFormatter __eventLogFormatter = new LogRecordTextFormatter(EventLogDefaults);
+
+		private static bool TestEventLog()
+		{
+			try
+			{
+				if (EventLog.SourceExists(EventSource))
+					return true;
+			}
+			catch
+			{
+				// ignored
+			}
+			try
+			{
+				EventLog.CreateEventSource(EventSource, "Application");
+				return EventLog.SourceExists(EventSource);
+			}
+			catch
+			{
+				// ignored
+			}
+			return false;
+		}
+
 		protected static EventLogEntryType LogEntryType(LogType logType)
 		{
-			return !UseSystemEventLog ? 0: logType switch
+			return !UseSystemEventLog ? 0 : logType switch
 			{
 				LogType.Output or LogType.Error => EventLogEntryType.Error,
 				LogType.Warning => EventLogEntryType.Warning,
@@ -168,24 +177,23 @@ namespace Lexxys.Logging
 			};
 		}
 
-
 		protected internal static void WriteDebugMessage(string source, string message)
 		{
 			if (Debugger.IsLogging())
-				WriteDebugMessage(new LogRecord(source, message, LogType.Debug, null));
+				WriteDebugMessage(new LogRecord(LogType.Debug, source, message, null));
 		}
 
 		protected internal static void WriteDebugMessage(string source, Func<string> message)
 		{
 			if (Debugger.IsLogging())
-				WriteDebugMessage(new LogRecord(source, message(), LogType.Debug, null));
+				WriteDebugMessage(new LogRecord(LogType.Debug, source, message(), null));
 		}
 
 		protected internal static void WriteDebugMessage(LogRecord record)
 		{
 			if (Debugger.IsLogging())
 			{
-				string message = __critical.Format(record);
+				string message = __eventLogFormatter.Format(record);
 				Debugger.Log(5, EventSource, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message: message + Environment.NewLine);
 			}
 		}
@@ -193,24 +201,24 @@ namespace Lexxys.Logging
 
 		protected internal static void WriteErrorMessage(string source, string message)
 		{
-			WriteErrorMessage(new LogRecord(source, message, LogType.Error, null));
+			WriteErrorMessage(new LogRecord(LogType.Error, source, message, null));
 		}
 
 		protected internal static void WriteErrorMessage(string source, string message, IDictionary argument)
 		{
-			WriteErrorMessage(new LogRecord(source, message, LogType.Error, argument));
+			WriteErrorMessage(new LogRecord(LogType.Error, source, message, argument));
 		}
 
 		protected internal static void WriteErrorMessage(string source, Exception exception)
 		{
-			WriteErrorMessage(new LogRecord(source, LogType.Error, exception));
+			WriteErrorMessage(new LogRecord(LogType.Error, source, exception));
 		}
 
 		protected internal static void WriteErrorMessage(LogRecord record)
 		{
 			if (!UseSystemEventLog && !Debugger.IsLogging())
 				return;
-			string message = __critical.Format(record);
+			string message = __eventLogFormatter.Format(record);
 			if (Debugger.IsLogging())
 				Debugger.Log(5, EventSource, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message: message + Environment.NewLine);
 			if (message.Length > 32765)
@@ -222,14 +230,14 @@ namespace Lexxys.Logging
 
 		protected internal static void WriteEventLogMessage(string source, string message, IDictionary argument)
 		{
-			WriteEventLogMessage(new LogRecord(source, message, LogType.Information, argument));
+			WriteEventLogMessage(new LogRecord(LogType.Information, source, message, argument));
 		}
 
 		protected internal static void WriteEventLogMessage(LogRecord record)
 		{
 			if (!UseSystemEventLog && !Debugger.IsLogging())
 				return;
-			string message = __critical.Format(record);
+			string message = __eventLogFormatter.Format(record);
 			if (Debugger.IsLogging())
 				Debugger.Log(5, EventSource, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message: message + Environment.NewLine);
 			if (message.Length > 32765)
@@ -237,9 +245,6 @@ namespace Lexxys.Logging
 			if (UseSystemEventLog)
 				EventLog.WriteEntry(EventSource, message, LogEntryType(record.LogType));
 		}
-
-		private static readonly LogRecordTextFormatter __critical = new LogRecordTextFormatter(new TextFormatSetting("  ", "  ",
-			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}"));
 
 		class EmptyWriter: LogWriter
 		{

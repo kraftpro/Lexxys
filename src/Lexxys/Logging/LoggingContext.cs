@@ -19,17 +19,30 @@ namespace Lexxys.Logging
 
 		internal const int LogTypeCount = (int)LogType.MaxValue + 1;
 
-		private static readonly XmlLiteNode DefaultLoggingConfiguration = new XmlLiteBuilder(true)
-			.Element("logging")
-				.Element("logger").Attrib("name", "TextFile").Attrib("class", "Lexxys.Logging.TextFileLogWriter").Attrib("file", "{YMD}-XX.log")
-					.Element("rule").Attrib("level", "TRACE").End()
-				.End()
-			.End().GetFirstNode();
+		private static readonly IReadOnlyList<LoggingConfiguration> DefaultLoggingConfiguration = new []
+		{
+			new LoggingConfiguration
+			{
+				LogItems = new List<XmlLiteNode>
+				{
+					new XmlLiteBuilder(true)
+						.Element("logger")
+							.Attrib("name", "TextFile")
+							.Attrib("class", "Lexxys.Logging.TextFileLogWriter")
+							.Attrib("file", "{YMD}-XX.log")
+							.Element("rule")
+								.Attrib("level", "TRACE")
+							.End()
+						.End().GetFirstNode()
+				}
+			}
+		};
 
 		internal const int FlushBoundMultiplier = 1024;
 
 		private static readonly List<Logger> _loggers = new List<Logger>(64);
 		private static volatile bool _enabled = true;
+		private static volatile int _lockDepth;
 		private static volatile bool _initialized;
 		private static volatile bool _stopped;
 		private static readonly object SyncRoot = new object();
@@ -97,7 +110,7 @@ namespace Lexxys.Logging
 				_initialized = true;
 				foreach (var logger in _loggers)
 				{
-					logger.Update();
+					logger.SetListeners(GetListeners(logger.Source));
 				}
 				OnChanged();
 			}
@@ -105,11 +118,11 @@ namespace Lexxys.Logging
 
 		private static List<LogWriter> LoadConfiguration()
 		{
-			IList<LoggingConfiguration> config = Config.GetList<LoggingConfiguration>("logging");
+			var config = Config.GetList<LoggingConfiguration>("logging");
 			if (config == null || config.Count == 0)
 			{
 				Config.LogConfigurationEvent("Lexxys.LoggingContext", SR.LoggingConfidurationMissing());
-				config = new List<LoggingConfiguration> { LoggingConfiguration.FromXml(DefaultLoggingConfiguration) };
+				config = DefaultLoggingConfiguration;
 			}
 			DefaultBatchSize = -1;
 			DefaultFlushBound = -1;
@@ -244,7 +257,11 @@ namespace Lexxys.Logging
 			}
 		}
 
-		public static bool IsEnabled => _enabled;
+		public static int LockLogging() => Interlocked.Increment(ref _lockDepth);
+
+		public static int UnlockLogging() => Interlocked.Decrement(ref _lockDepth);
+
+		public static bool IsEnabled => _enabled && !_stopped && _lockDepth <= 0;
 
 		public static bool IsInitialized => _initialized;
 
@@ -261,7 +278,7 @@ namespace Lexxys.Logging
 			{
 				if (!_loggers.Contains(logger))
 				{
-					logger.Update();
+					logger.SetListeners(GetListeners(logger.Source));
 					_loggers.Add(logger);
 				}
 			}

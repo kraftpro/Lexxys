@@ -6,12 +6,50 @@
 //
 using System;
 using System.Collections;
-using System.Text;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Lexxys.Logging
 {
+	public enum FormatItemType
+	{
+		IndentMark = 0,
+		MachineName = 1,
+		DomainName = 2,
+		ProcessId = 3,
+		ProcessName = 4,
+		ThreadId = 5,
+		ThreadSysId = 6,
+		SequencialNumber = 7,
+		Timestamp = 8,
+
+		Source = 9,
+		Message = 10,
+		Type = 11,
+		Grouping = 12,
+		Indent = 13,
+
+		Empty = 14,
+	}
+
+	public readonly struct LogRecordFormatItem
+	{
+		public readonly FormatItemType Index;
+		public readonly string Prefix;
+		public readonly string Format;
+
+		public LogRecordFormatItem(FormatItemType index, string prefix, string format)
+		{
+			Index = index;
+			Prefix = prefix;
+			Format = format;
+		}
+	}
+
 	/// <summary>
 	/// Convert <see cref="LogRecord"/> to string using formatting template.
 	/// </summary>
@@ -19,43 +57,28 @@ namespace Lexxys.Logging
 	{
 		public const int MaxIndents = 20;
 		private const int MAX_STACK_ALLOC = 16 * 1024;
-		private static readonly TextFormatSetting Defaults = new TextFormatSetting("  ", ". ",
-			"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff} {IndentMark}{Source}: {Message}");
+		private static readonly TextFormatSetting Defaults = new TextFormatSetting(
+			"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff} {IndentMark}{Source}{EventId:\\.0}: {Message}",
+			"  ",
+			". ");
 
-		private readonly LogRecordFormatItem[] _mappedFormat;
+		private const string NullValue = "(null)";
+		private const string DbNullValue = "(dbnull)";
+
+		private readonly IReadOnlyCollection<LogRecordFormatItem> _mappedFormat;
 
 		public TextFormatSetting Setting { get; }
 
 		public LogRecordTextFormatter(TextFormatSetting setting)
 		{
-			Setting = new TextFormatSetting(Defaults);
-			if (setting != null)
-				Setting.Join(setting);
+			Setting = new TextFormatSetting(Defaults).Join(setting);
+			_mappedFormat = MapFormat(Setting.Format);
+		}
 
-			Setting.Indent = KeepLf(Setting.Indent);
-			Setting.Para = KeepLf(Setting.Para);
-			Setting.Format = KeepLf(Setting.Format);
-
-			if (Setting.Format.IndexOf("{IndentMark", StringComparison.OrdinalIgnoreCase) < 0)
-			{
-				int i = Setting.Format.IndexOf("{Source", StringComparison.OrdinalIgnoreCase);
-				if (i < 0)
-					i = Setting.Format.IndexOf("{Message", StringComparison.OrdinalIgnoreCase);
-				if (i < 0)
-					i = 0;
-				Setting.Format = Setting.Format.Substring(0, i) + "{IndentMark}" + Setting.Format.Substring(i);
-			}
-
-			List<LogRecordFormatItem> xx = LogRecord.MapFormat(Setting.Format);
-			_mappedFormat = new LogRecordFormatItem[xx.Count];
-			for (int i = 0; i < xx.Count; ++i)
-			{
-				string s = KeepLf(xx[i].Left);
-				if (s == xx[i].Left)
-					_mappedFormat[i] = xx[i];
-				else
-					_mappedFormat[i] = new LogRecordFormatItem(xx[i].Index, s, xx[i].Format);
-			}
+		public LogRecordTextFormatter(string format, string indent = null, string para = null)
+		{
+			Setting = new TextFormatSetting(format, indent ?? "  ", para ?? ". ");
+			_mappedFormat = MapFormat(Setting.Format);
 		}
 
 		/// <summary>
@@ -100,45 +123,156 @@ namespace Lexxys.Logging
 			if (record == null)
 				return writer;
 
-			string newLine = GetIndentString(record.Indent);
-
-			var buffer = new StringBuilder(512);
-			record.Format(buffer, _mappedFormat, newLine);
-
-			var text = buffer.ToString().AsSpan();
-			int j = text.Length - 1;
-			while (j >= 0 && text[j] == '\n')
-			{
-				--j;
-			}
-			if (j + 1 < text.Length)
-				text = text.Slice(0, j + 1);
-
-			newLine = Environment.NewLine + Setting.Para + Setting.Para + newLine;
-			WriteText(writer, text, newLine);
+			var indent = GetIndentString(record.Indent);
+			var newLine = Environment.NewLine + Setting.Next + Setting.Next + indent;
+			Format(writer, record, _mappedFormat, indent, newLine);
 
 			if (record.Data != null)
 			{
-				string newLine2 = newLine + Setting.Indent;
+				var newLine2 = newLine + Setting.Indent;
 				foreach (DictionaryEntry arg in record.Data)
 				{
 					writer.Write(newLine);
-					WriteText(writer,
-						arg.Key == null ? "<null>".AsSpan():
-						arg.Key == DBNull.Value ? "<dbnull>".AsSpan():
-						KeepLf(arg.Key.ToString().Trim()).AsSpan(), newLine2);
-					writer.Write(" = ");
+					if (arg.Key == null)
+					{
+						writer.Write(NullValue + " = ");
+					}
+					else if (arg.Key == DBNull.Value)
+					{
+						writer.Write(DbNullValue + " = ");
+					}
+					else
+					{
+						writer.Write(arg.Key.ToString().AsSpan().Trim());
+						writer.Write(" = ");
+					}
 					if (arg.Value is string strvalue)
-						WriteText(writer, KeepLf(strvalue.Trim()).AsSpan(), newLine2);
+						WriteText(writer, strvalue.AsSpan().Trim(), newLine2);
 					else
 						Dump(writer, arg.Value, newLine2);
 				}
 			}
-
-			if (record.StackTrace != null)
-				SetTab(writer, record.StackTrace.AsSpan(), newLine);
 			return writer;
 		}
+
+		private void Format(TextWriter writer, LogRecord record, IEnumerable<LogRecordFormatItem> format, string indent, string newLine)
+		{
+			int length = 0;
+			foreach (LogRecordFormatItem item in format)
+			{
+				writer.Write(item.Prefix);
+				switch (item.Index)
+				{
+					case FormatItemType.IndentMark:
+						if (indent != null)
+							writer.Write(indent);
+						break;
+					case FormatItemType.MachineName:
+						writer.Write(record.Context.MachineName);
+						break;
+					case FormatItemType.DomainName:
+						writer.Write(record.Context.DomainName);
+						break;
+					case FormatItemType.ProcessId:
+						writer.Write(record.Context.ProcessId.ToString(item.Format));
+						break;
+					case FormatItemType.ProcessName:
+						writer.Write(record.Context.ProcessName);
+						break;
+					case FormatItemType.ThreadId:
+						writer.Write(record.Context.ThreadId.ToString(item.Format));
+						break;
+					case FormatItemType.ThreadSysId:
+						writer.Write(record.Context.ThreadSysId.ToString(item.Format));
+						break;
+					case FormatItemType.SequencialNumber:
+						writer.Write(record.Context.SequentialNumber.ToString(item.Format));
+						break;
+					case FormatItemType.Timestamp:
+						if (item.Format == null)
+						{
+							AppendTimeStamp(writer, record.Context.Timestamp, true);
+							length += 23;
+						}
+						else if (item.Format == "t")
+						{
+							AppendTimeStamp(writer, record.Context.Timestamp, false);
+							length += 10;
+						}
+						else
+						{
+							writer.Write(record.Context.Timestamp.ToString(item.Format));
+						}
+						break;
+					case FormatItemType.Source:
+						if (record.Source != null)
+							writer.Write(LogRecordTextFormatter.NormalizeWs(record.Source));
+						break;
+					case FormatItemType.Message:
+						if (record.Message != null)
+							LogRecordTextFormatter.WriteText(writer, record.Message.AsSpan(), newLine);
+						break;
+					case FormatItemType.Type:
+						if (item.Format == null)
+							writer.Write(record.LogType.ToString());
+						else if (item.Format == "1")
+							writer.Write(record.LogType >= LogType.Output && record.LogType <= LogType.MaxValue ? __severity1[(int)record.LogType] : record.LogType.ToString());
+						else if (item.Format == "3")
+							writer.Write(record.LogType >= LogType.Output && record.LogType <= LogType.MaxValue ? __severity3[(int)record.LogType] : record.LogType.ToString());
+						else
+							writer.Write(record.LogType.ToString(item.Format));
+						break;
+					case FormatItemType.Grouping:
+						writer.Write(record.RecordType.ToString(item.Format));
+						break;
+					case FormatItemType.Indent:
+						writer.Write(record.Indent.ToString(item.Format));
+						break;
+				}
+			}
+		}
+		private static readonly string[] __severity1 = new[] { "O", "E", "W", "I", "T", "D" };
+		private static readonly string[] __severity3 = new[] { "OUT", "ERR", "WRN", "INF", "TRC", "DBG" };
+
+		private void AppendTimeStamp(TextWriter writer, DateTime date, bool useDate)
+		{
+			if (useDate)
+			{
+				Write4(date.Year);
+				writer.Write('-');
+				Write2(date.Month);
+				writer.Write('-');
+				Write2(date.Day);
+				writer.Write('T');
+			}
+
+			Write2(date.Hour);
+			writer.Write(':');
+			Write2(date.Minute);
+			writer.Write(':');
+			Write2(date.Second);
+			writer.Write('.');
+			var value = (int)(date.Ticks % TicksPerSecond / TicksPerFraction);
+			writer.Write((char)(value / 10000 + '0'));
+			Write4(value % 10000);
+
+			void Write2(int value)
+			{
+				writer.Write((char)(value / 10 + '0'));
+				writer.Write((char)(value % 10 + '0'));
+			}
+			void Write4(int value)
+			{
+				writer.Write((char)(value / 1000 + '0'));
+				value %= 1000;
+				writer.Write((char)(value / 100 + '0'));
+				value %= 100;
+				writer.Write((char)(value / 10 + '0'));
+				writer.Write((char)(value % 10 + '0'));
+			}
+		}
+		private const long TicksPerFraction = 100L;
+		private const long TicksPerSecond = 10_000_000L;
 
 		private string GetIndentString(int indent)
 		{
@@ -160,143 +294,48 @@ namespace Lexxys.Logging
 		}
 		private static readonly string[] EmptyStringArray = new string[MaxIndents];
 
-		private static void WriteText(TextWriter text, ReadOnlySpan<char> value, string lineFeed)
+		public static void WriteText(TextWriter writer, ReadOnlySpan<char> value, string newLine)
 		{
+			value = value.Trim();
+			var crLf = CrLfFf.AsSpan();
+			while (crLf.IndexOf(value[0]) > 0)
+			{
+				value = value.Slice(1);
+				if (value.Length == 0)
+					return;
+			}
 			int k;
-			while ((k = value.IndexOf('\n')) >= 0)
+			while ((k = value.IndexOfAny(crLf)) >= 0)
 			{
-				text.Write(value.Slice(0, k));
-				text.Write(lineFeed);
+				writer.Write(value.Slice(0, k));
 				value = value.Slice(k + 1);
-			}
-			text.Write(value);
-		}
-
-		private static void Dump(TextWriter text, object value, string newLine)
-		{
-			switch (value)
-			{
-				case null:
-					text.Write("<null>");
+				if (value.Length == 0)
 					return;
-				case string str:
-					Strings.EscapeCsString(text, str.AsSpan());
-					return;
-				case IDump idump:
-					idump.Dump(DumpWriter.Create(text));
-					return;
-				case IDumpJson jdump:
-					jdump.ToJson(JsonBuilder.Create(text));
-					return;
-				case IEnumerable<byte> bytes:
-					text.Write("0x");
-					foreach (var b in bytes)
-					{
-						text.Write(HexChar[b >> 4]);
-						text.Write(HexChar[b & 15]);
-					}
-					return;
-				case IEnumerable collection:
-					text.Write('{');
-					bool first = true;
-					foreach (object item in collection)
-					{
-						if (first)
-							first = false;
-						else
-							text.Write(", ");
-						Dump(text, item, newLine);
-					}
-					text.Write('}');
-					return;
-			}
-
-			if (value == DBNull.Value)
-			{
-				text.Write("<dbnull>");
-				return;
-			}
-
-			Type t = value.GetType();
-			var s = KeepLf(value.ToString().Trim());
-			if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-			{
-				int i = s.IndexOf(", ", StringComparison.Ordinal);
-				if (i >= 0)
-					s = s.Substring(0, i) + " = " + s.Substring(i + 2);
-			}
-			WriteText(text, s.AsSpan(), newLine);
-		}
-		private static readonly char[] HexChar = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-
-		private static unsafe string RemoveLetters(ReadOnlySpan<char> value)
-		{
-			//private static Regex __nonSpaceChar = new Regex(@"[^\s]");
-			//return __nonSpaceChar.Replace(value, " ");
-			if (value.Length > MAX_STACK_ALLOC)
-			{
-				fixed (char* buffer = new char[value.Length])
+				while (crLf.IndexOf(value[0]) > 0)
 				{
-					return RemoveLetters_(buffer, value);
+					value = value.Slice(1);
+					if (value.Length == 0)
+						return;
 				}
+				writer.Write(newLine);
 			}
+			writer.Write(value);
+		}
+		private const string CrLfFf = "\r\n\f\u0085\u2028\u2029";
+
+		private static void Dump(TextWriter writer, object value, string newLine)
+		{
+			if (value == null)
+				writer.Write(NullValue);
+			else if (value is IDump idump)
+				idump.Dump(new DumpTextWriter(writer, newLine));
+			else if (value is IDumpJson jdump)
+				jdump.ToJson(JsonBuilder.Create(writer));
+			else if (value == DBNull.Value)
+				writer.Write(DbNullValue);
 			else
-			{
-				char* buffer = stackalloc char[value.Length];
-				return RemoveLetters_(buffer, value);
-			}
+				new DumpTextWriter(writer, newLine).Dump(value, true);
 		}
-
-		private static unsafe string RemoveLetters_(char* buffer, ReadOnlySpan<char> value)
-		{
-			//private static Regex __nonSpaceChar = new Regex(@"[^\s]");
-			//return __nonSpaceChar.Replace(value, " ");
-			char* p = buffer;
-			foreach (char c in value)
-			{
-				*p++ = Char.IsWhiteSpace(c) ? c : ' ';
-			}
-			return new string(buffer, 0, value.Length);
-		}
-
-		private static void SetTab(TextWriter text, ReadOnlySpan<char> value, string tab)
-		{
-			//private static Regex __setTab = new Regex(@"(\r\n?|\n\r?)\s*");
-			//string s = __setTab.Replace(value, tab);
-			//return s.EndsWith(tab, StringComparison.Ordinal) ? s.Substring(0, s.Length - tab.Length): s;
-
-			int j = 0;
-			while (j < value.Length && Char.IsWhiteSpace(value[j]))
-			{
-				++j;
-			}
-			if (j == value.Length)
-				return;
-			if (j > 0)
-				value = value.Slice(j);
-
-			text.Write(tab);
-
-			int i;
-			while ((i = value.IndexOfAny(CrLf)) >= 0)
-			{
-				text.Write(value.Slice(0, i));
-				value = value.Slice(value.Length > i + 1 && value[i + 1] == (value[i] ^ ('\r' ^ '\n')) ? i + 2 : i + 1);
-				if (value.Length == 0)
-					return;
-				j = 0;
-				while (j < value.Length && Char.IsWhiteSpace(value[j]) && value[j] != '\n' && value[j] != '\r')
-					++j;
-				if (j > 0)
-					value = value.Slice(j);
-				if (value.Length == 0)
-					return;
-				if (value[0] != '\n' && value[0] != '\r')
-					text.Write(tab);
-			}
-			text.Write(value);
-		}
-		private static readonly char[] CrLf = { '\r', '\n' };
 
 		internal static unsafe string NormalizeWs(string value)
 		{
@@ -343,82 +382,159 @@ namespace Lexxys.Logging
 				Finish:;
 			}
 			return new string(buffer, 0, (int)(p - buffer));
-			static bool IsWhiteSpace(char c) => c < '\x1680' ? c <= ' ' || c == '\x00a0' || c == '\x0085':
-				(c >= '\x2000' && c <= '\x200a') ||
-				c == '\x1680' ||
-				c == '\x2028' ||
-				c == '\x2029' ||
-				c == '\x202f' ||
-				c == '\x205f' ||
-				c == '\x3000' ||
-				c == '\xFEFF';
-		}
-
-		internal static unsafe string KeepLf(string value)
-		{
-			if (value == null)
-				return null;
-			int i = value.IndexOfAny(CrCr);
-			if (i < 0)
-				return value;
-			if (i > 0 && value[i - 1] == '\n')
-				--i;
-			if (value.Length > MAX_STACK_ALLOC)
+			static bool IsWhiteSpace(char c)
 			{
-				fixed (char* buffer = new char[value.Length])
-				{
-					return KeepLf_(buffer, i, value);
-				}
-			}
-			else
-			{
-				char* buffer = stackalloc char[value.Length];
-				return KeepLf_(buffer, i, value);
+				if (c < '\x7F') return c <= ' ';
+				if (c <= '\xA0') return true;
+				var k = Char.GetUnicodeCategory(c);
+				return k == UnicodeCategory.OtherNotAssigned || k == UnicodeCategory.Control || k == UnicodeCategory.SpaceSeparator;
 			}
 		}
-		private static readonly char[] CrCr = { '\r', '\f', '\u0085', '\u2028', '\u2029' };
 
-		private static unsafe string KeepLf_(char* buffer, int i, string value)
+		private static IReadOnlyCollection<LogRecordFormatItem> MapFormat(string format)
 		{
-			//private static Regex __keepLf = new Regex(@"\r\n?|\n\r?");
-			//return __keepLf.Replace(value, "\n");
-			char* p = buffer;
-			int length = value.Length - 1;
-			fixed (char* pvalue = value)
+			return __formatItems.GetOrAdd(format, Map);
+
+			static IReadOnlyCollection<LogRecordFormatItem> Map(string format)
 			{
-				int len = value.Length;
-				Buffer.MemoryCopy(pvalue, p, len * sizeof(char), i * sizeof(char));
-
-				char* q = pvalue + i;
-				char* e = pvalue + len;
-
-				while (q != e)
+				var result = new List<LogRecordFormatItem>();
+				MatchCollection mc = __formatRe.Matches(format);
+				int last = 0;
+				foreach (Match m in mc)
 				{
-					char c = *q++;
-					switch (c)
+					if (NamesMap.TryGetValue(m.Groups[1].Value.ToUpperInvariant(), out FormatItemType id))
 					{
-						case '\r':
-							if (q != e && *q == '\n')
-								++q;
-							c = '\n';
-							break;
-						case '\n':
-							if (q != e && *q == '\r')
-								++q;
-							break;
-						case '\f':
-						case '\u0085':
-						case '\u2028':
-						case '\u2029':
-							c = '\n';
-							break;
+						string f = m.Groups[4].Value;
+						if (f.Length == 0)
+							f = null;
+						else if (id == FormatItemType.Timestamp)
+							if (f.Equals("yyyy-MM-ddTHH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
+								f = null;
+							else if (f.Equals("HH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
+								f = "t";
+						result.Add(new LogRecordFormatItem(id, format.Substring(last, m.Index - last), f));
+						last = m.Index + m.Length;
 					}
-					*p++ = c;
 				}
+				if (last < format.Length)
+					result.Add(new LogRecordFormatItem(FormatItemType.Empty, format.Substring(last), null));
+				return result;
 			}
-			return new string(buffer, 0, (int)(p - buffer));
+		}
+		private static readonly Regex __formatRe = new Regex(@"\{\s*([a-zA-Z]+)\s*(,\s*[0-9]*)?\s*(:(.*?))?\s*\}", RegexOptions.Compiled);
+		private static readonly ConcurrentDictionary<string, IReadOnlyCollection<LogRecordFormatItem>> __formatItems = new ConcurrentDictionary<string, IReadOnlyCollection<LogRecordFormatItem>>();
+
+		private static readonly Dictionary<string, FormatItemType> NamesMap = new Dictionary<string, FormatItemType>(14)
+			{
+				{ "INDENTMARK", FormatItemType.IndentMark },
+
+				{ "MACHINENAME", FormatItemType.MachineName },
+				{ "DOMAINNAME", FormatItemType.DomainName },
+				{ "PROCESSID", FormatItemType.ProcessId },
+				{ "PROCESSNAME", FormatItemType.ProcessName },
+				{ "THREADID", FormatItemType.ThreadId },
+				{ "THREADSYSID", FormatItemType.ThreadSysId },
+				{ "SEQNUMBER", FormatItemType.SequencialNumber },
+				{ "TIMESTAMP", FormatItemType.Timestamp },
+
+				{ "SOURCE", FormatItemType.Source },
+				{ "MESSAGE", FormatItemType.Message },
+				{ "TYPE", FormatItemType.Type },
+				{ "GROUPING", FormatItemType.Grouping },
+				{ "INDENT", FormatItemType.Indent },
+			};
+
+		class DumpTextWriter : DumpWriter
+		{
+			private readonly TextWriter _w;
+			private readonly string _nl;
+			private bool _lf;
+
+			public DumpTextWriter(TextWriter writer, string newLine, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0)
+				: base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
+			{
+				_w = writer ?? throw new ArgumentNullException(nameof(writer));
+				_nl = newLine ?? throw new ArgumentNullException(nameof(newLine));
+			}
+
+			/// <inheritdoc />
+			public override DumpWriter Text(string text)
+			{
+				if (Left == 0)
+					return this;
+				if (text == null)
+					text = NullValue;
+				ReadOnlySpan<char> value;
+				int length = text.Length;
+				value = Left < length ? text.AsSpan(0, Left): text.AsSpan();
+				if (value.Length == 0)
+					return this;
+
+				var crLf = CrLfFf.AsSpan();
+				int k;
+				while ((k = value.IndexOfAny(crLf)) >= 0)
+				{
+					if (k > 0)
+					{
+						_lf = false;
+						if (k >= Left)
+						{
+							_w.Write(value.Slice(0, Left));
+							Left = 0;
+							return this;
+						}
+						_w.Write(value.Slice(0, k));
+						Left -= k;
+					}
+					value = value.Slice(k + 1);
+					while (value.Length > 0 && crLf.IndexOf(value[0]) > 0)
+					{
+						value = value.Slice(1);
+					}
+					if (!_lf)
+					{
+						_lf = true;
+						_w.Write(_nl);
+						--Left;
+						if (Left == 0)
+							return this;
+					}
+				}
+				if (value.Length > 0)
+				{
+					_lf = false;
+					if (value.Length > Left)
+					{
+						_w.Write(value.Slice(0, Left));
+						Left = 0;
+					}
+					else
+					{
+						_w.Write(value);
+						Left -= value.Length;
+					}
+				}
+				return this;
+			}
+
+			/// <inheritdoc />
+			public override DumpWriter Text(char text)
+			{
+				if (Left <= 0)
+					return this;
+				if (CrLfFf.IndexOf(text) < 0)
+				{
+					_lf = false;
+					_w.Write(text);
+				}
+				else if (!_lf)
+				{
+					_lf = true;
+					_w.Write(_nl);
+				}
+				--Left;
+				return this;
+			}
 		}
 	}
 }
-
-

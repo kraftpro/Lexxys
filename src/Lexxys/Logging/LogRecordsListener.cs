@@ -18,21 +18,22 @@ namespace Lexxys.Logging
 		private static readonly LogRecordsListener Empty = new LogRecordsListener(0, Array.Empty<int>());
 		private static readonly LogRecordsListener[] NoListeners = { Empty, Empty, Empty, Empty, Empty, Empty };
 
-		private static volatile Listener[] _global = Array.Empty<Listener>();
+		private static volatile Listener[] __global = Array.Empty<Listener>();
+		private static volatile int __version;
 
 		private readonly int[] _listener;
-		private readonly int _hash;
+		private readonly int _version;
 
-		private LogRecordsListener(int hash, int[] index)
+		private LogRecordsListener(int varsion, int[] index)
 		{
-			_hash = hash;
+			_version = varsion;
 			_listener = index;
 		}
 
 		public void Write(LogRecord record)
 		{
-			Listener[] global = _global;
-			if (_hash != global.GetHashCode())
+			Listener[] global = __global;
+			if (_version != __version)
 				return;
 
 			for (int i = 0; i < _listener.Length; ++i)
@@ -43,12 +44,15 @@ namespace Lexxys.Logging
 			}
 		}
 
-		public static void Initialize(IEnumerable<LogWriter> writers)
+		// Should be synced with Collect
+		internal static void Initialize(IEnumerable<LogWriter> writers)
 		{
 			if (writers == null)
 				throw new ArgumentNullException(nameof(writers));
-			Listener[] next = writers.Where(o => o != null && !o.Rule.IsEmpty).Select(o => new Listener(o)).ToArray();
-			Listener[] prev = Interlocked.Exchange(ref _global, next);
+			var next = writers.Where(o => o != null && !o.Rule.IsEmpty).Select(o => new Listener(o)).ToArray();
+			var prev = __global;
+			++__version;
+			__global = next;
 			if (prev.Length > 0)
 				DisposeListeners(prev);
 		}
@@ -61,9 +65,11 @@ namespace Lexxys.Logging
 			}
 		}
 
+		// Should be synced with Initialize
 		public static LogRecordsListener[] Collect(string source)
 		{
-			Listener[] global = _global;
+			var global = __global;
+			var version = __version;
 			var listeners = new LogRecordsListener[LoggingContext.LogTypeCount];
 			for (LogType logType = 0; logType <= LogType.MaxValue; ++logType)
 			{
@@ -73,7 +79,7 @@ namespace Lexxys.Logging
 					if (global[i].Writer.Rule.Contains(source, logType))
 						indices.Add(i);
 				}
-				listeners[(int)logType] = indices.Count == 0 ? Empty : new LogRecordsListener(global.GetHashCode(), indices.ToArray());
+				listeners[(int)logType] = indices.Count == 0 ? Empty : new LogRecordsListener(version, indices.ToArray());
 			}
 			return listeners;
 		}
@@ -85,7 +91,7 @@ namespace Lexxys.Logging
 
 		public static void ClearBuffers()
 		{
-			Listener[] global = _global;
+			Listener[] global = __global;
 			for (int i = 0; i < global.Length; ++i)
 			{
 				Listener temp = global[i];
@@ -96,7 +102,7 @@ namespace Lexxys.Logging
 
 		public static void FlushBuffers()
 		{
-			Listener[] global = _global;
+			Listener[] global = __global;
 			for (int i = 0; i < global.Length; ++i)
 			{
 				Listener temp = global[i];
@@ -107,7 +113,7 @@ namespace Lexxys.Logging
 
 		public static void StopAll(bool force = false)
 		{
-			Listener[] global = _global;
+			Listener[] global = __global;
 #if TraceFlushing
 			long x = WatchTimer.Start();
 			Console.WriteLine("Start flushing.");
@@ -255,7 +261,7 @@ namespace Lexxys.Logging
 				if (force)
 				{
 					_queue = new LogRecordQueue();
-					_writer.Write(new LogRecord(Source, "Terminating...", LogType.Warning, null));
+					_writer.Write(new LogRecord(LogType.Warning, Source, "Terminating...", null));
 					_writer.Close();
 #if NETFRAMEWORK
 					LogWriter.WriteEventLogMessage(Source, "Terminating...", LogRecord.Args("ThreadName", _thread.Name));
@@ -270,7 +276,7 @@ namespace Lexxys.Logging
 						if (!_queue.IsEmpty)
 							_writer.Write(_queue);
 
-						_writer.Write(new LogRecord(Source, "Exiting...", LogType.Trace, null));
+						_writer.Write(new LogRecord(LogType.Trace, Source, "Exiting...", null));
 						_writer.Close();
 						if ((_thread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0)
 							return;

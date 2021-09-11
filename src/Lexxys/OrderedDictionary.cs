@@ -14,17 +14,18 @@ using System.Runtime.CompilerServices;
 
 namespace Lexxys
 {
-	public class OrderedDictionary<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary, IList<KeyValuePair<TKey, TValue>>, IReadOnlyList<KeyValuePair<TKey, TValue>>
+	[Serializable]
+	public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary, IList<KeyValuePair<TKey, TValue>>, IReadOnlyList<KeyValuePair<TKey, TValue>>
 	{
 		protected List<KeyValuePair<TKey, TValue>> List;
 		protected IEqualityComparer<TKey> Comparer;
 
-		public OrderedDictionary(IEqualityComparer<TKey> comparer)
+		public OrderedBag(IEqualityComparer<TKey> comparer)
 			: this(0, comparer)
 		{
 		}
 
-		public OrderedDictionary(int capacity = 0, IEqualityComparer<TKey> comparer = null)
+		public OrderedBag(int capacity = 0, IEqualityComparer<TKey> comparer = null)
 		{
 			if (capacity < 0)
 				throw new ArgumentOutOfRangeException(nameof(capacity), capacity, null);
@@ -32,7 +33,7 @@ namespace Lexxys
 			Comparer = comparer ?? EqualityComparer<TKey>.Default;
 		}
 
-		public OrderedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer = null)
+		public OrderedBag(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer = null)
 		{
 			if (collection == null)
 				throw new ArgumentNullException(nameof(collection));
@@ -73,13 +74,7 @@ namespace Lexxys
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private int IndexOf(TKey key) => List.FindIndex(p => Comparer.Equals(p.Key, key));
 
-		public void Add(TKey key, TValue value)
-		{
-			int i = IndexOf(key);
-			if (i >= 0)
-				throw new ArgumentOutOfRangeException(nameof(key), key, null);
-			List.Add(new KeyValuePair<TKey, TValue>(key, value));
-		}
+		public void Add(TKey key, TValue value) => List.Add(new KeyValuePair<TKey, TValue>(key, value));
 
 		public bool ContainsKey(TKey key) => IndexOf(key) >= 0;
 
@@ -160,9 +155,9 @@ namespace Lexxys
 
 		protected class KeyCollection: ICollection<TKey>, ICollection
 		{
-			protected OrderedDictionary<TKey, TValue> Dictionary;
+			protected OrderedBag<TKey, TValue> Bag;
 
-			public KeyCollection(OrderedDictionary<TKey, TValue> dictionary) => Dictionary = dictionary;
+			public KeyCollection(OrderedBag<TKey, TValue> dictionary) => Bag = dictionary;
 
 			public void Add(TKey item) => throw new NotImplementedException();
 
@@ -170,7 +165,7 @@ namespace Lexxys
 
 			public void Clear() => throw new NotImplementedException();
 
-			public bool Contains(TKey item) => Dictionary.IndexOf(item) >= 0;
+			public bool Contains(TKey item) => Bag.IndexOf(item) >= 0;
 
 			public void CopyTo(TKey[] array, int index)
 			{
@@ -178,12 +173,12 @@ namespace Lexxys
 					throw new ArgumentNullException(nameof(array));
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
-				if (array.Length - index < Dictionary.Count)
+				if (array.Length - index < Bag.Count)
 					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
 
-				for (int i = 0; i < Dictionary.List.Count; ++i)
+				for (int i = 0; i < Bag.List.Count; ++i)
 				{
-					array[index++] = Dictionary.List[i].Key;
+					array[index++] = Bag.List[i].Key;
 				}
 			}
 
@@ -193,16 +188,16 @@ namespace Lexxys
 					throw new ArgumentNullException(nameof(array));
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
-				if (array.Length - index < Dictionary.Count)
+				if (array.Length - index < Bag.Count)
 					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
 
-				for (int i = 0; i < Dictionary.List.Count; ++i)
+				for (int i = 0; i < Bag.List.Count; ++i)
 				{
-					array.SetValue(Dictionary.List[i].Key, index++);
+					array.SetValue(Bag.List[i].Key, index++);
 				}
 			}
 
-			public int Count => Dictionary.Count;
+			public int Count => Bag.Count;
 
 			public bool IsReadOnly => true;
 
@@ -212,7 +207,7 @@ namespace Lexxys
 
 			public IEnumerator<TKey> GetEnumerator()
 			{
-				foreach (var item in Dictionary.List)
+				foreach (var item in Bag.List)
 				{
 					yield return item.Key;
 				}
@@ -220,7 +215,7 @@ namespace Lexxys
 
 			IEnumerator IEnumerable.GetEnumerator()
 			{
-				foreach (var item in Dictionary.List)
+				foreach (var item in Bag.List)
 				{
 					yield return item.Key;
 				}
@@ -229,9 +224,9 @@ namespace Lexxys
 
 		protected class ValueCollection: ICollection<TValue>, ICollection
 		{
-			protected OrderedDictionary<TKey, TValue> Dictionary;
+			protected OrderedBag<TKey, TValue> Bag;
 
-			public ValueCollection(OrderedDictionary<TKey, TValue> dictionary) => Dictionary = dictionary;
+			public ValueCollection(OrderedBag<TKey, TValue> dictionary) => Bag = dictionary;
 
 			public void Add(TValue item) => throw new NotImplementedException();
 
@@ -239,7 +234,7 @@ namespace Lexxys
 
 			public void Clear() => throw new NotImplementedException();
 
-			public bool Contains(TValue item) => Dictionary.List.FindIndex(o => Object.Equals(o.Value, item)) >= 0;
+			public bool Contains(TValue item) => Bag.List.FindIndex(o => Object.Equals(o.Value, item)) >= 0;
 
 			public void CopyTo(TValue[] array, int index)
 			{
@@ -247,12 +242,12 @@ namespace Lexxys
 					throw new ArgumentNullException(nameof(array));
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
-				if (array.Length - index < Dictionary.Count)
+				if (array.Length - index < Bag.Count)
 					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
 
-				for (int i = 0; i < Dictionary.List.Count; ++i)
+				for (int i = 0; i < Bag.List.Count; ++i)
 				{
-					array[index++] = Dictionary.List[i].Value;
+					array[index++] = Bag.List[i].Value;
 				}
 			}
 
@@ -262,16 +257,16 @@ namespace Lexxys
 					throw new ArgumentNullException(nameof(array));
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
-				if (array.Length - index < Dictionary.Count)
+				if (array.Length - index < Bag.Count)
 					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
 
-				for (int i = 0; i < Dictionary.List.Count; ++i)
+				for (int i = 0; i < Bag.List.Count; ++i)
 				{
-					array.SetValue(Dictionary.List[i].Value, index++);
+					array.SetValue(Bag.List[i].Value, index++);
 				}
 			}
 
-			public int Count => Dictionary.Count;
+			public int Count => Bag.Count;
 
 			public bool IsReadOnly => true;
 
@@ -281,7 +276,7 @@ namespace Lexxys
 
 			public IEnumerator<TValue> GetEnumerator()
 			{
-				foreach (var item in Dictionary.List)
+				foreach (var item in Bag.List)
 				{
 					yield return item.Value;
 				}
@@ -289,7 +284,7 @@ namespace Lexxys
 
 			IEnumerator IEnumerable.GetEnumerator()
 			{
-				foreach (var item in Dictionary.List)
+				foreach (var item in Bag.List)
 				{
 					yield return item.Value;
 				}
@@ -298,9 +293,9 @@ namespace Lexxys
 
 		private sealed class DictionaryEnumerator: IDictionaryEnumerator
 		{
-			private readonly IEnumerator<KeyValuePair<TKey, TValue>> _parent;
+			private readonly List<KeyValuePair<TKey, TValue>>.Enumerator _parent;
 
-			public DictionaryEnumerator(OrderedDictionary<TKey, TValue> dictionary) => _parent = dictionary.List.GetEnumerator();
+			public DictionaryEnumerator(OrderedBag<TKey, TValue> dictionary) => _parent = dictionary.List.GetEnumerator();
 
 			public DictionaryEntry Entry => new DictionaryEntry(_parent.Current.Key, _parent.Current.Value);
 
@@ -312,8 +307,9 @@ namespace Lexxys
 
 			public bool MoveNext() => _parent.MoveNext();
 
-			public void Reset() => _parent.Reset();
+			public void Reset() => ((IEnumerator)_parent).Reset();
 		}
+
 		#endregion
 
 		void IDictionary.Add(object key, object value) => Add((TKey)key, (TValue)value);

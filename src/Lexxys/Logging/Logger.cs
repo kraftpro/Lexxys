@@ -5,39 +5,53 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 
+using Microsoft.Extensions.Logging;
+
+#nullable enable
+
 namespace Lexxys
 {
-	using System.Threading;
+using System.Runtime.CompilerServices;
+
 	using Logging;
 
-	public class Logger
+	public class Logger<T>: Logger, ILogger<T>
 	{
-		private readonly string _source;
-		private bool _includeStackTrace;
+		public Logger(): base(typeof(T).Name)
+		{
+		}
+	}	
+
+	public class Logger: ILogger, ILoggerEx
+	{
 		private LogRecordsListener[] _listeners;
 		private LogTypeMask _levels;
 
 		public Logger(string source)
 		{
-			_source = source;
+			if (source == null)
+				throw new ArgumentNullException(nameof(source));
+
+			Source = source;
 			_listeners = Array.Empty<LogRecordsListener>();
 			_levels = LogTypeMask.None;
 			LoggingContext.Register(this);
 		}
 
-		public static Logger TryCreate(string source)
+		public static Logger? TryCreate(string source)
 		{
 			return LoggingContext.IsInitialized ? new Logger(source): null;
 		}
 
-		internal void Update()
+		internal void SetListeners(LogRecordsListener[] listeners)
 		{
-			_listeners = LoggingContext.GetListeners(_source);
+			_listeners = listeners;
 			_levels = LoggingContext.IsEnabled ? SetToOn(_listeners): LogTypeMask.None;
 		}
 
@@ -52,96 +66,89 @@ namespace Lexxys
 			return (LogTypeMask)levels;
 		}
 
-		public static bool Initialized => LoggingContext.IsInitialized;
+		/// <summary>
+		/// Get logger source (usually class name)
+		/// </summary>
+		public string Source { get; }
 
 		/// <summary>
 		/// True, if Direct messages will be logged (Write(...) methods)
 		/// </summary>
 		public bool WriteEnabled
 		{
-			get { return (_levels & LogTypeMask.Output) != 0; }
-			set
-			{
-				if (value && _listeners[(int)LogType.Output] != null)
-					_levels |= LogTypeMask.Output;
-				else
-					_levels &= ~LogTypeMask.Output;
-			}
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => (_levels & LogTypeMask.Output) != 0;
 		}
+
 		/// <summary>
 		/// True, if Error messages will be logged (Error(...) methods)
 		/// </summary>
 		public bool ErrorEnabled
 		{
-			get { return (_levels & LogTypeMask.Error) != 0; }
-			set
-			{
-				if (value && _listeners[(int)LogType.Error] != null)
-					_levels |= LogTypeMask.Error;
-				else
-					_levels &= ~LogTypeMask.Error;
-			}
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => (_levels & LogTypeMask.Error) != 0;
 		}
 		/// <summary>
 		/// True, if Warning messages will be logged (Warning(...) methods)
 		/// </summary>
 		public bool WarningEnabled
 		{
-			get { return (_levels & LogTypeMask.Warning) != 0; }
-			set
-			{
-				if (value && _listeners[(int)LogType.Warning] != null)
-					_levels |= LogTypeMask.Warning;
-				else
-					_levels &= ~LogTypeMask.Warning;
-			}
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => (_levels & LogTypeMask.Warning) != 0;
 		}
 		/// <summary>
 		/// True, if Information messages will be logged (Info(...) methods)
 		/// </summary>
 		public bool InfoEnabled
 		{
-			get { return (_levels & LogTypeMask.Information) != 0; }
-			set
-			{
-				if (value && _listeners[(int)LogType.Information] != null)
-					_levels |= LogTypeMask.Information;
-				else
-					_levels &= ~LogTypeMask.Information;
-			}
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => (_levels & LogTypeMask.Information) != 0;
 		}
 		/// <summary>
 		/// True, if Debug messages will be logged (Debug(...) methods)
 		/// </summary>
 		public bool DebugEnabled
 		{
-			get { return (_levels & LogTypeMask.Debug) != 0; }
-			set
-			{
-				if (value && _listeners[(int)LogType.Debug] != null)
-					_levels |= LogTypeMask.Debug;
-				else
-					_levels &= ~LogTypeMask.Debug;
-			}
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => (_levels & LogTypeMask.Debug) != 0;
 		}
 		/// <summary>
 		/// True, if Trace messages will be logged (Trace(...) methods)
 		/// </summary>
 		public bool TraceEnabled
 		{
-			get { return (_levels & LogTypeMask.Trace) != 0; }
-			set
-			{
-				if (value && _listeners[(int)LogType.Trace] != null)
-					_levels |= LogTypeMask.Trace;
-				else
-					_levels &= ~LogTypeMask.Trace;
-			}
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => (_levels & LogTypeMask.Trace) != 0;
 		}
+
 		/// <summary>
-		/// Get logger source (usually class name)
+		/// Write the <paramref name="record"/> into log
 		/// </summary>
-		public string Source => _source;
+		/// <param name="record">The log record to be writen</param>
+		public void Log(LogRecord record)
+		{
+			if (record == null)
+				throw new ArgumentNullException(nameof(record));
+			_listeners[(int)record.LogType]?.Write(record);
+		}
+
+		public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args)
+		{
+			if (!IsEnabled(logType))
+				return null;
+			return Entry.Create(this, sectionName, logType, 0, args);
+		}
+
+		public IDisposable? Timing(LogType logType, string? description, TimeSpan threshold)
+		{
+			if (!IsEnabled(logType))
+				return null;
+			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
+			return Entry.Create(this, description, description, logType, n == 0 ? -1: n, null);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool IsEnabled(LogType logType) => (_levels & (LogTypeMask)(1 << (int)logType)) != 0;
 
 		public void TurnOn()
 		{
@@ -153,10 +160,14 @@ namespace Lexxys
 			_levels = 0;
 		}
 
-		public static Dictionary<string, object> Args(params object[] args)
+		#region Global methods and static helpers
+
+		public static OrderedBag<string, object?>? Args(params object?[] args)
 		{
 			return LogRecord.Args(args);
 		}
+
+		public static bool Initialized => LoggingContext.IsInitialized;
 
 		public static void Flush()
 		{
@@ -166,28 +177,6 @@ namespace Lexxys
 		public static void Close()
 		{
 			LoggingContext.Stop();
-		}
-
-		/// <summary>
-		/// True - to include stack trace info into log record
-		/// </summary>
-		public bool IncludeStackTrace
-		{
-			get { return _includeStackTrace; }
-			set { _includeStackTrace = value; }
-		}
-
-		/// <summary>
-		/// Write the <paramref name="record"/> into log
-		/// </summary>
-		/// <param name="record">The log record to be writen</param>
-		public void Write(LogRecord record)
-		{
-			if (record == null)
-				throw new ArgumentNullException(nameof(record));
-			LogRecordsListener ls = _listeners[(int)record.LogType];
-			if (ls != null)
-				ls.Write(record);
 		}
 
 		/// <summary>
@@ -217,7 +206,7 @@ namespace Lexxys
 		/// <param name="message">The message</param>
 		public static void WriteEventLogMessage(string source, string message)
 		{
-			LogWriter.WriteEventLogMessage(new LogRecord(source, message, LogType.Information, null));
+			LogWriter.WriteEventLogMessage(new LogRecord(LogType.Information, source, message, null));
 		}
 
 		/// <summary>
@@ -227,7 +216,7 @@ namespace Lexxys
 		/// <param name="message">The message</param>
 		public static void WriteEventLogMessage(string source, Func<string> message)
 		{
-			LogWriter.WriteEventLogMessage(new LogRecord(source, message(), LogType.Information, null));
+			LogWriter.WriteEventLogMessage(new LogRecord(LogType.Information, source, message(), null));
 		}
 
 		/// <summary>
@@ -260,1880 +249,618 @@ namespace Lexxys
 			LogWriter.WriteErrorMessage(source, exception);
 		}
 
-		#region Template
-		//.?
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="exception">Exception to be logged</param>
-		public void Trace(Exception exception)
+		public static int LockLogging() => LoggingContext.LockLogging();
+		public static int UnlockLogging() => LoggingContext.LockLogging();
+
+		#endregion
+
+		#region ILogger
+
+		public bool IsEnabled(LogLevel logLevel)
 		{
-			Trace(_source, exception);
-		}
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="source">Source of the exception</param>
-		/// <param name="exception">Exception to be logged</param>
-		public void Trace(string source, Exception exception)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
+			return logLevel switch
 			{
-				if (exception == null)
-					throw new ArgumentNullException(nameof(exception));
-				if (source == null)
-					source = _source;
+				LogLevel.Trace => TraceEnabled,
+				LogLevel.Debug => DebugEnabled,
+				LogLevel.Information => InfoEnabled,
+				LogLevel.Warning => WarningEnabled,
+				LogLevel.Error => ErrorEnabled,
+				LogLevel.Critical => WriteEnabled,
+				_ => false
+			};
+		}
 
-				var record = new LogRecord(source, LogType.Trace, exception);
-				int i = record.Indent;
+		public void Log<TState>(LogLevel logLevel, EventId eventId, TState? state, Exception? exception, Func<TState?, Exception?, string?>? formatter)
+		{
+			if (!IsEnabled(logLevel))
+				return;
+			IDictionary? args = state as IDictionary;
+			string? message = null;
+			if (formatter != null)
+				message = formatter(state, exception);
+			if (message == null && args == null)
+				message = state?.ToString();
+			var logType = LogTypeFromLogLevel(logLevel);
+			if (exception == null)
+			{
+				Log(new LogRecord(logType, Source, message, args));
+			}
+			else
+			{
+				Log(new LogRecord(logType, Source, message, exception, args));
+				InnerExceptions(logType, Source, exception);
+			}
 
-				while (exception.InnerException != null)
+			static LogType LogTypeFromLogLevel(LogLevel logLevel)
+			{
 				{
-					Write(record);
-					exception = exception.InnerException;
-					record = new LogRecord(source, LogType.Trace, exception, ++i);
+					return logLevel switch
+					{
+						LogLevel.Trace => LogType.Trace,
+						LogLevel.Debug => LogType.Debug,
+						LogLevel.Information => LogType.Information,
+						LogLevel.Warning => LogType.Warning,
+						LogLevel.Error => LogType.Error,
+						LogLevel.Critical => LogType.Output,
+						_ => LogType.MaxValue
+					};
 				}
-				Write(record);
 			}
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
+
+		public IDisposable? BeginScope<TState>(TState state)
+		{
+			if ((_levels & LogTypeMask.Output) == 0)
+				return null;
+			var section = state?.ToString() ?? typeof(TState).Name;
+			return Entry.Create(this, section, LogType.Output, 0, null);
+		}
+
+		#endregion
+
+		#region ILogger, ILoggerEx extensions
+
+		#region Trace
+
+		public void Trace(string? source, string? message, Exception? exception, IDictionary? args)
+		{
+			if (!TraceEnabled)
+				return;
+			if (exception == null)
+			{
+				Stream(LogType.Trace)?.Write(new LogRecord(LogType.Trace, source ?? Source, message, args));
+			}
+			else
+			{
+				Stream(LogType.Trace)?.Write(new LogRecord(LogType.Trace, source ?? Source, message, exception, args));
+				InnerExceptions(LogType.Trace, source ?? Source, exception);
+			}
+		}
+
+		public void Trace(string? source, Exception exception)
+		{
+			if (TraceEnabled)
+				Exception(LogType.Trace, source, exception);
+		}
+
+		public void Trace(string message, IDictionary args)
+		{
+			if (TraceEnabled)
+				Stream(LogType.Trace)?.Write(new LogRecord(LogType.Trace, Source, message, args));
+		}
+
 		public void Trace(string message)
 		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-				Write(new LogRecord(_source, message, LogType.Trace, null));
+			if (TraceEnabled)
+				Stream(LogType.Trace)?.Write(new LogRecord(LogType.Trace, Source, message, null));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and arguments to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Trace(string message, Dictionary<string, object> args)
+
+		public void Trace(string message, string arg1Name, object arg1Value)
 		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-				Write(new LogRecord(_source, message, LogType.Trace, args));
+			if (TraceEnabled)
+				Stream(LogType.Trace)?.Write(new LogRecord(LogType.Trace, Source, message,
+					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argValue">Argument value</param>
-		public void Trace(string message, object argValue)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{"argument", argValue}};
-				Write(new LogRecord(_source, message, LogType.Trace, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argName">Argument name</param>
-		/// <param name="argValue">Argument value</param>
-		public void Trace(string message, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-				Write(new LogRecord(_source, message, LogType.Trace, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
+
 		public void Trace(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
 		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-			{
-				var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-				Write(new LogRecord(_source, message, LogType.Trace, arg));
-			}
+			if (TraceEnabled)
+				Stream(LogType.Trace)?.Write(new LogRecord(LogType.Trace, Source, message,
+					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
-		/// <param name="arg3Name">3rd argument name</param>
-		/// <param name="arg3Value">3rd argument value</param>
+
 		public void Trace(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
 		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-			{
-				var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-				Write(new LogRecord(_source, message, LogType.Trace, arg));
-			}
+			if (TraceEnabled)
+				Stream(LogType.Trace)?.Write(new LogRecord(LogType.Trace, Source, message,
+					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
+
 		public void Trace(string message, params object[] args)
 		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-				Write(new LogRecord(_source, message, LogType.Trace, LogRecord.Args(args)));
+			if (TraceEnabled)
+				Stream(LogType.Trace)?.Write(new LogRecord(LogType.Trace, Source, message, LogRecord.Args(args)));
 		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		public void Trace(Func<string> messageFunction)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Trace, null));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Trace(Func<string> messageFunction, Dictionary<string, object> args)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Trace, args));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
-		public void Trace(Func<string> messageFunction, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Trace, LogRecord.Args(args)));
-			}
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The <see cref="System.Object"/> to format</param>
-		public void TraceFormat(string message, object arg1)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1), LogType.Trace, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		public void TraceFormat(string message, object arg1, object arg2)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2), LogType.Trace, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		/// <param name="arg3">The third <see cref="System.Object"/> to format</param>
-		public void TraceFormat(string message, object arg1, object arg2, object arg3)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2, arg3), LogType.Trace, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="args">An array contained objects to format</param>
-		public void TraceFormat(string message, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Trace) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, args), LogType.Trace, null));
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Trace"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable TraceTiming(int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
-			return Entry.Create(this, "start timer", "stop timer", LogType.Trace, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Trace"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable TraceTiming(TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, "start timer", "stop timer", LogType.Trace, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Trace"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable TraceTiming(string description, int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
-			return Entry.Create(this, description, description, LogType.Trace, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Trace"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable TraceTiming(string description, TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, description, description, LogType.Trace, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Begin named section with <see cref="Lexxys.Logging.LogType.Trace"/> level. All records inside the section will indented.
-		/// </summary>
-		/// <param name="sectionName">Name of the section</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable TraceEnter(string sectionName)
-		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
-			return Entry.Create(this, sectionName, LogType.Trace, 0, null);
-		}
-		public IDisposable TraceEnter(string sectionName, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-			return Entry.Create(this, sectionName, LogType.Trace, 0, arg);
-		}
-		public IDisposable TraceEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
-		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-			return Entry.Create(this, sectionName, LogType.Trace, 0, arg);
-		}
-		public IDisposable TraceEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
-		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-			return Entry.Create(this, sectionName, LogType.Trace, 0, arg);
-		}
-		public IDisposable TraceEnter(string sectionName, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
 
-			var arg = new Dictionary<string, object>((args.Length + 1) / 2);
-			for (int i = 1; i < args.Length; i += 2)
-			{
-				arg.Add(args[i - 1] == null ? "(null)": args[i - 1].ToString(), args[i]);
-			}
-			return Entry.Create(this, sectionName, LogType.Trace, 0, arg);
-		}
-		public IDisposable TraceEnter(string sectionName, Dictionary<string, object> args)
+		public void Trace(Func<string> message, Func<IDictionary>? args = null)
 		{
-			if ((_levels & LogTypeMask.Trace) == 0)
-				return null;
-
-			return Entry.Create(this, sectionName, LogType.Trace, 0, args);
+			if (TraceEnabled)
+				Stream(LogType.Trace)?.Write(new LogRecord(LogType.Trace, Source, message(), args?.Invoke()));
 		}
-		//.?$X = above("LogType.Trace", "TraceTiming", "TraceEnter", "Trace", "[Conditional(\"TRACE\")]", "#if TRACE", "#else\n\treturn null;\n#endif");
+
+		public IDisposable? TraceEnter(string? section, IDictionary? args)
+		{
+			return Enter(LogType.Trace, section, args);
+		}
+
+		public IDisposable? TraceEnter(string? section, params object[] args)
+		{
+			return Enter(LogType.Trace, section, LogRecord.Args(args));
+		}
+
+		public IDisposable? TraceTiming(string? description, TimeSpan threshold = default)
+		{
+			return Timing(LogType.Trace, description, threshold);
+		}
+
 		#endregion
-		//.#back($X, "LogType.Debug", "DebugTiming", "DebugEnter", "Debug", "[Conditional(\"DEBUG\")]", "#if DEBUG", "#else\n\treturn null;\n#endif")
-		#region sp2.pl
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="exception">Exception to be logged</param>
-		public void Debug(Exception exception)
+
+		#region Debug
+
+		public void Debug(string? source, string? message, Exception? exception, IDictionary? args)
 		{
-			Debug(_source, exception);
-		}
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="source">Source of the exception</param>
-		/// <param name="exception">Exception to be logged</param>
-		public void Debug(string source, Exception exception)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
+			if (!DebugEnabled)
+				return;
+			if (exception == null)
 			{
-				if (exception == null)
-					throw new ArgumentNullException(nameof(exception));
-				if (source == null)
-					source = _source;
-
-				var record = new LogRecord(source, LogType.Debug, exception);
-				int i = record.Indent;
-
-				while (exception.InnerException != null)
-				{
-					Write(record);
-					exception = exception.InnerException;
-					record = new LogRecord(source, LogType.Debug, exception, ++i);
-				}
-				Write(record);
+				Stream(LogType.Debug)?.Write(new LogRecord(LogType.Debug, source ?? Source, message, args));
+			}
+			else
+			{
+				Stream(LogType.Debug)?.Write(new LogRecord(LogType.Debug, source ?? Source, message, exception, args));
+				InnerExceptions(LogType.Debug, source ?? Source, exception);
 			}
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
+
+		public void Debug(string? source, Exception exception)
+		{
+			if (DebugEnabled)
+				Exception(LogType.Debug, source, exception);
+		}
+
+		public void Debug(string message, IDictionary args)
+		{
+			if (DebugEnabled)
+				Stream(LogType.Debug)?.Write(new LogRecord(LogType.Debug, Source, message, args));
+		}
+
 		public void Debug(string message)
 		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-				Write(new LogRecord(_source, message, LogType.Debug, null));
+			if (DebugEnabled)
+				Stream(LogType.Debug)?.Write(new LogRecord(LogType.Debug, Source, message, null));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and arguments to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Debug(string message, Dictionary<string, object> args)
+
+		public void Debug(string message, string arg1Name, object arg1Value)
 		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-				Write(new LogRecord(_source, message, LogType.Debug, args));
+			if (DebugEnabled)
+				Stream(LogType.Debug)?.Write(new LogRecord(LogType.Debug, Source, message,
+					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argValue">Argument value</param>
-		public void Debug(string message, object argValue)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{"argument", argValue}};
-				Write(new LogRecord(_source, message, LogType.Debug, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argName">Argument name</param>
-		/// <param name="argValue">Argument value</param>
-		public void Debug(string message, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-				Write(new LogRecord(_source, message, LogType.Debug, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
+
 		public void Debug(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
 		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-			{
-				var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-				Write(new LogRecord(_source, message, LogType.Debug, arg));
-			}
+			if (DebugEnabled)
+				Stream(LogType.Debug)?.Write(new LogRecord(LogType.Debug, Source, message,
+					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
-		/// <param name="arg3Name">3rd argument name</param>
-		/// <param name="arg3Value">3rd argument value</param>
+
 		public void Debug(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
 		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-			{
-				var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-				Write(new LogRecord(_source, message, LogType.Debug, arg));
-			}
+			if (DebugEnabled)
+				Stream(LogType.Debug)?.Write(new LogRecord(LogType.Debug, Source, message,
+					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
+
 		public void Debug(string message, params object[] args)
 		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-				Write(new LogRecord(_source, message, LogType.Debug, LogRecord.Args(args)));
+			if (DebugEnabled)
+				Stream(LogType.Debug)?.Write(new LogRecord(LogType.Debug, Source, message, LogRecord.Args(args)));
 		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		public void Debug(Func<string> messageFunction)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Debug, null));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Debug(Func<string> messageFunction, Dictionary<string, object> args)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Debug, args));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
-		public void Debug(Func<string> messageFunction, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Debug, LogRecord.Args(args)));
-			}
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The <see cref="System.Object"/> to format</param>
-		public void DebugFormat(string message, object arg1)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1), LogType.Debug, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		public void DebugFormat(string message, object arg1, object arg2)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2), LogType.Debug, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		/// <param name="arg3">The third <see cref="System.Object"/> to format</param>
-		public void DebugFormat(string message, object arg1, object arg2, object arg3)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2, arg3), LogType.Debug, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="args">An array contained objects to format</param>
-		public void DebugFormat(string message, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Debug) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, args), LogType.Debug, null));
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Debug"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable DebugTiming(int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Debug) == 0)
-				return null;
-			return Entry.Create(this, "start timer", "stop timer", LogType.Debug, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Debug"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable DebugTiming(TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Debug) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, "start timer", "stop timer", LogType.Debug, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Debug"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable DebugTiming(string description, int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Debug) == 0)
-				return null;
-			return Entry.Create(this, description, description, LogType.Debug, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Debug"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable DebugTiming(string description, TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Debug) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, description, description, LogType.Debug, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Begin named section with <see cref="Lexxys.Logging.LogType.Debug"/> level. All records inside the section will indented.
-		/// </summary>
-		/// <param name="sectionName">Name of the section</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable DebugEnter(string sectionName)
-		{
-			if ((_levels & LogTypeMask.Debug) == 0)
-				return null;
-			return Entry.Create(this, sectionName, LogType.Debug, 0, null);
-		}
-		public IDisposable DebugEnter(string sectionName, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Debug) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-			return Entry.Create(this, sectionName, LogType.Debug, 0, arg);
-		}
-		public IDisposable DebugEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
-		{
-			if ((_levels & LogTypeMask.Debug) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-			return Entry.Create(this, sectionName, LogType.Debug, 0, arg);
-		}
-		public IDisposable DebugEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
-		{
-			if ((_levels & LogTypeMask.Debug) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-			return Entry.Create(this, sectionName, LogType.Debug, 0, arg);
-		}
-		public IDisposable DebugEnter(string sectionName, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Debug) == 0)
-				return null;
 
-			var arg = new Dictionary<string, object>((args.Length + 1) / 2);
-			for (int i = 1; i < args.Length; i += 2)
-			{
-				arg.Add(args[i - 1] == null ? "(null)": args[i - 1].ToString(), args[i]);
-			}
-			return Entry.Create(this, sectionName, LogType.Debug, 0, arg);
+		public void Debug(Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (DebugEnabled)
+				Stream(LogType.Debug)?.Write(new LogRecord(LogType.Debug, Source, message(), args?.Invoke()));
 		}
+
+		public IDisposable? DebugEnter(string? section, IDictionary? args)
+		{
+			return Enter(LogType.Debug, section, args);
+		}
+
+		public IDisposable? DebugEnter(string? section, params object[] args)
+		{
+			return Enter(LogType.Debug, section, LogRecord.Args(args));
+		}
+
+		public IDisposable? DebugTiming(string? description, TimeSpan threshold = default)
+		{
+			return Timing(LogType.Debug, description, threshold);
+		}
+
 		#endregion
-		//.=cut
-		//~.#back($X, "LogType.Audit", "AuditTiming", "AuditEnter", "Audit")
-		//~.=cut
-		//.#back($X, "LogType.Information", "InfoTiming", "InfoEnter", "Info")
-		#region sp2.pl
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="exception">Exception to be logged</param>
-		public void Info(Exception exception)
+
+		#region Info
+
+		public void Info(string? source, string? message, Exception? exception, IDictionary? args)
 		{
-			Info(_source, exception);
-		}
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="source">Source of the exception</param>
-		/// <param name="exception">Exception to be logged</param>
-		public void Info(string source, Exception exception)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
+			if (!InfoEnabled)
+				return;
+			if (exception == null)
 			{
-				if (exception == null)
-					throw new ArgumentNullException(nameof(exception));
-				if (source == null)
-					source = _source;
-
-				var record = new LogRecord(source, LogType.Information, exception);
-				int i = record.Indent;
-
-				while (exception.InnerException != null)
-				{
-					Write(record);
-					exception = exception.InnerException;
-					record = new LogRecord(source, LogType.Information, exception, ++i);
-				}
-				Write(record);
+				Stream(LogType.Information)?.Write(new LogRecord(LogType.Information, source ?? Source, message, args));
+			}
+			else
+			{
+				Stream(LogType.Information)?.Write(new LogRecord(LogType.Information, source ?? Source, message, exception, args));
+				InnerExceptions(LogType.Information, source ?? Source, exception);
 			}
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
+
+		public void Info(string? source, Exception exception)
+		{
+			if (InfoEnabled)
+				Exception(LogType.Information, source, exception);
+		}
+
+		public void Info(string message, IDictionary args)
+		{
+			if (InfoEnabled)
+				Stream(LogType.Information)?.Write(new LogRecord(LogType.Information, Source, message, args));
+		}
+
 		public void Info(string message)
 		{
-			if ((_levels & LogTypeMask.Information) != 0)
-				Write(new LogRecord(_source, message, LogType.Information, null));
+			if (InfoEnabled)
+				Stream(LogType.Information)?.Write(new LogRecord(LogType.Information, Source, message, null));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and arguments to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Info(string message, Dictionary<string, object> args)
+
+		public void Info(string message, string arg1Name, object arg1Value)
 		{
-			if ((_levels & LogTypeMask.Information) != 0)
-				Write(new LogRecord(_source, message, LogType.Information, args));
+			if (InfoEnabled)
+				Stream(LogType.Information)?.Write(new LogRecord(LogType.Information, Source, message,
+					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argValue">Argument value</param>
-		public void Info(string message, object argValue)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{"argument", argValue}};
-				Write(new LogRecord(_source, message, LogType.Information, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argName">Argument name</param>
-		/// <param name="argValue">Argument value</param>
-		public void Info(string message, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-				Write(new LogRecord(_source, message, LogType.Information, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
+
 		public void Info(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
 		{
-			if ((_levels & LogTypeMask.Information) != 0)
-			{
-				var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-				Write(new LogRecord(_source, message, LogType.Information, arg));
-			}
+			if (InfoEnabled)
+				Stream(LogType.Information)?.Write(new LogRecord(LogType.Information, Source, message,
+					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
-		/// <param name="arg3Name">3rd argument name</param>
-		/// <param name="arg3Value">3rd argument value</param>
+
 		public void Info(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
 		{
-			if ((_levels & LogTypeMask.Information) != 0)
-			{
-				var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-				Write(new LogRecord(_source, message, LogType.Information, arg));
-			}
+			if (InfoEnabled)
+				Stream(LogType.Information)?.Write(new LogRecord(LogType.Information, Source, message,
+					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
+
 		public void Info(string message, params object[] args)
 		{
-			if ((_levels & LogTypeMask.Information) != 0)
-				Write(new LogRecord(_source, message, LogType.Information, LogRecord.Args(args)));
+			if (InfoEnabled)
+				Stream(LogType.Information)?.Write(new LogRecord(LogType.Information, Source, message, LogRecord.Args(args)));
 		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		public void Info(Func<string> messageFunction)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Information, null));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Info(Func<string> messageFunction, Dictionary<string, object> args)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Information, args));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
-		public void Info(Func<string> messageFunction, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Information, LogRecord.Args(args)));
-			}
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The <see cref="System.Object"/> to format</param>
-		public void InfoFormat(string message, object arg1)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1), LogType.Information, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		public void InfoFormat(string message, object arg1, object arg2)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2), LogType.Information, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		/// <param name="arg3">The third <see cref="System.Object"/> to format</param>
-		public void InfoFormat(string message, object arg1, object arg2, object arg3)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2, arg3), LogType.Information, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="args">An array contained objects to format</param>
-		public void InfoFormat(string message, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Information) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, args), LogType.Information, null));
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Information"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable InfoTiming(int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Information) == 0)
-				return null;
-			return Entry.Create(this, "start timer", "stop timer", LogType.Information, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Information"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable InfoTiming(TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Information) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, "start timer", "stop timer", LogType.Information, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Information"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable InfoTiming(string description, int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Information) == 0)
-				return null;
-			return Entry.Create(this, description, description, LogType.Information, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Information"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable InfoTiming(string description, TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Information) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, description, description, LogType.Information, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Begin named section with <see cref="Lexxys.Logging.LogType.Information"/> level. All records inside the section will indented.
-		/// </summary>
-		/// <param name="sectionName">Name of the section</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable InfoEnter(string sectionName)
-		{
-			if ((_levels & LogTypeMask.Information) == 0)
-				return null;
-			return Entry.Create(this, sectionName, LogType.Information, 0, null);
-		}
-		public IDisposable InfoEnter(string sectionName, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Information) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-			return Entry.Create(this, sectionName, LogType.Information, 0, arg);
-		}
-		public IDisposable InfoEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
-		{
-			if ((_levels & LogTypeMask.Information) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-			return Entry.Create(this, sectionName, LogType.Information, 0, arg);
-		}
-		public IDisposable InfoEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
-		{
-			if ((_levels & LogTypeMask.Information) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-			return Entry.Create(this, sectionName, LogType.Information, 0, arg);
-		}
-		public IDisposable InfoEnter(string sectionName, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Information) == 0)
-				return null;
 
-			var arg = new Dictionary<string, object>((args.Length + 1) / 2);
-			for (int i = 1; i < args.Length; i += 2)
-			{
-				arg.Add(args[i - 1] == null ? "(null)": args[i - 1].ToString(), args[i]);
-			}
-			return Entry.Create(this, sectionName, LogType.Information, 0, arg);
+		public void Info(Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (InfoEnabled)
+				Stream(LogType.Information)?.Write(new LogRecord(LogType.Information, Source, message(), args?.Invoke()));
 		}
+
+		public IDisposable? InfoEnter(string? section, IDictionary? args)
+		{
+			return Enter(LogType.Information, section, args);
+		}
+
+		public IDisposable? InfoEnter(string? section, params object[] args)
+		{
+			return Enter(LogType.Information, section, LogRecord.Args(args));
+		}
+
+		public IDisposable? InfoTiming(string? description, TimeSpan threshold = default)
+		{
+			return Timing(LogType.Information, description, threshold);
+		}
+
 		#endregion
-		//.=cut
-		//.#back($X, "LogType.Warning", "WarningTiming", "WarningEnter", "Warning")
-		#region sp2.pl
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="exception">Exception to be logged</param>
-		public void Warning(Exception exception)
+
+		#region Warning
+
+		public void Warning(string? source, string? message, Exception? exception, IDictionary? args)
 		{
-			Warning(_source, exception);
-		}
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="source">Source of the exception</param>
-		/// <param name="exception">Exception to be logged</param>
-		public void Warning(string source, Exception exception)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
+			if (!WarningEnabled)
+				return;
+			if (exception == null)
 			{
-				if (exception == null)
-					throw new ArgumentNullException(nameof(exception));
-				if (source == null)
-					source = _source;
-
-				var record = new LogRecord(source, LogType.Warning, exception);
-				int i = record.Indent;
-
-				while (exception.InnerException != null)
-				{
-					Write(record);
-					exception = exception.InnerException;
-					record = new LogRecord(source, LogType.Warning, exception, ++i);
-				}
-				Write(record);
+				Stream(LogType.Warning)?.Write(new LogRecord(LogType.Warning, source ?? Source, message, args));
+			}
+			else
+			{
+				Stream(LogType.Warning)?.Write(new LogRecord(LogType.Warning, source ?? Source, message, exception, args));
+				InnerExceptions(LogType.Warning, source ?? Source, exception);
 			}
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
+
+		public void Warning(string? source, Exception exception)
+		{
+			if (WarningEnabled)
+				Exception(LogType.Warning, source, exception);
+		}
+
+		public void Warning(string message, IDictionary args)
+		{
+			if (WarningEnabled)
+				Stream(LogType.Warning)?.Write(new LogRecord(LogType.Warning, Source, message, args));
+		}
+
 		public void Warning(string message)
 		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-				Write(new LogRecord(_source, message, LogType.Warning, null));
+			if (WarningEnabled)
+				Stream(LogType.Warning)?.Write(new LogRecord(LogType.Warning, Source, message, null));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and arguments to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Warning(string message, Dictionary<string, object> args)
+
+		public void Warning(string message, string arg1Name, object arg1Value)
 		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-				Write(new LogRecord(_source, message, LogType.Warning, args));
+			if (WarningEnabled)
+				Stream(LogType.Warning)?.Write(new LogRecord(LogType.Warning, Source, message,
+					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argValue">Argument value</param>
-		public void Warning(string message, object argValue)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{"argument", argValue}};
-				Write(new LogRecord(_source, message, LogType.Warning, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argName">Argument name</param>
-		/// <param name="argValue">Argument value</param>
-		public void Warning(string message, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-				Write(new LogRecord(_source, message, LogType.Warning, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
+
 		public void Warning(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
 		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-			{
-				var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-				Write(new LogRecord(_source, message, LogType.Warning, arg));
-			}
+			if (WarningEnabled)
+				Stream(LogType.Warning)?.Write(new LogRecord(LogType.Warning, Source, message,
+					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
-		/// <param name="arg3Name">3rd argument name</param>
-		/// <param name="arg3Value">3rd argument value</param>
+
 		public void Warning(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
 		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-			{
-				var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-				Write(new LogRecord(_source, message, LogType.Warning, arg));
-			}
+			if (WarningEnabled)
+				Stream(LogType.Warning)?.Write(new LogRecord(LogType.Warning, Source, message,
+					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
+
 		public void Warning(string message, params object[] args)
 		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-				Write(new LogRecord(_source, message, LogType.Warning, LogRecord.Args(args)));
+			if (WarningEnabled)
+				Stream(LogType.Warning)?.Write(new LogRecord(LogType.Warning, Source, message, LogRecord.Args(args)));
 		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		public void Warning(Func<string> messageFunction)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Warning, null));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Warning(Func<string> messageFunction, Dictionary<string, object> args)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Warning, args));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
-		public void Warning(Func<string> messageFunction, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Warning, LogRecord.Args(args)));
-			}
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The <see cref="System.Object"/> to format</param>
-		public void WarningFormat(string message, object arg1)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1), LogType.Warning, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		public void WarningFormat(string message, object arg1, object arg2)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2), LogType.Warning, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		/// <param name="arg3">The third <see cref="System.Object"/> to format</param>
-		public void WarningFormat(string message, object arg1, object arg2, object arg3)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2, arg3), LogType.Warning, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="args">An array contained objects to format</param>
-		public void WarningFormat(string message, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Warning) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, args), LogType.Warning, null));
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Warning"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable WarningTiming(int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Warning) == 0)
-				return null;
-			return Entry.Create(this, "start timer", "stop timer", LogType.Warning, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Warning"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable WarningTiming(TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Warning) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, "start timer", "stop timer", LogType.Warning, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Warning"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable WarningTiming(string description, int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Warning) == 0)
-				return null;
-			return Entry.Create(this, description, description, LogType.Warning, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Warning"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable WarningTiming(string description, TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Warning) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, description, description, LogType.Warning, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Begin named section with <see cref="Lexxys.Logging.LogType.Warning"/> level. All records inside the section will indented.
-		/// </summary>
-		/// <param name="sectionName">Name of the section</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable WarningEnter(string sectionName)
-		{
-			if ((_levels & LogTypeMask.Warning) == 0)
-				return null;
-			return Entry.Create(this, sectionName, LogType.Warning, 0, null);
-		}
-		public IDisposable WarningEnter(string sectionName, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Warning) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-			return Entry.Create(this, sectionName, LogType.Warning, 0, arg);
-		}
-		public IDisposable WarningEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
-		{
-			if ((_levels & LogTypeMask.Warning) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-			return Entry.Create(this, sectionName, LogType.Warning, 0, arg);
-		}
-		public IDisposable WarningEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
-		{
-			if ((_levels & LogTypeMask.Warning) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-			return Entry.Create(this, sectionName, LogType.Warning, 0, arg);
-		}
-		public IDisposable WarningEnter(string sectionName, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Warning) == 0)
-				return null;
 
-			var arg = new Dictionary<string, object>((args.Length + 1) / 2);
-			for (int i = 1; i < args.Length; i += 2)
-			{
-				arg.Add(args[i - 1] == null ? "(null)": args[i - 1].ToString(), args[i]);
-			}
-			return Entry.Create(this, sectionName, LogType.Warning, 0, arg);
+		public void Warning(Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (WarningEnabled)
+				Stream(LogType.Warning)?.Write(new LogRecord(LogType.Warning, Source, message(), args?.Invoke()));
 		}
+
+		public IDisposable? WarningEnter(string? section, IDictionary? args)
+		{
+			return Enter(LogType.Warning, section, args);
+		}
+
+		public IDisposable? WarningEnter(string? section, params object[] args)
+		{
+			return Enter(LogType.Warning, section, LogRecord.Args(args));
+		}
+
+		public IDisposable? WarningTiming(string? description, TimeSpan threshold = default)
+		{
+			return Timing(LogType.Warning, description, threshold);
+		}
+
 		#endregion
-		//.=cut
-		//.#back($X, "LogType.Error", "ErrorTiming", "ErrorEnter", "Error")
-		#region sp2.pl
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="exception">Exception to be logged</param>
-		public void Error(Exception exception)
+
+		#region Error
+
+		public void Error(string? source, string? message, Exception? exception, IDictionary? args)
 		{
-			Error(_source, exception);
-		}
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="source">Source of the exception</param>
-		/// <param name="exception">Exception to be logged</param>
-		public void Error(string source, Exception exception)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
+			if (!ErrorEnabled)
+				return;
+			if (exception == null)
 			{
-				if (exception == null)
-					throw new ArgumentNullException(nameof(exception));
-				if (source == null)
-					source = _source;
-
-				var record = new LogRecord(source, LogType.Error, exception);
-				int i = record.Indent;
-
-				while (exception.InnerException != null)
-				{
-					Write(record);
-					exception = exception.InnerException;
-					record = new LogRecord(source, LogType.Error, exception, ++i);
-				}
-				Write(record);
+				Stream(LogType.Error)?.Write(new LogRecord(LogType.Error, source ?? Source, message, args));
+			}
+			else
+			{
+				Stream(LogType.Error)?.Write(new LogRecord(LogType.Error, source ?? Source, message, exception, args));
+				InnerExceptions(LogType.Error, source ?? Source, exception);
 			}
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
+
+		public void Error(string? source, Exception exception)
+		{
+			if (ErrorEnabled)
+				Exception(LogType.Error, source, exception);
+		}
+
+		public void Error(string message, IDictionary args)
+		{
+			if (ErrorEnabled)
+				Stream(LogType.Error)?.Write(new LogRecord(LogType.Error, Source, message, args));
+		}
+
 		public void Error(string message)
 		{
-			if ((_levels & LogTypeMask.Error) != 0)
-				Write(new LogRecord(_source, message, LogType.Error, null));
+			if (ErrorEnabled)
+				Stream(LogType.Error)?.Write(new LogRecord(LogType.Error, Source, message, null));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and arguments to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Error(string message, Dictionary<string, object> args)
+
+		public void Error(string message, string arg1Name, object arg1Value)
 		{
-			if ((_levels & LogTypeMask.Error) != 0)
-				Write(new LogRecord(_source, message, LogType.Error, args));
+			if (ErrorEnabled)
+				Stream(LogType.Error)?.Write(new LogRecord(LogType.Error, Source, message,
+					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argValue">Argument value</param>
-		public void Error(string message, object argValue)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{"argument", argValue}};
-				Write(new LogRecord(_source, message, LogType.Error, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argName">Argument name</param>
-		/// <param name="argValue">Argument value</param>
-		public void Error(string message, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-				Write(new LogRecord(_source, message, LogType.Error, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
+
 		public void Error(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
 		{
-			if ((_levels & LogTypeMask.Error) != 0)
-			{
-				var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-				Write(new LogRecord(_source, message, LogType.Error, arg));
-			}
+			if (ErrorEnabled)
+				Stream(LogType.Error)?.Write(new LogRecord(LogType.Error, Source, message,
+					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
-		/// <param name="arg3Name">3rd argument name</param>
-		/// <param name="arg3Value">3rd argument value</param>
+
 		public void Error(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
 		{
-			if ((_levels & LogTypeMask.Error) != 0)
-			{
-				var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-				Write(new LogRecord(_source, message, LogType.Error, arg));
-			}
+			if (ErrorEnabled)
+				Stream(LogType.Error)?.Write(new LogRecord(LogType.Error, Source, message,
+					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
+
 		public void Error(string message, params object[] args)
 		{
-			if ((_levels & LogTypeMask.Error) != 0)
-				Write(new LogRecord(_source, message, LogType.Error, LogRecord.Args(args)));
+			if (ErrorEnabled)
+				Stream(LogType.Error)?.Write(new LogRecord(LogType.Error, Source, message, LogRecord.Args(args)));
 		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		public void Error(Func<string> messageFunction)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Error, null));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Error(Func<string> messageFunction, Dictionary<string, object> args)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Error, args));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
-		public void Error(Func<string> messageFunction, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Error, LogRecord.Args(args)));
-			}
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The <see cref="System.Object"/> to format</param>
-		public void ErrorFormat(string message, object arg1)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1), LogType.Error, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		public void ErrorFormat(string message, object arg1, object arg2)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2), LogType.Error, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		/// <param name="arg3">The third <see cref="System.Object"/> to format</param>
-		public void ErrorFormat(string message, object arg1, object arg2, object arg3)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2, arg3), LogType.Error, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="args">An array contained objects to format</param>
-		public void ErrorFormat(string message, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Error) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, args), LogType.Error, null));
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Error"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable ErrorTiming(int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Error) == 0)
-				return null;
-			return Entry.Create(this, "start timer", "stop timer", LogType.Error, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Error"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable ErrorTiming(TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Error) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, "start timer", "stop timer", LogType.Error, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Error"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable ErrorTiming(string description, int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Error) == 0)
-				return null;
-			return Entry.Create(this, description, description, LogType.Error, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Error"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable ErrorTiming(string description, TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Error) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, description, description, LogType.Error, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Begin named section with <see cref="Lexxys.Logging.LogType.Error"/> level. All records inside the section will indented.
-		/// </summary>
-		/// <param name="sectionName">Name of the section</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable ErrorEnter(string sectionName)
-		{
-			if ((_levels & LogTypeMask.Error) == 0)
-				return null;
-			return Entry.Create(this, sectionName, LogType.Error, 0, null);
-		}
-		public IDisposable ErrorEnter(string sectionName, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Error) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-			return Entry.Create(this, sectionName, LogType.Error, 0, arg);
-		}
-		public IDisposable ErrorEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
-		{
-			if ((_levels & LogTypeMask.Error) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-			return Entry.Create(this, sectionName, LogType.Error, 0, arg);
-		}
-		public IDisposable ErrorEnter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
-		{
-			if ((_levels & LogTypeMask.Error) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-			return Entry.Create(this, sectionName, LogType.Error, 0, arg);
-		}
-		public IDisposable ErrorEnter(string sectionName, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Error) == 0)
-				return null;
 
-			var arg = new Dictionary<string, object>((args.Length + 1) / 2);
-			for (int i = 1; i < args.Length; i += 2)
-			{
-				arg.Add(args[i - 1] == null ? "(null)": args[i - 1].ToString(), args[i]);
-			}
-			return Entry.Create(this, sectionName, LogType.Error, 0, arg);
+		public void Error(Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (ErrorEnabled)
+				Stream(LogType.Error)?.Write(new LogRecord(LogType.Error, Source, message(), args?.Invoke()));
 		}
+
+		public IDisposable? ErrorEnter(string? section, IDictionary? args)
+		{
+			return Enter(LogType.Error, section, args);
+		}
+
+		public IDisposable? ErrorEnter(string? section, params object[] args)
+		{
+			return Enter(LogType.Error, section, LogRecord.Args(args));
+		}
+
+		public IDisposable? ErrorTiming(string? description, TimeSpan threshold = default)
+		{
+			return Timing(LogType.Error, description, threshold);
+		}
+
 		#endregion
-		//.=cut
-		//.#back($X, "LogType.Output", "Timing", "Enter", "Write")
-		#region sp2.pl
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="exception">Exception to be logged</param>
-		public void Write(Exception exception)
+
+		#region Write
+
+		public void Write(string? source, string? message, Exception? exception, IDictionary? args)
 		{
-			Write(_source, exception);
-		}
-		/// <summary>
-		/// Write the <paramref name="exception"/> to log.
-		/// </summary>
-		/// <param name="source">Source of the exception</param>
-		/// <param name="exception">Exception to be logged</param>
-		public void Write(string source, Exception exception)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
+			if (!WriteEnabled)
+				return;
+			if (exception == null)
 			{
-				if (exception == null)
-					throw new ArgumentNullException(nameof(exception));
-				if (source == null)
-					source = _source;
-
-				var record = new LogRecord(source, LogType.Output, exception);
-				int i = record.Indent;
-
-				while (exception.InnerException != null)
-				{
-					Write(record);
-					exception = exception.InnerException;
-					record = new LogRecord(source, LogType.Output, exception, ++i);
-				}
-				Write(record);
+				Stream(LogType.Output)?.Write(new LogRecord(LogType.Output, source ?? Source, message, args));
+			}
+			else
+			{
+				Stream(LogType.Output)?.Write(new LogRecord(LogType.Output, source ?? Source, message, exception, args));
+				InnerExceptions(LogType.Output, source ?? Source, exception);
 			}
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
+
+		public void Write(string? source, Exception exception)
+		{
+			if (WriteEnabled)
+				Exception(LogType.Output, source, exception);
+		}
+
+		public void Write(string message, IDictionary args)
+		{
+			if (WriteEnabled)
+				Stream(LogType.Output)?.Write(new LogRecord(LogType.Output, Source, message, args));
+		}
+
 		public void Write(string message)
 		{
-			if ((_levels & LogTypeMask.Output) != 0)
-				Write(new LogRecord(_source, message, LogType.Output, null));
+			if (WriteEnabled)
+				Stream(LogType.Output)?.Write(new LogRecord(LogType.Output, Source, message, null));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and arguments to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Write(string message, Dictionary<string, object> args)
+
+		public void Write(string message, string arg1Name, object arg1Value)
 		{
-			if ((_levels & LogTypeMask.Output) != 0)
-				Write(new LogRecord(_source, message, LogType.Output, args));
+			if (WriteEnabled)
+				Stream(LogType.Output)?.Write(new LogRecord(LogType.Output, Source, message,
+					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argValue">Argument value</param>
-		public void Write(string message, object argValue)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{"argument", argValue}};
-				Write(new LogRecord(_source, message, LogType.Output, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="argName">Argument name</param>
-		/// <param name="argValue">Argument value</param>
-		public void Write(string message, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
-			{
-				var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-				Write(new LogRecord(_source, message, LogType.Output, arg));
-			}
-		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
+
 		public void Write(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
 		{
-			if ((_levels & LogTypeMask.Output) != 0)
-			{
-				var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-				Write(new LogRecord(_source, message, LogType.Output, arg));
-			}
+			if (WriteEnabled)
+				Stream(LogType.Output)?.Write(new LogRecord(LogType.Output, Source, message,
+					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="arg1Name">1st argument name</param>
-		/// <param name="arg1Value">1st arguemnt value</param>
-		/// <param name="arg2Name">2nd argument Name</param>
-		/// <param name="arg2Value">2nd argument value</param>
-		/// <param name="arg3Name">3rd argument name</param>
-		/// <param name="arg3Value">3rd argument value</param>
+
 		public void Write(string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
 		{
-			if ((_levels & LogTypeMask.Output) != 0)
-			{
-				var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-				Write(new LogRecord(_source, message, LogType.Output, arg));
-			}
+			if (WriteEnabled)
+				Stream(LogType.Output)?.Write(new LogRecord(LogType.Output, Source, message,
+					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
-		/// <summary>
-		/// Write <paramref name="message"/> and argument to log.
-		/// </summary>
-		/// <param name="message">Message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
+
 		public void Write(string message, params object[] args)
 		{
-			if ((_levels & LogTypeMask.Output) != 0)
-				Write(new LogRecord(_source, message, LogType.Output, LogRecord.Args(args)));
+			if (WriteEnabled)
+				Stream(LogType.Output)?.Write(new LogRecord(LogType.Output, Source, message, LogRecord.Args(args)));
 		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		public void Write(Func<string> messageFunction)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Output, null));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">Arguments as Name, Value pairs</param>
-		public void Write(Func<string> messageFunction, Dictionary<string, object> args)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Output, args));
-			}
-		}
-		/// <summary>
-		/// Write result of <paramref name="messageFunction"/> evaluation to log.
-		/// </summary>
-		/// <param name="messageFunction">Function that produced a message to be logged</param>
-		/// <param name="args">An array contained name/value pair of arguments</param>
-		public void Write(Func<string> messageFunction, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
-			{
-				if (messageFunction == null)
-					throw new ArgumentNullException(nameof(messageFunction));
-				Write(new LogRecord(_source, messageFunction(), LogType.Output, LogRecord.Args(args)));
-			}
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The <see cref="System.Object"/> to format</param>
-		public void WriteFormat(string message, object arg1)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1), LogType.Output, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		public void WriteFormat(string message, object arg1, object arg2)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2), LogType.Output, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="arg1">The first <see cref="System.Object"/> to format</param>
-		/// <param name="arg2">The second <see cref="System.Object"/> to format</param>
-		/// <param name="arg3">The third <see cref="System.Object"/> to format</param>
-		public void WriteFormat(string message, object arg1, object arg2, object arg3)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, arg1, arg2, arg3), LogType.Output, null));
-		}
-		/// <summary>
-		/// Write formated <paramref name="message"/> to log.
-		/// </summary>
-		/// <param name="message">A string contained format items</param>
-		/// <param name="args">An array contained objects to format</param>
-		public void WriteFormat(string message, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Output) != 0)
-				Write(new LogRecord(_source, String.Format(CultureInfo.CurrentCulture, message, args), LogType.Output, null));
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Output"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable Timing(int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Output) == 0)
-				return null;
-			return Entry.Create(this, "start timer", "stop timer", LogType.Output, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Output"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable Timing(TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Output) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, "start timer", "stop timer", LogType.Output, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Output"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold in miliseconds</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable Timing(string description, int threshold = 0)
-		{
-			if ((_levels & LogTypeMask.Output) == 0)
-				return null;
-			return Entry.Create(this, description, description, LogType.Output, threshold == 0 ? -1: threshold, null);
-		}
-		/// <summary>
-		/// Start timer with <see cref="Lexxys.Logging.LogType.Output"/> level and log notification if duration greater or equal to specified <paramref name="threshold"/>. Should be used in the C# using directive.
-		/// </summary>
-		/// <param name="description">Description</param>
-		/// <param name="threshold">Time threshold</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable Timing(string description, TimeSpan threshold)
-		{
-			if ((_levels & LogTypeMask.Output) == 0)
-				return null;
-			int n = (int)(threshold.Ticks / TimeSpan.TicksPerMillisecond);
-			return Entry.Create(this, description, description, LogType.Output, n == 0 ? -1: n, null);
-		}
-		/// <summary>
-		/// Begin named section with <see cref="Lexxys.Logging.LogType.Output"/> level. All records inside the section will indented.
-		/// </summary>
-		/// <param name="sectionName">Name of the section</param>
-		/// <returns>Object to be disposed at the end of time calculation</returns>
-		public IDisposable Enter(string sectionName)
-		{
-			if ((_levels & LogTypeMask.Output) == 0)
-				return null;
-			return Entry.Create(this, sectionName, LogType.Output, 0, null);
-		}
-		public IDisposable Enter(string sectionName, string argName, object argValue)
-		{
-			if ((_levels & LogTypeMask.Output) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(1) {{argName, argValue}};
-			return Entry.Create(this, sectionName, LogType.Output, 0, arg);
-		}
-		public IDisposable Enter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
-		{
-			if ((_levels & LogTypeMask.Output) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(2) {{arg1Name, arg1Value}, {arg2Name, arg2Value}};
-			return Entry.Create(this, sectionName, LogType.Output, 0, arg);
-		}
-		public IDisposable Enter(string sectionName, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
-		{
-			if ((_levels & LogTypeMask.Output) == 0)
-				return null;
-			var arg = new Dictionary<string, object>(3) {{arg1Name, arg1Value}, {arg2Name, arg2Value}, {arg3Name, arg3Value}};
-			return Entry.Create(this, sectionName, LogType.Output, 0, arg);
-		}
-		public IDisposable Enter(string sectionName, params object[] args)
-		{
-			if ((_levels & LogTypeMask.Output) == 0)
-				return null;
 
-			var arg = new Dictionary<string, object>((args.Length + 1) / 2);
-			for (int i = 1; i < args.Length; i += 2)
-			{
-				arg.Add(args[i - 1] == null ? "(null)": args[i - 1].ToString(), args[i]);
-			}
-			return Entry.Create(this, sectionName, LogType.Output, 0, arg);
+		public void Write(Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (WriteEnabled)
+				Stream(LogType.Output)?.Write(new LogRecord(LogType.Output, Source, message(), args?.Invoke()));
 		}
+
+		public IDisposable? WriteEnter(string? section, IDictionary? args)
+		{
+			return Enter(LogType.Output, section, args);
+		}
+
+		public IDisposable? WriteEnter(string? section, params object[] args)
+		{
+			return Enter(LogType.Output, section, LogRecord.Args(args));
+		}
+
+		public IDisposable? WriteTiming(string? description, TimeSpan threshold = default)
+		{
+			return Timing(LogType.Output, description, threshold);
+		}
+
 		#endregion
-		//.=cut
 
-		public void Error(string source, Exception exception, Dictionary<string, object> args)
+		#endregion
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private void Exception(LogType logType, string? source, Exception exception)
 		{
-			if ((_levels & LogTypeMask.Error) != 0)
-			{
-				if (exception == null)
-					throw new ArgumentNullException(nameof(exception));
-				if (source == null)
-					source = _source;
-
-				var record = new LogRecord(source, LogType.Error, exception);
-				int i = record.Indent;
-
-				while (exception.InnerException != null)
-				{
-					Write(record);
-					exception = exception.InnerException;
-					record = new LogRecord(source, LogType.Error, exception, ++i);
-				}
-				if (args != null)
-				{
-					foreach (var o in args)
-					{
-						record.Add(o.Key, o.Value);
-					}
-				}
-				Write(record);
-			}
+			Stream(logType)?.Write(new LogRecord(logType, source, exception));
+			InnerExceptions(logType, source, exception);
 		}
 
+		private void InnerExceptions(LogType logType, string? source, Exception exception)
+		{
+			int i = 0;
+			while (exception.InnerException != null)
+			{
+				exception = exception.InnerException;
+				Stream(logType)?.Write(new LogRecord(logType, source, exception, ++i));
+			}
+		}
 
 		private class Entry: IDisposable
 		{
+			public static IDisposable Empty = new NotEntry();
+
 			private Logger _log;
 			private readonly string _endMessage;
 			private readonly long _stamp;
 			private readonly long _threshold;
 			private readonly LogType _logType;
-			private readonly Dictionary<string, object> _arg;
+			private readonly IDictionary? _arg;
 
-			private Entry(Logger log, string endMessage, LogType logType, int threshold, Dictionary<string, object> arg)
+			public Entry(Logger log, string? endMessage, LogType logType, int threshold, IDictionary? arg)
 			{
 				_log = log;
 				_endMessage = endMessage ?? "exiting";
@@ -2143,64 +870,53 @@ namespace Lexxys
 				_stamp = WatchTimer.Start();
 			}
 
-			public static Entry Create(Logger log, string sectionName, LogType logType, int threshold, Dictionary<string, object> arg)
+			public static Entry Create(Logger log, string? sectionName, LogType logType, int threshold, IDictionary? arg)
 			{
 				if (threshold == 0)
 				{
-					var rec = new LogRecord(LogGroupingType.BeginGroup, log.Source, (sectionName == null ? SR.LOG_BeginSection(): SR.LOG_BeginSection(sectionName)), logType, arg);
-					log.Write(rec);
+					var rec = new LogRecord(LogGroupingType.BeginGroup, logType, log.Source, (sectionName == null ? SR.LOG_BeginSection() : SR.LOG_BeginSection(sectionName)), arg);
+					log.Log(rec);
 				}
-				return new Entry(log, (sectionName == null ? SR.LOG_EndSection(): SR.LOG_EndSection(sectionName)), logType, threshold, threshold == 0 ? null : arg);
+				return new Entry(log, (sectionName == null ? SR.LOG_EndSection() : SR.LOG_EndSection(sectionName)), logType, threshold, threshold == 0 ? null : arg);
 			}
 
-			public static Entry Create(Logger log, string startMessage, string endMessage, LogType logType, int threshold, Dictionary<string, object> arg)
+			public static Entry Create(Logger log, string? startMessage, string? endMessage, LogType logType, int threshold, IDictionary? arg)
 			{
 				if (threshold == 0)
 				{
-					var rec = new LogRecord(LogGroupingType.BeginGroup, log.Source, startMessage ?? SR.LOG_BeginGroup(), logType, arg);
-					log.Write(rec);
+					var rec = new LogRecord(LogGroupingType.BeginGroup, logType, log.Source, startMessage ?? SR.LOG_BeginGroup(), arg);
+					log.Log(rec);
 				}
-				return new Entry(log, (endMessage ?? SR.LOG_EndGroup()), logType, threshold, threshold == 0 ? null: arg);
+				return new Entry(log, (endMessage ?? SR.LOG_EndGroup()), logType, threshold, threshold == 0 ? null : arg);
 			}
 
 			void IDisposable.Dispose()
 			{
-				if (_log != null)
+				if (!_disposed)
 				{
+					_disposed = true;
 					long time = WatchTimer.Stop(_stamp);
 					if (_threshold == 0 || _threshold <= time)
 					{
-						_log.Write(
-							new LogRecord(_threshold == 0 ? LogGroupingType.EndGroup: LogGroupingType.Message,
-								_log.Source, _endMessage + " (" + WatchTimer.ToString(time, false) + ")", _logType, _arg)
+						_log.Log(
+							new LogRecord(_threshold == 0 ? LogGroupingType.EndGroup : LogGroupingType.Message,
+								_logType, _log.Source, _endMessage + " (" + WatchTimer.ToString(time, false) + ")", _arg)
 							);
 					}
-					_log = null;
+				}
+			}
+			private bool _disposed;
+
+			private class NotEntry: IDisposable
+			{
+				public void Dispose()
+				{
 				}
 			}
 		}
 
-		public static int LockLogging()
-		{
-			lock (SyncObj)
-			{
-				if (++__lockDepth == 1)
-					LoggingContext.Disable();
-				return __lockDepth;
-			}
-		}
-
-		public static int UnlockLogging()
-		{
-			lock (SyncObj)
-			{
-				if (--__lockDepth == 0)
-					LoggingContext.Enable();
-				return __lockDepth;
-			}
-		}
-		private static int __lockDepth;
-		private static readonly object SyncObj = new object();
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private LogRecordsListener Stream(LogType logType) => _listeners[(int)logType];
 	}
 
 }

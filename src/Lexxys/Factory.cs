@@ -97,7 +97,7 @@ namespace Lexxys
 
 		private static string[] SystemAssemblyNames()
 		{
-			IList<string> iss = Config.GetList<string>(ConfigurationSkip);
+			var iss = Config.GetList<string>(ConfigurationSkip);
 			if (iss == null)
 				return DefaultSystemAssemblyNames;
 
@@ -181,7 +181,7 @@ namespace Lexxys
 
 		private static void ImportRestAssemblies()
 		{
-			IList<string> import = Config.GetList<string>(ConfigurationImport);
+			var import = Config.GetList<string>(ConfigurationImport);
 			if (import != null)
 			{
 				foreach (string assemblyName in import)
@@ -213,7 +213,7 @@ namespace Lexxys
 			}
 			catch (Exception flaw)
 			{
-				var logRecord = new Logging.LogRecord("Lexxys.Factory.TryLoadAssembly", Logging.LogType.Warning, flaw);
+				var logRecord = new Logging.LogRecord(Logging.LogType.Warning, "Lexxys.Factory.TryLoadAssembly", flaw);
 				logRecord.Add("assemblyName", assemblyName);
 				logRecord.Add("file", file);
 				Logging.LogWriter.WriteEventLogMessage(logRecord);

@@ -1103,7 +1103,7 @@ namespace Lexxys.Xml
 			{
 				private readonly string _name;
 				private readonly IEqualityComparer<string> _comparer;
-				private OrderedDictionary<string, string> _attrib;
+				private OrderedBag<string, string> _attrib;
 				private List<Node> _nodeDescendants;
 				private List<XmlLiteNode> _xmlDescendants;
 				private string _value;
@@ -1122,7 +1122,7 @@ namespace Lexxys.Xml
 				public void SetAttribute(string name, string value)
 				{
 					if (_attrib == null)
-						_attrib = new OrderedDictionary<string, string>(_comparer);
+						_attrib = new OrderedBag<string, string>(_comparer);
 					_attrib[name] = value;
 				}
 
