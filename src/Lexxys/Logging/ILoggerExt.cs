@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using Lexxys.Logging;
@@ -1075,6 +1076,7 @@ namespace Lexxys
 			string? Message { get; }
 			IDictionary? Args { get; }
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			public TState(string? source, string? message, IDictionary? args)
 			{
 				Source = source;
@@ -1091,15 +1093,12 @@ namespace Lexxys
 			{
 				var text = new StringBuilder();
 				if (value.Source != null)
-				{
-					text.Append(value.Source);
-					if (value.Message != null)
-						text.Append(": ");
-				}
-				if (value.Message != null)
-					text.Append(value.Message);
-				if (text.Length > 0)
-					text.AppendLine();
+					if (value.Message == null)
+						text.AppendLine(value.Source);
+					else
+						text.Append(value.Source).Append(": ").AppendLine(value.Message);
+				else if (value.Message != null)
+					text.AppendLine(value.Message);
 				if (value.Args != null && value.Args.Count > 0)
 				{
 					foreach (DictionaryEntry item in value.Args)
@@ -1115,7 +1114,7 @@ namespace Lexxys
 					{
 						text.Append(tab).Append(item.Key).Append(": ").Append(item.Value).AppendLine();
 					}
-					text.Append("Stack: ").AppendLine(exception.StackTrace);
+					text.Append(tab).Append("Stack: ").AppendLine(exception.StackTrace);
 					tab += "\t";
 					exception = exception.InnerException;
 				}
@@ -1123,17 +1122,7 @@ namespace Lexxys
 			}
 		}
 
-		private static LogType Level2Type(LogLevel logLevel) =>
-			logLevel switch
-			{
-				LogLevel.Trace => LogType.Trace,
-				LogLevel.Debug => LogType.Debug,
-				LogLevel.Information => LogType.Information,
-				LogLevel.Warning => LogType.Warning,
-				LogLevel.Error => LogType.Error,
-				_ => LogType.Output
-			};
-
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static LogLevel Type2Level(LogType logLevel) =>
 			logLevel switch
 			{

@@ -18,7 +18,7 @@ namespace Lexxys
 		object? Value { get; }
 	}
 
-#if NETFRAMEWORK
+#if !NETCOREAPP
 	public interface IOptions<out T> where T : class, new()
 	{
 		T Value { get; }

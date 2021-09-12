@@ -592,7 +592,7 @@ namespace Lexxys
 					{
 						_initializing = true;
 						AddSystem(new ConfigurationLocator("System.Environment"), new EnvironmentConfigurationProvider());
-#if NETFRAMEWORK
+#if !NETCOREAPP
 						AddSystem(new ConfigurationLocator("System.Configuration"), new SystemConfigurationProvider());
 #endif
 
@@ -622,7 +622,7 @@ namespace Lexxys
 		private static IReadOnlyList<string> GetConfigurationDerectories()
 		{
 			var configurationDirectory = new List<string> { Lxx.HomeDirectory };
-#if NETFRAMEWORK
+#if !NETCOREAPP
 			string[] directories = ConfigurationManager.AppSettings.GetValues(ConfigurationDerectoryKey);
 			if (directories != null)
 			{
@@ -646,7 +646,7 @@ namespace Lexxys
 		private static IEnumerable<ConfigurationLocator> GetInitialConfigurationsLocations()
 		{
 			var cc = new OrderedSet<ConfigurationLocator>();
-#if NETFRAMEWORK
+#if !NETCOREAPP
 			string[] ss = ConfigurationManager.AppSettings.GetValues(InitialLocationKey);
 			if (ss != null)
 			{
@@ -671,9 +671,10 @@ namespace Lexxys
 
 		private static ConfigurationLocator GetConfigurationLocator(Assembly asm)
 		{
-			if (asm == null || asm.IsDynamic || String.IsNullOrEmpty(asm.Location))
+			string name;
+			if (asm == null || asm.IsDynamic || String.IsNullOrEmpty(name = asm.GetName().CodeBase))
 				return null;
-			var locator = new ConfigurationLocator(Path.ChangeExtension(asm.Location, null));
+			var locator = new ConfigurationLocator(Path.ChangeExtension(name, null));
 			return locator.IsValid ? locator: null;
 		}
 	}

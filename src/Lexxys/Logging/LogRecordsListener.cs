@@ -263,7 +263,7 @@ namespace Lexxys.Logging
 					_queue = new LogRecordQueue();
 					_writer.Write(new LogRecord(LogType.Warning, Source, "Terminating...", null));
 					_writer.Close();
-#if NETFRAMEWORK
+#if !NETCOREAPP
 					LogWriter.WriteEventLogMessage(Source, "Terminating...", LogRecord.Args("ThreadName", _thread.Name));
 					if ((_thread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) == 0)
 						_thread.Abort();
@@ -286,7 +286,7 @@ namespace Lexxys.Logging
 						if (_thread.Join(LoggingContext.LogoffTimeout))
 							return;
 						LogWriter.WriteErrorMessage(Source, "Thread join operation has been timed out", LogRecord.Args("time-out", LoggingContext.LogoffTimeout));
-#if NETFRAMEWORK
+#if !NETCOREAPP
 						_thread.Abort();
 #endif
 					}

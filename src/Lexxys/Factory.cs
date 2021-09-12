@@ -27,7 +27,7 @@ namespace Lexxys
 
 		public static readonly object Void = new object();
 		public static readonly object[] NoArgs = Array.Empty<object>();
-#if NETFRAMEWORK && DEBUG
+#if !NETCOREAPP && DEBUG
 		public static readonly DebugInfoGenerator DebugInfo = DebugInfoGenerator.CreatePdbGenerator();
 #endif
 
@@ -122,7 +122,7 @@ namespace Lexxys
 
 		private static bool IsSystemAssembly(Assembly asm)
 		{
-#if NETFRAMEWORK
+#if !NETCOREAPP
 			if (asm.GlobalAssemblyCache)
 				return true;
 #endif
@@ -661,7 +661,7 @@ namespace Lexxys
 					else
 						return null;
 				return Expression.Lambda<Func<object>>(Expression.TypeAs(Expression.Default(type), typeof(object)))
-#if NETFRAMEWORK && DEBUG
+#if !NETCOREAPP && DEBUG
 					.Compile(DebugInfo);
 #else
 					.Compile();
@@ -676,7 +676,7 @@ namespace Lexxys
 				else
 					return null;
 			return Expression.Lambda<Func<object>>(Expression.New(ci))
-#if NETFRAMEWORK && DEBUG
+#if !NETCOREAPP && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();
@@ -821,7 +821,7 @@ namespace Lexxys
 			return Expression.Lambda<Func<object[], object>>(
 				ConvertParameter(Expression.ArrayAccess(args, Expression.Constant(0)), parameterType),
 				args)
-#if NETFRAMEWORK && DEBUG
+#if !NETCOREAPP && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();
@@ -839,7 +839,7 @@ namespace Lexxys
 				call = Expression.TypeAs(call, typeof(object));
 
 			return Expression.Lambda<Func<object[], object>>(call, args)
-#if NETFRAMEWORK && DEBUG
+#if !NETCOREAPP && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();
@@ -1348,7 +1348,7 @@ namespace Lexxys
 				call = Expression.Block(call, Expression.Constant(null));
 
 			return Expression.Lambda<Func<object, object[], object>>(call, arg1, args)
-#if NETFRAMEWORK && DEBUG
+#if !NETCOREAPP && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();
@@ -1369,7 +1369,7 @@ namespace Lexxys
 				call = Expression.TypeAs(call, typeof(object));
 
 			return Expression.Lambda<Func<object, object[], object>>(call, instance, args)
-#if NETFRAMEWORK && DEBUG
+#if !NETCOREAPP && DEBUG
 				.Compile(DebugInfo);
 #else
 				.Compile();

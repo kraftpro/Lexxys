@@ -36,19 +36,19 @@ namespace Lexxys
 			}
 		}
 
-#if !NETFRAMEWORK
+#if NETCOREAPP
 		public static string AnonymousConfigurationFile => "application";
 #else
 		public static string AnonymousConfigurationFile => ConfigurationManager.AppSettings["AnonymousConfigurationFile"] ?? "application";
 #endif
 
-#if !NETFRAMEWORK
+#if NETCOREAPP
 		public static string GlobalConfigurationFile => "global";
 #else
 		public static string GlobalConfigurationFile => ConfigurationManager.AppSettings["GlobalConfigurationFile"] ?? "global";
 #endif
 
-#if !NETFRAMEWORK
+#if NETCOREAPP
 		public static string GlobalConfigurationDirectory => @"C:\Application\Config";
 #else
 		public static string GlobalConfigurationDirectory => ConfigurationManager.AppSettings["ConfigurationDirectory"] ?? @"C:\Application\Config";

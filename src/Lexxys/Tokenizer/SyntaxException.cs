@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
 using System.Runtime.Serialization;
-#if NETFRAMEWORK
+#if !NETCOREAPP
 using System.Security.Permissions;
 #endif
 
@@ -74,7 +74,7 @@ namespace Lexxys.Tokenizer
 			}
 		}
 
-#if NETFRAMEWORK
+#if !NETCOREAPP
 		[SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
 #endif
 		public override void GetObjectData(SerializationInfo info, StreamingContext context)

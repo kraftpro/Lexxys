@@ -7,7 +7,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-#if !NETFRAMEWORK
+#if NETCOREAPP
 using Microsoft.Extensions.Caching.Memory;
 #else
 using System.Runtime.Caching;
@@ -17,7 +17,7 @@ namespace Lexxys
 {
 	public static class RuntimeCache
 	{
-#if !NETFRAMEWORK
+#if NETCOREAPP
 		private static readonly MemoryCache Default = new MemoryCache(new OptOut<MemoryCacheOptions>(() => new MemoryCacheOptions { CompactionPercentage = 0.5, ExpirationScanFrequency = TimeSpan.FromMinutes(2) }));
 #else
 		private static readonly MemoryCache Default = MemoryCache.Default;
@@ -57,7 +57,7 @@ namespace Lexxys
 		public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive = default)
 			where TValue: class
 		{
-#if !NETFRAMEWORK
+#if NETCOREAPP
 			if (Default.TryGetValue<TValue>(key, out var value))
 #else
 			if (Default[key] is TValue value)
@@ -78,7 +78,7 @@ namespace Lexxys
 		public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive, TimeSpan slidingExpiration)
 			where TValue: class
 		{
-#if !NETFRAMEWORK
+#if NETCOREAPP
 			if (Default.TryGetValue<TValue>(key, out var value))
 #else
 			if (Default[key] is TValue value)
@@ -100,7 +100,7 @@ namespace Lexxys
 				timeToLive = MinTimeToLive;
 			value = producer();
 			Default.Set(key, value,
-#if !NETFRAMEWORK
+#if NETCOREAPP
 				new MemoryCacheEntryOptions { AbsoluteExpiration = DateTime.UtcNow + timeToLive, SlidingExpiration = slidingExpiration }
 #else
 				new CacheItemPolicy { AbsoluteExpiration = DateTime.UtcNow + timeToLive, SlidingExpiration = slidingExpiration }

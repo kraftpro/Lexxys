@@ -293,7 +293,7 @@ namespace Lexxys
 
 		private sealed class DictionaryEnumerator: IDictionaryEnumerator
 		{
-			private readonly List<KeyValuePair<TKey, TValue>>.Enumerator _parent;
+			private List<KeyValuePair<TKey, TValue>>.Enumerator _parent;
 
 			public DictionaryEnumerator(OrderedBag<TKey, TValue> dictionary) => _parent = dictionary.List.GetEnumerator();
 
@@ -307,7 +307,7 @@ namespace Lexxys
 
 			public bool MoveNext() => _parent.MoveNext();
 
-			public void Reset() => ((IEnumerator)_parent).Reset();
+			public void Reset() { }
 		}
 
 		#endregion

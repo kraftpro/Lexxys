@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Extensions.Logging;
 
@@ -17,8 +18,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys
 {
-using System.Runtime.CompilerServices;
-
 	using Logging;
 
 	public class Logger<T>: Logger, ILogger<T>

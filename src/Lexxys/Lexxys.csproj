@@ -4,7 +4,7 @@
     <TargetFrameworks>net5;net471</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <VersionPrefix>2.5.6</VersionPrefix>
+    <VersionPrefix>2.6.0</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <!--Build>0$([System.DateTime]::Today.ToString("MMdd"))</Build-->
     <Build>0</Build>
