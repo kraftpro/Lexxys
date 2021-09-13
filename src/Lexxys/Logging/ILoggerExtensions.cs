@@ -36,6 +36,38 @@ namespace Lexxys
 			return logger is ILogging log ? log.Timing(logType, description, threshold) : logger.BeginScope(description);
 		}
 
+		/// <summary>
+		/// True, if Direct messages will be logged (Write(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool WriteEnabled(this ILogger logger) => logger.IsEnabled(LogLevel.Critical);
+
+		/// <summary>
+		/// True, if Error messages will be logged (Error(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool ErrorEnabled(this ILogger logger) => logger.IsEnabled(LogLevel.Error);
+		/// <summary>
+		/// True, if Warning messages will be logged (Warning(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool WarningEnabled(this ILogger logger) => logger.IsEnabled(LogLevel.Warning);
+		/// <summary>
+		/// True, if Information messages will be logged (Info(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool InfoEnabled(this ILogger logger) => logger.IsEnabled(LogLevel.Information);
+		/// <summary>
+		/// True, if Debug messages will be logged (Debug(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool DebugEnabled(this ILogger logger) => logger.IsEnabled(LogLevel.Debug);
+		/// <summary>
+		/// True, if Trace messages will be logged (Trace(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool TraceEnabled(this ILogger logger) => logger.IsEnabled(LogLevel.Trace);
+
 		#region Trace
 
 		public static void Trace(this ILogger logger, string? source, string? message, Exception? exception, IDictionary? args)

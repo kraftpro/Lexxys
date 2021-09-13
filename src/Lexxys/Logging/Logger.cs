@@ -71,59 +71,10 @@ namespace Lexxys
 		public string Source { get; }
 
 		/// <summary>
-		/// True, if Direct messages will be logged (Write(...) methods)
-		/// </summary>
-		public bool WriteEnabled
-		{
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => (_levels & LogTypeMask.Output) != 0;
-		}
-
-		/// <summary>
-		/// True, if Error messages will be logged (Error(...) methods)
-		/// </summary>
-		public bool ErrorEnabled
-		{
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => (_levels & LogTypeMask.Error) != 0;
-		}
-		/// <summary>
-		/// True, if Warning messages will be logged (Warning(...) methods)
-		/// </summary>
-		public bool WarningEnabled
-		{
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => (_levels & LogTypeMask.Warning) != 0;
-		}
-		/// <summary>
-		/// True, if Information messages will be logged (Info(...) methods)
-		/// </summary>
-		public bool InfoEnabled
-		{
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => (_levels & LogTypeMask.Information) != 0;
-		}
-		/// <summary>
-		/// True, if Debug messages will be logged (Debug(...) methods)
-		/// </summary>
-		public bool DebugEnabled
-		{
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => (_levels & LogTypeMask.Debug) != 0;
-		}
-		/// <summary>
-		/// True, if Trace messages will be logged (Trace(...) methods)
-		/// </summary>
-		public bool TraceEnabled
-		{
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => (_levels & LogTypeMask.Trace) != 0;
-		}
-
-		/// <summary>
 		/// Write the <paramref name="record"/> into log
 		/// </summary>
 		/// <param name="record">The log record to be writen</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Log(LogRecord record)
 		{
 			if (record == null)
@@ -131,6 +82,7 @@ namespace Lexxys
 			_listeners[(int)record.LogType]?.Write(record);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args)
 		{
 			if (!IsEnabled(logType))
@@ -138,6 +90,7 @@ namespace Lexxys
 			return Entry.Create(this, sectionName, logType, 0, args);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public IDisposable? Timing(LogType logType, string? description, TimeSpan threshold)
 		{
 			if (!IsEnabled(logType))
@@ -255,12 +208,15 @@ namespace Lexxys
 
 		#region ILogger
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		bool ILogger.IsEnabled(LogLevel logLevel)
 			=> LoggingTools.IsEnabled(this, logLevel);
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void ILogger.Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string?>? formatter)
 			=> LoggingTools.Log(this, logLevel, eventId, state, exception, formatter);
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		IDisposable? ILogger.BeginScope<TState>(TState state)
 			=> LoggingTools.BeginScope(this, state);
 

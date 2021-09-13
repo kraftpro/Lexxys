@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 using Lexxys.Logging;
 
@@ -14,6 +15,39 @@ namespace Lexxys
 			if (logger.IsEnabled(logType))
 				logger.Log(new LogRecord(logType, source ?? logger.Source, message, exception, args));
 		}
+
+		/// <summary>
+		/// True, if Direct messages will be logged (Write(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool WriteEnabled(this ILogging logger) => logger.IsEnabled(LogType.Output);
+
+		/// <summary>
+		/// True, if Error messages will be logged (Error(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool ErrorEnabled(this ILogging logger) => logger.IsEnabled(LogType.Error);
+		/// <summary>
+		/// True, if Warning messages will be logged (Warning(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool WarningEnabled(this ILogging logger) => logger.IsEnabled(LogType.Warning);
+		/// <summary>
+		/// True, if Information messages will be logged (Info(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool InfoEnabled(this ILogging logger) => logger.IsEnabled(LogType.Information);
+		/// <summary>
+		/// True, if Debug messages will be logged (Debug(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool DebugEnabled(this ILogging logger) => logger.IsEnabled(LogType.Debug);
+		/// <summary>
+		/// True, if Trace messages will be logged (Trace(...) methods)
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool TraceEnabled(this ILogging logger) => logger.IsEnabled(LogType.Trace);
+
 
 		#region Trace
 
