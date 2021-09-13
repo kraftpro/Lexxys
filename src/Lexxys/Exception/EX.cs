@@ -11,14 +11,15 @@ using System.Text;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Lexxys
 {
 
 	public static class EX
 	{
-		private static Logger Log => _loger ??= Logger.TryCreate("Lexxys.EX");
-		private static Logger _loger;
+		private static ILogging Log => _loger ??= Logger.TryCreate("Lexxys.EX");
+		private static ILogging _loger;
 #if DEBUG
 		private static int _debugLogging;
 #endif

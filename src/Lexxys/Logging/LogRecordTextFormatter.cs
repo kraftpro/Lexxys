@@ -123,36 +123,59 @@ namespace Lexxys.Logging
 			if (record == null)
 				return writer;
 
-			var indent = GetIndentString(record.Indent);
-			var newLine = Environment.NewLine + Setting.Next + Setting.Next + indent;
-			Format(writer, record, _mappedFormat, indent, newLine);
+			var section = GetIndentString(record.Indent);
+			var newLine = Environment.NewLine + Setting.Indent + section;
+
+			Format(writer, record, _mappedFormat, section, newLine);
 
 			if (record.Data != null)
-			{
-				var newLine2 = newLine + Setting.Indent;
-				foreach (DictionaryEntry arg in record.Data)
-				{
-					writer.Write(newLine);
-					if (arg.Key == null)
-					{
-						writer.Write(NullValue + " = ");
-					}
-					else if (arg.Key == DBNull.Value)
-					{
-						writer.Write(DbNullValue + " = ");
-					}
-					else
-					{
-						writer.Write(arg.Key.ToString().AsSpan().Trim());
-						writer.Write(" = ");
-					}
-					if (arg.Value is string strvalue)
-						WriteText(writer, strvalue.AsSpan().Trim(), newLine2);
-					else
-						Dump(writer, arg.Value, newLine2);
-				}
-			}
+				WriteArgs(writer, record.Data, newLine);
+			if (record.Exception != null)
+				WriteException(writer, "Exception: ", record.Exception, newLine);
+
 			return writer;
+		}
+
+		private void WriteArgs(TextWriter writer, IDictionary args, string newLine)
+		{
+			var newLine2 = newLine + Setting.Indent;
+			foreach (DictionaryEntry arg in args)
+			{
+				writer.Write(newLine);
+				if (arg.Key == null)
+				{
+					writer.Write(NullValue + " = ");
+				}
+				else if (arg.Key == DBNull.Value)
+				{
+					writer.Write(DbNullValue + " = ");
+				}
+				else
+				{
+					writer.Write(arg.Key.ToString().AsSpan().Trim());
+					writer.Write(" = ");
+				}
+				if (arg.Value is string strvalue)
+					WriteText(writer, strvalue.AsSpan().Trim(), newLine2);
+				else
+					Dump(writer, arg.Value, newLine2);
+			}
+		}
+
+		private void WriteException(TextWriter writer, string label, LogRecord.ExceptionInfo exception, string newLine)
+		{
+			var newLine2 = newLine + Setting.Indent;
+			writer.Write(newLine + label);
+			WriteText(writer, exception.Message.AsSpan().Trim(), newLine2);
+			if (exception.Data != null)
+				WriteArgs(writer, exception.Data, newLine2);
+			if (exception.StackTrace != null)
+			{
+				writer.Write(newLine);
+				WriteText(writer, exception.StackTrace.AsSpan(), newLine);
+			}
+			if (exception.InnerException != null)
+				WriteException(writer, "Inner Exception: ", exception.InnerException, newLine2);
 		}
 
 		private void Format(TextWriter writer, LogRecord record, IEnumerable<LogRecordFormatItem> format, string indent, string newLine)
@@ -210,7 +233,7 @@ namespace Lexxys.Logging
 						break;
 					case FormatItemType.Message:
 						if (record.Message != null)
-							LogRecordTextFormatter.WriteText(writer, record.Message.AsSpan(), newLine);
+							LogRecordTextFormatter.WriteText(writer, record.Message.AsSpan().Trim(), newLine);
 						break;
 					case FormatItemType.Type:
 						if (item.Format == null)
@@ -274,29 +297,18 @@ namespace Lexxys.Logging
 		private const long TicksPerFraction = 100L;
 		private const long TicksPerSecond = 10_000_000L;
 
-		private string GetIndentString(int indent)
+		private string GetIndentString(int indent) => indent switch
 		{
-			switch (indent)
-			{
-				case 1:
-					return Setting.Indent;
-				case 2:
-					return Setting.Indent + Setting.Indent;
-				case 3:
-					return Setting.Indent + Setting.Indent + Setting.Indent;
-				default:
-					if (indent <= 0)
-						return "";
-					if (indent > MaxIndents)
-						indent = MaxIndents;
-					return String.Join(Setting.Indent, EmptyStringArray, 0, indent);
-			}
-		}
+			0 => String.Empty,
+			1 => Setting.Section,
+			2 => Setting.Section + Setting.Section,
+			3 => Setting.Section + Setting.Section + Setting.Section,
+			_ => String.Join(Setting.Section, EmptyStringArray, 0, Math.Min(indent, MaxIndents)),
+		};
 		private static readonly string[] EmptyStringArray = new string[MaxIndents];
 
 		public static void WriteText(TextWriter writer, ReadOnlySpan<char> value, string newLine)
 		{
-			value = value.Trim();
 			var crLf = CrLfFf.AsSpan();
 			while (crLf.IndexOf(value[0]) > 0)
 			{

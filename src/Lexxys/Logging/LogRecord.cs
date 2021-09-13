@@ -7,12 +7,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 
 #nullable enable
@@ -45,30 +41,14 @@ namespace Lexxys.Logging
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public LogRecord(LogType logType, string? source, string? message, IDictionary? args)
-			: this(LogGroupingType.Message, logType, source, message, args)
+			: this(logType, source, message, null, args)
 		{
-		}
-
-		public LogRecord(LogGroupingType recordType, LogType logType, string? source, string? message, IDictionary? args)
-		{
-			Source = source;
-			Message = message;
-			_data = CopyDictionary(args);
-			LogType = logType;
-			RecordType = recordType;
-			Indent = _currentIndent.Value;
-			if (RecordType == LogGroupingType.BeginGroup)
-				++_currentIndent.Value;
-			else if (RecordType == LogGroupingType.EndGroup && Indent > 0)
-				--_currentIndent.Value;
-			Context = new SystemContext();
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public LogRecord(LogType logType, string? source, Exception exception, int indent = 0)
+		public LogRecord(LogType logType, string? source, Exception exception)
 			: this(logType, source, null, exception, null)
 		{
-			Indent += indent;
 		}
 
 		public LogRecord(LogType logType, string? source, string? message, Exception? exception, IDictionary? args)
@@ -82,25 +62,35 @@ namespace Lexxys.Logging
 				MethodBase? method = exception.TargetSite;
 				Source = (method == null) ? exception.Source: method.GetType().Name;
 			}
-			Message =
-				exception == null ? message:
-				message == null ? exception.Message:
-				message + ": " + exception.Message;
-			_data = CopyDictionary(exception?.Data, CopyDictionary(args));
-			if (exception != null)
-				(_data ??= new OrderedBag<string, object?>(1)).Add("Stack trace", exception.StackTrace);
+			Message = message;
+			_data = CopyDictionary(args);
+			Exception = exception == null ? null: new ExceptionInfo(exception);
 			LogType = logType;
 			RecordType = LogGroupingType.Message;
-			Indent = _currentIndent.Value;
+			Indent = Math.Max(0, _currentIndent.Value);
 			Context = new SystemContext();
 		}
 
-		private static OrderedBag<string, object?>? CopyDictionary(IDictionary? data, OrderedBag<string, object?>? bag = null)
+		public LogRecord(LogGroupingType recordType, LogType logType, string? source, string? message, IDictionary? args)
+		{
+			Source = source;
+			Message = message;
+			_data = CopyDictionary(args);
+			LogType = logType;
+			RecordType = recordType;
+			Indent = Math.Max(0, _currentIndent.Value);
+			if (RecordType == LogGroupingType.BeginGroup)
+				++_currentIndent.Value;
+			else if (RecordType == LogGroupingType.EndGroup && Indent > 0)
+				--_currentIndent.Value;
+			Context = new SystemContext();
+		}
+
+		private static OrderedBag<string, object?>? CopyDictionary(IDictionary? data)
 		{
 			if (data == null)
-				return bag;
-			if (bag == null)
-				bag = new OrderedBag<string, object?>(data.Count);
+				return null;
+			var bag = new OrderedBag<string, object?>(data.Count);
 			var xx = data.GetEnumerator();
 			while (xx.MoveNext())
 			{
@@ -119,6 +109,9 @@ namespace Lexxys.Logging
 
 		/// <summary>Actual parameters values</summary>
 		public IDictionary? Data => _data;
+
+		/// <summary>Exception</summary>
+		public ExceptionInfo? Exception { get; }
 
 		/// <summary>Priority of the log item. (5 - critical, 0 - verbose)</summary>
 		public int Priority => (int)LogType.MaxValue - (int)LogType;
@@ -173,6 +166,25 @@ namespace Lexxys.Logging
 			if (count != args.Length)
 				arg.Add(NullArg, args[args.Length - 1]);
 			return arg;
+		}
+
+		public class ExceptionInfo
+		{
+			private OrderedBag<string, object?>? _data;
+
+			public ExceptionInfo(Exception exception)
+			{
+				Message = exception.Message;
+				_data = CopyDictionary(exception.Data);
+				StackTrace = exception.StackTrace;
+				if (exception.InnerException != null)
+					InnerException = new ExceptionInfo(exception.InnerException);
+			}
+
+			public string Message { get; }
+			public IDictionary? Data => _data;
+			public string? StackTrace { get; }
+			public ExceptionInfo? InnerException { get; }
 		}
 	}
 }

@@ -13,8 +13,8 @@ namespace Lexxys
 {
 	public sealed class ReadWriteSyncFat: IReadWriteSync
 	{
-		private static Logger Log => _log ??= new Logger("Lexxys.ReadWriteSyncFat");
-		private static Logger _log;
+		private static ILogging Log => _log ??= new Logger("Lexxys.ReadWriteSyncFat");
+		private static ILogging _log;
 		private readonly ReaderWriterLock _locker;
 		public const int DefaultTimingThreshold = 100;
 		public const int DefaultLockTimeout = 5 * 60 * 1000;

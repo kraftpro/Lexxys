@@ -32,11 +32,11 @@ namespace Lexxys.Data
 		public const IsolationLevel DefaultIsolationLevel = IsolationLevel.ReadCommitted;
 		public const string ConfigSection = "database.connection";
 
-		public static Logger Log => __log ??= new Logger("Dc");
-		private static Logger __log;
+		public static ILogging Log => __log ??= new Logger("Dc");
+		private static ILogging __log;
 
-		public static Logger Timing => __logTrace ??= new Logger("Dc-Timing");
-		private static Logger __logTrace;
+		public static ILogging Timing => __logTrace ??= new Logger("Dc-Timing");
+		private static ILogging __logTrace;
 
 		#region Tools
 

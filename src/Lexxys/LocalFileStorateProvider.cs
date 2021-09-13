@@ -49,7 +49,7 @@ namespace Lexxys
 		private static void CreateDirectory(string uri)
 		{
 			var dir = Path.GetDirectoryName(uri);
-			if (!String.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+			if (!String.IsNullOrEmpty(dir))
 				Directory.CreateDirectory(dir);
 		}
 

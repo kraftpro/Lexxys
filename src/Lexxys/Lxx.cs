@@ -26,7 +26,7 @@ namespace Lexxys
 		public static event EventHandler<ConfigurationEventArgs> ConfigurationInitialized;
 		public static event EventHandler<ThreadExceptionEventArgs> UnhandledException;
 
-		public static Logger Log
+		public static ILogging Log
 		{
 			get
 			{

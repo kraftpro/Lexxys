@@ -76,7 +76,7 @@ namespace Lexxys
 		private static bool _initialized;
 		private static bool _initializing;
 		private static bool _cacheValues;
-		private static Logger __log;
+		private static ILogging __log;
 		private static List<EventEntry> __messages = new List<EventEntry>();
 		private volatile static int __version;
 
@@ -386,7 +386,8 @@ namespace Lexxys
 				flaw = flaw.Unwrap();
 				flaw.Add("locaion", location);
 				Logger.WriteErrorMessage($"ERROR: Cannot load configuration {location?.ToString() ?? "(null)"}.", flaw);
-				__log?.Error("AddConfiguration", flaw);
+				if (__log != null && __log.IsEnabled(LogType.Error))
+					__log.Log(new LogRecord(LogType.Error, "AddConfiguration", flaw));
 				return null;
 			}
 		}
@@ -513,12 +514,12 @@ namespace Lexxys
 		{
 			if (item.Exception != null)
 			{
-				if (__log.ErrorEnabled)
-					__log.Log(new LogRecord(LogType.Trace, item.Source, item.Exception));
+				if (__log.IsEnabled(LogType.Error))
+					__log.Log(new LogRecord(LogType.Error, item.Source, item.Message?.Invoke(), item.Exception, null));
 			}
 			else if (item.Message != null)
 			{
-				if (__log.TraceEnabled)
+				if (__log.IsEnabled(LogType.Trace))
 					__log.Log(new LogRecord(LogType.Trace, item.Source, item.Message(), null));
 			}
 		}

@@ -17,8 +17,17 @@ namespace Lexxys
 {
 	public enum DirectoryGenerationMode
 	{
+		/// <summary>
+		/// 1234567 -> "/34/12"
+		/// </summary>
 		Compatible,
+		/// <summary>
+		/// 1234567 -> "/12/34"
+		/// </summary>
 		BigEndian,
+		/// <summary>
+		/// 1234567 -> "/67/45"
+		/// </summary>
 		LittleEndian
 	}
 
@@ -126,7 +135,7 @@ namespace Lexxys
 		public static long NextSalt(long salt) => salt + 1 + ((DateTime.UtcNow.Ticks >> 5) & 7);
 
 		/// <summary>
-		/// Creates a file path to be stored to a file system. Returns a file path in the form /dir/.../index-salt.ext, ie /12/45/1114512-a3dre.doc
+		/// Creates a file path to be stored to a file system. Returns a file path in the form /dir/.../index-salt.ext, ie /12/34/1234567-a3dre.doc
 		/// </summary>
 		/// <param name="index">File index</param>
 		/// <param name="salt">Random file salt</param>
@@ -143,7 +152,7 @@ namespace Lexxys
 				return $"{config.TemporaryFolder}{config.PathSeparator}{Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)}{extension}";
 			string dir = GetDirectory(index.GetValueOrDefault(), config.DirectoryCount, config.DirectoryFormat, config.FileCount, config.PathSeparator, config.Mode); // /01/02/
 			string format = config.FileFormat.Replace("{index", "{0").Replace("{salt", "{1").Replace("{ext", "{2");
-			return dir + String.Format(format, index, Salt(salt), extension); // 01\02\3120201-salt.doc
+			return dir + String.Format(format, index, Salt(salt), extension); // /01/02/3120201-salt.doc
 		}
 
 		public static bool IsTemporaryPath(string path, DirectoryStorageConfig config = default)
@@ -175,14 +184,13 @@ namespace Lexxys
 			var dir = new StringBuilder();
 			if (mode == DirectoryGenerationMode.BigEndian)
 			{
-				// 1234567 -> "/12/23/"
+				// 1234567 -> "/12/34"
 				int i = index / fileCount;
 				while (i > 0)
 				{
-					dir.Insert(0, (i % directoryCount).ToString(directoryFormat) + pathSeparator.ToString()).Append(pathSeparator);
+					dir.Insert(0, pathSeparator.ToString() + (i % directoryCount).ToString(directoryFormat));
 					i /= directoryCount;
 				}
-				// 31\20\3120201-salt.doc
 			}
 			else if (mode == DirectoryGenerationMode.LittleEndian)
 			{
@@ -196,14 +204,15 @@ namespace Lexxys
 			}
 			else // (mode == DirectoryGenerationMode.Compatible)
 			{
+				// 1234567 -> "/34/12"
 				int i = index / fileCount;
 				while (i > 0)
 				{
-					dir.Append((i % directoryCount).ToString(directoryFormat)).Append(pathSeparator);
+					dir.Append(pathSeparator).Append((i % directoryCount).ToString(directoryFormat));
 					i /= directoryCount;
 				}
 			}
-			return dir.ToString();
+			return dir.Append(pathSeparator).ToString();
 		}
 
 		private static string Salt(long salt)

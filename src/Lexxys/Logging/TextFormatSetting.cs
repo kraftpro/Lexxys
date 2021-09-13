@@ -5,33 +5,41 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using Lexxys.Xml;
+
+#nullable enable
 
 namespace Lexxys.Logging
 {
+	using Xml;
+
 	public readonly struct TextFormatSetting
 	{
 		public string Format { get; }
-		public string Next { get; }
 		public string Indent { get; }
+		public string Section { get; }
 
-		public TextFormatSetting(string format, string next, string indent)
+		public TextFormatSetting(string format, string indent, string? section)
 		{
+			if (format == null)
+				throw new ArgumentNullException(nameof(format));
+			if (indent == null)
+				throw new ArgumentNullException(nameof(indent));
+
 			Format = FixIndentMark(format);
-			Next = next;
-			Indent = indent ?? Next;
+			Indent = indent;
+			Section = section ?? indent;
 		}
 
 		public TextFormatSetting(TextFormatSetting other)
 		{
 			Format = other.Format;
+			Section = other.Section;
 			Indent = other.Indent;
-			Next = other.Next;
 		}
 
 		private static string FixIndentMark(string value)
 		{
-			if (value == null || value.IndexOf("{IndentMark", StringComparison.OrdinalIgnoreCase) >= 0)
+			if (value.IndexOf("{IndentMark", StringComparison.OrdinalIgnoreCase) >= 0)
 				return value;
 			int i = value.IndexOf("{Source", StringComparison.OrdinalIgnoreCase);
 			if (i < 0)
@@ -57,8 +65,8 @@ namespace Lexxys.Logging
 			return config == null || config.IsEmpty ? this:
 				new TextFormatSetting(
 					XmlTools.GetString(config["format"], Format),
-					XmlTools.GetString(config["indent"], Indent),
-					XmlTools.GetString(config["para"], Next));
+					XmlTools.GetString(config["indent"], Section),
+					XmlTools.GetString(config["para"], Indent));
 		}
 
 		/// <summary>
@@ -70,8 +78,8 @@ namespace Lexxys.Logging
 		{
 			return new TextFormatSetting(
 				setting.Format ?? Format,
-				setting.Indent ?? Indent,
-				setting.Next ?? Next);
+				setting.Section ?? Section,
+				setting.Indent ?? Indent);
 		}
 	}
 }
