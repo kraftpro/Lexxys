@@ -30,7 +30,7 @@ namespace Lexxys.Data
 
 		private int _transactionsCount;
 		private int _connectionsCount;
-		private SqlConnection _connection;
+		private readonly SqlConnection _connection;
 		private SqlTransaction _transaction;
 		private TimeSpan _commandTimeout;
 		private TimeSpan _defaultCommandTimeout;
@@ -41,7 +41,7 @@ namespace Lexxys.Data
 		private long _timingGroupStamp;
 		private int _lockTiming;
 		private readonly List<TimingNode> _timingGroupItems;
-		private ConnectionStringInfo _connectionInfo;
+		private readonly ConnectionStringInfo _connectionInfo;
 		private DateTime _lockedTime;
 		private DateTime _timeSyncStamp;
 		private long _timeSyncOffset;

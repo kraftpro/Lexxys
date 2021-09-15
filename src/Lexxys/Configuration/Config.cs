@@ -334,8 +334,8 @@ namespace Lexxys
 		{
 			if (location == null || location.Length <= 0)
 				throw new ArgumentNullException(nameof(location));
-			var x = SplitOptions(location);
-			return AddConfiguration(new ConfigurationLocator(x.Location), x.Parameters);
+			var (value, parameters) = SplitOptions(location);
+			return AddConfiguration(new ConfigurationLocator(value), parameters);
 		}
 
 		// TODO: optional
@@ -405,8 +405,8 @@ namespace Lexxys
 				foreach (string s in ss)
 				{
 					int k = Locations.Count;
-					var x = SplitOptions(s);
-					AddConfiguration(new ConfigurationLocator(x.Location), x.Parameters, location.DirectoryName, position);
+					var (value, parameters) = SplitOptions(s);
+					AddConfiguration(new ConfigurationLocator(value), parameters, location.DirectoryName, position);
 					position += Locations.Count - k;
 				}
 			}

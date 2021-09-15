@@ -48,15 +48,14 @@ namespace Lexxys.RL
 			string path = Environment.ExpandEnvironmentVariables(location.FullPath);
 			_fileInfo = new FileInfo(path);
 
-			var _info = new ResourceInfo()
-			{
-				Locator = location,
-				Name = _fileInfo.Name,
-				Created = _fileInfo.CreationTime,
-				Modified = _fileInfo.LastWriteTime,
-				Length = _fileInfo.Length,
-
-			};
+			//var _info = new ResourceInfo()
+			//{
+			//	Locator = location,
+			//	Name = _fileInfo.Name,
+			//	Created = _fileInfo.CreationTime,
+			//	Modified = _fileInfo.LastWriteTime,
+			//	Length = _fileInfo.Length,
+			//};
 
 		}
 

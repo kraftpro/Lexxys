@@ -134,7 +134,7 @@ namespace Lexxys
 
 		public static bool Equals(FieldError left, FieldError right)
 			=> Object.ReferenceEquals(left, right) || (
-			!(left is null) && !(right is null) &&
+			left is not null && right is not null &&
 			left.FieldName == right.FieldName &&
 			left.MessageCode == right.MessageCode &&
 			Tools.Equals(left._arguments, right._arguments));

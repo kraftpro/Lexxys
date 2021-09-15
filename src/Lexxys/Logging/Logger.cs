@@ -22,22 +22,45 @@ namespace Lexxys
 
 	public class Logger<T>: Logger, ILogger<T>
 	{
+		public new static readonly ILogger<T> Empty = new Dummy();
 		public Logger(): base(typeof(T).Name)
 		{
 		}
-	}	
+
+		private class Dummy : ILogger<T>, ILogging
+		{
+			public string Source => "Dummy";
+
+			public IDisposable? BeginScope<TState>(TState state) => null;
+
+			public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => null;
+
+			public bool IsEnabled(LogType logType) => false;
+
+			public bool IsEnabled(LogLevel logLevel) => false;
+
+			public void Log(LogRecord record)
+			{
+			}
+
+			public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+			{
+			}
+
+			public IDisposable? Timing(LogType logType, string? description, TimeSpan threshold) => null;
+		}
+	}
 
 	public class Logger: ILogging
 	{
+		public static readonly ILogging Empty = new Dummy();
+
 		private LogRecordsListener[] _listeners;
 		private LogTypeMask _levels;
 
 		public Logger(string source)
 		{
-			if (source == null)
-				throw new ArgumentNullException(nameof(source));
-
-			Source = source;
+			Source = source ?? throw new ArgumentNullException(nameof(source));
 			_listeners = Array.Empty<LogRecordsListener>();
 			_levels = LogTypeMask.None;
 			LoggingContext.Register(this);
@@ -226,7 +249,7 @@ namespace Lexxys
 		{
 			public static IDisposable Empty = new NotEntry();
 
-			private Logger _log;
+			private readonly Logger _log;
 			private readonly string _endMessage;
 			private readonly long _stamp;
 			private readonly long _threshold;
@@ -288,8 +311,27 @@ namespace Lexxys
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private LogRecordsListener Stream(LogType logType) => _listeners[(int)logType];
-	}
+		private class Dummy : ILogging
+		{
+			public string Source => "Dummy";
 
+			public IDisposable? BeginScope<TState>(TState state) => null;
+
+			public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => null;
+
+			public bool IsEnabled(LogType logType) => false;
+
+			public bool IsEnabled(LogLevel logLevel) => false;
+
+			public void Log(LogRecord record)
+			{
+			}
+
+			public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+			{
+			}
+
+			public IDisposable? Timing(LogType logType, string? description, TimeSpan threshold) => null;
+		}
+	}
 }

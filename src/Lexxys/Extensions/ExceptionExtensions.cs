@@ -39,9 +39,9 @@ namespace Lexxys
 		{
 			if (items != null)
 			{
-				foreach (var item in items)
+				foreach (var (name, value) in items)
 				{
-					Add(exception, item.Name, item.Value);
+					Add(exception, name, value);
 				}
 			}
 			return exception;

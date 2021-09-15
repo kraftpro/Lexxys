@@ -185,9 +185,9 @@ namespace Lexxys.Data
 
 			if (value is null)
 				return nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue());
-			if (!(min is null) && value.CompareTo(min) < 0)
+			if (min is not null && value.CompareTo(min) < 0)
 				return ValidationResults.Create(field, ErrorInfo.OutOfRange(value, min, max));
-			if (!(max is null) && value.CompareTo(max) > 0)
+			if (max is not null && value.CompareTo(max) > 0)
 				return ValidationResults.Create(field, ErrorInfo.OutOfRange(value, min, max));
 			return ValidationResults.Empty;
 		}

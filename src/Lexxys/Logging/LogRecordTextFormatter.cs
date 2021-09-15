@@ -126,7 +126,7 @@ namespace Lexxys.Logging
 			var section = GetIndentString(record.Indent);
 			var newLine = Environment.NewLine + Setting.Indent + section;
 
-			Format(writer, record, _mappedFormat, section, newLine);
+			LogRecordTextFormatter.Format(writer, record, _mappedFormat, section, newLine);
 
 			if (record.Data != null)
 				WriteArgs(writer, record.Data, newLine);
@@ -178,7 +178,7 @@ namespace Lexxys.Logging
 				WriteException(writer, "Inner Exception: ", exception.InnerException, newLine2);
 		}
 
-		private void Format(TextWriter writer, LogRecord record, IEnumerable<LogRecordFormatItem> format, string indent, string newLine)
+		private static void Format(TextWriter writer, LogRecord record, IEnumerable<LogRecordFormatItem> format, string indent, string newLine)
 		{
 			int length = 0;
 			foreach (LogRecordFormatItem item in format)
@@ -214,12 +214,12 @@ namespace Lexxys.Logging
 					case FormatItemType.Timestamp:
 						if (item.Format == null)
 						{
-							AppendTimeStamp(writer, record.Context.Timestamp, true);
+							LogRecordTextFormatter.AppendTimeStamp(writer, record.Context.Timestamp, true);
 							length += 23;
 						}
 						else if (item.Format == "t")
 						{
-							AppendTimeStamp(writer, record.Context.Timestamp, false);
+							LogRecordTextFormatter.AppendTimeStamp(writer, record.Context.Timestamp, false);
 							length += 10;
 						}
 						else
@@ -257,7 +257,7 @@ namespace Lexxys.Logging
 		private static readonly string[] __severity1 = new[] { "O", "E", "W", "I", "T", "D" };
 		private static readonly string[] __severity3 = new[] { "OUT", "ERR", "WRN", "INF", "TRC", "DBG" };
 
-		private void AppendTimeStamp(TextWriter writer, DateTime date, bool useDate)
+		private static void AppendTimeStamp(TextWriter writer, DateTime date, bool useDate)
 		{
 			if (useDate)
 			{

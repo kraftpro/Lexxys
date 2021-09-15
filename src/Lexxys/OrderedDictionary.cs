@@ -174,7 +174,7 @@ namespace Lexxys
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				if (array.Length - index < Bag.Count)
-					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
+					throw new ArgumentException($"The number of elements in the collection ({Bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
 
 				for (int i = 0; i < Bag.List.Count; ++i)
 				{
@@ -189,7 +189,7 @@ namespace Lexxys
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				if (array.Length - index < Bag.Count)
-					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
+					throw new ArgumentException($"The number of elements in the collection ({Bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
 
 				for (int i = 0; i < Bag.List.Count; ++i)
 				{
@@ -243,7 +243,7 @@ namespace Lexxys
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				if (array.Length - index < Bag.Count)
-					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
+					throw new ArgumentException($"The number of elements in the collection ({Bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
 
 				for (int i = 0; i < Bag.List.Count; ++i)
 				{
@@ -258,7 +258,7 @@ namespace Lexxys
 				if (index < 0)
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				if (array.Length - index < Bag.Count)
-					throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
+					throw new ArgumentException($"The number of elements in the collection ({Bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
 
 				for (int i = 0; i < Bag.List.Count; ++i)
 				{
@@ -329,9 +329,9 @@ namespace Lexxys
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index), index, null);
 			if (array.Rank != 1)
-				throw new ArgumentOutOfRangeException(nameof(array) + ".Rank", array.Rank, null);
+				throw new ArgumentException($"Array is multidimensional.", nameof(array));
 			if (array.Length - index < List.Count)
-				throw new ArgumentOutOfRangeException(nameof(array) + ".Length", array.Length, null);
+				throw new ArgumentException($"The number of elements in the collection ({List.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
 
 			for (int i = 0; i < List.Count; ++i)
 			{

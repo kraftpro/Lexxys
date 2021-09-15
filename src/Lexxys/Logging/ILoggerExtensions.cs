@@ -94,6 +94,14 @@ namespace Lexxys
 				logger.Log(LogLevel.Trace, 0, new TState(null, message, args), null, TState.Formatter);
 		}
 
+		public static void Trace(this ILogger logger, string message)
+		{
+			if (logger is ILogging log)
+				log.Trace(message);
+			else
+				logger.Log(LogLevel.Trace, 0, new TState(null, message, null), null, TState.Formatter);
+		}
+
 		public static void Trace(this ILogger logger, string message, string arg1Name, object arg1Value)
 		{
 			if (logger is ILogging log)
@@ -171,6 +179,14 @@ namespace Lexxys
 				log.Debug(message, args);
 			else
 				logger.Log(LogLevel.Debug, 0, new TState(null, message, args), null, TState.Formatter);
+		}
+
+		public static void Debug(this ILogger logger, string message)
+		{
+			if (logger is ILogging log)
+				log.Debug(message);
+			else
+				logger.Log(LogLevel.Debug, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
 		public static void Debug(this ILogger logger, string message, string arg1Name, object arg1Value)
@@ -252,6 +268,14 @@ namespace Lexxys
 				logger.Log(LogLevel.Information, 0, new TState(null, message, args), null, TState.Formatter);
 		}
 
+		public static void Info(this ILogger logger, string message)
+		{
+			if (logger is ILogging log)
+				log.Info(message);
+			else
+				logger.Log(LogLevel.Information, 0, new TState(null, message, null), null, TState.Formatter);
+		}
+
 		public static void Info(this ILogger logger, string message, string arg1Name, object arg1Value)
 		{
 			if (logger is ILogging log)
@@ -329,6 +353,14 @@ namespace Lexxys
 				log.Warning(message, args);
 			else
 				logger.Log(LogLevel.Warning, 0, new TState(null, message, args), null, TState.Formatter);
+		}
+
+		public static void Warning(this ILogger logger, string message)
+		{
+			if (logger is ILogging log)
+				log.Warning(message);
+			else
+				logger.Log(LogLevel.Warning, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
 		public static void Warning(this ILogger logger, string message, string arg1Name, object arg1Value)
@@ -410,6 +442,14 @@ namespace Lexxys
 				logger.Log(LogLevel.Error, 0, new TState(null, message, args), null, TState.Formatter);
 		}
 
+		public static void Error(this ILogger logger, string message)
+		{
+			if (logger is ILogging log)
+				log.Error(message);
+			else
+				logger.Log(LogLevel.Error, 0, new TState(null, message, null), null, TState.Formatter);
+		}
+
 		public static void Error(this ILogger logger, string message, string arg1Name, object arg1Value)
 		{
 			if (logger is ILogging log)
@@ -487,6 +527,14 @@ namespace Lexxys
 				log.Write(message, args);
 			else
 				logger.Log(LogLevel.Information, 0, new TState(null, message, args), null, TState.Formatter);
+		}
+
+		public static void Write(this ILogger logger, string message)
+		{
+			if (logger is ILogging log)
+				log.Write(message);
+			else
+				logger.Log(LogLevel.Information, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
 		public static void Write(this ILogger logger, string message, string arg1Name, object arg1Value)

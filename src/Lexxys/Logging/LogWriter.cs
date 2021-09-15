@@ -140,8 +140,6 @@ namespace Lexxys.Logging
 		protected static string LogEventSource => EventSource;
 
 
-		#pragma warning disable CA1416 // Validate platform compatibility
-
 		private static readonly LogRecordTextFormatter __eventLogFormatter = new LogRecordTextFormatter(EventLogDefaults);
 
 		private static bool TestEventLog()

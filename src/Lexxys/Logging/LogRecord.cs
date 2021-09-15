@@ -36,8 +36,8 @@ namespace Lexxys.Logging
 	public class LogRecord
 	{
 		private const string NullArg = "null";
+		private static readonly AsyncLocal<int> _currentIndent = new();
 		private OrderedBag<string, object?>? _data;
-		private static AsyncLocal<int> _currentIndent = new();
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public LogRecord(LogType logType, string? source, string? message, IDictionary? args)
