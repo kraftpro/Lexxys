@@ -16,24 +16,23 @@ using Lexxys.Xml;
 
 namespace Lexxys.Logging
 {
-	public class TextFileLogWriter: LogWriter
+	public class FileLogWriter: LogWriter
 	{
 		private TimeSpan _timeout = DefaultTimeout;
-		private string _file;
+		private readonly string _file;
 		private bool _truncate;
 		private bool _errorLogged;
 
 		public const string DefaultLogFileMask = @"{YMD}.log";
-		public const int DefaultBatchSize = 16;
+		public const int DefaultBatchSize = 4096/200;
+		public const int DefaultFlushBound = 4096/200;
 
 		public static readonly TimeSpan DefaultTimeout = new TimeSpan(0, 0, 2);
 		public static readonly TimeSpan MaxTimeout = new TimeSpan(0, 0, 10);
 		public static readonly TimeSpan MinTimeout = new TimeSpan(0, 0, 0, 100);
 
-		public override string Target => _file;
-
 		/// <summary>
-		/// Initialize the LogWriter from XML.
+		/// Creates a new <see cref="LogWriter"/> to write logs to the text file.
 		/// </summary>
 		/// <param name="name">Name of the <see cref="LogWriter"/> for future reference.</param>
 		/// <param name="config">
@@ -42,18 +41,26 @@ namespace Lexxys.Logging
 		///		file		- mask of file name. default: %TEMP%\Logs\{YMD}-LL.log
 		///		timeout		- timeout while opening file in milliseconds. default: 2000
 		/// </param>
-		protected override void Initialize(string name, XmlLiteNode config)
+		/// <param name="formatter"></param>
+		/// <param name="batchSize"></param>
+		/// <param name="flushBound"></param>
+		public FileLogWriter(string name, XmlLiteNode config, ILogRecordFormatter formatter, int batchSize = 0, int flushBound = 0) :
+			base(name, config, batchSize == 0 ? DefaultBatchSize: batchSize, flushBound == 0 ? DefaultFlushBound: flushBound, formatter)
 		{
-			base.Initialize(name, config);
 			if (config == null)
 				config = XmlLiteNode.Empty;
 			_file = XmlTools.GetString(config["file"], DefaultLogFileMask);
 			_timeout = XmlTools.GetTimeSpan(config["timeout"], DefaultTimeout, MinTimeout, MaxTimeout);
 			XmlLiteNode overwrite = config.FirstOrDefault("overwrite");
 			_truncate = overwrite != null && overwrite.Value.AsBoolean(true);
-			if (BatchSize < 0)
-				BatchSize = DefaultBatchSize;
 		}
+
+		public FileLogWriter(string name, XmlLiteNode config):
+			this(name, config, null, DefaultBatchSize, DefaultFlushBound)
+		{
+		}
+
+		public override string Target => _file;
 
 		public override void Write(LogRecord record)
 		{
@@ -64,7 +71,7 @@ namespace Lexxys.Logging
 			{
 				if (o != null)
 				{
-					Format(o, record).WriteLine();
+					o.Write(record, Formatter).WriteLine();
 					return;
 				}
 			}
@@ -88,7 +95,7 @@ namespace Lexxys.Logging
 					foreach (var record in records)
 					{
 						if (record != null)
-							Format(o, record).WriteLine();
+							o.Write(record, Formatter).WriteLine();
 					}
 					return;
 				}
@@ -221,11 +228,29 @@ namespace Lexxys.Logging
 		}
 	}
 
+	public class TextFileLogWriter: FileLogWriter
+	{
+		public TextFileLogWriter(string name, XmlLiteNode config): base(name, config, formatter: new LogRecordTextFormatter(TextFormatDefaults.Join(config)))
+		{
+		}
+	}
+
+	public class JsonFileLogWriter : FileLogWriter
+	{
+		public JsonFileLogWriter(string name, XmlLiteNode config) : base(name, config, formatter: new LogRecordJsonFormatter(config))
+		{
+		}
+	}
+
 
 	public class NullLogWriter: LogWriter
 	{
 
 		public override string Target => "Null";
+
+		public NullLogWriter(string name, XmlLiteNode config): base(name, config, 1, 1, LogRecordFormatter.NullFormatter)
+		{
+		}
 
 		public override void Write(LogRecord record)
 		{
@@ -239,13 +264,15 @@ namespace Lexxys.Logging
 			"  ",
 			". ");
 
-		protected override TextFormatSetting FormattingDefaults => Defaults;
+		public ConsoleLogWriter(string name, XmlLiteNode config): base(name, config, 1, 1, new LogRecordTextFormatter(Defaults))
+		{
+		}
 
 		public override string Target => "Console";
 
 		public override void Write(LogRecord record)
 		{
-			Format(Console.Error, record).WriteLine();
+			Console.Error.Write(record, Formatter).WriteLine();
 		}
 	}
 
@@ -257,13 +284,15 @@ namespace Lexxys.Logging
 			"  ",
 			". ");
 
-		protected override TextFormatSetting FormattingDefaults => Defaults;
+		public TraceLogWriter(string name, XmlLiteNode config) : base(name, config, 1, 1, new LogRecordTextFormatter(Defaults))
+		{
+		}
 
 		public override string Target => "Trace";
 
 		public override void Write(LogRecord record)
 		{
-			Trace.WriteLine(Format(record));
+			Trace.WriteLine(Formatter.Format(record));
 		}
 	}
 
@@ -275,7 +304,9 @@ namespace Lexxys.Logging
 			"  ",
 			". ");
 
-		protected override TextFormatSetting FormattingDefaults => Defaults;
+		public DebuggerLogWriter(string name, XmlLiteNode config) : base(name, config, 1, 1, new LogRecordTextFormatter(Defaults))
+		{
+		}
 
 		public override string Target => "Debugger";
 
@@ -283,7 +314,7 @@ namespace Lexxys.Logging
 		{
 			if (Debugger.IsLogging())
 			{
-				string message = Format(record);
+				string message = Formatter.Format(record);
 				Debugger.Log(record.Priority, record.Source, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message: message + Environment.NewLine);
 			}
 		}
@@ -294,38 +325,29 @@ namespace Lexxys.Logging
 	{
 		private string _eventSource;
 
-		private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-			"{MachineName} {ProcessID:X4}\nthread {ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyy-MM-ddTHH:mm:ss.fffff}\n{Source}: {Message}",
-			"",
-			"");
-
-		protected override TextFormatSetting FormattingDefaults => Defaults;
-
-		public override string Target => "EventLog";
-
-		/// <summary>
-		/// Initialize the LogWriter from XML.
-		/// </summary>
-		/// <param name="name">Name of the <see cref="LogWriter"/> for future reference.</param>
-		/// <param name="config">
-		///	Initialization XML contaning 'parameters' element with attributes:
-		///		format setting <see cref="TextFormatSetting.Join(XmlLiteNode)"/>
-		///		source		- EventLog source (default: "Lexxys")
-		/// </param>
-		protected override void Initialize(string name, XmlLiteNode config)
+		public EventLogLogWriter(string name, XmlLiteNode config): base(name, config, 1, 1, new LogRecordTextFormatter(TextFormatEventLogDefaults))
 		{
 			if (config == null)
 				config = XmlLiteNode.Empty;
-			base.Initialize(name, config);
-
-			_eventSource = XmlTools.GetString(config["eventSource"], LogEventSource);
-			if (_eventSource.Length > 254)
-				_eventSource = _eventSource.Substring(0, 254);
+			var eventSource = XmlTools.GetString(config["eventSource"], EventSource);
+			if (eventSource.Length > 254)
+				eventSource = eventSource.Substring(0, 254);
+			var logName = XmlTools.GetString(config["logName"], "Application");
+			if (TestEventLog(eventSource, logName))
+				_eventSource = eventSource;
 		}
+
+		public override string Target => "EventLog";
 
 		public override void Write(LogRecord record)
 		{
-			WriteEventLogMessage(record);
+			if (_eventSource == null)
+				return;
+			string message = Formatter.Format(record);
+			if (message.Length > MaxEventLogMessage)
+				message = message.Substring(0, MaxEventLogMessage);
+			#pragma warning disable CA1416 // Validate platform compatibility
+			EventLog.WriteEntry(_eventSource, message, LogEntryType(record.LogType));
 		}
 	}
 }

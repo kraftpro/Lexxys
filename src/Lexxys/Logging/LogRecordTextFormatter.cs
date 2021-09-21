@@ -13,6 +13,8 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using Lexxys.Xml;
+
 namespace Lexxys.Logging
 {
 	public enum FormatItemType
@@ -21,19 +23,18 @@ namespace Lexxys.Logging
 		MachineName = 1,
 		DomainName = 2,
 		ProcessId = 3,
-		ProcessName = 4,
-		ThreadId = 5,
-		ThreadSysId = 6,
-		SequencialNumber = 7,
-		Timestamp = 8,
+		ThreadId = 4,
+		ThreadSysId = 5,
+		SequentialNumber = 6,
+		Timestamp = 7,
 
-		Source = 9,
-		Message = 10,
-		Type = 11,
-		Grouping = 12,
-		Indent = 13,
+		Source = 8,
+		Message = 9,
+		Type = 10,
+		Grouping = 11,
+		Indent = 12,
 
-		Empty = 14,
+		Empty = 13,
 	}
 
 	public readonly struct LogRecordFormatItem
@@ -53,7 +54,7 @@ namespace Lexxys.Logging
 	/// <summary>
 	/// Convert <see cref="LogRecord"/> to string using formatting template.
 	/// </summary>
-	public class LogRecordTextFormatter
+	public class LogRecordTextFormatter: ILogRecordFormatter
 	{
 		public const int MaxIndents = 20;
 		private const int MAX_STACK_ALLOC = 16 * 1024;
@@ -81,20 +82,24 @@ namespace Lexxys.Logging
 			_mappedFormat = MapFormat(Setting.Format);
 		}
 
+		public LogRecordTextFormatter(XmlLiteNode config)
+		{
+			Setting = new TextFormatSetting(Defaults).Join(config);
+			_mappedFormat = MapFormat(Setting.Format);
+		}
+
 		/// <summary>
 		/// Format <paramref name="record"/> to string using <see cref="TextFormatSetting.Format"/> template
 		/// </summary>
 		/// <param name="record">The <paramref name="record"/> to format</param>
 		/// <returns>Formatted string</returns>
 		/// <remarks>
-		/// We cannot use Regular expressions, because of thread finalization.
 		/// Available formating fields options are:
 		/// <code>
 		/// 	IndentMark
 		/// 	MachineName
 		/// 	DomainName
 		/// 	ProcessID
-		/// 	ProcessName
 		/// 	ThreadID
 		/// 	ThreadSysID
 		/// 	SeqNumber
@@ -199,16 +204,13 @@ namespace Lexxys.Logging
 					case FormatItemType.ProcessId:
 						writer.Write(record.Context.ProcessId.ToString(item.Format));
 						break;
-					case FormatItemType.ProcessName:
-						writer.Write(record.Context.ProcessName);
-						break;
 					case FormatItemType.ThreadId:
 						writer.Write(record.Context.ThreadId.ToString(item.Format));
 						break;
 					case FormatItemType.ThreadSysId:
 						writer.Write(record.Context.ThreadSysId.ToString(item.Format));
 						break;
-					case FormatItemType.SequencialNumber:
+					case FormatItemType.SequentialNumber:
 						writer.Write(record.Context.SequentialNumber.ToString(item.Format));
 						break;
 					case FormatItemType.Timestamp:
@@ -391,7 +393,7 @@ namespace Lexxys.Logging
 					}
 					*p++ = c;
 				}
-				Finish:;
+			Finish:;
 			}
 			return new string(buffer, 0, (int)(p - buffer));
 			static bool IsWhiteSpace(char c)
@@ -443,10 +445,9 @@ namespace Lexxys.Logging
 				{ "MACHINENAME", FormatItemType.MachineName },
 				{ "DOMAINNAME", FormatItemType.DomainName },
 				{ "PROCESSID", FormatItemType.ProcessId },
-				{ "PROCESSNAME", FormatItemType.ProcessName },
 				{ "THREADID", FormatItemType.ThreadId },
 				{ "THREADSYSID", FormatItemType.ThreadSysId },
-				{ "SEQNUMBER", FormatItemType.SequencialNumber },
+				{ "SEQNUMBER", FormatItemType.SequentialNumber },
 				{ "TIMESTAMP", FormatItemType.Timestamp },
 
 				{ "SOURCE", FormatItemType.Source },
@@ -478,7 +479,7 @@ namespace Lexxys.Logging
 					text = NullValue;
 				ReadOnlySpan<char> value;
 				int length = text.Length;
-				value = Left < length ? text.AsSpan(0, Left): text.AsSpan();
+				value = Left < length ? text.AsSpan(0, Left) : text.AsSpan();
 				if (value.Length == 0)
 					return this;
 

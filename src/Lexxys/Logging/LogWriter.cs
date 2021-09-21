@@ -9,73 +9,66 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-
+using System.Xml.Linq;
 using Lexxys.Xml;
+
+using static Lexxys.Xml.TextToXmlConverter;
 
 namespace Lexxys.Logging
 {
 	public abstract class LogWriter
 	{
-		private string _name;
-		private LoggingRule _rule;
-		private LogRecordTextFormatter _formatter;
-		private int _batchSize;
-		private int _flushBound;
+		public const string EventSource = "Lexxys";
+		public const int MaxEventLogMessage = 30000;
+		public static readonly LogWriter Empty = new NullWriter();
 
-		private static readonly string EventSource = "Lexxys";
-		private static readonly bool UseSystemEventLog = TestEventLog();
-		private static readonly TextFormatSetting Defaults = new TextFormatSetting(
+		private static readonly bool UseSystemEventLog = TestEventLog(EventSource, "Application");
+
+		public static readonly TextFormatSetting TextFormatDefaults = new TextFormatSetting(
 			"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
 			"  ",
 			". ");
-		private static readonly TextFormatSetting EventLogDefaults = new TextFormatSetting(
+		public static readonly TextFormatSetting TextFormatEventLogDefaults = new TextFormatSetting(
 			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
 			"  ",
 			". ");
 
-		/// <summary>
-		/// Get name of the <see cref="LogWriter"/>
-		/// </summary>
-		public string Name => _name;
-
-		internal LoggingRule Rule => _rule;
-
-		public abstract string Target { get; }
-
-		public int BatchSize { get => _batchSize; protected set => _batchSize = value; }
-
-		public int FlushBound { get => _flushBound; protected set => _flushBound = value; }
-
-		public virtual bool IsReady => true;
-
-		protected internal LogRecordTextFormatter Formatter => _formatter;
-
-		protected string Format(LogRecord record) => _formatter.Format(record);
-
-		protected TextWriter Format(TextWriter writer, LogRecord record) => _formatter.Format(writer, record);
-
-		protected virtual TextFormatSetting FormattingDefaults => Defaults;
-
-		protected static string DefaultLogEventSource => EventSource;
-
-		/// <summary>
-		/// Initialize the LogWriter from XML.
-		/// </summary>
-		/// <param name="name">Name of the <see cref="LogWriter"/>.</param>
-		/// <param name="config">Not used</param>
-		protected virtual void Initialize(string name, XmlLiteNode config)
+		public LogWriter(string name, XmlLiteNode config, int batchSize = 0, int flushBound = 0, ILogRecordFormatter formatter = null)
 		{
 			if (config == null)
 				config = XmlLiteNode.Empty;
+			if (batchSize <= 0)
+				batchSize = LoggingContext.DefaultBatchSize;
+			if (flushBound <= 0)
+				flushBound = LoggingContext.DefaultFlushBound;
 
-			_name = name ?? this.GetType().Name;
-			_batchSize = config["batchSize"].AsInt32(LoggingContext.DefaultBatchSize);
-			_flushBound = config["flushBound"].AsInt32(LoggingContext.DefaultFlushBound);
-			_formatter = new LogRecordTextFormatter(FormattingDefaults.Join(config));
-			_rule = LoggingRule.Create(config);
+			Name = name ?? this.GetType().Name;
+			BatchSize = config["batchSize"].AsInt32(batchSize);
+			if (BatchSize <= 0)
+				BatchSize = batchSize;
+			FlushBound = config["flushBound"].AsInt32(flushBound);
+			if (FlushBound <= 0)
+				FlushBound = flushBound;
+			Formatter = CreateFormatter(config["formatter"], config) ?? formatter ?? new LogRecordTextFormatter(TextFormatDefaults.Join(config));
+			Rule = LoggingRule.Create(config);
 		}
 
-		public static LogWriter Empty { get; } = new EmptyWriter();
+		/// <summary>
+		/// Get name of the <see cref="LogWriter"/>
+		/// </summary>
+		public string Name { get; }
+
+		internal LoggingRule Rule { get; }
+
+		public abstract string Target { get; }
+
+		public int BatchSize { get; }
+
+		public int FlushBound { get; }
+
+		public virtual bool IsReady => true;
+
+		protected internal ILogRecordFormatter Formatter { get; }
 
 		public static LogWriter FromXml(XmlLiteNode node)
 		{
@@ -84,27 +77,56 @@ namespace Lexxys.Logging
 
 			string name = node["name"].AsString(null);
 			string className = node["class"].AsString(null);
-			if (className == null)
-			{
-				LogWriter.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, null, null));
-				return Empty;
-			}
+			if (className != null)
+				return CreateLogWriter(className, name, node) ?? Empty;
+
+			LogWriter.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name));
+			return Empty;
+		}
+
+
+		private static LogWriter CreateLogWriter(string className, string name, XmlLiteNode node)
+		{
+			if (String.IsNullOrEmpty(className))
+				return null;
+			LogWriter writer = null;
 			try
 			{
-				var writer = Factory.TryConstruct(Factory.GetType(className), false) as LogWriter ??
-					Factory.TryConstruct(Factory.GetType("Lexxys.Logging." + className), false) as LogWriter;
-				if (writer != null)
-				{
-					writer.Initialize(name, node);
-					return writer.Rule.IsEmpty ? Empty: writer;
-				}
-				LogWriter.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className, null));
+				Type type = Factory.GetType(className) ??
+					(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
+				if (type != null && type.IsSubclassOf(typeof(LogWriter)))
+					writer = Factory.TryGetConstructor(type, false, new[] { typeof(string), typeof(XmlLiteNode) })?
+						.Invoke(new object[] { name, node }) as LogWriter;
+				if (writer == null)
+					LogWriter.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className));
 			}
 			catch (Exception e)
 			{
 				LogWriter.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className, e));
 			}
-			return Empty;
+			return writer;
+		}
+
+		private static ILogRecordFormatter CreateFormatter(string className, XmlLiteNode node)
+		{
+			if (String.IsNullOrEmpty(className))
+				return null;
+			ILogRecordFormatter formatter = null;
+			try
+			{
+				Type type = Factory.GetType(className) ??
+					(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
+				if (type != null)
+					formatter = Factory.TryGetConstructor(type, false, new[] { typeof(XmlLiteNode) })?
+						.Invoke(new object[] { node }) as ILogRecordFormatter;
+				if (formatter == null)
+					LogWriter.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogFormatter(className));
+			}
+			catch (Exception e)
+			{
+				LogWriter.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogFormatter(className, e));
+			}
+			return formatter;
 		}
 
 		/// <summary>
@@ -113,12 +135,14 @@ namespace Lexxys.Logging
 		public virtual void Open()
 		{
 		}
+
 		/// <summary>
 		/// Close <see cref="LogWriter"/> and free all resources used.
 		/// </summary>
 		public virtual void Close()
 		{
 		}
+
 		/// <summary>
 		/// Log the <paramref name="record"/> to the log
 		/// </summary>
@@ -137,16 +161,17 @@ namespace Lexxys.Logging
 			}
 		}
 
-		protected static string LogEventSource => EventSource;
+		#region EventLog tools
 
+		private static readonly LogRecordTextFormatter __eventLogFormatter = new LogRecordTextFormatter(TextFormatEventLogDefaults);
 
-		private static readonly LogRecordTextFormatter __eventLogFormatter = new LogRecordTextFormatter(EventLogDefaults);
+		#pragma warning disable CA1416 // Validate platform compatibility
 
-		private static bool TestEventLog()
+		internal static bool TestEventLog(string eventSource, string logName)
 		{
 			try
 			{
-				if (EventLog.SourceExists(EventSource))
+				if (EventLog.SourceExists(eventSource))
 					return true;
 			}
 			catch
@@ -155,8 +180,8 @@ namespace Lexxys.Logging
 			}
 			try
 			{
-				EventLog.CreateEventSource(EventSource, "Application");
-				return EventLog.SourceExists(EventSource);
+				EventLog.CreateEventSource(eventSource, logName);
+				return EventLog.SourceExists(eventSource);
 			}
 			catch
 			{
@@ -192,7 +217,7 @@ namespace Lexxys.Logging
 			if (Debugger.IsLogging())
 			{
 				string message = __eventLogFormatter.Format(record);
-				Debugger.Log(5, EventSource, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message: message + Environment.NewLine);
+				Debugger.Log(5, EventSource, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message : message + Environment.NewLine);
 			}
 		}
 
@@ -218,9 +243,9 @@ namespace Lexxys.Logging
 				return;
 			string message = __eventLogFormatter.Format(record);
 			if (Debugger.IsLogging())
-				Debugger.Log(5, EventSource, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message: message + Environment.NewLine);
-			if (message.Length > 32765)
-				message = message.Substring(0, 32765);
+				Debugger.Log(5, EventSource, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message : message + Environment.NewLine);
+			if (message.Length > MaxEventLogMessage)
+				message = message.Substring(0, MaxEventLogMessage);
 			if (UseSystemEventLog)
 				EventLog.WriteEntry(EventSource, message, EventLogEntryType.Error);
 		}
@@ -237,23 +262,22 @@ namespace Lexxys.Logging
 				return;
 			string message = __eventLogFormatter.Format(record);
 			if (Debugger.IsLogging())
-				Debugger.Log(5, EventSource, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message: message + Environment.NewLine);
-			if (message.Length > 32765)
-				message = message.Substring(0, 32765);
+				Debugger.Log(5, EventSource, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message : message + Environment.NewLine);
+			if (message.Length > MaxEventLogMessage)
+				message = message.Substring(0, MaxEventLogMessage);
 			if (UseSystemEventLog)
 				EventLog.WriteEntry(EventSource, message, LogEntryType(record.LogType));
 		}
 
-		class EmptyWriter: LogWriter
+		#endregion
+
+		class NullWriter : LogWriter
 		{
-			public EmptyWriter()
+			public NullWriter(): base("Null", null, 1, 1, LogRecordFormatter.NullFormatter)
 			{
-				_name = "Empty";
-				_formatter = new LogRecordTextFormatter(Defaults);
-				_rule = LoggingRule.Empty;
 			}
 
-			public override string Target => "(null)";
+			public override string Target => "Null";
 
 			public override void Write(LogRecord record)
 			{

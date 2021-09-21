@@ -35,6 +35,27 @@ namespace Lexxys.Logging
 		private SqlCommand _insertArgumentCommand;
 		private SqlConnection _connection;
 
+		public DatabaseLogWriter(string name, XmlLiteNode config) : base(name, config, 1, 1, LogRecordFormatter.NullFormatter)
+		{
+			if (config == null)
+				config = XmlLiteNode.Empty;
+
+			_connectionInfo = ConnectionStringInfo.Create(config.FirstOrDefault("connection")) ??
+				Config.GetValue<ConnectionStringInfo>(XmlTools.GetString(config["connection"], ConfigSection));
+			if (_connectionInfo == null)
+				WriteErrorMessage(LogSource, SR.CollectionIsEmpty(), null);
+
+			_schema = __cleanRex.Replace(config["schema"] ?? "", "");
+			if (_schema.Length == 0)
+				_schema = DefaultSchema;
+			_table = __cleanRex.Replace(config["table"] ?? "", "");
+			if (_table.Length == 0)
+				_table = DefaultTable;
+			_dedicatedConnection = XmlTools.GetBoolean(config["dedicated"], false);
+			_cloneCommand = XmlTools.GetBoolean(config["clone"], false);
+		}
+		private static readonly Regex __cleanRex = new Regex(@"[\x00- '""\]\[\x7F\*/]");
+
 		public override string Target => _connectionInfo == null ? "Empty database": $"{_connectionInfo.Server}:{_connectionInfo.Database}.{_schema}.{_table}LogEntries";
 
 		public override void Write(LogRecord record)
@@ -62,7 +83,7 @@ namespace Lexxys.Logging
 					arument.Connection = connection;
 
 					int instanceId = __instancesMap.GetOrAdd(
-						new Tuple<string, string, string, int>(record.Context.MachineName, record.Context.DomainName, record.Context.ProcessName, record.Context.ProcessId),
+						new Tuple<string, string, int>(record.Context.MachineName, record.Context.DomainName, record.Context.ProcessId),
 						o=> {
 								instance = GetInsertInstanceCommand();
 								instance.Connection = connection;
@@ -86,7 +107,7 @@ namespace Lexxys.Logging
 				WriteEventLogMessage(record);
 			}
 		}
-		private static readonly ConcurrentDictionary<Tuple<string, string, string, int>, int> __instancesMap = new ConcurrentDictionary<Tuple<string, string, string, int>, int>();
+		private static readonly ConcurrentDictionary<Tuple<string, string, int>, int> __instancesMap = new ConcurrentDictionary<Tuple<string, string, int>, int>();
 
 		public override void Write(IEnumerable<LogRecord> records)
 		{
@@ -113,7 +134,7 @@ namespace Lexxys.Logging
 					{
 						LogRecord record = item;
 						int instanceId = __instancesMap.GetOrAdd(
-							new Tuple<string, string, string, int>(record.Context.MachineName, record.Context.DomainName, record.Context.ProcessName, record.Context.ProcessId),
+							new Tuple<string, string, int>(record.Context.MachineName, record.Context.DomainName, record.Context.ProcessId),
 							o=> {
 									if (instance == null)
 									{
@@ -139,30 +160,6 @@ namespace Lexxys.Logging
 				WriteErrorMessage("DatabaseLogWriter", exception);
 			}
 		}
-
-
-		protected override void Initialize(string name, XmlLiteNode config)
-		{
-			if (config == null)
-				config = XmlLiteNode.Empty;
-			base.Initialize(name, config);
-
-			_connectionInfo = ConnectionStringInfo.Create(config.FirstOrDefault("connection")) ??
-				Config.GetValue<ConnectionStringInfo>(XmlTools.GetString(config["connection"], ConfigSection));
-			if (_connectionInfo == null)
-				WriteErrorMessage(LogSource, SR.CollectionIsEmpty(), null);
-
-			_schema = __cleanRex.Replace(config["schema"] ?? "", "");
-			if (_schema.Length == 0)
-				_schema = DefaultSchema;
-			_table = __cleanRex.Replace(config["table"] ?? "", "");
-			if (_table.Length == 0)
-				_table = DefaultTable;
-			_dedicatedConnection = XmlTools.GetBoolean(config["dedicated"], false);
-			_cloneCommand = XmlTools.GetBoolean(config["clone"], false);
-
-		}
-		private static readonly Regex __cleanRex = new Regex(@"[\x00- '""\]\[\x7F\*/]");
 
 		public override void Open()
 		{
@@ -249,10 +246,9 @@ namespace Lexxys.Logging
 			command.Parameters[0].Value = record.Context.Timestamp;
 			command.Parameters[1].Value = record.Context.MachineName;
 			command.Parameters[2].Value = record.Context.DomainName;
-			command.Parameters[3].Value = record.Context.ProcessName;
-			command.Parameters[4].Value = record.Context.ProcessId;
+			command.Parameters[3].Value = record.Context.ProcessId;
 			command.ExecuteNonQuery();
-			return (int)command.Parameters[5].Value;
+			return (int)command.Parameters[4].Value;
 		}
 
 
@@ -262,7 +258,6 @@ namespace Lexxys.Logging
 			command.Parameters.Add("@LocalTime", System.Data.SqlDbType.DateTime);
 			command.Parameters.Add("@ComputerName", System.Data.SqlDbType.VarChar, 120);
 			command.Parameters.Add("@DomainName", System.Data.SqlDbType.VarChar, 120);
-			command.Parameters.Add("@ProcessName", System.Data.SqlDbType.VarChar, 250);
 			command.Parameters.Add("@ProcessId", System.Data.SqlDbType.Int);
 			command.Parameters.Add("@ID", System.Data.SqlDbType.Int);
 			command.Parameters["@ID"].Direction = System.Data.ParameterDirection.Output;
@@ -354,11 +349,10 @@ create table [{0}].[{1}LogInstances]
 	LocalTime datetime not null,
 	ComputerName varchar(120) null,
 	DomainName varchar(120) null,
-	ProcessName varchar(250) null,
 	ProcessId int not null,
 	)
 ');
-exec dbo.alter_index '[{0}].[{1}LogInstances](unique)', 'ProcessId', 'ComputerName', 'DomainName', 'ProcessName';
+exec dbo.alter_index '[{0}].[{1}LogInstances](unique)', 'ProcessId', 'ComputerName', 'DomainName';
 end;
 ", @"if (object_id('[{0}].[{1}LogEntries]') is null)
 exec ('
@@ -400,7 +394,6 @@ create proc [{0}].[Insert{1}LogInstance]
 	@LocalTime datetime,
 	@ComputerName varchar(120),
 	@DomainName varchar(120),
-	@ProcessName varchar(250),
 	@ProcessId int,
 	@ID int output
 	)
@@ -410,15 +403,14 @@ as
 		from [{0}].[{1}LogInstances]
 		where ComputerName=@ComputerName
 			and DomainName=@DomainName
-			and ProcessName=@ProcessName
 			and ProcessId=@ProcessId
 		);
 	if (@ID is null)
 		begin
 		insert into [{0}].[{1}LogInstances]
-			( LocalTime, ComputerName, DomainName, ProcessName, ProcessId)
+			( LocalTime, ComputerName, DomainName, ProcessId)
 		values
-			(@LocalTime,@ComputerName,@DomainName,@ProcessName,@ProcessId);
+			(@LocalTime,@ComputerName,@DomainName,@ProcessId);
 		set @ID = scope_identity();
 		end;
 	end;
@@ -461,7 +453,7 @@ as
 "
 		};
 
-		private const string InsertInstanceCommandText = @"exec [{0}].[Insert{1}LogInstance] @LocalTime,@ComputerName,@DomainName,@ProcessName,@ProcessId,@ID output;";
+		private const string InsertInstanceCommandText = @"exec [{0}].[Insert{1}LogInstance] @LocalTime,@ComputerName,@DomainName,@ProcessId,@ID output;";
 		private const string InsertEntryCommandText = @"exec [{0}].[Insert{1}LogEntry] @SeqNumber,@LocalTime,@Instance,@Source,@ThreadId,@ThreadSysId,@LogType,@RecordType,@Indentlevel,@Message,@ID output;";
 		private const string InsertArgumentCommandText = @"exec [{0}].[Insert{1}LogArgument] @Entry,@ArgName,@ArgValue;";
 

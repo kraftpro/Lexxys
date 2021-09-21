@@ -33,7 +33,7 @@ namespace Lexxys.Logging
 		EndGroup=2
 	}
 
-	public class LogRecord
+	public class LogRecord: IDumpJson
 	{
 		private const string NullArg = "null";
 		private static readonly AsyncLocal<int> _currentIndent = new();
@@ -168,9 +168,21 @@ namespace Lexxys.Logging
 			return arg;
 		}
 
-		public class ExceptionInfo
+		public JsonBuilder ToJsonContent(JsonBuilder json)
 		{
-			private OrderedBag<string, object?>? _data;
+			return json
+				.Item("type", LogType)
+				.Item("indent", Indent)
+				.Item("source", Source)
+				.Item("message", Message)
+				.Item("data", Data)
+				.Item("exception", Exception)
+				.Item("context", Context);
+		}
+
+		public class ExceptionInfo: IDumpJson
+		{
+			private readonly OrderedBag<string, object?>? _data;
 
 			public ExceptionInfo(Exception exception)
 			{
@@ -185,6 +197,15 @@ namespace Lexxys.Logging
 			public IDictionary? Data => _data;
 			public string? StackTrace { get; }
 			public ExceptionInfo? InnerException { get; }
+
+			public JsonBuilder ToJsonContent(JsonBuilder json)
+			{
+				return json
+					.Item("meessage", Message)
+					.Item("data", Data)
+					.Item("stackTrace", StackTrace)
+					.Item("innetException", InnerException);
+			}
 		}
 	}
 }

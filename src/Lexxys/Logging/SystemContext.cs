@@ -9,11 +9,10 @@ using System.Threading;
 
 namespace Lexxys.Logging
 {
-	public class SystemContext
+	public class SystemContext: IDumpJson
 	{
 		private readonly string _machineName;
 		private readonly string _domainName;
-		private readonly string _processName;
 		private readonly int _processId;
 		private readonly int _threadId;
 		private readonly int _threadSysId;
@@ -22,9 +21,8 @@ namespace Lexxys.Logging
 
 		private static readonly string __staticMachineName = Tools.MachineName;
 		private static readonly string __staticDomainName = Tools.DomainName;
-		private static readonly string __staticProcessName = Tools.ModuleFileName;
 		private static readonly int __staticProcessId = Tools.ProcessId;
-		private static readonly TimeSpan __localUtcOffset = TimeSpan.FromTicks(DateTime.Now.Ticks - DateTime.UtcNow.Ticks);
+		private static readonly TimeSpan __localUtcOffset = TimeSpan.FromTicks((DateTime.Now.Ticks - DateTime.UtcNow.Ticks) / (TimeSpan.TicksPerSecond * 60) * (TimeSpan.TicksPerSecond * 60));
 		private static int _lastSequenceNumber;
 
 		/// <summary>
@@ -32,11 +30,10 @@ namespace Lexxys.Logging
 		/// </summary>
 		internal SystemContext()
 		{
-			_timestamp = DateTime.UtcNow + __localUtcOffset;
+			_timestamp = DateTime.UtcNow;
 			_sequentialNumber = Interlocked.Increment(ref _lastSequenceNumber);
 			_machineName = __staticMachineName;
 			_domainName = __staticDomainName;
-			_processName = __staticProcessName;
 			_processId = __staticProcessId;
 			_threadId = Thread.CurrentThread.ManagedThreadId;
 			_threadSysId = Tools.ThreadId;
@@ -58,11 +55,6 @@ namespace Lexxys.Logging
 		public int ProcessId => _processId;
 
 		/// <summary>
-		/// Get process name (full path to executable file)
-		/// </summary>
-		public string ProcessName => _processName;
-
-		/// <summary>
 		/// Get managed thread ID
 		/// </summary>
 		public int ThreadId => _threadId;
@@ -78,9 +70,25 @@ namespace Lexxys.Logging
 		public int SequentialNumber => _sequentialNumber;
 
 		/// <summary>
-		/// Time when the object was created
+		/// Local time when the object was created
 		/// </summary>
-		public DateTime Timestamp => _timestamp;
+		public DateTime Timestamp => _timestamp + __localUtcOffset;
+
+		/// <summary>
+		/// UTC time when the object was created
+		/// </summary>
+		public DateTime UtcTimestamp => _timestamp;
+
+		public JsonBuilder ToJsonContent(JsonBuilder json)
+		{
+			return json
+				.Item("machine", MachineName)
+				.Item("domain", DomainName)
+				.Item("processId", ProcessId)
+				.Item("threadId", ThreadId)
+				.Item("seqNumber", SequentialNumber)
+				.Item("utcTimestamp", UtcTimestamp);
+		}
 	}
 }
 

@@ -8,15 +8,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-using Lexxys;
 
 namespace Lexxys
 {
@@ -69,15 +65,23 @@ namespace Lexxys
 		/// <param name="value">The <see cref="Char"/> value to write.</param>
 		protected abstract void Text(char value);
 
+		public JsonBuilder WithNamingRule(NamingCaseRule namingRule)
+		{
+			NamingRule = namingRule;
+			return this;
+		}
+
 		/// <summary>
 		/// Writes a <see cref="String"/> value as a JavaScript escaped string.
 		/// </summary>
 		/// <param name="value">The <see cref="String"/> value to write.</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		protected virtual void Value(string value)
 		{
 			Text(value == null ? NullValue : Strings.EscapeCsString(value));
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Comma()
 		{
 			switch (_state)
@@ -100,6 +104,7 @@ namespace Lexxys
 		/// Writes the start of a JSON object.
 		/// </summary>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Obj()
 		{
 			_elements.Push('?');
@@ -112,6 +117,7 @@ namespace Lexxys
 		/// Writes the start of an JSON array.
 		/// </summary>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Arr()
 		{
 			_elements.Push(']');
@@ -125,6 +131,7 @@ namespace Lexxys
 		/// Writes the end of an array or a object.
 		/// </summary>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder End()
 		{
 			var c = _elements.Pop();
@@ -146,6 +153,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="name">Name of the attribute</param>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name)
 		{
 			if (String.IsNullOrEmpty(name))
@@ -232,6 +240,7 @@ namespace Lexxys
 			return End();
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private string ForceName(string name)
 		{
 			return (NamingRule & NamingCaseRule.Force) == 0 ? name: Strings.ToNamingRule(name, NamingRule);
@@ -615,169 +624,194 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
-		public JsonBuilder Item(string name, IDictionary value) => Item(name).Val(value);
-		
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public JsonBuilder Item(string name, IDictionary value) => value == null ? this: Item(name).Val(value);
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
-		public JsonBuilder Item(string name, string value) => Item(name).Val(value);
-		
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public JsonBuilder Item(string name, string value) => value == null ? this: Item(name).Val(value);
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, char value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, bool value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, byte value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, sbyte value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, short value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, ushort value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, int value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, uint value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, long value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, ulong value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, decimal value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, float value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, double value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, DateTime value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, DateTimeOffset value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, TimeSpan value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name, Guid value) => Item(name).Val(value);
-		
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
-		public JsonBuilder Item(string name, byte[] value) => Item(name).Val(value);
-		
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public JsonBuilder Item(string name, byte[] value) => value == null ? this: Item(name).Val(value);
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
-		public JsonBuilder Item(string name, IEnumerable value) => Item(name).Val(value);
-		
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public JsonBuilder Item(string name, IEnumerable value) => value == null ? this: Item(name).Val(value);
+
 		/// <summary>
 		/// Writes item and value pair.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
-		public JsonBuilder Item(string name, IDumpJson value) => Item(name).Val(value);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public JsonBuilder Item(string name, IDumpJson value) => value == null ? this: Item(name).Val(value);
 
 		/// <summary>
 		/// Writes item and value pair using <see cref="IDumpJson"/> implementation if it is present.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
-		public JsonBuilder Item(string name, object value) => Item(name).Val(value);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public JsonBuilder Item(string name, object value) => value == null ? this: Item(name).Val(value);
 
 		/// <summary>
 		/// Writes item and value pair ignoring <see cref="IDumpJson"/> implementation.
 		/// </summary>
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
-		public JsonBuilder ItemObj(string name, object value) => Item(name).ValObj(value);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public JsonBuilder ItemObj(string name, object value) => value == null ? this: Item(name).ValObj(value);
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Content(IDumpJson value)
 		{
 			value?.ToJsonContent(this);

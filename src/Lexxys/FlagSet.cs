@@ -193,7 +193,7 @@ namespace Lexxys
 
 		public static bool operator !=(FlagSet left, FlagSet right)
 		{
-			return right is null ? left is object : !right.Equals(left);
+			return right is null ? left is not null : !right.Equals(left);
 		}
 
 		public override int GetHashCode()

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -23,21 +24,47 @@ namespace Lexxys.Tests
 		}
 
 		[TestMethod]
-		public void RemoveExtraBracesTest()
+		[DataRow(null, null)]
+		[DataRow("", "")]
+		[DataRow(" (  ", "(")]
+		[DataRow("( ( )", "(")]
+		public void RemoveExtraBracesTest(string original, string expected)
 		{
-			Assert.Inconclusive();
+			var value = Strings.RemoveExtraBraces(original);
+			Assert.AreEqual(expected, value);
 		}
 
 		[TestMethod]
-		public void SplitByCapitalsTest()
+		[DataRow("A", "A")]
+		[DataRow("abcDef", "abc;Def")]
+		[DataRow("ABCDef", "ABC;Def")]
+		[DataRow("ABCDefGHI", "ABC;Def;GHI")]
+		[DataRow("ABCD_._ef,,,ghi", "ABCD;_._;ef;,,,;ghi")]
+		public void SplitByCapitalsTest(string value, string expected)
 		{
-			Assert.Inconclusive();
+			var results = String.Join(";", Strings.SplitByCapitals(value));
+			Assert.AreEqual(expected, results);
 		}
 
 		[TestMethod]
-		public void SplitByWordBoundTest()
+		[DataRow("asd der fereis", 3, 5)]
+		[DataRow("  abc       def ghij s ssss ", 3, 8)]
+		[DataRow("\n\n  abc       def gh\n\n\nij s\n ssss ", 3, 8)]
+		public void SplitByWordBoundTest(string value, int min, int max)
 		{
-			Assert.Inconclusive();
+			for (int i = min; i <= max; ++i)
+			{
+				var xx = Strings.SplitByWordBound(value, i);
+				var expected = Regex.Replace(value, @"\s+", "");
+				var constructed = String.Join("", xx.Select(o => value.Substring(o.Index, o.Length)));
+				var condensed = Regex.Replace(constructed, @"\s+", "");
+				Assert.AreEqual(expected, condensed);
+				foreach (var x in xx)
+				{
+					Assert.IsTrue(x.Length > 0, $"\"{x}\".Length == 0");
+					Assert.IsTrue(x.Length <= i, $"\"{x}\".Length = {x.Length} <= {i}");
+				}
+			}
 		}
 
 		[TestMethod]

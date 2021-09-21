@@ -42,6 +42,7 @@ namespace Lexxys.Configuration
 		///	Create Configuration Locator
 		/// </summary>
 		/// <param name="value"></param>
+		/// <param name="directory">True - the location is directory, so don't need to parse extension</param>
 		/// <remarks>
 		///		grammar:
 		///			location		:=	[ schema schemaSeparator ] [ type ] [host] ['/' path ] ['?' query] [newLine text]
@@ -49,24 +50,24 @@ namespace Lexxys.Configuration
 		///			schemaSeparator	:=	':' '?'{0..2}
 		///		
 		/// </remarks>
-		public ConfigurationLocator(string value)
+		public ConfigurationLocator(string value, bool directory = false)
 		{
 			if (value == null)
 				throw EX.ArgumentNull(nameof(value));
 
 			value = Config.ExpandParameters(value);
 			Match m = __crlRex.Match(value);
-
 			Schema = m.Groups["schema"].Value.Trim().ToLowerInvariant();
 			Host = m.Groups["host"].Value.Trim();
 			Path = m.Groups["path"].Value.Trim();
 			QueryString = m.Groups["query"].Value.Trim();
 			SourceType = m.Groups["type"].Value.Trim().ToUpperInvariant();
 			Text = m.Groups["text"].Value.Trim();
-			if (SourceType.Length == 0)
-				SourceType = GetExtension(Path).ToUpperInvariant();
-			else
-				_sourceTypeFixed = true;
+			if (!directory)
+				if (SourceType.Length == 0)
+					SourceType = GetExtension(Path).ToUpperInvariant();
+				else
+					_sourceTypeFixed = true;
 
 			SchemaType = ConfigLocatorSchema.Undefined;
 			switch (Schema)
@@ -114,7 +115,7 @@ namespace Lexxys.Configuration
 						String.Equals(Host, "DATABASE-ENUMS", StringComparison.OrdinalIgnoreCase))
 					{
 						SchemaType = ConfigLocatorSchema.DatabaseEnums;
-						Host = "";
+						Host = String.Empty;
 					}
 					break;
 			}

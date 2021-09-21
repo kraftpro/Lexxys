@@ -661,7 +661,7 @@ namespace Lexxys
 #endif
 			cc.AddRange(Factory.DomainAssemblies.Select(GetConfigurationLocator).Where(o => o != null));
 
-			var locator = new ConfigurationLocator(Lxx.HomeDirectory + Environment.NewLine  + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile);
+			var locator = new ConfigurationLocator("file:///" + Lxx.HomeDirectory + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile, true);
 			if (locator.IsValid)
 				cc.Add(locator);
 			locator = new ConfigurationLocator(Lxx.GlobalConfigurationDirectory + Path.DirectorySeparatorChar + Lxx.GlobalConfigurationFile);
@@ -675,7 +675,7 @@ namespace Lexxys
 			string name;
 			if (asm == null || asm.IsDynamic || String.IsNullOrEmpty(name = asm.GetName().CodeBase))
 				return null;
-			var locator = new ConfigurationLocator(Path.ChangeExtension(name, null));
+			var locator = new ConfigurationLocator(Path.ChangeExtension(name, null), true);
 			return locator.IsValid ? locator: null;
 		}
 	}

@@ -20,14 +20,15 @@ namespace Lexxys
 {
 	using Logging;
 
-	public class Logger<T>: Logger, ILogger<T>
+	public class Logger<T>: Logger, ILogging<T>
 	{
-		public new static readonly ILogger<T> Empty = new Dummy();
-		public Logger(): base(typeof(T).Name)
+		public new static readonly ILogging<T> Empty = new Dummy();
+
+		public Logger(): base(typeof(T).GetTypeName())
 		{
 		}
 
-		private class Dummy : ILogger<T>, ILogging
+		private class Dummy: ILogging<T>, ILogging
 		{
 			public string Source => "Dummy";
 
@@ -225,7 +226,7 @@ namespace Lexxys
 		}
 
 		public static int LockLogging() => LoggingContext.LockLogging();
-		public static int UnlockLogging() => LoggingContext.LockLogging();
+		public static int UnlockLogging() => LoggingContext.UnlockLogging();
 
 		#endregion
 

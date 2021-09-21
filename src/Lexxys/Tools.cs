@@ -551,34 +551,79 @@ namespace Lexxys
 		{
 			if (value == null)
 				return null;
-			value = value.Trim();
-			if (value.Length == 0)
-				return value;
-			while (value.Length > 1 && value[0] == '(' && value[value.Length - 1] == ')')
+			var str = value.AsSpan().Trim();
+			while (str.Length > 1 && str[0] == '(' && str[str.Length - 1] == ')')
 			{
-				value = value.Substring(1, value.Length - 2).Trim();
+				str = str.Slice(1, str.Length - 2).Trim();
 			}
-			return value;
+			return str.Length == value.Length ? value: str.ToString();
 		}
 
-		public static string[] SplitByCapitals(string identifier)
+		//public static string[] SplitByCapitals(string identifier)
+		//{
+		//	if (identifier == null || identifier.Length == 0)
+		//		return EmptyArray<string>.Value;
+		//	var ss = new List<string>();
+		//	var cc = identifier.AsSpan();
+		//	var c = cc[0];
+		//	CharType ot =
+		//		Char.IsUpper(c) ? CharType.Upper:
+		//		Char.IsLower(c) ? CharType.Lower:
+		//		Char.IsDigit(c) ? CharType.Digit: CharType.Other;
+
+		//	for (int i = 1; i < cc.Length; ++i)
+		//	{
+		//		c = cc[i];
+		//		CharType ct =
+		//			Char.IsUpper(c) ? CharType.Upper:
+		//			Char.IsLower(c) ? CharType.Lower:
+		//			Char.IsDigit(c) ? CharType.Digit: CharType.Other;
+
+		//		if (ct == ot)
+		//			continue;
+
+		//		if (ct > ot || ot == CharType.Other)
+		//		{
+		//			ss.Add(cc.Slice(0, i).ToString());
+		//			cc = cc.Slice(i);
+		//			i = 0;
+		//		}
+		//		else if (ct == CharType.Lower && ot == CharType.Upper && i > 1)
+		//		{
+		//			ss.Add(cc.Slice(0, i - 1).ToString());
+		//			cc = cc.Slice(i - 1);
+		//			i = 0;
+		//		}
+
+		//		ot = ct;
+		//	}
+
+		//	if (cc.Length > 0)
+		//		ss.Add(cc.ToString());
+		//	return ss.ToArray();
+		//}
+
+		public static (int Index, int Length)[] SplitByCapitals(string identifier)
 		{
 			if (identifier == null || identifier.Length == 0)
-				return EmptyArray<string>.Value;
-			var ss = new List<string>();
-			char[] cc = identifier.ToCharArray();
+				return Array.Empty<(int, int)>();
+			var ss = new List<(int Index, int Length)>();
+			var cc = identifier.AsSpan();
+			var c = cc[0];
 			CharType ot =
-				Char.IsUpper(cc[0]) ? CharType.Upper:
-				Char.IsLower(cc[0]) ? CharType.Lower:
-				Char.IsDigit(cc[0]) ? CharType.Digit: CharType.Other;
-			int i0 = 0; //ot == CharType.Other ? 1: 0;
+				Char.IsUpper(c) ? CharType.Upper :
+				Char.IsLower(c) ? CharType.Lower :
+				Char.IsDigit(c) ? CharType.Digit : CharType.Other;
+
+			int i0 = 0;
 
 			for (int i = 1; i < cc.Length; ++i)
 			{
+				c = cc[i];
 				CharType ct =
-					Char.IsUpper(cc[i]) ? CharType.Upper:
-					Char.IsLower(cc[i]) ? CharType.Lower:
-					Char.IsDigit(cc[i]) ? CharType.Digit: CharType.Other;
+					Char.IsUpper(c) ? CharType.Upper :
+					Char.IsLower(c) ? CharType.Lower :
+					Char.IsDigit(c) ? CharType.Digit : CharType.Other;
 
 				if (ct == ot)
 					continue;
@@ -586,14 +631,14 @@ namespace Lexxys
 				if (ct > ot || ot == CharType.Other)
 				{
 					if (i > i0)
-						ss.Add(new string(cc, i0, i - i0));
+						ss.Add((i0, i - i0));
 					i0 = i;
 				}
 				else if (ct == CharType.Lower && ot == CharType.Upper)
 				{
 					if (i > i0 + 1)
 					{
-						ss.Add(new string(cc, i0, i - i0 - 1));
+						ss.Add((i0, i - i0 - 1));
 						i0 = i - 1;
 					}
 				}
@@ -602,68 +647,85 @@ namespace Lexxys
 			}
 
 			if (cc.Length > i0)
-				ss.Add(new string(cc, i0, cc.Length - i0));
+				ss.Add((i0, cc.Length - i0));
 			return ss.ToArray();
 		}
 
-		public static string[] SplitByWordBound(string value, int width, int count = 0)
+		public static (int Index, int Length)[] SplitByWordBound(string value, int width, int count = 0)
 		{
-			Contract.Ensures(Contract.Result<string[]>() != null);
+			Contract.Ensures(Contract.Result<(int Index, int Length)[]>() != null);
 			if (value == null)
-				return EmptyArray<string>.Value;
+				return Array.Empty<(int, int)>();
 			if (count == 1 || value.Length <= width)
-				return new[] { value };
-			var list = new List<string>();
-			int start = 0;
-			while (value.Length > start)
+				return new[] { (0, value.Length) };
+			var list = new List<(int, int)>();
+			var span = value.AsSpan();
+			int ix = 0;
+			while (span.Length > 0)
 			{
+				while (span.Length > 0 && Char.IsWhiteSpace(span[0]))
+				{
+					span = span.Slice(1);
+					++ix;
+				}
 				if (list.Count == count - 1)
 				{
-					list.Add(value.Substring(start));
+					if (span.Length > 0)
+						list.Add((ix, span.Length));
 					break;
 				}
-				int bound = GetBound(value, start, width);
-				if (bound > start)
-					list.Add(value.Substring(start, bound - start));
-				start = bound;
-				while (start < value.Length && Char.IsWhiteSpace(value[start]))
+
+				int bound = GetBound(span, width);
+				if (bound > 0)
 				{
-					++start;
+					int i;
+					for (i = 0; i < bound; ++i)
+					{
+						if (!Char.IsWhiteSpace(span[bound - (i + 1)]))
+							break;
+					}
+					if (bound > i)
+						list.Add((ix, bound - i));
+					span = span.Slice(bound);
+					ix += bound;
 				}
 			}
 			return list.ToArray();
 		}
 
-		private static int GetBound(string value, int start, int width)
+		private static int GetBound(ReadOnlySpan<char> value, int width)
 		{
-			if (start >= value.Length)
-				return value.Length;
-			int ii = value.IndexOfAny(CrLf, start);
-			if (ii >= start && ii <= start + width)
+			int ii = value.IndexOfAny(CrLf);
+			if (ii >= 0 && ii <= width)
 			{
-				while (ii > start && Char.IsWhiteSpace(value, ii - 1))
+				while (ii > 0 && Char.IsWhiteSpace(value[ii - 1]))
 					--ii;
 				return ii;
 			}
-			if (start + width >= value.Length)
+			if (width >= value.Length)
 				return value.Length;
-			for (int i = start + width; i > start; --i)
+			for (int i = width; i > 0; --i)
 			{
 				char c = value[i];
 				if (char.IsLetter(c))
 					continue;
 				if (c == '(' || c == '[' || c == '{' || Char.IsWhiteSpace(c))
 					return i;
-				if (i < start + width)
+				if (i < width)
 					return i + 1;
 			}
-			return start + width;
+			return width;
 		}
 		private static readonly char[] CrLf = new[] {'\n', '\r'};
 
 		public static string ToTitleCase(string value)
 		{
-			return String.IsNullOrEmpty(value) ? value: value.Substring(0, 1).ToUpperInvariant() + value.Substring(1).ToLowerInvariant();
+			if (String.IsNullOrEmpty(value))
+				return value;
+			var a = new char[value.Length];
+			a[0] = Char.ToUpperInvariant(value[0]);
+			value.AsSpan(1).ToLowerInvariant(a.AsSpan(1));
+			return new String(a);
 		}
 
 		public static string ToCamelCase(string value)
@@ -671,19 +733,27 @@ namespace Lexxys
 			if (String.IsNullOrEmpty(value))
 				return value;
 
-			var text = new StringBuilder(value.Length);
 			bool upper = false;
-			foreach (var s in SplitByCapitals(value))
+			var ix = 0;
+			var ax = new char[value.Length].AsSpan();
+			foreach (var (index, length) in SplitByCapitals(value))
 			{
-				if (s.Length == 0 || s == "_")
+				var f = value[index];
+				if (length == 0 || (length == 1 && f == '_'))
 					continue;
 				if (upper)
-					text.Append(Char.ToUpperInvariant(s[0])).Append(s.Substring(1).ToLowerInvariant());
+				{
+					ax[ix] = Char.ToUpperInvariant(f);
+					value.AsSpan(index + 1, length - 1).ToLowerInvariant(ax.Slice(ix + 1));
+				}
 				else
-					text.Append(s.ToLowerInvariant());
-				upper = Char.IsLetter(s[s.Length - 1]);
+				{
+					value.AsSpan(index, length).ToLowerInvariant(ax.Slice(ix));
+				}
+				ix += length;
+				upper = Char.IsLetter(f);
 			}
-			return text.ToString();
+			return ax.Slice(0, ix).ToString();
 		}
 
 		public static string ToPascalCase(string value)
@@ -691,14 +761,18 @@ namespace Lexxys
 			if (String.IsNullOrEmpty(value))
 				return value;
 
-			var text = new StringBuilder(value.Length);
-			foreach (var s in SplitByCapitals(value))
+			var ix = 0;
+			var ax = new char[value.Length].AsSpan();
+			foreach (var (index, length) in SplitByCapitals(value))
 			{
-				if (s.Length == 0 || s == "_")
+				var f = value[index];
+				if (length == 0 || (length == 1 && f == '_'))
 					continue;
-				text.Append(Char.ToUpperInvariant(s[0])).Append(s.Substring(1).ToLowerInvariant());
+				ax[ix] = Char.ToUpperInvariant(f);
+				value.AsSpan(index + 1, length - 1).ToLowerInvariant(ax.Slice(ix + 1));
+				ix += length;
 			}
-			return text.ToString();
+			return ax.Slice(0, ix).ToString();
 		}
 
 		public static string ToDashed(string value, bool pascalCase, params char[] dash)
@@ -706,25 +780,37 @@ namespace Lexxys
 			if (String.IsNullOrEmpty(value))
 				return value;
 			if (dash == null || dash.Length == 0)
-				dash = __dasches;
+				dash = __dashes;
 
-			var text = new StringBuilder(value.Length);
 			var c = dash[0];
-			foreach (var s0 in SplitByCapitals(value))
+
+			var ix = 0;
+			var ax = new char[value.Length * 2].AsSpan();
+			var ss = value.AsSpan();
+			foreach (var (index, length) in SplitByCapitals(value))
 			{
-				var s = s0.Trim(dash);
-				if (s.Length == 0 || s == "_")
+				var s = ss.Slice(index, length).Trim(dash);
+				if (s.Length == 0 || (s.Length == 1 && s[0] == '_'))
 					continue;
-				if (text.Length > 0)
-					text.Append(c);
+				if (ix > 0)
+				{
+					ax[ix] = c;
+					++ix;
+				}
 				if (pascalCase)
-					text.Append(Char.ToUpperInvariant(s[0])).Append(s.Substring(1).ToLowerInvariant());
+				{
+					ax[ix] = Char.ToUpperInvariant(s[0]);
+					s.Slice(1).ToLowerInvariant(ax.Slice(ix + 1));
+				}
 				else
-					text.Append(s);
+				{
+					s.CopyTo(ax.Slice(ix));
+				}
+				ix += length;
 			}
-			return text.ToString();
+			return ax.Slice(0, ix).ToString();
 		}
-		private static readonly char[] __dasches = new[] {'-'};
+		private static readonly char[] __dashes = new[] {'-'};
 
 		public static string ToNamingRule(string value, NamingCaseRule rule)
 		{
@@ -1176,7 +1262,6 @@ namespace Lexxys
 					if (index >= LogThreshold)
 						flaw.LogError();
 				}
-#pragma warning restore
 			}
 		}
 

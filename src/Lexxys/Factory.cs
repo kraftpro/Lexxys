@@ -118,7 +118,7 @@ namespace Lexxys
 			}
 			return ss.ToArray();
 		}
-		private static readonly string[] DefaultSystemAssemblyNames = { "CppCodeProvider", "WebDev.", "SMDiagnostics", "mscor", "vshost", "System", "Microsoft", "Windows", "Presentation" };
+		private static readonly string[] DefaultSystemAssemblyNames = { "CppCodeProvider", "WebDev.", "SMDiagnostics", "mscor", "vshost", "System", "Microsoft", "Windows", "Presentation", "netstandard" };
 
 		private static bool IsSystemAssembly(Assembly asm)
 		{

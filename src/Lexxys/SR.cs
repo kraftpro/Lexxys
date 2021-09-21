@@ -336,11 +336,18 @@ namespace Lexxys
 		{
 			return String.Format(Culture, "Cannot open log file '{0}'", fileName);
 		}
-		internal static string LOG_CannotCreateLogWriter(string writerName, string className, Exception exception)
+		internal static string LOG_CannotCreateLogWriter(string writerName, string className = null, Exception exception = null)
 		{
 			return exception == null ?
-				String.Format(Culture, "Cannot create Log Writer (name={0}, class={1}).", writerName, className):
+				String.Format(Culture, "Cannot create Log Writer (name={0}, class={1}).", writerName, className ?? "(null)"):
 				String.Format(Culture, "Cannot create Log Writer (name={0}, class={1})\nException: {2}.", writerName, className, exception.Message);
+		}
+
+		internal static string LOG_CannotCreateLogFormatter(string className, Exception exception = null)
+		{
+			return exception == null ?
+				String.Format(Culture, "Cannot create Log Formatter (class={1}).", className) :
+				String.Format(Culture, "Cannot create Log Formatter (class={1})\nException: {2}.", className, exception.Message);
 		}
 
 		internal static string LOG_MissingLogWriterName()

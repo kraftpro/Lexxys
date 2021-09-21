@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,11 +21,13 @@ namespace Lexxys
 
 	public static class ToJsonExtensions
 	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static JsonBuilder ToJson(this IDumpJson obj, JsonBuilder json)
 		{
 			return obj.ToJsonContent(json.Obj()).End();
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static StringBuilder ToJson(this IDumpJson obj, StringBuilder text)
 		{
 			Contract.Ensures(Contract.Result<StringBuilder>() != null);
@@ -36,6 +39,7 @@ namespace Lexxys
 			return text;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string ToJson(this IDumpJson obj)
 		{
 			Contract.Ensures(Contract.Result<string>() != null);

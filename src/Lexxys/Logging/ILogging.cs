@@ -28,4 +28,8 @@ namespace Lexxys
 #endif
 
 	}
+
+	public interface ILogging<T>: ILogging, ILogger<T>
+	{
+	}
 }
