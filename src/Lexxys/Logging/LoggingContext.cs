@@ -15,12 +15,14 @@ namespace Lexxys.Logging
 {
 	public static class LoggingContext
 	{
+		private const int DefaultMaxQueueSize = 256 * 1024;
+		private const int DefaultLogoffTimeout = 5000;
+
 		internal const int LogWatcherSleep = 500;
 
 		internal const int LogTypeCount = (int)LogType.MaxValue + 1;
 
-		private static readonly IReadOnlyList<LoggingConfiguration> DefaultLoggingConfiguration = new []
-		{
+		private static readonly LoggingConfiguration[] DefaultLoggingConfiguration = new [] {
 			new LoggingConfiguration
 			{
 				LogItems = new List<XmlLiteNode>
@@ -35,8 +37,7 @@ namespace Lexxys.Logging
 							.End()
 						.End().GetFirstNode()
 				}
-			}
-		};
+			}};
 
 		internal const int FlushBoundMultiplier = 1024;
 
@@ -47,11 +48,8 @@ namespace Lexxys.Logging
 		private static volatile bool _stopped;
 		private static readonly object SyncRoot = new object();
 
-		internal static TimeSpan LogoffTimeout { get; private set; }
-		internal static TimeSpan ListenerTurnSleep { get; private set; }
-		internal static TimeSpan ListenerPulseInterval { get; private set; }
-		internal static int DefaultBatchSize { get; private set; }
-		internal static int DefaultFlushBound { get; private set; }
+		internal static int MaxQueueSize { get; private set; }
+		internal static int LogoffTimeout { get; private set; }
 
 		private static void Initialize()
 		{
@@ -63,7 +61,7 @@ namespace Lexxys.Logging
 				if (_stopped || _initialized)
 					return;
 
-				LogRecordsListener.Initialize(LoadConfiguration());
+				ApplyConfiguration();
 				_initialized = true;
 				Config.OnLoggerInitialized();
 			}
@@ -106,7 +104,7 @@ namespace Lexxys.Logging
 				if (_stopped || !_initialized)
 					return;
 				_initialized = false;
-				LogRecordsListener.Initialize(LoadConfiguration());
+				ApplyConfiguration();
 				_initialized = true;
 				foreach (var logger in _loggers)
 				{
@@ -116,34 +114,29 @@ namespace Lexxys.Logging
 			}
 		}
 
-		private static List<LogWriter> LoadConfiguration()
+		private static void ApplyConfiguration()
 		{
 			var config = Config.GetList<LoggingConfiguration>("logging");
-			if (config == null || config.Count == 0)
+			if (config == null)
 			{
 				Config.LogConfigurationEvent("Lexxys.LoggingContext", SR.LoggingConfidurationMissing());
 				config = DefaultLoggingConfiguration;
 			}
-			DefaultBatchSize = -1;
-			DefaultFlushBound = -1;
-			foreach (var item in config)
-			{
-				if (item.BatchSize != BatchSizeDefault && item.BatchSize > DefaultBatchSize)
-					DefaultBatchSize = item.BatchSize;
-				if (item.FlushBound != FlushBoundDefault && item.FlushBound > DefaultFlushBound)
-					DefaultFlushBound = item.FlushBound;
-			}
-			if (DefaultBatchSize == -1)
-				DefaultBatchSize = BatchSizeDefault;
-			if (DefaultFlushBound == -1)
-				DefaultFlushBound = FlushBoundDefault;
 
 			LoggingRule.GlobalExclude = String.Join(",", config.Select(o => o.Exclude.TrimToNull()).Where(o => o != null)).TrimToNull();
-			LogoffTimeout = config.Max(o => o.LogoffTimeout);
-			ListenerTurnSleep = config.Max(o => o.ListenerTurnSleep);
-			ListenerPulseInterval = config.Max(o => o.ListenerPulseInterval);
 
-			var writers = config.SelectMany(o => o.LogItems).Select(o => XmlTools.GetValue(o, LogWriter.Empty)).Where(o => o != null && !o.Rule.IsEmpty).ToList();
+			MaxQueueSize = Value(config.Select(o => o?.MaxQueueSize).FirstOrDefault(o => o != null), 0, int.MaxValue, DefaultMaxQueueSize);
+			LogoffTimeout = Value((int?)(config.Select(o => o?.LogoffTimeout).FirstOrDefault(o => o != null)?.Ticks / TimeSpan.TicksPerMillisecond), 0, int.MaxValue, DefaultLogoffTimeout);
+
+			LogRecordsListener.Initialize(GetLogWriters(config));
+
+			static int Value(int? value, int min, int max, int def)
+				=> value == null ? def : Math.Max(min, Math.Min(max, value.GetValueOrDefault()));
+		}
+
+		private static IEnumerable<ILogWriter> GetLogWriters(IEnumerable<LoggingConfiguration> config)
+		{
+			var writers = config.SelectMany(o => o.LogItems).Select(o => LogWriter.FromXml(o)).Where(o => o != null).ToList();
 			if (System.Diagnostics.Debugger.IsLogging())
 			{
 				foreach (var item in writers)
@@ -204,22 +197,6 @@ namespace Lexxys.Logging
 			}
 		}
 
-		//public static void Start()
-		//{
-		//	if (!_stopped)
-		//		return;
-		//	lock (SyncRoot)
-		//	{
-		//		if (!_stopped)
-		//			return;
-
-		//		_stopped = false;
-		//		_initialized = false;
-		//		Initialize();
-		//		Enable();
-		//	}
-		//}
-
 		public static void Enable()
 		{
 			if (_enabled || _stopped || !IsInitialized)
@@ -245,7 +222,7 @@ namespace Lexxys.Logging
 					if (_enabled)
 					{
 						_enabled = false;
-						if (_initialized)
+						if (IsInitialized)
 						{
 							foreach (Logger t in _loggers)
 							{
@@ -307,31 +284,11 @@ namespace Lexxys.Logging
 			ch?.Invoke(null, EventArgs.Empty);
 		}
 
-		public static readonly TimeSpan LogoffTimeoutMin = new TimeSpan(0, 0, 1);
-		public static readonly TimeSpan LogoffTimeoutMax = new TimeSpan(0, 0, 30);
-		public static readonly TimeSpan LogoffTimeoutDefault = new TimeSpan(0, 0, 5);
-		public static readonly TimeSpan ListenerTurnSleepMin = TimeSpan.Zero;
-		public static readonly TimeSpan ListenerTurnSleepMax = TimeSpan.FromTicks(200 * TimeSpan.TicksPerMillisecond);
-		public static readonly TimeSpan ListenerTurnSleepDefault = TimeSpan.Zero;
-		public static readonly TimeSpan ListenerPulseIntervalMin = TimeSpan.FromTicks(500 * TimeSpan.TicksPerMillisecond);
-		public static readonly TimeSpan ListenerPulseIntervalMax = new TimeSpan(0, 5, 0);
-		public static readonly TimeSpan ListenerPulseIntervalDefault = new TimeSpan(0, 0, 10);
-		
-		public const int BatchSizeMin = 1;
-		public const int BatchSizeMax = 1024;
-		public const int BatchSizeDefault = 4;
-		public const int FlushBoundMin = 1;
-		public const int FlushBoundMax = 1024;
-		public const int FlushBoundDefault = 64;
-
 		private class LoggingConfiguration
 		{
-			public TimeSpan LogoffTimeout;
-			public TimeSpan ListenerTurnSleep;
-			public TimeSpan ListenerPulseInterval;
+			public TimeSpan? LogoffTimeout;
 			public string Exclude;
-			public int BatchSize;
-			public int FlushBound;
+			public int? MaxQueueSize;
 			public List<XmlLiteNode> LogItems;
 
 			public static LoggingConfiguration FromXml(XmlLiteNode config)
@@ -340,15 +297,12 @@ namespace Lexxys.Logging
 					return null;
 
 				return new LoggingConfiguration
-					{
-						Exclude = XmlTools.GetString(config["exclude"], null),
-						LogoffTimeout = XmlTools.GetTimeSpan(config["logoffTimeout"], LogoffTimeoutDefault, LogoffTimeoutMin, LogoffTimeoutMax),
-						ListenerTurnSleep = XmlTools.GetTimeSpan(config["turnSleep"], ListenerTurnSleepDefault, ListenerTurnSleepMin, ListenerTurnSleepMax),
-						ListenerPulseInterval = XmlTools.GetTimeSpan(config["turnSleep"], ListenerPulseIntervalDefault, ListenerPulseIntervalMin, ListenerPulseIntervalMax),
-						BatchSize = XmlTools.GetInt32(config["batchSize"], BatchSizeDefault, BatchSizeMin, BatchSizeMax),
-						FlushBound = XmlTools.GetInt32(config["flushBound"], FlushBoundDefault, FlushBoundMin, FlushBoundMax),
-						LogItems = config.Where("logger").Where(o => o != null && !o.IsEmpty).ToList(),
-					};
+				{
+					Exclude = XmlTools.GetString(config["exclude"], null),
+					LogoffTimeout = XmlTools.GetTimeSpan(config["logoffTimeout"], null),
+					MaxQueueSize = XmlTools.GetInt32(config["maxQueueSize"], null),
+					LogItems = config.Where("logger").Where(o => !o.IsEmpty).ToList(),
+				};
 			}
 		}
 	}

@@ -41,25 +41,6 @@ namespace Lexxys.Logging
 
 		public bool IsEmpty => _rules.Length == 0;
 
-		public bool Contains(string source)
-		{
-			for (int i = 0; i < _rules.Length; ++i)
-			{
-				if (_rules[i].Contains(source))
-					return true;
-			}
-			return false;
-		}
-
-		public bool Contains(LogType type)
-		{
-			for (int i = 0; i < _rules.Length; ++i)
-			{
-				if (_rules[i].Contains(type))
-					return true;
-			}
-			return false;
-		}
 		public bool Contains(string source, LogType type)
 		{
 			for (int i = 0; i < _rules.Length; ++i)

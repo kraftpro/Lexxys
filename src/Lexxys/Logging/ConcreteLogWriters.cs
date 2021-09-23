@@ -45,7 +45,7 @@ namespace Lexxys.Logging
 		/// <param name="batchSize"></param>
 		/// <param name="flushBound"></param>
 		public FileLogWriter(string name, XmlLiteNode config, ILogRecordFormatter formatter, int batchSize = 0, int flushBound = 0) :
-			base(name, config, batchSize == 0 ? DefaultBatchSize: batchSize, flushBound == 0 ? DefaultFlushBound: flushBound, formatter)
+			base(name, config, formatter)
 		{
 			if (config == null)
 				config = XmlLiteNode.Empty;
@@ -61,27 +61,6 @@ namespace Lexxys.Logging
 		}
 
 		public override string Target => _file;
-
-		public override void Write(LogRecord record)
-		{
-			if (record == null)
-				return;
-
-			using (StreamWriter o = OpenLog())
-			{
-				if (o != null)
-				{
-					o.Write(record, Formatter).WriteLine();
-					return;
-				}
-			}
-			if (!_errorLogged)
-			{
-				WriteErrorMessage("TextFileLogWriter", SR.LOG_CannotOpenLogFile(_file), null);
-				_errorLogged = true;
-			}
-			WriteEventLogMessage(record);
-		}
 
 		public override void Write(IEnumerable<LogRecord> records)
 		{
@@ -248,11 +227,11 @@ namespace Lexxys.Logging
 
 		public override string Target => "Null";
 
-		public NullLogWriter(string name, XmlLiteNode config): base(name, config, 1, 1, LogRecordFormatter.NullFormatter)
+		public NullLogWriter(string name, XmlLiteNode config): base(name, config, LogRecordFormatter.NullFormatter)
 		{
 		}
 
-		public override void Write(LogRecord record)
+		public override void Write(IEnumerable<LogRecord> records)
 		{
 		}
 	}
@@ -264,15 +243,20 @@ namespace Lexxys.Logging
 			"  ",
 			". ");
 
-		public ConsoleLogWriter(string name, XmlLiteNode config): base(name, config, 1, 1, new LogRecordTextFormatter(Defaults))
+		public ConsoleLogWriter(string name, XmlLiteNode config): base(name, config, new LogRecordTextFormatter(Defaults))
 		{
 		}
 
 		public override string Target => "Console";
 
-		public override void Write(LogRecord record)
+		public override void Write(IEnumerable<LogRecord> records)
 		{
-			Console.Error.Write(record, Formatter).WriteLine();
+			if (records == null)
+				return;
+			foreach (var record in records)
+			{
+				Console.Error.Write(record, Formatter).WriteLine();
+			}
 		}
 	}
 
@@ -284,15 +268,20 @@ namespace Lexxys.Logging
 			"  ",
 			". ");
 
-		public TraceLogWriter(string name, XmlLiteNode config) : base(name, config, 1, 1, new LogRecordTextFormatter(Defaults))
+		public TraceLogWriter(string name, XmlLiteNode config) : base(name, config, new LogRecordTextFormatter(Defaults))
 		{
 		}
 
 		public override string Target => "Trace";
 
-		public override void Write(LogRecord record)
+		public override void Write(IEnumerable<LogRecord> records)
 		{
-			Trace.WriteLine(Formatter.Format(record));
+			if (records == null)
+				return;
+			foreach (var record in records)
+			{
+				Trace.WriteLine(Formatter.Format(record));
+			}
 		}
 	}
 
@@ -304,18 +293,20 @@ namespace Lexxys.Logging
 			"  ",
 			". ");
 
-		public DebuggerLogWriter(string name, XmlLiteNode config) : base(name, config, 1, 1, new LogRecordTextFormatter(Defaults))
+		public DebuggerLogWriter(string name, XmlLiteNode config) : base(name, config, new LogRecordTextFormatter(Defaults))
 		{
 		}
 
 		public override string Target => "Debugger";
 
-		public override void Write(LogRecord record)
+		public override void Write(IEnumerable<LogRecord> records)
 		{
-			if (Debugger.IsLogging())
+			if (!Debugger.IsLogging() || records == null)
+				return;
+			foreach (var record in records)
 			{
 				string message = Formatter.Format(record);
-				Debugger.Log(record.Priority, record.Source, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message: message + Environment.NewLine);
+				Debugger.Log(record.Priority, record.Source, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message : message + Environment.NewLine);
 			}
 		}
 	}
@@ -323,9 +314,14 @@ namespace Lexxys.Logging
 
 	public class EventLogLogWriter: LogWriter
 	{
+		public static readonly TextFormatSetting Defaults = new TextFormatSetting(
+			"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+			"  ",
+			". ");
+
 		private string _eventSource;
 
-		public EventLogLogWriter(string name, XmlLiteNode config): base(name, config, 1, 1, new LogRecordTextFormatter(TextFormatEventLogDefaults))
+		public EventLogLogWriter(string name, XmlLiteNode config): base(name, config, new LogRecordTextFormatter(Defaults))
 		{
 			if (config == null)
 				config = XmlLiteNode.Empty;
@@ -339,15 +335,19 @@ namespace Lexxys.Logging
 
 		public override string Target => "EventLog";
 
-		public override void Write(LogRecord record)
+		public override void Write(IEnumerable<LogRecord> records)
 		{
-			if (_eventSource == null)
+			if (_eventSource == null || records == null)
 				return;
-			string message = Formatter.Format(record);
-			if (message.Length > MaxEventLogMessage)
-				message = message.Substring(0, MaxEventLogMessage);
-			#pragma warning disable CA1416 // Validate platform compatibility
-			EventLog.WriteEntry(_eventSource, message, LogEntryType(record.LogType));
+
+			foreach (var record in records)
+			{
+				string message = Formatter.Format(record);
+				if (message.Length > MaxEventLogMessage)
+					message = message.Substring(0, MaxEventLogMessage);
+				#pragma warning disable CA1416 // Validate platform compatibility
+				EventLog.WriteEntry(_eventSource, message, LogEntryType(record.LogType));
+			}
 		}
 	}
 }

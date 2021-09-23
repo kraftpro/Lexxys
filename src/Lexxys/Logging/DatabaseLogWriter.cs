@@ -11,14 +11,13 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Threading;
-using Lexxys.Configuration;
-using Lexxys.Xml;
 using System.Text.RegularExpressions;
 
 namespace Lexxys.Logging
 {
+	using Xml;
 
-	class DatabaseLogWriter: LogWriter, IDisposable
+	class DatabaseLogWriter : ILogWriter, IDisposable
 	{
 		public const string DefaultSchema = "log";
 		public const string DefaultTable = "App";
@@ -34,8 +33,9 @@ namespace Lexxys.Logging
 		private SqlCommand _insertEntryCommand;
 		private SqlCommand _insertArgumentCommand;
 		private SqlConnection _connection;
+		private readonly LoggingRule _rule;
 
-		public DatabaseLogWriter(string name, XmlLiteNode config) : base(name, config, 1, 1, LogRecordFormatter.NullFormatter)
+		public DatabaseLogWriter(string name, XmlLiteNode config)
 		{
 			if (config == null)
 				config = XmlLiteNode.Empty;
@@ -43,7 +43,7 @@ namespace Lexxys.Logging
 			_connectionInfo = ConnectionStringInfo.Create(config.FirstOrDefault("connection")) ??
 				Config.GetValue<ConnectionStringInfo>(XmlTools.GetString(config["connection"], ConfigSection));
 			if (_connectionInfo == null)
-				WriteErrorMessage(LogSource, SR.CollectionIsEmpty(), null);
+				LogWriter.WriteErrorMessage(LogSource, SR.CollectionIsEmpty(), null);
 
 			_schema = __cleanRex.Replace(config["schema"] ?? "", "");
 			if (_schema.Length == 0)
@@ -53,63 +53,18 @@ namespace Lexxys.Logging
 				_table = DefaultTable;
 			_dedicatedConnection = XmlTools.GetBoolean(config["dedicated"], false);
 			_cloneCommand = XmlTools.GetBoolean(config["clone"], false);
+			Name = name;
+			_rule = LoggingRule.Create(config);
 		}
 		private static readonly Regex __cleanRex = new Regex(@"[\x00- '""\]\[\x7F\*/]");
 
-		public override string Target => _connectionInfo == null ? "Empty database": $"{_connectionInfo.Server}:{_connectionInfo.Database}.{_schema}.{_table}LogEntries";
+		public string Name { get; }
 
-		public override void Write(LogRecord record)
-		{
-			if (record == null)
-				return;
+		public string Target => _connectionInfo == null ? "Empty database": $"{_connectionInfo.Server}:{_connectionInfo.Database}.{_schema}.{_table}LogEntries";
 
-			if (_connectionInfo == null)
-			{
-				WriteEventLogMessage(record);
-				return;
-			}
+		public bool WillWrite(string source, LogType type) => _rule.Contains(source, type);
 
-			try
-			{
-				SqlCommand instance = null;
-				SqlCommand entry = null;
-				SqlCommand arument = null;
-				try
-				{
-					SqlConnection connection = OpenDatabaseCommection();
-					entry = GetInsertEntryCommand();
-					entry.Connection = connection;
-					arument = GetInsertArgumentsCommand();
-					arument.Connection = connection;
-
-					int instanceId = __instancesMap.GetOrAdd(
-						new Tuple<string, string, int>(record.Context.MachineName, record.Context.DomainName, record.Context.ProcessId),
-						o=> {
-								instance = GetInsertInstanceCommand();
-								instance.Connection = connection;
-								return InsertInstance(instance, record);
-							});
-					int entryId = InsertEntry(entry, instanceId, record);
-					if (record.Data != null && record.Data.Count > 0)
-						InsertArgument(arument, entryId, record.Data);
-				}
-				finally
-				{
-					CloseDatabaseCommand(instance);
-					CloseDatabaseCommand(entry);
-					CloseDatabaseCommand(arument);
-					CloseDatabaseCommection();
-				}
-			}
-			catch (Exception exception)
-			{
-				WriteErrorMessage("DatabaseLogWriter", exception);
-				WriteEventLogMessage(record);
-			}
-		}
-		private static readonly ConcurrentDictionary<Tuple<string, string, int>, int> __instancesMap = new ConcurrentDictionary<Tuple<string, string, int>, int>();
-
-		public override void Write(IEnumerable<LogRecord> records)
+		public void Write(IEnumerable<LogRecord> records)
 		{
 			if (records == null)
 				return;
@@ -157,16 +112,16 @@ namespace Lexxys.Logging
 			}
 			catch (Exception exception)
 			{
-				WriteErrorMessage("DatabaseLogWriter", exception);
+				LogWriter.WriteErrorMessage("DatabaseLogWriter", exception);
 			}
 		}
+		private static readonly ConcurrentDictionary<Tuple<string, string, int>, int> __instancesMap = new ConcurrentDictionary<Tuple<string, string, int>, int>();
 
-		public override void Open()
+		public void Open()
 		{
-			base.Open();
 			if (_connectionInfo == null)
 			{
-				WriteErrorMessage("DatabaseLogWriter", SR.ConnectionStringIsEmpty(), null);
+				LogWriter.WriteErrorMessage("DatabaseLogWriter", SR.ConnectionStringIsEmpty(), null);
 				return;
 			}
 
@@ -188,14 +143,13 @@ namespace Lexxys.Logging
 					.Add("ConnectionString", _connectionInfo.ToString())
 					.Add("Schema", _schema)
 					.Add("Table", _table);
-				WriteErrorMessage("DatabaseLogWriter", exception);
+				LogWriter.WriteErrorMessage("DatabaseLogWriter", exception);
 				DisposeResources();
 			}
 		}
 
-		public override void Close()
+		public void Close()
 		{
-			base.Close();
 			DisposeResources();
 		}
 

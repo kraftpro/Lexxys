@@ -24,6 +24,9 @@ namespace Lexxys.Logging
 		private readonly int[] _listener;
 		private readonly int _version;
 
+		public const int ListenerTurnSleep = 0;
+		public const int ListenerPulseInterval = 5000;
+
 		private LogRecordsListener(int varsion, int[] index)
 		{
 			_version = varsion;
@@ -45,11 +48,11 @@ namespace Lexxys.Logging
 		}
 
 		// Should be synced with Collect
-		internal static void Initialize(IEnumerable<LogWriter> writers)
+		internal static void Initialize(IEnumerable<ILogWriter> writers)
 		{
 			if (writers == null)
 				throw new ArgumentNullException(nameof(writers));
-			var next = writers.Where(o => o != null && !o.Rule.IsEmpty).Select(o => new Listener(o)).ToArray();
+			var next = writers.Where(o => o != null).Select(o => new Listener(o)).ToArray();
 			var prev = __global;
 			++__version;
 			__global = next;
@@ -76,7 +79,7 @@ namespace Lexxys.Logging
 				var indices = new List<int>();
 				for (int i = 0; i < global.Length; ++i)
 				{
-					if (global[i].Writer.Rule.Contains(source, logType))
+					if (global[i].Writer.WillWrite(source, logType))
 						indices.Add(i);
 				}
 				listeners[(int)logType] = indices.Count == 0 ? Empty : new LogRecordsListener(version, indices.ToArray());
@@ -127,7 +130,7 @@ namespace Lexxys.Logging
 					if (temp != null)
 					{
 						global[i] = null;
-						if (force || temp.RecordCount == 0)
+						if (force || temp.QueueIsEmpty)
 						{
 							temp.ClearBuffers();
 							temp.Stop(force);
@@ -172,28 +175,16 @@ namespace Lexxys.Logging
 
 		class Listener: IDisposable
 		{
-			//const int MinBatchSize = 1;
-			//const int MaxBatchSize = 1024;
-			//const int DefaultBatchSize = 4;
 			private const string Source = "Lexxys.Logging.LogRecordsListenner";
-			private readonly LogWriter _writer;
-			private readonly int _batchSize;
-			private readonly int _flushBound;
+			private readonly ILogWriter _writer;
 			private LogRecordQueue _queue;
 			private volatile EventWaitHandle _data;
 			private readonly Thread _thread;
 
-			public Listener(LogWriter writer)
+			public Listener(ILogWriter writer)
 			{
 				_writer = writer ?? throw new ArgumentNullException(nameof(writer));
-				_batchSize = writer.BatchSize == 0 ? LoggingContext.DefaultBatchSize:
-					writer.BatchSize <= LoggingContext.BatchSizeMin ? LoggingContext.BatchSizeMin:
-					writer.BatchSize >= LoggingContext.BatchSizeMax ? LoggingContext.BatchSizeMax: writer.BatchSize;
 				_queue = new LogRecordQueue();
-				_flushBound = LoggingContext.FlushBoundMultiplier * (
-					writer.FlushBound <= 0 ? LoggingContext.DefaultFlushBound:
-					writer.FlushBound <= LoggingContext.FlushBoundMin ? LoggingContext.FlushBoundMin:
-					writer.FlushBound >= LoggingContext.FlushBoundMax ? LoggingContext.FlushBoundMax: writer.FlushBound);
 				_data = new AutoResetEvent(false);
 
 				_writer.Open();
@@ -206,30 +197,21 @@ namespace Lexxys.Logging
 				_thread.Start();
 			}
 
-			public LogWriter Writer
-			{
-				get { return _writer; }
-			}
+			public ILogWriter Writer => _writer;
 
-			public int RecordCount
-			{
-				get { return _queue.Count; }
-			}
+			public bool QueueIsEmpty => _queue.IsEmpty;
+
+			private bool IsStopping => _data == null;
+
+			public int MaxQueueSize => LoggingContext.MaxQueueSize;
 
 			public void Dispose()
 			{
 				Stop(false);
 			}
 
-			private bool IsStopping
-			{
-				get { return _data == null; }
-			}
-
 			public void ClearBuffers()
 			{
-				if (IsStopping)
-					return;
 				if (!IsStopping)
 					_queue = new LogRecordQueue();
 			}
@@ -261,7 +243,7 @@ namespace Lexxys.Logging
 				if (force)
 				{
 					_queue = new LogRecordQueue();
-					_writer.Write(new LogRecord(LogType.Warning, Source, "Terminating...", null));
+					_writer.Write(new [] { new LogRecord(LogType.Warning, Source, "Terminating...", null) });
 					_writer.Close();
 #if !NETCOREAPP
 					LogWriter.WriteEventLogMessage(Source, "Terminating...", LogRecord.Args("ThreadName", _thread.Name));
@@ -276,11 +258,11 @@ namespace Lexxys.Logging
 						if (!_queue.IsEmpty)
 							_writer.Write(_queue);
 
-						_writer.Write(new LogRecord(LogType.Trace, Source, "Exiting...", null));
+						_writer.Write(new[] { new LogRecord(LogType.Trace, Source, "Exiting...", null) });
 						_writer.Close();
 						if ((_thread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0)
 							return;
-						if (_thread.Join(LoggingContext.ListenerTurnSleep))
+						if (_thread.Join(0))
 							return;
 						LogWriter.WriteEventLogMessage(Source, "Waiting for working thread", LogRecord.Args("ThreadName", _thread.Name));
 						if (_thread.Join(LoggingContext.LogoffTimeout))
@@ -299,17 +281,23 @@ namespace Lexxys.Logging
 				data.Dispose();
 			}
 
+			private int _count = 0;
+
 			public void Write(LogRecord record)
 			{
 				if (IsStopping)
 					return;
 				_queue.Enqueue(record);
 				EventWaitHandle tmp = _data;
-				if (tmp != null && _queue.Count >= _batchSize)
+				if (tmp != null)
 				{
 					tmp.Set();
-					while (_queue.Count >= _flushBound)
-						Thread.Sleep(5);
+					if (MaxQueueSize > 0 && Interlocked.Increment(ref _count) > MaxQueueSize)
+					{
+						while (_queue.Count > MaxQueueSize)
+							Thread.Sleep(5);
+						_count = 0;
+					}
 				}
 			}
 
@@ -318,25 +306,12 @@ namespace Lexxys.Logging
 			{
 				while (!IsStopping)
 				{
-					{
-						EventWaitHandle tmp = _data;
-						if (tmp == null)
-							break;
-						tmp.WaitOne(LoggingContext.ListenerPulseInterval);
-					}
-					if (IsStopping)
-						return;
-
+					_data?.WaitOne(ListenerPulseInterval);
 					while (!_queue.IsEmpty)
 					{
 						if (IsStopping)
 							break;
 
-						if (!_writer.IsReady)
-						{
-							Thread.Sleep(100);
-							continue;
-						}
 						try
 						{
 							_writer.Write(_queue);
@@ -345,7 +320,7 @@ namespace Lexxys.Logging
 						{
 							LogWriter.WriteErrorMessage(String.Format("Internal error in Log Writer '{0}'", Writer.Name), e);
 						}
-						Thread.Sleep(LoggingContext.ListenerTurnSleep);
+						Thread.Sleep(ListenerTurnSleep);
 					}
 				}
 			}
