@@ -42,7 +42,7 @@ namespace Lexxys.Tests
 		[DataRow("ABCD_._ef,,,ghi", "ABCD;_._;ef;,,,;ghi")]
 		public void SplitByCapitalsTest(string value, string expected)
 		{
-			var results = String.Join(";", Strings.SplitByCapitals(value));
+			var results = String.Join(";", Strings.SplitByCapitals(value).Select(o => value.Substring(o.Index, o.Length)));
 			Assert.AreEqual(expected, results);
 		}
 

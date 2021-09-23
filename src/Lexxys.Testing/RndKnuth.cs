@@ -45,6 +45,8 @@ namespace Lexxys.Testing
 		int ranf_arr_ptr = ran_arr_started;								/* the next random fraction, or -1 */
 		public double[] ran_u = new double[KK];							/* the generator state */
 
+		private object syncDbl = new object();
+		private object syncInt = new object();
 
 		public RndKnuth(int seed = -1)
 		{
@@ -130,17 +132,24 @@ namespace Lexxys.Testing
 		public int NextInt()
 		{
 			var x = ran_arr_buf[ran_arr_ptr++];
-			return x < 0 ? CycleLong(): x;
+			if (x < 0)
+				x = CycleLong();
+			else
+				++ranf_arr_ptr;
+			return x;
 		}
 
 		private int CycleLong()
 		{
-			if (!_integerInitialized)
-				StartInt(_seed);
-			InitLongArray(ran_arr_buf, QUALITY);
-			ran_arr_buf[KK] =- 1;
-			ran_arr_ptr = 1;
-			return ran_arr_buf[0];
+			lock (syncInt)
+			{
+				if (!_integerInitialized)
+					StartInt(_seed);
+				InitLongArray(ran_arr_buf, QUALITY);
+				ran_arr_buf[KK] = -1;
+				ran_arr_ptr = 1;
+				return ran_arr_buf[0];
+			}
 		}
 
 		public void InitDoubleArray(double[] aa, int n) /* put n new random fractions in aa */
@@ -206,18 +215,25 @@ namespace Lexxys.Testing
 
 		public double NextDouble()
 		{
-			var x = ranf_arr_buf[ranf_arr_ptr++];
-			return x < 0 ? CycleDouble() : x;
+			var x = ranf_arr_buf[ranf_arr_ptr];
+			if (x < 0)
+				x = CycleDouble();
+			else
+				++ranf_arr_ptr;
+			return x;
 		}
 
 		double CycleDouble()
 		{
-			if (!_doubleInitialized)
-				StartDouble(_seed);
-			InitDoubleArray(ranf_arr_buf, QUALITY);
-			ranf_arr_buf[KK]=-1;
-			ranf_arr_ptr=1;
-			return ranf_arr_buf[0];
+			lock (syncDbl)
+			{
+				if (!_doubleInitialized)
+					StartDouble(_seed);
+				InitDoubleArray(ranf_arr_buf, QUALITY);
+				ranf_arr_buf[KK] = -1;
+				ranf_arr_ptr = 1;
+				return ranf_arr_buf[0];
+			}
 		}
 
 		public unsafe void NextBytes(byte[] buffer)
