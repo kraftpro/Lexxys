@@ -9,16 +9,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+#nullable enable
+
 namespace Lexxys.Configuration
 {
 	public interface IConfigurationProvider: ITrackedConfiguration
 	{
 		string Name { get; }
-		bool Initialized { get; }
-		bool IsEmpty { get; }
-		object GetValue(string reference, Type returnType);
+		object? GetValue(string reference, Type returnType);
 		List<T> GetList<T>(string reference);
 	}
 }
-
-

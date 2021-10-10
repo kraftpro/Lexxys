@@ -20,9 +20,8 @@ using Microsoft.Extensions.Logging;
 
 #nullable enable
 
-namespace Lexxys
+namespace Lexxys.Configuration
 {
-	using Configuration;
 	using Logging;
 
 	internal class DefaultConfig
@@ -268,11 +267,6 @@ namespace Lexxys
 				if (i >= 0)
 				{
 					provider = Providers[i];
-					return false;
-				}
-				if (provider.IsEmpty)
-				{
-					provider = null;
 					return false;
 				}
 				return true;

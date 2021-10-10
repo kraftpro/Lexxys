@@ -8,26 +8,28 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+#nullable enable
+
 namespace Lexxys.Configuration
 {
-	public static class ConfigurationFactory
+	internal static class ConfigurationFactory
 	{
-		internal static IConfigurationProvider FindProvider(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		internal static IConfigurationProvider? FindProvider(ConfigurationLocator location, IReadOnlyCollection<string>? parameters)
 		{
 			if (location == null)
 				throw EX.ArgumentNull(nameof(location));
 
-			var arguments = new object[] { location, parameters };
+			var arguments = new object?[] { location, parameters };
 			return Factory.Constructors(typeof(IConfigurationProvider), "Create", __locationType2)
 				.Select(m => m.Invoke(null, arguments) as IConfigurationProvider).FirstOrDefault(o => o != null);
 		}
 
-		internal static IXmlConfigurationSource FindXmlSource(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		internal static IXmlConfigurationSource? FindXmlSource(ConfigurationLocator location, IReadOnlyCollection<string>? parameters)
 		{
 			if (location == null)
 				throw EX.ArgumentNull(nameof(location));
 
-			var arguments = new object[] { location, parameters };
+			var arguments = new object?[] { location, parameters };
 			return Factory.Constructors(typeof(IXmlConfigurationSource), "Create", __locationType2)
 				.Select(m => m.Invoke(null, arguments) as IXmlConfigurationSource).FirstOrDefault(o => o != null);
 		}

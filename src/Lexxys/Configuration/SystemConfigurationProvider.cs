@@ -14,6 +14,8 @@ using System.Text;
 using Lexxys.Xml;
 
 
+#nullable enable
+
 namespace Lexxys.Configuration
 {
 	[DebuggerDisplay("[System.Configuration]")]
@@ -21,11 +23,7 @@ namespace Lexxys.Configuration
 	{
 		public string Name => "System.Configuration";
 
-		public bool Initialized => true;
-
-		public bool IsEmpty => false;
-
-		public object GetValue(string reference, Type returnType)
+		public object? GetValue(string reference, Type returnType)
 		{
 			if (returnType == null)
 				throw EX.ArgumentNull(nameof(returnType));
@@ -83,13 +81,13 @@ namespace Lexxys.Configuration
 						}
 						return result;
 					}
-					return null;
+					return new List<T>();
 				}
 			}
-			return ConfigurationManager.GetSection(reference) as List<T>;
+			return ConfigurationManager.GetSection(reference) as List<T> ?? new List<T>();
 		}
 
-		event EventHandler<ConfigurationEventArgs> ITrackedConfiguration.Changed
+		event EventHandler<ConfigurationEventArgs>? ITrackedConfiguration.Changed
 		{
 			add { }
 			remove { }

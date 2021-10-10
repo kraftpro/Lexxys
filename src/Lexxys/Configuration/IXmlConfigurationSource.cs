@@ -10,19 +10,18 @@ using System.Linq;
 using System.Text;
 using Lexxys.Xml;
 
+#nullable enable
+
 namespace Lexxys.Configuration
 {
 	public interface ITrackedConfiguration
 	{
-		event EventHandler<ConfigurationEventArgs> Changed;
+		event EventHandler<ConfigurationEventArgs>? Changed;
 	}
 
 	public interface IXmlConfigurationSource: ITrackedConfiguration
 	{
 		string Name { get; }
-		bool Initialized { get; }
-		string LocalDirectory { get; }
-		string LocalRoot { get; }
 		IReadOnlyList<XmlLiteNode> Content { get; }
 		ConfigurationLocator Location { get; }
 	}

@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 #nullable enable
 
-namespace Lexxys
+namespace Lexxys.Configuration
 {
 	public interface IConfigValue
 	{

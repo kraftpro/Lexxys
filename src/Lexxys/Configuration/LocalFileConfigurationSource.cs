@@ -8,7 +8,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+
+using Lexxys;
 using Lexxys.Xml;
+
+#nullable enable
 
 namespace Lexxys.Configuration
 {
@@ -18,16 +22,18 @@ namespace Lexxys.Configuration
 		private const string LogSource = "Lexxys.Configuration.LocalFileConfigurationSource";
 		private readonly FileInfo _file;
 		private readonly Func<string, string, IReadOnlyList<XmlLiteNode>> _converter;
-		private List<string> _includes;
-		private IReadOnlyList<XmlLiteNode> _content;
+		private List<string>? _includes;
+		private IReadOnlyList<XmlLiteNode>? _content;
 		private readonly ConfigurationLocator _location;
 
 		private LocalFileConfigurationSource(FileInfo file, string sourceType, ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
 			if (file == null)
-				throw EX.ArgumentNull(nameof(file));
-			_file = file.Exists ? file: null;
-			_converter = XmlLiteConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
+				throw new ArgumentNullException(nameof(file));
+			if (!file.Exists)
+				throw new ArgumentOutOfRangeException(nameof(file), file, null);
+			_file = file;
+			_converter = ConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
 			_location = location;
 		}
 
@@ -35,18 +41,10 @@ namespace Lexxys.Configuration
 
 		public string Name => _file.FullName;
 
-		public bool Initialized => true;
-
-		public string LocalDirectory => _file?.DirectoryName;
-
-		public string LocalRoot => null;
-
 		public IReadOnlyList<XmlLiteNode> Content
 		{
 			get
 			{
-				if (_file == null)
-					return null;
 				if (_content == null)
 				{
 					lock (this)
@@ -64,12 +62,13 @@ namespace Lexxys.Configuration
 
 		public ConfigurationLocator Location => _location;
 
-		public event EventHandler<ConfigurationEventArgs> Changed;
+		public event EventHandler<ConfigurationEventArgs>? Changed;
+
 		#endregion
 
 		public FileInfo FileInfo => _file;
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			if (obj is not LocalFileConfigurationSource x)
 				return false;
@@ -87,7 +86,7 @@ namespace Lexxys.Configuration
 		{
 			try
 			{
-				if (_file == null || _content == null)
+				if (_content == null)
 					return;
 				lock (this)
 				{
@@ -108,7 +107,7 @@ namespace Lexxys.Configuration
 			Changed?.Invoke(this, e);
 		}
 
-		private IEnumerable<XmlLiteNode> OptionHandler(string option, IReadOnlyCollection<string> parameters)
+		private IEnumerable<XmlLiteNode>? OptionHandler(string option, IReadOnlyCollection<string> parameters)
 		{
 			if (option != "include")
 			{
@@ -118,7 +117,7 @@ namespace Lexxys.Configuration
 			return HandleInclude(LogSource, parameters, _file.DirectoryName, ref _includes, OnFileChanged);
 		}
 
-		public static IEnumerable<XmlLiteNode> HandleInclude(string logSource, IReadOnlyCollection<string> parameters, string directory, ref List<string> includes, FileSystemEventHandler eventHandler)
+		public static IEnumerable<XmlLiteNode>? HandleInclude(string logSource, IReadOnlyCollection<string> parameters, string? directory, ref List<string>? includes, FileSystemEventHandler eventHandler)
 		{
 			var include = parameters?.FirstOrDefault();
 			if (String.IsNullOrEmpty(include))
@@ -149,7 +148,7 @@ namespace Lexxys.Configuration
 			return xs.Content;
 		}
 
-		public static LocalFileConfigurationSource Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		public static LocalFileConfigurationSource? Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
 			if (location == null)
 				return null;

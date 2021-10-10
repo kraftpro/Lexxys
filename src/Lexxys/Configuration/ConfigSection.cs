@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 #nullable enable
 
-namespace Lexxys
+namespace Lexxys.Configuration
 {
 	internal class ConfigSection: IConfigSection
 	{
@@ -46,7 +46,7 @@ namespace Lexxys
 		public IConfigSection Section(string key)
 			=> key.StartsWith("::", StringComparison.Ordinal) ? new ConfigSection(key.Substring(2), null, _config) : new ConfigSection(Path, key, _config);
 
-		public ISectionValue<T> GetSection<T>(string key, Func<T> defaultValue)
+		public IVersionedValue<T> GetSection<T>(string key, Func<T> defaultValue)
 		{
 			if (key == null || key.Length <= 0)
 				throw new ArgumentNullException(nameof(key));
@@ -56,7 +56,7 @@ namespace Lexxys
 			return new ConfigSectionValue<T>(() => GetConfigValue<T>(key, defaultValue), () => Version);
 		}
 
-		public ISectionValue<IReadOnlyList<T>> GetSectionList<T>(string key)
+		public IVersionedValue<IReadOnlyList<T>> GetSectionList<T>(string key)
 		{
 			if (key == null || key.Length <= 0)
 				throw new ArgumentNullException(nameof(key));

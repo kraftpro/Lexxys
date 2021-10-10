@@ -11,41 +11,34 @@ using System.Linq;
 
 using Lexxys.Xml;
 
+#nullable enable
+
 namespace Lexxys.Configuration
 {
 	[DebuggerDisplay("{_source.Location,nq}")]
-	public class XmlLiteConfigurationProvider: IConfigurationProvider
+	public class ConfigurationProvider: IConfigurationProvider
 	{
 		private const string ConfigurationRoot = "configuration";
 		readonly IXmlConfigurationSource _source;
-		private XmlLiteNode _node;
+		private XmlLiteNode? _node;
 
-		protected XmlLiteConfigurationProvider(IXmlConfigurationSource source)
+		protected ConfigurationProvider(IXmlConfigurationSource source)
 		{
-			_source = source ?? throw EX.ArgumentNull("resource");
+			_source = source ?? throw new ArgumentNullException(nameof(source));
 			_source.Changed += OnChanged;
 		}
 
-		public string Name
-		{
-			get { return _source.Name; }
-		}
+		public string Name => _source.Name;
 
-		public bool Initialized
-		{
-			get { return _source.Initialized; }
-		}
+		public bool IsEmpty => (GetRootNode() ?? XmlLiteNode.Empty).IsEmpty;
 
-		public bool IsEmpty
-		{
-			get { return (GetRootNode() ?? XmlLiteNode.Empty).IsEmpty; }
-		}
+		public event EventHandler<ConfigurationEventArgs>? Changed;
 
-		public virtual object GetValue(string reference, Type returnType)
+		public virtual object? GetValue(string reference, Type returnType)
 		{
 			if (reference == null || reference.Length == 0)
 				return null;
-			if (_source == null || !_source.Initialized)
+			if (_source == null)
 				return null;
 			XmlLiteNode root = GetRootNode();
 			if (root == null || root.IsEmpty)
@@ -59,31 +52,29 @@ namespace Lexxys.Configuration
 		public virtual List<T> GetList<T>(string reference)
 		{
 			if (reference == null || reference.Length == 0)
-				return null;
-			if (_source == null || !_source.Initialized)
-				return null;
+				return new List<T>();
+			if (_source == null)
+				return new List<T>();
 			XmlLiteNode root = GetRootNode();
 			if (root == null || root.IsEmpty)
-				return null;
+				return new List<T>();
 			IEnumerable<XmlLiteNode> nodes = XmlLiteNode.Select(reference, root.Elements);
 			return nodes
 				.Select(o => ParseValue(o, typeof(T)))
 				.Where(o => o != null)
-				.Select(o => (T)o).ToList();
+				.Select(o => (T)o!).ToList();
 		}
 
-		public event EventHandler<ConfigurationEventArgs> Changed;
-
-		public static XmlLiteConfigurationProvider Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		public static ConfigurationProvider? Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
 			if (location == null)
 				throw EX.ArgumentNull(nameof(location));
 
-			IXmlConfigurationSource source = ConfigurationFactory.FindXmlSource(location, parameters);
-			return source == null ? null: new XmlLiteConfigurationProvider(source);
+			IXmlConfigurationSource? source = ConfigurationFactory.FindXmlSource(location, parameters);
+			return source == null ? null: new ConfigurationProvider(source);
 		}
 
-		public static Func<string, string, IReadOnlyList<XmlLiteNode>> GetSourceConverter(string sourceType, TextToXmlOptionHandler optionHandler, IReadOnlyCollection<string> parameters)
+		public static Func<string, string?, IReadOnlyList<XmlLiteNode>> GetSourceConverter(string sourceType, TextToXmlOptionHandler? optionHandler, IReadOnlyCollection<string> parameters)
 		{
 			bool ignoreCase = parameters?.FindIndex(o => String.Equals(XmlTools.OptionIgnoreCase, o, StringComparison.OrdinalIgnoreCase)) >= 0;
 			bool forceAttib = parameters?.FindIndex(o => String.Equals(XmlTools.OptionForceAttributes, o, StringComparison.OrdinalIgnoreCase)) >= 0;
@@ -98,7 +89,7 @@ namespace Lexxys.Configuration
 		}
 
 
-		private void OnChanged(object sender, ConfigurationEventArgs e)
+		private void OnChanged(object? sender, ConfigurationEventArgs e)
 		{
 			_node = null;
 			Changed?.Invoke(sender ?? this, e);
@@ -117,7 +108,7 @@ namespace Lexxys.Configuration
 			return _node;
 		}
 
-		private static object ParseValue(XmlLiteNode node, Type type)
+		private static object? ParseValue(XmlLiteNode node, Type type)
 		{
 			if (node == null)
 				return null;

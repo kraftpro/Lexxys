@@ -12,32 +12,36 @@ namespace Lexxys
 {
 	using Configuration;
 
+	public class ConfigurationEventArgs : EventArgs
+	{
+	}
+
 	public static class Config
 	{
 		public static readonly IConfigSection Default = ConfigSection.Instance;
 
-		public static T? GetValue<T>(string key)
-		{
-			if (key == null || key.Length <= 0)
-				throw new ArgumentNullException(nameof(key));
-			return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : default;
-		}
+		//public static T? GetValue<T>(string key)
+		//{
+		//	if (key == null || key.Length <= 0)
+		//		throw new ArgumentNullException(nameof(key));
+		//	return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : default;
+		//}
 
-		public static T GetValue<T>(string key, T defaultValue)
-		{
-			if (key == null || key.Length <= 0)
-				throw new ArgumentNullException(nameof(key));
-			return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : defaultValue;
-		}
-
-		public static T GetValue<T>(string key, Func<T> defaultValue)
-		{
-			if (key == null || key.Length <= 0)
-				throw new ArgumentNullException(nameof(key));
-			if (defaultValue == null)
-				throw new ArgumentNullException(nameof(defaultValue));
-			return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : defaultValue();
-		}
+		//public static T GetValue<T>(string key, T defaultValue)
+		//{
+		//	if (key == null || key.Length <= 0)
+		//		throw new ArgumentNullException(nameof(key));
+		//	return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : defaultValue;
+		//}
+		
+		//public static T GetValue<T>(string key, Func<T> defaultValue)
+		//{
+		//	if (key == null || key.Length <= 0)
+		//		throw new ArgumentNullException(nameof(key));
+		//	if (defaultValue == null)
+		//		throw new ArgumentNullException(nameof(defaultValue));
+		//	return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : defaultValue();
+		//}
 
 		public static void AddConfiguration(string location)
 			=> DefaultConfig.AddConfiguration(location);

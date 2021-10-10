@@ -11,14 +11,14 @@ using System.Text;
 using System.Threading.Tasks;
 using Lexxys.Xml;
 
+#nullable enable
+
 namespace Lexxys.Configuration
 {
 	class EnvironmentConfigurationProvider: IConfigurationProvider
 	{
 		public string Name => "System.Environment";
-		public bool Initialized => true;
-		public bool IsEmpty => false;
-		public object GetValue(string reference, Type returnType)
+		public object? GetValue(string reference, Type returnType)
 		{
 			if (reference == null)
 				return null;
@@ -27,13 +27,10 @@ namespace Lexxys.Configuration
 			return XmlTools.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out object result) ? result : null;
 		}
 
-		public List<T> GetList<T>(string reference)
-		{
-			return null;
-		}
-
-		#pragma warning disable CS0067
-		public event EventHandler<ConfigurationEventArgs> Changed;
+		public List<T> GetList<T>(string reference) => new List<T>();
+		
+		#pragma warning disable CS0067 
+		public event EventHandler<ConfigurationEventArgs>? Changed;
 	}
 }
 

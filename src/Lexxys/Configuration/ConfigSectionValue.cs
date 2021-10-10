@@ -11,13 +11,13 @@ using Lexxys;
 
 #nullable disable
 
-namespace Lexxys
+namespace Lexxys.Configuration
 {
-	internal class ConfigSectionValue<T>: ISectionValue<T>
+	internal class ConfigSectionValue<T>: IVersionedValue<T>
 	{
 		private readonly Func<T> _value;
 		private readonly Func<int> _version;
-		volatile private VersionValue? _item;
+		volatile private VersionValue _item;
 
 		public ConfigSectionValue(Func<T> value, Func<int> version)
 		{
@@ -45,7 +45,7 @@ namespace Lexxys
 
 		public int Version => _item?.Version ?? 0;
 
-		object? IValue.Value => Value;
+		object IValue.Value => Value;
 
 		class VersionValue
 		{

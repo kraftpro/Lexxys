@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 using Lexxys.Data;
 using Lexxys.Xml;
 
+#nullable enable
+
 namespace Lexxys.Configuration
 {
 	class DatabaseConfigurationSource: IXmlConfigurationSource
@@ -62,37 +64,13 @@ namespace Lexxys.Configuration
 
 		#region IXmlConfigurationSource
 
-		public string Name
-		{
-			get { return "Dbatabase"; }
-		}
+		public string Name => "Dbatabase";
 
-		public bool Initialized
-		{
-			get { return _content != null; }
-		}
+		public IReadOnlyList<XmlLiteNode> Content => _content;
 
-		public string LocalDirectory
-		{
-			get { return Lxx.HomeDirectory; }
-		}
+		public ConfigurationLocator Location => _location;
 
-		public string LocalRoot
-		{
-			get { return "Configuration"; }
-		}
-
-		public IReadOnlyList<XmlLiteNode> Content
-		{
-			get { return _content; }
-		}
-
-		public ConfigurationLocator Location
-		{
-			get { return _location; }
-		}
-
-		public event EventHandler<ConfigurationEventArgs> Changed
+		public event EventHandler<ConfigurationEventArgs>? Changed
 		{
 			add { }
 			remove { }

@@ -10,50 +10,34 @@ using System.IO;
 using System.Threading;
 using Lexxys.Xml;
 
+#nullable enable
+
 namespace Lexxys.Configuration
 {
 
 	class StringConfigurationSource: IXmlConfigurationSource
 	{
 		private const string LogSource = "Lexxys.Configuration.StringConfigurationSource";
-		private List<string> _includes;
-		private IReadOnlyList<XmlLiteNode> _content;
-		private readonly Func<string, string, IReadOnlyList<XmlLiteNode>> _converter;
+		private List<string>? _includes;
+		private IReadOnlyList<XmlLiteNode>? _content;
+		private readonly Func<string, string?, IReadOnlyList<XmlLiteNode>> _converter;
 		private readonly ConfigurationLocator _location;
 
 		private StringConfigurationSource(string sourceType, ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
-			_location = location ?? throw EX.ArgumentNull(nameof(location));
-			_converter = XmlLiteConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
+			_location = location ?? throw new ArgumentNullException(nameof(location));
+			_converter = ConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
 		}
 
 		#region IConfigurationSource
 
-		public string Name
-		{
-			get { return _location.Host; }
-		}
-
-		public bool Initialized
-		{
-			get { return true; }
-		}
-
-		public string LocalDirectory
-		{
-			get { return null; }
-		}
-
-		public string LocalRoot
-		{
-			get { return null; }
-		}
+		public string Name => _location.Host;
 
 		public IReadOnlyList<XmlLiteNode> Content
 		{
 			get
 			{
-				IReadOnlyList<XmlLiteNode> content = _content;
+				IReadOnlyList<XmlLiteNode>? content = _content;
 				if (content == null)
 				{
 					Interlocked.CompareExchange(ref _content, _converter(_location.Text, null), null);
@@ -63,15 +47,12 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		public ConfigurationLocator Location
-		{
-			get { return _location; }
-		}
+		public ConfigurationLocator Location => _location;
 
-		public event EventHandler<ConfigurationEventArgs> Changed;
+		public event EventHandler<ConfigurationEventArgs>? Changed;
 		#endregion
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is StringConfigurationSource x && x._location.Text == _location.Text;
 		}
@@ -81,7 +62,7 @@ namespace Lexxys.Configuration
 			return _location.Text.GetHashCode();
 		}
 
-		private void OnFileChanged(object sender, FileSystemEventArgs e)
+		private void OnFileChanged(object? sender, FileSystemEventArgs e)
 		{
 			try
 			{
@@ -103,7 +84,7 @@ namespace Lexxys.Configuration
 			Changed?.Invoke(this, e);
 		}
 
-		private IEnumerable<XmlLiteNode> OptionHandler(string option, IReadOnlyCollection<string> parameters)
+		private IEnumerable<XmlLiteNode>? OptionHandler(string option, IReadOnlyCollection<string> parameters)
 		{
 			if (option != "include")
 			{
@@ -113,7 +94,7 @@ namespace Lexxys.Configuration
 			return LocalFileConfigurationSource.HandleInclude(LogSource, parameters, null, ref _includes, OnFileChanged);
 		}
 
-		public static StringConfigurationSource Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		public static StringConfigurationSource? Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
 			if (location == null)
 				return null;
