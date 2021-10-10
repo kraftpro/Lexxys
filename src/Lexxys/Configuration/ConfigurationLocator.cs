@@ -55,7 +55,7 @@ namespace Lexxys.Configuration
 			if (value == null)
 				throw EX.ArgumentNull(nameof(value));
 
-			value = Config.ExpandParameters(value);
+			//value = Config.ExpandParameters(value);
 			Match m = __crlRex.Match(value);
 			Schema = m.Groups["schema"].Value.Trim().ToLowerInvariant();
 			Host = m.Groups["host"].Value.Trim();
@@ -273,7 +273,7 @@ namespace Lexxys.Configuration
 			if (filePath == null)
 				return null;
 
-			filePath = Config.ExpandParameters(filePath);
+			//filePath = Config.ExpandParameters(filePath);
 			if (File.Exists(filePath))
 				return new FileInfo(filePath);
 

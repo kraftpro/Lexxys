@@ -20,7 +20,7 @@ namespace Lexxys.Tests.Configuration
 	[DeploymentItem("test.config.txt")]
 	public class ConfiguraitionTest
 	{
-		private IValue<object> SharedConfiguration => __config ??= Config.GetSection<object>("scattergories.lists");
+		private IValue<object> SharedConfiguration => __config ??= Config.Default.GetSection<object>("scattergories.lists");
 		private IValue<object> __config;
 
 		[TestInitialize]
@@ -30,7 +30,7 @@ namespace Lexxys.Tests.Configuration
 			if (!File.Exists(configFile))
 				throw new ArgumentOutOfRangeException(nameof(configFile), configFile, null);
 			Config.AddConfiguration(configFile);
-			var nodes = Config.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
+			var nodes = Config.Default.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
 			if (nodes == null)
 				throw new ArgumentNullException(nameof(nodes));
 		}

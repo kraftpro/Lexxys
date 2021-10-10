@@ -52,8 +52,8 @@ namespace Lexxys.Data
 			return __localCache.Get((table, key, value), o => IsReferenceKey(dc, o.Value, o.Table, o.Key));
 		}
 		private static readonly LocalCache<(string Table, string Key, int Value), bool> __localCache = new LocalCache<(string, string, int), bool>(
-			capacity: Config.GetValue(ConfigReference + ":cacheCapacity", 16, 128 * 1024, 8 * 1024),
-			timeToLive: Config.GetValue(ConfigReference + ":cacheTimeout", new TimeSpan(0, 0, 10), new TimeSpan(1, 0, 0), new TimeSpan(0, 10, 0)));
+			capacity: Config.Default.GetValue(ConfigReference + ":cacheCapacity", 16, 128 * 1024, 8 * 1024),
+			timeToLive: Config.Default.GetValue(ConfigReference + ":cacheTimeout", new TimeSpan(0, 0, 10), new TimeSpan(1, 0, 0), new TimeSpan(0, 10, 0)));
 
 		private static bool IsReferenceKey(IDataContext dc, int value, string table, string key)
 		{
@@ -209,13 +209,13 @@ namespace Lexxys.Data
 		{
 			return value == null ? nullable : (value = value.Trim()).Length == 2 && UsStateCodes.Value.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
 		}
-		private static readonly IValue<string> UsStateCodes = Config.GetSection("Lexxys.Check.UsStateCodes", "AA AK AL AP AR AS AZ CA CO CT DC DE FL FM GA GU HI IA ID IL IN KS KY LA MA MD ME MI MN MO MP MS MT NC ND NE NH NJ NM NV NY OH OK OR PA PR PW RI SC SD TN TX UT VA VI VT WA WI WV WY");
+		private static readonly IValue<string> UsStateCodes = Config.Default.GetSection("Lexxys.Check.UsStateCodes", "AA AK AL AP AR AS AZ CA CO CT DC DE FL FM GA GU HI IA ID IL IN KS KY LA MA MD ME MI MN MO MP MS MT NC ND NE NH NJ NM NV NY OH OK OR PA PR PW RI SC SD TN TX UT VA VI VT WA WI WV WY");
 
 		public static bool CountryCode(string value, bool nullable)
 		{
 			return value == null ? nullable : (value = value.Trim()).Length == 2 && CountryCodes.Value.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
 		}
-		private static readonly IValue<string> CountryCodes = Config.GetSection("Lexxys.Check.CountryCodesCodes", "AD AE AF AG AI AL AM AN AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR ST SV SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW");
+		private static readonly IValue<string> CountryCodes = Config.Default.GetSection("Lexxys.Check.CountryCodesCodes", "AD AE AF AG AI AL AM AN AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR ST SV SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW");
 
 		public static bool PostalCode(string value, int length, bool nullable = false)
 		{

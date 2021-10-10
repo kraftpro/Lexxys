@@ -1,3 +1,4 @@
+//#define TraceFlushing
 // Lexxys Infrastructural library.
 // file: LogRecordsListener.cs
 //
@@ -11,6 +12,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
+#nullable enable
+
 namespace Lexxys.Logging
 {
 	internal class LogRecordsListener
@@ -18,7 +21,7 @@ namespace Lexxys.Logging
 		private static readonly LogRecordsListener Empty = new LogRecordsListener(0, Array.Empty<int>());
 		private static readonly LogRecordsListener[] NoListeners = { Empty, Empty, Empty, Empty, Empty, Empty };
 
-		private static volatile Listener[] __global = Array.Empty<Listener>();
+		private static volatile Listener?[] __global = Array.Empty<Listener>();
 		private static volatile int __version;
 
 		private readonly int[] _listener;
@@ -33,15 +36,17 @@ namespace Lexxys.Logging
 			_listener = index;
 		}
 
-		public void Write(LogRecord record)
+		public void Write(LogRecord? record)
 		{
-			Listener[] global = __global;
+			if (record == null)
+				return;
+			Listener?[] global = __global;
 			if (_version != __version)
 				return;
 
 			for (int i = 0; i < _listener.Length; ++i)
 			{
-				Listener temp = global[_listener[i]];
+				Listener? temp = global[_listener[i]];
 				if (temp != null)
 					temp.Write(record);
 			}
@@ -60,16 +65,16 @@ namespace Lexxys.Logging
 				DisposeListeners(prev);
 		}
 
-		private static void DisposeListeners(IEnumerable<Listener> listeners)
+		private static void DisposeListeners(IEnumerable<Listener?> listeners)
 		{
-			foreach (Listener listener in listeners)
+			foreach (Listener? listener in listeners)
 			{
-				listener.Dispose();
+				listener?.Dispose();
 			}
 		}
 
 		// Should be synced with Initialize
-		public static LogRecordsListener[] Collect(string source)
+		public static LogRecordsListener[] Collect(string? source)
 		{
 			var global = __global;
 			var version = __version;
@@ -79,7 +84,8 @@ namespace Lexxys.Logging
 				var indices = new List<int>();
 				for (int i = 0; i < global.Length; ++i)
 				{
-					if (global[i].Writer.WillWrite(source, logType))
+					var item = global[i];
+					if (item != null && item.Writer.WillWrite(source, logType))
 						indices.Add(i);
 				}
 				listeners[(int)logType] = indices.Count == 0 ? Empty : new LogRecordsListener(version, indices.ToArray());
@@ -94,10 +100,10 @@ namespace Lexxys.Logging
 
 		public static void ClearBuffers()
 		{
-			Listener[] global = __global;
+			Listener?[] global = __global;
 			for (int i = 0; i < global.Length; ++i)
 			{
-				Listener temp = global[i];
+				Listener? temp = global[i];
 				if (temp != null)
 					temp.ClearBuffers();
 			}
@@ -105,18 +111,16 @@ namespace Lexxys.Logging
 
 		public static void FlushBuffers()
 		{
-			Listener[] global = __global;
+			Listener?[] global = __global;
 			for (int i = 0; i < global.Length; ++i)
 			{
-				Listener temp = global[i];
-				if (temp != null)
-					temp.FLush();
+				global[i]?.FLush();
 			}
 		}
 
 		public static void StopAll(bool force = false)
 		{
-			Listener[] global = __global;
+			Listener?[] global = __global;
 #if TraceFlushing
 			long x = WatchTimer.Start();
 			Console.WriteLine("Start flushing.");
@@ -126,20 +130,20 @@ namespace Lexxys.Logging
 			{
 				for (int i = 0; i < global.Length; ++i)
 				{
-					Listener temp = global[i];
-					if (temp != null)
+					Listener? listener = global[i];
+					if (listener != null)
 					{
 						global[i] = null;
-						if (force || temp.QueueIsEmpty)
+						if (force || listener.QueueIsEmpty)
 						{
-							temp.ClearBuffers();
-							temp.Stop(force);
+							listener.ClearBuffers();
+							listener.Stop(force);
 						}
 						else
 						{
 							var stopper = new Thread(Stopper);
 							pool.Add(stopper);
-							stopper.Start(temp);
+							stopper.Start(listener);
 						}
 					}
 				}
@@ -155,18 +159,17 @@ namespace Lexxys.Logging
 #endif
 		}
 
-		private static void Stopper(object obj)
+		private static void Stopper(object? obj)
 		{
-			var listener = (Listener)obj;
-			if (listener != null)
+			if (obj is Listener listener)
 			{
 #if TraceFlushing
 				long y = WatchTimer.Start();
-				Console.WriteLine("{0} ({1} {2})", listener.Writer.Name, listener.RecordCount, Lingua.Plural("record", listener.RecordCount));
+				Console.WriteLine($"{listener.Writer.Name} ({listener.RecordCount} {Lingua.Plural("record", listener.RecordCount)})");
 #endif
 				listener.Stop(false);
 #if TraceFlushing
-				Console.WriteLine("{0} finish: {1} sec.", listener.Writer.Name, WatchTimer.ToSeconds(WatchTimer.Stop(y)));
+				Console.WriteLine($"{listener.Writer.Name} finish: {WatchTimer.ToSeconds(WatchTimer.Stop(y))} sec.");
 #endif
 			}
 		}
@@ -178,7 +181,7 @@ namespace Lexxys.Logging
 			private const string Source = "Lexxys.Logging.LogRecordsListenner";
 			private readonly ILogWriter _writer;
 			private LogRecordQueue _queue;
-			private volatile EventWaitHandle _data;
+			private volatile EventWaitHandle? _data;
 			private readonly Thread _thread;
 
 			public Listener(ILogWriter writer)
@@ -200,6 +203,10 @@ namespace Lexxys.Logging
 			public ILogWriter Writer => _writer;
 
 			public bool QueueIsEmpty => _queue.IsEmpty;
+
+#if TraceFlushing
+			public int RecordCount => _queue.Count;
+#endif
 
 			private bool IsStopping => _data == null;
 
@@ -227,12 +234,12 @@ namespace Lexxys.Logging
 
 			public void Stop(bool force)
 			{
-				using EventWaitHandle tmp = Interlocked.Exchange(ref _data, null);
-				if (tmp != null)
+				using EventWaitHandle? handle = Interlocked.Exchange(ref _data, null);
+				if (handle != null)
 				{
-					if (!tmp.SafeWaitHandle.IsClosed)
-						tmp.Set();
-					Terminate(tmp, force);
+					if (!handle.SafeWaitHandle.IsClosed)
+						handle.Set();
+					Terminate(handle, force);
 				}
 			}
 
@@ -288,10 +295,10 @@ namespace Lexxys.Logging
 				if (IsStopping)
 					return;
 				_queue.Enqueue(record);
-				EventWaitHandle tmp = _data;
-				if (tmp != null)
+				EventWaitHandle? handle = _data;
+				if (handle != null)
 				{
-					tmp.Set();
+					handle.Set();
 					if (MaxQueueSize > 0 && Interlocked.Increment(ref _count) > MaxQueueSize)
 					{
 						while (_queue.Count > MaxQueueSize)
@@ -329,7 +336,7 @@ namespace Lexxys.Logging
 			{
 				IEnumerator<LogRecord> IEnumerable<LogRecord>.GetEnumerator()
 				{
-					while (TryDequeue(out LogRecord rec))
+					while (TryDequeue(out LogRecord? rec))
 					{
 						yield return rec;
 					}

@@ -63,7 +63,7 @@ namespace Lexxys.Logging
 
 				ApplyConfiguration();
 				_initialized = true;
-				Config.OnLoggerInitialized();
+				DefaultConfig.OnLoggerInitialized();
 			}
 
 			bool registered = false;
@@ -116,8 +116,8 @@ namespace Lexxys.Logging
 
 		private static void ApplyConfiguration()
 		{
-			var config = Config.GetList<LoggingConfiguration>("logging");
-			if (config == null)
+			var config = Config.Default.GetSectionList<LoggingConfiguration>("logging").Value;
+			if (config.Count == 0)
 			{
 				Config.LogConfigurationEvent("Lexxys.LoggingContext", SR.LoggingConfidurationMissing());
 				config = DefaultLoggingConfiguration;

@@ -4,11 +4,14 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+using Lexxys;
 using Lexxys.Xml;
 using System;
 using System.Collections.Generic;
 ﻿using System.Linq;
 ﻿using System.Text.RegularExpressions;
+
+#nullable enable
 
 namespace Lexxys.Logging
 {
@@ -32,16 +35,16 @@ namespace Lexxys.Logging
 
 		public static readonly LoggingRule Empty = new LoggingRule(null);
 
-		private LoggingRule(Rule[] rules)
+		private LoggingRule(Rule[]? rules)
 		{
 			_rules = rules ?? EmptyArray<Rule>.Value;
 		}
 
-		public static string GlobalExclude { get; set; }
+		public static string? GlobalExclude { get; set; }
 
 		public bool IsEmpty => _rules.Length == 0;
 
-		public bool Contains(string source, LogType type)
+		public bool Contains(string? source, LogType type)
 		{
 			for (int i = 0; i < _rules.Length; ++i)
 			{
@@ -51,7 +54,7 @@ namespace Lexxys.Logging
 			return false;
 		}
 
-		public LogTypeMask LogTypes(string source)
+		public LogTypeMask LogTypes(string? source)
 		{
 			LogTypeMask logTypes = LogTypeMask.None;
 			for (int i = 0; i < _rules.Length; ++i)
@@ -66,7 +69,7 @@ namespace Lexxys.Logging
 			return logTypes;
 		}
 
-		public static LoggingRule Create(XmlLiteNode config)
+		public static LoggingRule Create(XmlLiteNode? config)
 		{
 			if (config == null || config.IsEmpty)
 				return Empty;
@@ -83,11 +86,11 @@ namespace Lexxys.Logging
 
 			public static readonly Rule Empty = new Rule(LogTypeMask.None, null, null);
 
-			private readonly Regex _include;
-			private readonly Regex _exclude;
+			private readonly Regex? _include;
+			private readonly Regex? _exclude;
 			private readonly LogTypeMask _types;
 
-			private Rule(LogTypeMask types, string include, string exclude)
+			private Rule(LogTypeMask types, string? include, string? exclude)
 			{
 				_types = types;
 				_include = ParseRule(include, true);
@@ -98,7 +101,7 @@ namespace Lexxys.Logging
 
 			public bool IsEmpty => _types == LogTypeMask.None;
 
-			public bool Contains(string source)
+			public bool Contains(string? source)
 			{
 				if (_types == LogTypeMask.None)
 					return false;
@@ -114,7 +117,7 @@ namespace Lexxys.Logging
 				return (_types & (LogTypeMask)(1 << (int)type)) != 0;
 			}
 
-			private static Rule Create(string type, string include, string exclude)
+			private static Rule Create(string? type, string? include, string? exclude)
 			{
 				LogTypeMask types = ParseLogType(type, LogTypeMask.All);
 				return types == LogTypeMask.None ? Empty: new Rule(types, include, exclude);
@@ -122,6 +125,8 @@ namespace Lexxys.Logging
 
 			public static Rule Create(XmlLiteNode config)
 			{
+				if (config == null)
+					throw new ArgumentNullException(nameof(config));
 				return Create(config["level"], config["include"], config["exclude"]);
 			}
 
@@ -139,7 +144,7 @@ namespace Lexxys.Logging
 			///	</code>
 			/// 
 			/// </remarks>
-			private static LogTypeMask ParseLogType(string configuration, LogTypeMask defaultValue)
+			private static LogTypeMask ParseLogType(string? configuration, LogTypeMask defaultValue)
 			{
 				if (configuration == null)
 					return defaultValue;
@@ -203,7 +208,7 @@ namespace Lexxys.Logging
 				return all == 0 ? defaultValue: onlyFlag ? only: all;
 			}
 
-			private static Regex ParseRule(string rule, bool excludeAll)
+			private static Regex? ParseRule(string? rule, bool excludeAll)
 			{
 				if (rule == null)
 					return null;

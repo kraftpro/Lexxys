@@ -5,8 +5,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Lexxys;
-
 #nullable enable
 
 namespace Lexxys
@@ -17,6 +15,14 @@ namespace Lexxys
 		ILogging CreateLogger(string source);
 		ILogging<T> CreateLogger<T>();
 	}
+
+	//public static class ILoggingFactoryExtensions
+	//{
+	//	public static ILogging CreateLogger(this ILoggingFactory factory, string source)
+	//		=> factory.TryCreateLogger(source) ?? throw new InvalidOperationException();
+	//	public static ILogging CreateLogger<T>(this ILoggingFactory factory)
+	//		=> factory.TryCreateLogger<T>() ?? throw new InvalidOperationException();
+	//}
 
 	public static class LoggingFactory
 	{

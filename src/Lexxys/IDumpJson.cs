@@ -12,6 +12,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace Lexxys
 {
 	public interface IDumpJson
@@ -22,13 +24,13 @@ namespace Lexxys
 	public static class ToJsonExtensions
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static JsonBuilder ToJson(this IDumpJson obj, JsonBuilder json)
+		public static JsonBuilder ToJson(this IDumpJson? obj, JsonBuilder json)
 		{
-			return obj.ToJsonContent(json.Obj()).End();
+			return obj?.ToJsonContent(json.Obj()).End() ?? json;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static StringBuilder ToJson(this IDumpJson obj, StringBuilder text)
+		public static StringBuilder ToJson(this IDumpJson? obj, StringBuilder text)
 		{
 			Contract.Ensures(Contract.Result<StringBuilder>() != null);
 			if (text == null)
@@ -40,12 +42,10 @@ namespace Lexxys
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string ToJson(this IDumpJson obj)
+		public static string ToJson(this IDumpJson? obj)
 		{
 			Contract.Ensures(Contract.Result<string>() != null);
-			if (obj == null)
-				return "";
-			return obj.ToJson(new JsonStringBuilder()).ToString();
+			return obj?.ToJson(new JsonStringBuilder()).ToString() ?? String.Empty;
 		}
 	}
 }

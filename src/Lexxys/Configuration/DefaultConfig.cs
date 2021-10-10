@@ -9,60 +9,23 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 
+using Microsoft.Extensions.Logging;
+
+#nullable enable
+
 namespace Lexxys
 {
 	using Configuration;
 	using Logging;
 
-	public class ConfigurationEventArgs: EventArgs
-	{
-	}
-
-	public interface IConfiguration
-	{
-		event EventHandler<ConfigurationEventArgs> Changed;
-		IValue<T> GetSection<T>(string name, Func<T> defaultValue);
-		IOptions<T> GetOptions<T>(string node, Func<T> defaultValue) where T : class, new();
-	}
-
-	public static class ConfigurationExtenstions
-	{
-		public static IValue<T> GetSection<T>(this IConfiguration config, string node)
-		{
-			if (config == null)
-				throw new ArgumentNullException(nameof(config));
-			return config.GetSection<T>(node, () => default);
-		}
-
-		public static IValue<T> GetSection<T>(this IConfiguration config, string node, T defaultValue)
-		{
-			if (config == null)
-				throw new ArgumentNullException(nameof(config));
-			return config.GetSection<T>(node, () => defaultValue);
-		}
-
-		public static IOptions<T> GetOptions<T>(this IConfiguration config, string node) where T : class, new()
-		{
-			if (config == null)
-				throw new ArgumentNullException(nameof(config));
-			return config.GetOptions<T>(node, () => default);
-		}
-
-		public static IOptions<T> GetOptions<T>(this IConfiguration config, string node, T defaultValue) where T : class, new()
-		{
-			if (config == null)
-				throw new ArgumentNullException(nameof(config));
-			return config.GetOptions<T>(node, () => defaultValue);
-		}
-	}
-
-	public static class Config
+	internal class DefaultConfig
 	{
 		private const bool CachingDefault = false;
 
@@ -72,35 +35,37 @@ namespace Lexxys
 		private const string ConfigurationDerectoryKey = "configurationDirectory";
 		private static readonly string[] Extensions = { ".config.xml", ".config.txt", ".config.ini", ".config.json" };
 
-		private static IReadOnlyList<string> _configurationDirectory;
+		private static IReadOnlyList<string>? _configurationDirectory;
 		private static bool _initialized;
 		private static bool _initializing;
 		private static bool _cacheValues;
-		private static ILogging __log;
-		private static List<EventEntry> __messages = new List<EventEntry>();
+		private static ILogger? __log;
+		private static List<EventEntry>? __messages;
 		private volatile static int __version;
 
 		private static readonly object SyncRoot = new object();
 		private static readonly List<ConfigurationLocator> Locations = new List<ConfigurationLocator>();
 		private static readonly List<IConfigurationProvider> Providers = new List<IConfigurationProvider>();
-		private static readonly ConcurrentDictionary<string, object> Cache = new ConcurrentDictionary<string, object>();
+		private static readonly ConcurrentDictionary<string, object?> Cache = new ConcurrentDictionary<string, object?>();
 
-		static Config()
+		static DefaultConfig()
 		{
 			Factory.AssemblyLoad += Factory_AssemblyLoad;
 		}
 
-		static void Factory_AssemblyLoad(object sender, AssemblyLoadEventArgs e)
+		public static int Version => __version;
+
+		private static void Factory_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
 		{
 			if (e != null)
 			{
-				ConfigurationLocator locator = GetConfigurationLocator(e.LoadedAssembly);
+				ConfigurationLocator? locator = GetConfigurationLocator(e.LoadedAssembly);
 				if (locator != null)
 					AddConfiguration(locator, null);
 			}
 		}
 
-		public static IReadOnlyList<string> ConfigurationDirectories
+		private static IReadOnlyList<string> ConfigurationDirectories
 		{
 			get
 			{
@@ -111,173 +76,45 @@ namespace Lexxys
 			}
 		}
 
-		public static bool IsInitialized => _initialized;
+		internal static bool IsInitialized => _initialized;
 
-		public static T GetValue<T>(string node)
+		private static T GetValue<T>(string key, T defaultValue)
 		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
-			return GetValue(node, typeof(T)) is T value ? value: default;
+			if (key == null || key.Length <= 0)
+				throw new ArgumentNullException(nameof(key));
+			return GetObjectValue(key, typeof(T)) is T value ? value: defaultValue;
 		}
 
-		public static T GetValue<T>(string node, T defaultValue)
+		private static T GetValue<T>(string key, Func<T> defaultValue)
 		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
-			return GetValue(node, typeof(T)) is T value ? value: defaultValue;
-		}
-
-		public static T GetValue<T>(string node, Func<T> defaultValue)
-		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
+			if (key == null || key.Length <= 0)
+				throw new ArgumentNullException(nameof(key));
 			if (defaultValue == null)
 				throw new ArgumentNullException(nameof(defaultValue));
-			return GetValue(node, typeof(T)) is T value ? value : defaultValue();
+			return GetObjectValue(key, typeof(T)) is T value ? value : defaultValue();
 		}
 
-		public static T GetValue<T>(string node, T minValue, T maxValue, T defaultValue)
-			where T: IComparable<T>
+		internal static IReadOnlyList<T> GetList<T>(string key)
 		{
-			return GetValue(node, typeof(T)) is not T value ? defaultValue:
-				value.CompareTo(minValue) <= 0 ? minValue:
-				value.CompareTo(maxValue) >= 0 ? maxValue: value;
-		}
-
-
-		public static IValue<T> GetSection<T>(string node)
-		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
-			var custom = new Custom<T>(node, () => default);
-			return new Out<T>(() => custom.Value);
-		}
-
-		public static IValue<T> GetSection<T>(string node, T defaultValue)
-		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
-			var custom = new Custom<T>(node, () => defaultValue);
-			return new Out<T>(() => custom.Value);
-		}
-
-		public static IValue<T> GetSection<T>(string node, Func<T> defaultValue)
-		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
-			if (defaultValue == null)
-				throw new ArgumentNullException(nameof(defaultValue));
-			var custom = new Custom<T>(node, defaultValue);
-			return new Out<T>(() => custom.Value);
-		}
-
-		public static IOptions<T> GetOptions<T>(string node) where T : class, new()
-		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
-			var custom = new Custom<T>(node, () => default);
-			return new OptOut<T>(() => custom.Value);
-		}
-
-		public static IOptions<T> GetOptions<T>(string node, T defaultValue) where T : class, new()
-		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
-			var custom = new Custom<T>(node, () => defaultValue);
-			return new OptOut<T>(() => custom.Value);
-		}
-
-		public static IOptions<T> GetOptions<T>(string node, Func<T> defaultValue) where T : class, new()
-		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
-			if (defaultValue == null)
-				throw new ArgumentNullException(nameof(defaultValue));
-			var custom = new Custom<T>(node, defaultValue);
-			return new OptOut<T>(() => custom.Value);
-		}
-
-		private class Custom<T>: IValue<T>
-		{
-			private readonly Func<T> _default;
-			private readonly string _section;
-			volatile private VersionValue _item;
-
-			public Custom(string section, Func<T> @default)
-			{
-				if (section == null || section.Length <= 0)
-					throw new ArgumentNullException(nameof(section));
-
-				_section = section;
-				_default = @default;
-				_item = VersionValue.Default;
-			}
-
-			public T Value
-			{
-				get
-				{
-					for (;;)
-					{
-						var current = _item;
-						var version = __version;
-						if (current.Version == version)
-							return current.Value;
-						try
-						{
-							var value = Config.GetValue(_section, _default);
-							var updated = new VersionValue(version, value);
-							Interlocked.CompareExchange(ref _item, updated, current);
-						}
-						catch (Exception flaw)
-						{
-							flaw.Add("Section", _section);
-							throw;
-						}
-					}
-				}
-				set { throw new NotSupportedException(); }
-			}
-
-			object IValue.Value => Value;
-
-			class VersionValue
-			{
-				public static readonly VersionValue Default = new VersionValue(-1, default);
-
-				public T Value { get; }
-				public int Version { get; }
-
-				public VersionValue(int version, T value)
-				{
-					Value = value;
-					Version = version;
-				}
-			}
-		}
-
-
-		public static IReadOnlyList<T> GetList<T>(string node, bool suppressNull = false)
-		{
-			if (node == null || node.Length <= 0)
-				throw new ArgumentNullException(nameof(node));
+			if (key == null || key.Length <= 0)
+				throw new ArgumentNullException(nameof(key));
 			if (!_initialized)
 				Initialize();
 
-			string key = node + "`List`" + typeof(T).ToString();
-			if (_cacheValues && Cache.TryGetValue(key, out object value))
-				return value is IReadOnlyList<T> tvalue ? tvalue: suppressNull ? EmptyArray<T>.Value : null;
+			string cacheKey = key + "$*$" + typeof(T).ToString();
+			if (_cacheValues && Cache.TryGetValue(cacheKey, out object? value))
+				return value as IReadOnlyList<T> ?? EmptyArray<T>.Value;
 
 			lock (SyncRoot)
 			{
-				if (_cacheValues && Cache.TryGetValue(key, out value))
-					return value is IReadOnlyList<T> tvalue ? tvalue : suppressNull ? EmptyArray<T>.Value : null;
+				if (_cacheValues && Cache.TryGetValue(cacheKey, out value))
+					return value as IReadOnlyList<T> ?? EmptyArray<T>.Value;
 
-				List<T> temp = null;
+				List<T>? temp = null;
 				bool copy = false;
 				for (int i = Providers.Count - 1; i >= 0; --i)
 				{
-					List<T> x = Providers[i].GetList<T>(node);
+					List<T> x = Providers[i].GetList<T>(key);
 					if (x != null && x.Count > 0)
 					{
 						if (temp == null)
@@ -295,42 +132,21 @@ namespace Lexxys
 						}
 					}
 				}
-				IReadOnlyList<T> result = temp == null || temp.Count == 0 ? null: ReadOnly.Wrap(temp);
+				IReadOnlyList<T>? result = temp == null || temp.Count == 0 ? null: ReadOnly.Wrap(temp);
 				if (_cacheValues)
-					Cache[key] = result;
-				return result == null && suppressNull ? EmptyArray<T>.Value: result;
+					Cache[cacheKey] = result;
+				return result ?? EmptyArray<T>.Value;
 			}
 		}
 
-		public static string ExpandParameters(string value)
-		{
-			return __parametersRex.Replace(value, m => GetValue(m.Groups[1].Value, () => m.Groups[1].Value == "global" ? Lxx.GlobalConfigurationDirectory: ""));
-		}
-		private static readonly Regex __parametersRex = new Regex(@"\${(.*?)}");
+		public static event EventHandler<ConfigurationEventArgs>? Changed;
 
-		public static event EventHandler<ConfigurationEventArgs> Changed;
-
-		public static void OnChanged()
+		private static void OnChanged()
 		{
 			OnChanged(null, new ConfigurationEventArgs());
 		}
 
-		public static IConfigurationProvider GetConfiguration(string location)
-		{
-			if (location == null || location.Length <= 0)
-				throw new ArgumentNullException(nameof(location));
-			return GetConfiguration(new ConfigurationLocator(location));
-		}
-
-		public static IConfigurationProvider GetConfiguration(ConfigurationLocator location)
-		{
-			if (location == null)
-				throw new ArgumentNullException(nameof(location));
-			FindProvider(null, ref location, null, out IConfigurationProvider provider);
-			return provider;
-		}
-
-		public static IConfigurationProvider AddConfiguration(string location)
+		public static IConfigurationProvider? AddConfiguration(string location)
 		{
 			if (location == null || location.Length <= 0)
 				throw new ArgumentNullException(nameof(location));
@@ -339,7 +155,7 @@ namespace Lexxys
 		}
 
 		// TODO: optional
-		public static IConfigurationProvider AddConfiguration(ConfigurationLocator location, IReadOnlyCollection<string> parameters) // = null)
+		public static IConfigurationProvider? AddConfiguration(ConfigurationLocator location, IReadOnlyCollection<string>? parameters) // = null)
 		{
 			if (location == null)
 				throw new ArgumentNullException(nameof(location));
@@ -347,7 +163,7 @@ namespace Lexxys
 			lock (SyncRoot)
 			{
 				int n = Providers.Count;
-				IConfigurationProvider provider = AddConfiguration(location, parameters, null, 0);
+				IConfigurationProvider? provider = AddConfiguration(location, parameters, null, 0);
 				if (provider == null)
 					return null;
 				if (n < Providers.Count)
@@ -356,38 +172,42 @@ namespace Lexxys
 			}
 		}
 
-		private static IConfigurationProvider AddConfiguration(ConfigurationLocator location, IReadOnlyCollection<string> parameters, string currentDirectory, int position)
+		private static IConfigurationProvider? AddConfiguration(ConfigurationLocator location, IReadOnlyCollection<string>? parameters, string? currentDirectory, int position)
 		{
 			try
 			{
 				Logger.WriteDebugMessage("Find Configuration", location.ToString());
-				if (!FindProvider(currentDirectory, ref location, parameters, out IConfigurationProvider provider))
+				if (!FindProvider(currentDirectory, ref location, parameters, out var provider))
 					return provider;
+
+				Debug.Assert(provider != null);
+				Debug.Assert(location != null);
 
 				if (position >= Locations.Count || position < 0)
 				{
-					Locations.Add(location);
-					Providers.Add(provider);
+					Locations.Add(location!);
+					Providers.Add(provider!);
 					position = Locations.Count;
 				}
 				else
 				{
-					Locations.Insert(position, location);
-					Providers.Insert(position, provider);
+					Locations.Insert(position, location!);
+					Providers.Insert(position, provider!);
 					++position;
 				}
 				LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(location, position));
-				ScanConfigurationFile(provider, location, position);
-				provider.Changed += OnChanged;
+				ScanConfigurationFile(provider!, location!, position);
+				provider!.Changed += OnChanged;
 				return provider;
 			}
 			catch (Exception flaw)
 			{
 				flaw = flaw.Unwrap();
 				flaw.Add("locaion", location);
-				Logger.WriteErrorMessage($"ERROR: Cannot load configuration {location?.ToString() ?? "(null)"}.", flaw);
-				if (__log != null && __log.IsEnabled(LogType.Error))
-					__log.Log(new LogRecord(LogType.Error, "AddConfiguration", flaw));
+				if (__log == null)
+					Logger.WriteErrorMessage($"ERROR: Cannot load configuration {location?.ToString() ?? "(null)"}.", flaw);
+				else
+					__log.Error(nameof(AddConfiguration), flaw.Add(nameof(location), location?.ToString()));
 				return null;
 			}
 		}
@@ -412,7 +232,7 @@ namespace Lexxys
 			}
 		}
 
-		private static (string Location, IReadOnlyCollection<string> Parameters) SplitOptions(string value)
+		private static (string Location, IReadOnlyCollection<string>? Parameters) SplitOptions(string value)
 		{
 			if (String.IsNullOrWhiteSpace(value) || value.IndexOf(' ') < 0)
 				return (value, null);
@@ -421,7 +241,7 @@ namespace Lexxys
 		}
 		private static readonly char[] SpaceSeparator = new[] { ' ' };
 
-		private static bool FindProvider(string currentDirectory, ref ConfigurationLocator location, IReadOnlyCollection<string> parameters, out IConfigurationProvider provider)
+		private static bool FindProvider(string? currentDirectory, ref ConfigurationLocator location, IReadOnlyCollection<string>? parameters, out IConfigurationProvider? provider)
 		{
 			if (!_initialized)
 				Initialize();
@@ -459,7 +279,7 @@ namespace Lexxys
 			}
 		}
 
-		private static void OnChanged(object sender, ConfigurationEventArgs e)
+		private static void OnChanged(object? sender, ConfigurationEventArgs e)
 		{
 			if (!_initialized)
 				return;
@@ -470,115 +290,117 @@ namespace Lexxys
 				LogConfigurationEvent(LogSource, SR.ConfigurationChanged(cs));
 			}
 			Cache.Clear();
-			EventHandler<ConfigurationEventArgs> ch = Changed;
-			ch?.Invoke(sender, e);
+			Changed?.Invoke(sender, e);
 			__log = null;
 		}
 
 
 		internal static void OnLoggerInitialized()
 		{
-			if (_initialized && __log == null && Logger.Initialized)
-			{
-				lock (SyncRoot)
-				{
-					TryCreateLogger();
-				}
-			}
+			if (__log == null)
+				SetLogger(new Logger(LogSource));
 		}
 
-		private static void TryCreateLogger()
+		public static void SetLogger(ILogger? logger)
 		{
-			if (_initialized && __log == null && Logger.Initialized)
+			if (logger == __log)
+				return;
+			lock (SyncRoot)
 			{
-				__log = new Logger(LogSource);
-				if (__messages != null && __messages.Count > 0)
+				__log = logger;
+				if (__log != null)
 				{
-					foreach (EventEntry item in __messages)
+					if (__messages != null && __messages.Count > 0)
 					{
-						LogEventEntry(item);
+						foreach (EventEntry item in __messages)
+						{
+							LogEventEntry(item);
+						}
 					}
+					__messages = null;
 				}
-				__messages = null;
 			}
 		}
 
 		private class EventEntry
 		{
-			public Exception Exception;
-			public Func<string> Message;
+			public Exception? Exception;
+			public Func<string>? Message;
 			public string Source;
+
+			public EventEntry(Exception exception, string source)
+			{
+				Exception = exception ?? throw new ArgumentNullException(nameof(exception));
+				Source = source ?? throw new ArgumentNullException(nameof(source));
+			}
+
+			public EventEntry(Func<string> message, string source)
+			{
+				Message = message ?? throw new ArgumentNullException(nameof(message));
+				Source = source ?? throw new ArgumentNullException(nameof(source));
+			}
 		}
 
 		private static void LogEventEntry(EventEntry item)
 		{
 			if (item.Exception != null)
 			{
-				if (__log.IsEnabled(LogType.Error))
-					__log.Log(new LogRecord(LogType.Error, item.Source, item.Message?.Invoke(), item.Exception, null));
+				if (__log!.IsEnabled(LogType.Error))
+					__log!.Error(item.Source, item.Exception);
 			}
 			else if (item.Message != null)
 			{
-				if (__log.IsEnabled(LogType.Trace))
-					__log.Log(new LogRecord(LogType.Trace, item.Source, item.Message(), null));
+				if (__log!.IsEnabled(LogType.Trace))
+					__log!.Error(item.Source, item.Message(), null, null);
 			}
 		}
 
 		private static void LogConfigurationItem(EventEntry item)
 		{
 			if (__log == null)
-			{
-				lock (SyncRoot)
-				{
-					TryCreateLogger();
-					if (__log == null)
-					{
-						__messages.Add(item);
-						return;
-					}
-				}
-			}
-			LogEventEntry(item);
+				(__messages ??= new List<EventEntry>()).Add(item);
+			else
+				LogEventEntry(item);
 		}
 
 		public static void LogConfigurationError(string logSource, Exception exception)
 		{
 			if (exception != null)
-				LogConfigurationItem(new EventEntry { Exception = exception, Source = logSource });
+				LogConfigurationItem(new EventEntry(exception, logSource));
 		}
 
 		public static void LogConfigurationEvent(string logSource, Func<string> message)
 		{
 			if (message != null)
-				LogConfigurationItem(new EventEntry { Message = message, Source = logSource });
+				LogConfigurationItem(new EventEntry(message, logSource));
 		}
 
-		private static object GetValue(string node, Type objectType)
+		public static object? GetObjectValue(string key, Type objectType)
 		{
 			if (objectType == null)
 				throw EX.ArgumentNull(nameof(objectType));
-			if (node == null || node.Length <= 0)
-				throw EX.ArgumentNull(nameof(node));
+			if (key == null || key.Length <= 0)
+				throw EX.ArgumentNull(nameof(key));
 			if (!_initialized)
 				Initialize();
 
-			string key = node + "`" + objectType.ToString();
-			if (_cacheValues && Cache.TryGetValue(key, out object value))
+			string cacheKey = key + "$" + objectType.ToString();
+			if (_cacheValues && Cache.TryGetValue(cacheKey, out object? value))
 				return value;
 
 			lock (SyncRoot)
 			{
-				if (_cacheValues && Cache.TryGetValue(key, out value))
+				if (_cacheValues && Cache.TryGetValue(cacheKey, out value))
 					return value;
 				value = null;
 				foreach (IConfigurationProvider provider in Providers)
 				{
-					value = provider.GetValue(node, objectType);
+					value = provider.GetValue(key, objectType);
 					if (value != null)
 						break;
 				}
 				if (_cacheValues)
-					Cache[key] = value;
+					Cache[cacheKey] = value;
 				return value;
 			}
 		}
@@ -659,7 +481,7 @@ namespace Lexxys
 				}
 			}
 #endif
-			cc.AddRange(Factory.DomainAssemblies.Select(GetConfigurationLocator).Where(o => o != null));
+			cc.AddRange(Factory.DomainAssemblies.Select(GetConfigurationLocator).Where(o => o != null)!);
 
 			var locator = new ConfigurationLocator("file:///" + Lxx.HomeDirectory + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile, true);
 			if (locator.IsValid)
@@ -670,9 +492,9 @@ namespace Lexxys
 			return cc;
 		}
 
-		private static ConfigurationLocator GetConfigurationLocator(Assembly asm)
+		private static ConfigurationLocator? GetConfigurationLocator(Assembly? asm)
 		{
-			string name;
+			string? name;
 			if (asm == null || asm.IsDynamic || String.IsNullOrEmpty(name = asm.GetName().CodeBase))
 				return null;
 			var locator = new ConfigurationLocator(Path.ChangeExtension(name, null), true);

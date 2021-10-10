@@ -696,7 +696,7 @@ namespace Lexxys
 				#endregion
 			};
 
-			XmlLiteNode node = Config.GetValue(ConfigSection, XmlLiteNode.Empty);
+			XmlLiteNode node = Config.Default.GetValue(ConfigSection, XmlLiteNode.Empty);
 
 			foreach (var item in node.Where("map"))
 			{

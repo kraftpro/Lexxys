@@ -89,8 +89,8 @@ namespace Lexxys
 			{
 				if (_productName == null)
 				{
-					string temp = Config.GetValue("ProductVersion:Name", () => AppVersion.ProductName);
-					if (!Config.IsInitialized)
+					string temp = Config.Default.GetValue("ProductVersion:Name", () => AppVersion.ProductName);
+					if (!DefaultConfig.IsInitialized)
 						return temp;
 					Interlocked.CompareExchange(ref _productName, temp, null);
 				}
@@ -163,7 +163,7 @@ namespace Lexxys
 					if (!_initialized)
 					{
 						_initialized = true;
-						Config.Changed += OnConfigChanged;
+						Config.Default.Changed += OnConfigChanged;
 						AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 						Type type = Factory.GetType("System.Windows.Forms.Application", Factory.SystemAssemblies);
 						if (type != null)

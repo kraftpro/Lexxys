@@ -5,10 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Lexxys.Xml;
+#nullable enable
 
 namespace Lexxys.Logging
 {
+	using Xml;
+
 	public class LogRecordJsonFormatter : ILogRecordFormatter
 	{
 		private NamingCaseRule _namingRule;
@@ -26,9 +28,9 @@ namespace Lexxys.Logging
 			_namingRule = namingRule;
 		}
 
-		public TextWriter Format(TextWriter writer, LogRecord record)
+		public TextWriter Format(TextWriter writer, LogRecord? record)
 		{
-			record.ToJson(JsonBuilder.Create(writer));
+			record?.ToJson(JsonBuilder.Create(writer));
 			return writer;
 		}
 	}

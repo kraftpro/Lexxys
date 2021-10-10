@@ -97,8 +97,8 @@ namespace Lexxys
 
 		private static string[] SystemAssemblyNames()
 		{
-			var iss = Config.GetList<string>(ConfigurationSkip);
-			if (iss == null)
+			var iss = __systemNamesConfig.Value;
+			if (iss.Count == 0)
 				return DefaultSystemAssemblyNames;
 
 			var ss = new List<string>(iss
@@ -119,6 +119,7 @@ namespace Lexxys
 			return ss.ToArray();
 		}
 		private static readonly string[] DefaultSystemAssemblyNames = { "CppCodeProvider", "WebDev.", "SMDiagnostics", "mscor", "vshost", "System", "Microsoft", "Windows", "Presentation", "netstandard" };
+		private static readonly IValue<IReadOnlyList<string>> __systemNamesConfig = Config.Default.GetSectionList<string>(ConfigurationSkip);
 
 		private static bool IsSystemAssembly(Assembly asm)
 		{
@@ -181,15 +182,12 @@ namespace Lexxys
 
 		private static void ImportRestAssemblies()
 		{
-			var import = Config.GetList<string>(ConfigurationImport);
-			if (import != null)
+			foreach (string assemblyName in __importConfig.Value)
 			{
-				foreach (string assemblyName in import)
-				{
-					TryLoadAssembly(assemblyName, false);
-				}
+				TryLoadAssembly(assemblyName, false);
 			}
 		}
+		private static readonly IValue<IReadOnlyList<string>> __importConfig = Config.Default.GetSectionList<string>(ConfigurationImport);
 
 		private static void OnConfigChanged(object sender, ConfigurationEventArgs e)
 		{
@@ -342,8 +340,8 @@ namespace Lexxys
 				{
 					if (!__synonymsLoaded)
 					{
-						var synonyms = Config.GetList<KeyValuePair<string, string>>(ConfigurationSynonyms);
-						if (synonyms != null && synonyms.Count > 0)
+						var synonyms = __synonymsConfig.Value;
+						if (synonyms.Count > 0)
 						{
 							foreach (var item in synonyms)
 							{
@@ -374,6 +372,8 @@ namespace Lexxys
 
 			return GetTypeInternal(typeName);
 		}
+		private static readonly IValue<IReadOnlyList<KeyValuePair<string, string>>> __synonymsConfig = Config.Default.GetSectionList<KeyValuePair<string, string>>(ConfigurationSynonyms);
+
 		#region Types synonyms table
 		private static bool __synonymsLoaded;
 		private static readonly Dictionary<string, Type> __typesSynonyms = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)

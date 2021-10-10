@@ -13,20 +13,22 @@ using System.Text;
 using System.Threading.Tasks;
 using Lexxys;
 
+#nullable enable
+
 namespace Lexxys.Data
 {
 	public sealed class DataContext: IDataContext, IDisposable
 	{
-		private static readonly IOptions<ConnectionStringInfo> __globalConnetionString = Config.GetOptions<ConnectionStringInfo>(Dc.ConfigSection);
+		private static readonly IValue<ConnectionStringInfo?> __globalConnetionString = Config.Default.GetSection<ConnectionStringInfo>(Dc.ConfigSection, null);
 
 		private readonly DataContextImplementation _context;
 
 
-		public DataContext(): this(__globalConnetionString.Value)
+		public DataContext(): this(__globalConnetionString?.Value)
 		{
 		}
 
-		public DataContext(ConnectionStringInfo connectionInfo)
+		public DataContext(ConnectionStringInfo? connectionInfo)
 		{
 			if (connectionInfo == null)
 				throw new ArgumentNullException(nameof(connectionInfo));
@@ -61,7 +63,7 @@ namespace Lexxys.Data
 
 		public DateTime Now => _context.Now;
 
-		public IDisposable HoldTheMoment() => _context.LockNow(_context.Time) ? new Dc.TimeHolder(_context) : null;
+		public IDisposable? HoldTheMoment() => _context.LockNow(_context.Time) ? new Dc.TimeHolder(_context) : null;
 
 		public IDisposable Connection() => new Dc.Connecting(_context);
 
@@ -75,11 +77,11 @@ namespace Lexxys.Data
 
 		public void SetQueryTimeout(TimeSpan timeout) => _context.CommandTimeout = timeout;
 
-		public IDisposable CommadTimeout(TimeSpan timeout, bool always = false) => always || _context.CommandTimeout < timeout ? new Dc.TimeoutLocker(_context, timeout) : null;
+		public IDisposable? CommadTimeout(TimeSpan timeout, bool always = false) => always || _context.CommandTimeout < timeout ? new Dc.TimeoutLocker(_context, timeout) : null;
 
 		public void ResetStatistics() => _context.ResetStatistics();
 
-		public T GetValue<T>(string query, params DbParameter[] parameters) => Map(Dc.ValueMapper<T>, query, parameters);
+		public T? GetValue<T>(string query, params DbParameter[] parameters) => Map(Dc.ValueMapper<T>, query, parameters);
 
 		public Task<T> GetValueAsync<T>(string query, params DbParameter[] parameters) => MapAsync(Dc.ValueMapperAsync<T>, query, parameters);
 

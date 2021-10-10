@@ -21,7 +21,7 @@ namespace Lexxys
 		public virtual T Value
 		{
 			get => _getter();
-			set => throw new NotImplementedException("Out<T>.Value.get");
+			set => throw new NotImplementedException("Out<T>.Value.set in not implemented.");
 		}
 
 		object IValue.Value => Value;
@@ -56,7 +56,7 @@ namespace Lexxys
 	}
 
 
-	public class OptOut<T>: IValue<T>, IOptions<T> where T : class, new()
+	public class OptOut<T> : IValue<T>, IOptions<T> where T : class, new()
 	{
 		protected readonly Func<T> _getter;
 
@@ -77,7 +77,7 @@ namespace Lexxys
 		public static implicit operator Out<T>(OptOut<T> value) => new Out<T>(value._getter);
 	}
 
-	public sealed class OptRef<T>: OptOut<T> where T : class, new()
+	public sealed class OptRef<T> : OptOut<T> where T : class, new()
 	{
 		private readonly Action<T> _setter;
 

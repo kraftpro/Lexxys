@@ -4,18 +4,19 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-#nullable enable
+
+#nullable disable
 
 namespace Lexxys
 {
-	public interface IValue<T>: IValue
+	public interface IValue<out T>: IValue
 	{
-		new T Value { get; set; }
+		new T Value { get; }
 	}
 
 	public interface IValue
 	{
-		object? Value { get; }
+		object Value { get; }
 	}
 
 #if !NETCOREAPP
@@ -24,7 +25,7 @@ namespace Lexxys
 		T Value { get; }
 	}
 #else
-	public interface IOptions<out T>: Microsoft.Extensions.Options.IOptions<T> where T: class, new()
+	public interface IOptions<out T> : Microsoft.Extensions.Options.IOptions<T> where T : class, new()
 	{
 	}
 #endif

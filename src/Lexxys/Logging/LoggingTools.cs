@@ -2,14 +2,14 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
 
-using Lexxys.Logging;
-
 using Microsoft.Extensions.Logging;
 
 #nullable enable
 
 namespace Lexxys
 {
+	using Logging;
+
 	public static class LoggingTools
 	{
 		public static void Log<TState>(ILogging log, LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string?>? formatter)

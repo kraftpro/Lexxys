@@ -21,7 +21,7 @@ namespace Lexxys.RL
 		static PartialScheme()
 		{
 			LoadConfiguration();
-			Config.Changed += OnConfigurationChanged;
+			Config.Default.Changed += OnConfigurationChanged;
 		}
 
 		public IEnumerable<string> SupportedSchemas => _schemas;
@@ -94,7 +94,7 @@ namespace Lexxys.RL
 
 		private static void LoadConfiguration()
 		{
-			List<KeyValuePair<string, RootLocation>> ss = Config.GetValue<List<KeyValuePair<string, RootLocation>>>(ConfigSection);
+			List<KeyValuePair<string, RootLocation>> ss = Config.Default.GetValue<List<KeyValuePair<string, RootLocation>>>(ConfigSection);
 			if (ss == null || ss.Count == 0)
 			{
 				_schemasDefinition = ReadOnly.Empty<string, RootLocation>();

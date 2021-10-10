@@ -271,7 +271,7 @@ namespace Lexxys.Xml
 					defaultValue = macro.Substring(k + 1).Trim();
 					macro = macro.Substring(0, k);
 				}
-				string subst = String.IsNullOrWhiteSpace(macro) ? defaultValue: Config.GetValue<string>(macro) ?? defaultValue;
+				string subst = String.IsNullOrWhiteSpace(macro) ? defaultValue: Config.Default.GetValue<string>(macro) ?? defaultValue;
 				if (subst != null)
 					value = value.Substring(0, i) + subst + value.Substring(j + 2);
 				i = j + 2;

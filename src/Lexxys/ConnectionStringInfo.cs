@@ -76,7 +76,7 @@ namespace Lexxys
 			Define(location.QueryParameters);
 			string s = location.Host + location.Path;
 			if (s.StartsWith("^"))
-				Append(Config.GetValue<ConnectionStringInfo>(s.Substring(1)));
+				Append(Config.Default.GetValue<ConnectionStringInfo>(s.Substring(1)));
 			else if (!String.IsNullOrWhiteSpace(s))
 				Server = s;
 		}
@@ -276,7 +276,7 @@ namespace Lexxys
 			if (reference == null)
 				return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
 
-			ConnectionStringInfo that = Config.GetValue<ConnectionStringInfo>(reference);
+			ConnectionStringInfo that = Config.Default.GetValue<ConnectionStringInfo>(reference);
 			if (that == null)
 				return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
 

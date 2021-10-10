@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 
+#nullable enable
+
 namespace Lexxys.Logging
 {
 	public interface ILogWriter
@@ -8,7 +10,7 @@ namespace Lexxys.Logging
 		string Target { get; }
 		void Open();
 		void Close();
-		bool WillWrite(string source, LogType type);
+		bool WillWrite(string? source, LogType type);
 		void Write(IEnumerable<LogRecord> records);
 	}
 }

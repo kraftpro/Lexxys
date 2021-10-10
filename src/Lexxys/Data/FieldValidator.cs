@@ -14,13 +14,13 @@ namespace Lexxys.Data
 
 		static FieldValidator()
 		{
-			Config.Changed += Config_Changed;
+			Config.Default.Changed += Config_Changed;
 			Config_Changed();
 		}
 
 		private static void Config_Changed(object sender = null, ConfigurationEventArgs e = null)
 		{
-			_ignoreReferenceKey = !Config.GetValue(Check.ConfigReference + ":validate", true);
+			_ignoreReferenceKey = !Config.Default.GetValue(Check.ConfigReference + ":validate", true);
 		}
 
 		public static ValidationResults ReferenceKey(IDataContext dc, int? value, string reference, string field) => ReferenceKey(dc, value, reference, field, true);

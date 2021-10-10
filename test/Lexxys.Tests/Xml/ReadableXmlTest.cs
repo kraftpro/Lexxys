@@ -314,7 +314,7 @@ configuration
 			if (File.Exists(@"test.db.config.txt"))
 			{
 				Config.AddConfiguration(@"test.db.config.txt");
-				var c = Config.GetValue<ConnectionStringInfo>("database.connection");
+				var c = Config.Default.GetValue<ConnectionStringInfo>("database.connection");
 				Assert.IsNotNull(c);
 			}
 		}
