@@ -87,7 +87,7 @@ namespace Lexxys.Configuration
 			return ConfigurationManager.GetSection(reference) as List<T> ?? new List<T>();
 		}
 
-		event EventHandler<ConfigurationEventArgs>? ITrackedConfiguration.Changed
+		public event EventHandler<ConfigurationEventArgs>? Changed
 		{
 			add { }
 			remove { }

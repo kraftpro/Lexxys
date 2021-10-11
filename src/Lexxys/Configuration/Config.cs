@@ -51,7 +51,5 @@ namespace Lexxys
 
 		public static void LogConfigurationEvent(string logSource, Func<string> message)
 			=> DefaultConfig.LogConfigurationEvent(logSource, message);
-
-		public static void RegisterSource(ITrackedConfiguration source) => DefaultConfig.RegisterSource(source);
 	}
 }

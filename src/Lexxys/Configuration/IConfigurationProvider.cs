@@ -13,8 +13,9 @@ using System.Text;
 
 namespace Lexxys.Configuration
 {
-	public interface IConfigurationProvider: ITrackedConfiguration
+	public interface IConfigurationProvider
 	{
+		event EventHandler<ConfigurationEventArgs>? Changed;
 		string Name { get; }
 		object? GetValue(string reference, Type returnType);
 		List<T> GetList<T>(string reference);

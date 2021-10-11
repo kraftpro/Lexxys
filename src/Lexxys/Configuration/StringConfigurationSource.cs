@@ -26,7 +26,7 @@ namespace Lexxys.Configuration
 		private StringConfigurationSource(string sourceType, ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
 			_location = location ?? throw new ArgumentNullException(nameof(location));
-			_converter = ConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
+			_converter = XmlConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
 		}
 
 		#region IConfigurationSource
@@ -50,6 +50,7 @@ namespace Lexxys.Configuration
 		public ConfigurationLocator Location => _location;
 
 		public event EventHandler<ConfigurationEventArgs>? Changed;
+
 		#endregion
 
 		public override bool Equals(object? obj)
@@ -62,26 +63,20 @@ namespace Lexxys.Configuration
 			return _location.Text.GetHashCode();
 		}
 
-		private void OnFileChanged(object? sender, FileSystemEventArgs e)
+		private void OnChanged(object? sender, ConfigurationEventArgs e)
 		{
 			try
 			{
 				lock (this)
 				{
 					_content = null;
-					OnChanged(new ConfigurationEventArgs());
+					Changed?.Invoke(sender ?? this, e);
 				}
 			}
-			catch (Exception exception)
+			catch (Exception flaw)
 			{
-				exception.Add("fileName", e?.FullPath);
-				Config.LogConfigurationError(LogSource, exception);
+				Config.LogConfigurationError(LogSource, flaw);
 			}
-		}
-
-		private void OnChanged(ConfigurationEventArgs e)
-		{
-			Changed?.Invoke(this, e);
 		}
 
 		private IEnumerable<XmlLiteNode>? OptionHandler(string option, IReadOnlyCollection<string> parameters)
@@ -91,7 +86,7 @@ namespace Lexxys.Configuration
 				Config.LogConfigurationEvent(LogSource, SR.UnknownOption(option, null));
 				return null;
 			}
-			return LocalFileConfigurationSource.HandleInclude(LogSource, parameters, null, ref _includes, OnFileChanged);
+			return ConfigurationSource.HandleInclude(LogSource, parameters, null, ref _includes, OnChanged);
 		}
 
 		public static StringConfigurationSource? Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)

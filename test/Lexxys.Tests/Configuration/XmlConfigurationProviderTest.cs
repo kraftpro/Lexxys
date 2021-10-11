@@ -156,7 +156,7 @@ namespace Lexxys.Tests.Configuration
 		}
 
 
-		private static ConfigurationProvider GetConfiguration()
+		private static IConfigurationProvider GetConfiguration()
 		{
 			return CreateConfig(
 @"string:[txt]?
@@ -335,9 +335,9 @@ Setting
 			}
 		}
 
-		private static ConfigurationProvider CreateConfig(string value, IReadOnlyCollection<string> parameters)
+		private static IConfigurationProvider CreateConfig(string value, IReadOnlyCollection<string> parameters)
 		{
-			return ConfigurationProvider.Create(new ConfigurationLocator(value), parameters) ?? throw new InvalidOperationException("Cannot create configuration");
+			return XmlConfigurationProvider.Create(new ConfigurationLocator(value), parameters) ?? throw new InvalidOperationException("Cannot create configuration");
 		}
 
 

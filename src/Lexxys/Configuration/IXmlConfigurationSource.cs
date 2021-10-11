@@ -14,13 +14,9 @@ using Lexxys.Xml;
 
 namespace Lexxys.Configuration
 {
-	public interface ITrackedConfiguration
+	public interface IXmlConfigurationSource
 	{
 		event EventHandler<ConfigurationEventArgs>? Changed;
-	}
-
-	public interface IXmlConfigurationSource: ITrackedConfiguration
-	{
 		string Name { get; }
 		IReadOnlyList<XmlLiteNode> Content { get; }
 		ConfigurationLocator Location { get; }

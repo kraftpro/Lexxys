@@ -211,8 +211,6 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		public static void RegisterSource(ITrackedConfiguration source) => source.Changed += OnChanged;
-
 		private static void ScanConfigurationFile(IConfigurationProvider provider, ConfigurationLocator location, int position)
 		{
 			if (provider.GetValue("applicationDirectory", typeof(string)) is string home)

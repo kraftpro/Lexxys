@@ -16,13 +16,13 @@ using Lexxys.Xml;
 namespace Lexxys.Configuration
 {
 	[DebuggerDisplay("{_source.Location,nq}")]
-	public class ConfigurationProvider: IConfigurationProvider
+	public class XmlConfigurationProvider: IConfigurationProvider
 	{
 		private const string ConfigurationRoot = "configuration";
 		readonly IXmlConfigurationSource _source;
 		private XmlLiteNode? _node;
 
-		protected ConfigurationProvider(IXmlConfigurationSource source)
+		protected XmlConfigurationProvider(IXmlConfigurationSource source)
 		{
 			_source = source ?? throw new ArgumentNullException(nameof(source));
 			_source.Changed += OnChanged;
@@ -65,13 +65,13 @@ namespace Lexxys.Configuration
 				.Select(o => (T)o!).ToList();
 		}
 
-		public static ConfigurationProvider? Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		public static XmlConfigurationProvider? Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
 		{
 			if (location == null)
 				throw EX.ArgumentNull(nameof(location));
 
 			IXmlConfigurationSource? source = ConfigurationFactory.FindXmlSource(location, parameters);
-			return source == null ? null: new ConfigurationProvider(source);
+			return source == null ? null: new XmlConfigurationProvider(source);
 		}
 
 		public static Func<string, string?, IReadOnlyList<XmlLiteNode>> GetSourceConverter(string sourceType, TextToXmlOptionHandler? optionHandler, IReadOnlyCollection<string> parameters)
