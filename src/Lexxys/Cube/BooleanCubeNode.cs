@@ -9,6 +9,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
 using System.Globalization;
+using Lexxys;
+
+#nullable enable
 
 namespace Lexxys.Cube
 {
@@ -31,72 +34,43 @@ namespace Lexxys.Cube
 
 		public bool this[int index]
 		{
-			get { return ((Bits & (1u << index)) != 0); }
-			set
-			{
-				if (value)
-					Bits |= 1u << index;
-				else
-					Bits &= ~(1u << index);
-			}
+			get => IsBit(index);
+			set => SetBit(index, value);
 		}
 
-		public bool IsBit(int index)
-		{
-			return ((Bits & (1u << index)) != 0);
-		}
+		public bool IsBit(int index) => (Bits & (1u << index)) != 0;
+
 		public void SetBit(int index, bool value)
 		{
 			if (value)
-				Bits |= 1u << index;
+				SetBit(index);
 			else
-				Bits &= ~(1u << index);
-		}
-		public void SetBit(int index)
-		{
-			Bits |= 1u << index;
-		}
-		public void ResetBit(int index)
-		{
-			Bits &= ~(1u << index);
-		}
-		public void ReverseBit(int index)
-		{
-			Bits ^= (1u << index);
+				ResetBit(index);
 		}
 
-		public bool IsHole(int index)
-		{
-			return ((Holes & (1u << index)) != 0);
-		}
+		public void SetBit(int index) => Bits |= 1u << index;
+
+		public void ResetBit(int index) => Bits &= ~(1u << index);
+
+		public void ReverseBit(int index) => Bits ^= (1u << index);
+
+		public bool IsHole(int index) => (Holes & (1u << index)) != 0;
+		
 		public void SetHole(int index, bool value)
 		{
 			if (value)
-				Bits |= 1u << index;
+				SetHole(index);
 			else
-				Bits &= ~(1u << index);
-		}
-		public void SetHole(int index)
-		{
-			Holes |= 1u << index;
-		}
-		public void ResetHole(int index)
-		{
-			Holes &= ~(1u << index);
+				ResetHole(index);
 		}
 
-		public string Hex
-		{
-			get
-			{
-				return String.Format(CultureInfo.InvariantCulture, "{0:X}; {1:X}", Bits, Holes);
-			}
-		}
+		public void SetHole(int index) => Holes |= 1u << index;
+		
+		public void ResetHole(int index) => Holes &= ~(1u << index);
 
-		public void Normalize()
-		{
-			Bits &= ~Holes;
-		}
+		public string Hex => String.Format(CultureInfo.InvariantCulture, "{0:X}; {1:X}", Bits, Holes);
+
+		public void Normalize() => Bits &= ~Holes;
 
 		public void Join(BooleanCubeNode other)
 		{
@@ -104,10 +78,7 @@ namespace Lexxys.Cube
 			Bits = (Bits & other.Bits) | ~(Bits | other.Bits);
 		}
 
-		public static int MaxWidth
-		{
-			get { return 32; }
-		}
+		public static int MaxWidth => 32;
 
 		public void AppendDisjunctant(StringBuilder sb, string delimiter, string[] arguments)
 		{
@@ -151,7 +122,7 @@ namespace Lexxys.Cube
 			return left.Bits != right.Bits || left.Holes != right.Holes;
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is BooleanCubeNode node && Bits == node.Bits && Holes == node.Holes;
 		}
