@@ -60,7 +60,7 @@ namespace Lexxys.Configuration
 		IValue<IReadOnlyList<T>> IConfigSection.GetCollection<T>(string? key)
 		{
 			var k = Key(key);
-			return Lists<T>.TryGet(k, out var value) ? new Out<IReadOnlyList<T>>(() => value!): new ConfigSectionValue<IReadOnlyList<T>>(() => DefaultConfig.GetList<T>(k) ?? Array.Empty<T>(), GetConfigVersion);
+			return Lists<T>.TryGet(k, out var value) ? new Out<IReadOnlyList<T>>(() => value!): new ConfigValue<IReadOnlyList<T>>(() => DefaultConfig.GetList<T>(k) ?? Array.Empty<T>(), GetConfigVersion);
 		}
 
 		#nullable disable
@@ -68,7 +68,7 @@ namespace Lexxys.Configuration
 		IValue<T> IConfigSection.GetValue<T>(string key, Func<T> defaultValue)
 		{
 			var k = Key(key);
-			return Values<T>.TryGet(k, out var value) ? new Out<T>(() => value): new ConfigSectionValue<T>(GetConfigValue(Key(k), defaultValue), GetConfigVersion);
+			return Values<T>.TryGet(k, out var value) ? new Out<T>(() => value): new ConfigValue<T>(GetConfigValue(Key(k), defaultValue), GetConfigVersion);
 		}
 
 		private static Func<T> GetConfigValue<T>(string key, Func<T> defaultValue)
@@ -130,6 +130,51 @@ namespace Lexxys.Configuration
 					return false;
 				}
 				return _lists.TryGetValue(key, out value);
+			}
+		}
+
+		private class ConfigValue<T>: IValue<T>
+		{
+			private readonly Func<T> _value;
+			private readonly Func<int> _version;
+			private volatile VersionValue? _item;
+
+			public ConfigValue(Func<T> value, Func<int> version)
+			{
+				_value = value ?? throw new ArgumentNullException(nameof(value));
+				_version = version ?? throw new ArgumentNullException(nameof(version));
+				_item = default;
+			}
+
+			public T Value
+			{
+				get
+				{
+					for (; ; )
+					{
+						var current = _item;
+						var version = _version();
+						if (current?.Version == version)
+							return current.Value;
+						var value = _value();
+						var updated = new VersionValue(version, value);
+						Interlocked.CompareExchange(ref _item, updated, current);
+					}
+				}
+			}
+
+			object? IValue.Value => Value;
+
+			class VersionValue
+			{
+				public T Value { get; }
+				public int Version { get; }
+
+				public VersionValue(int version, T value)
+				{
+					Value = value;
+					Version = version;
+				}
 			}
 		}
 	}
