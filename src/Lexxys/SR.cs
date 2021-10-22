@@ -274,9 +274,12 @@ namespace Lexxys
 		{
 			return () => String.Format(Culture, "Including file not found. file: {0}, directory: {1}.", fileName, baseDirectory);
 		}
-		public static Func<string> ConfigValueFotFound(string filter)
+		public static string ConfigValueNotFound(string key, Type type)
 		{
-			return () => String.Format(Culture, "Config value not found. filter: {0}.", filter);
+			return
+				type == null ? String.Format(Culture, "Configuration not found for path \"{0}\".", key):
+				String.IsNullOrEmpty(key) ? String.Format(Culture, "Configuration not found for type {0}.", type):
+				String.Format(Culture, "Configuration not found for type {0} and path \"{1}\".", type, key);
 		}
 		public static string ConfigurationXmlFile(Configuration.ConfigurationLocator location, string reference)
 		{

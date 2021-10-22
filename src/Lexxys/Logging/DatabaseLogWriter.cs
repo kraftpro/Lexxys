@@ -41,7 +41,7 @@ namespace Lexxys.Logging
 				config = XmlLiteNode.Empty;
 
 			_connectionInfo = ConnectionStringInfo.Create(config.FirstOrDefault("connection")) ??
-				Config.Default.GetValue<ConnectionStringInfo>(XmlTools.GetString(config["connection"], ConfigSection));
+				Config.Default.GetValue<ConnectionStringInfo>(XmlTools.GetString(config["connection"], ConfigSection)).Value;
 			if (_connectionInfo == null)
 				LogWriter.WriteErrorMessage(LogSource, SR.CollectionIsEmpty(), null);
 

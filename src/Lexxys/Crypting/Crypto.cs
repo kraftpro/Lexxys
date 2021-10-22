@@ -117,7 +117,7 @@ namespace Lexxys.Crypting
 					if (__settings == null)
 					{
 						const string Cryptors = "Lexxys.Crypting.Cryptors.";
-						__settings = Config.Default.GetValue<List<CryptoProviderSettingItem>>(ConfigSection) ?? new List<CryptoProviderSettingItem>();
+						__settings = Config.Default.GetCollection<CryptoProviderSettingItem>(ConfigSection).Value?.ToList() ?? new List<CryptoProviderSettingItem>();
 						foreach (var x in new[] { "Md5", "Sha1", "Sha2", "Sha3", "Sha5", "Des", "Hma" })
 						{
 							__settings.Add(new CryptoProviderSettingItem(CryptoProviderType.Hasher, x, Cryptors + x + "Hasher"));

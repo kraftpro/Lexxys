@@ -19,7 +19,7 @@ namespace Lexxys.Data
 {
 	public sealed class DataContext: IDataContext, IDisposable
 	{
-		private static readonly IValue<ConnectionStringInfo?> __globalConnetionString = Config.Default.GetSection<ConnectionStringInfo>(Dc.ConfigSection, null);
+		private static readonly IValue<ConnectionStringInfo?> __globalConnetionString = Config.Default.GetValue<ConnectionStringInfo>(Dc.ConfigSection, null);
 
 		private readonly DataContextImplementation _context;
 

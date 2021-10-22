@@ -20,7 +20,7 @@ namespace Lexxys.Tests.Configuration
 	[DeploymentItem("test.config.txt")]
 	public class ConfiguraitionTest
 	{
-		private IValue<object> SharedConfiguration => __config ??= Config.Default.GetSection<object>("scattergories.lists");
+		private IValue<object> SharedConfiguration => __config ??= Config.Default.GetValue<object>("scattergories.lists");
 		private IValue<object> __config;
 
 		[TestInitialize]

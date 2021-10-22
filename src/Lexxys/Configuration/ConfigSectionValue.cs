@@ -13,11 +13,11 @@ using Lexxys;
 
 namespace Lexxys.Configuration
 {
-	internal class ConfigSectionValue<T>: IVersionedValue<T>
+	internal class ConfigSectionValue<T>: IValue<T>
 	{
 		private readonly Func<T> _value;
 		private readonly Func<int> _version;
-		volatile private VersionValue _item;
+		private volatile VersionValue _item;
 
 		public ConfigSectionValue(Func<T> value, Func<int> version)
 		{
@@ -42,8 +42,6 @@ namespace Lexxys.Configuration
 				}
 			}
 		}
-
-		public int Version => _item?.Version ?? 0;
 
 		object IValue.Value => Value;
 

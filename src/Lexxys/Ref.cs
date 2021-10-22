@@ -56,7 +56,7 @@ namespace Lexxys
 	}
 
 
-	public class OptOut<T> : IValue<T>, IOptions<T> where T : class, new()
+	public class OptOut<T>: IValue<T>, IOptions<T> where T: class
 	{
 		protected readonly Func<T> _getter;
 
@@ -77,11 +77,11 @@ namespace Lexxys
 		public static implicit operator Out<T>(OptOut<T> value) => new Out<T>(value._getter);
 	}
 
-	public sealed class OptRef<T> : OptOut<T> where T : class, new()
+	public sealed class OptRef<T>: OptOut<T> where T: class
 	{
 		private readonly Action<T> _setter;
 
-		public OptRef(Func<T> getter, Action<T> setter) : base(getter)
+		public OptRef(Func<T> getter, Action<T> setter): base(getter)
 		{
 			_setter = setter;
 		}

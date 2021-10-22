@@ -94,7 +94,7 @@ namespace Lexxys.RL
 
 		private static void LoadConfiguration()
 		{
-			List<KeyValuePair<string, RootLocation>> ss = Config.Default.GetValue<List<KeyValuePair<string, RootLocation>>>(ConfigSection);
+			List<KeyValuePair<string, RootLocation>> ss = Config.Default.GetCollection<KeyValuePair<string, RootLocation>>(ConfigSection).Value?.ToList();
 			if (ss == null || ss.Count == 0)
 			{
 				_schemasDefinition = ReadOnly.Empty<string, RootLocation>();

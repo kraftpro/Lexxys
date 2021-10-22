@@ -33,6 +33,11 @@ namespace Lexxys
 		{
 		}
 
+		public ConfigurationException(string key, Type type)
+			: base(SR.ConfigValueNotFound(key, type))
+		{
+		}
+
 		public ConfigurationException(string message, XmlLiteNode config)
 			: base(message)
 		{

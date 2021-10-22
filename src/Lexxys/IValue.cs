@@ -20,12 +20,12 @@ namespace Lexxys
 	}
 
 #if !NETCOREAPP
-	public interface IOptions<out T> where T : class, new()
+	public interface IOptions<out T> where T: class
 	{
 		T Value { get; }
 	}
 #else
-	public interface IOptions<out T> : Microsoft.Extensions.Options.IOptions<T> where T : class, new()
+	public interface IOptions<out T>: Microsoft.Extensions.Options.IOptions<T> where T: class
 	{
 	}
 #endif

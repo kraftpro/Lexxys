@@ -6,11 +6,8 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Threading;
 
-using Lexxys;
-
-#nullable disable
+#nullable enable
 
 namespace Lexxys.Configuration
 {
@@ -20,9 +17,16 @@ namespace Lexxys.Configuration
 
 		int Version { get; }
 
-		IConfigSection Section(string key);
+		IConfigSection GetSection(string key);
 
-		IVersionedValue<T> GetSection<T>(string key, Func<T> defaultValue);
-		IVersionedValue<IReadOnlyList<T>> GetSectionList<T>(string key);
+		void MapPath(string key, string value);
+
+		void DefineValue<T>(string key, T value);
+		#nullable disable
+		IValue<T> GetValue<T>(string key, Func<T> defaultValue = null);
+		#nullable enable
+
+		void DefineCollection<T>(string key, IReadOnlyList<T> value);
+		IValue<IReadOnlyList<T>> GetCollection<T>(string key);
 	}
 }

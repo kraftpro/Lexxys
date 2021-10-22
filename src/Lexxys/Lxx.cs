@@ -89,7 +89,7 @@ namespace Lexxys
 			{
 				if (_productName == null)
 				{
-					string temp = Config.Default.GetValue("ProductVersion:Name", () => AppVersion.ProductName);
+					string temp = Config.Default.GetValue("ProductVersion:Name", () => AppVersion.ProductName).Value;
 					if (!Configuration.DefaultConfig.IsInitialized)
 						return temp;
 					Interlocked.CompareExchange(ref _productName, temp, null);

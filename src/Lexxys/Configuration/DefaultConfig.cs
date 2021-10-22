@@ -77,23 +77,7 @@ namespace Lexxys.Configuration
 
 		internal static bool IsInitialized => _initialized;
 
-		private static T GetValue<T>(string key, T defaultValue)
-		{
-			if (key == null || key.Length <= 0)
-				throw new ArgumentNullException(nameof(key));
-			return GetObjectValue(key, typeof(T)) is T value ? value: defaultValue;
-		}
-
-		private static T GetValue<T>(string key, Func<T> defaultValue)
-		{
-			if (key == null || key.Length <= 0)
-				throw new ArgumentNullException(nameof(key));
-			if (defaultValue == null)
-				throw new ArgumentNullException(nameof(defaultValue));
-			return GetObjectValue(key, typeof(T)) is T value ? value : defaultValue();
-		}
-
-		internal static IReadOnlyList<T> GetList<T>(string key)
+		public static IReadOnlyList<T> GetList<T>(string key)
 		{
 			if (key == null || key.Length <= 0)
 				throw new ArgumentNullException(nameof(key));
@@ -135,6 +119,36 @@ namespace Lexxys.Configuration
 				if (_cacheValues)
 					Cache[cacheKey] = result;
 				return result ?? EmptyArray<T>.Value;
+			}
+		}
+
+		public static object? GetValue(string key, Type objectType)
+		{
+			if (objectType == null)
+				throw EX.ArgumentNull(nameof(objectType));
+			if (key == null || key.Length <= 0)
+				throw EX.ArgumentNull(nameof(key));
+			if (!_initialized)
+				Initialize();
+
+			string cacheKey = key + "$" + objectType.ToString();
+			if (_cacheValues && Cache.TryGetValue(cacheKey, out object? value))
+				return value;
+
+			lock (SyncRoot)
+			{
+				if (_cacheValues && Cache.TryGetValue(cacheKey, out value))
+					return value;
+				value = null;
+				foreach (IConfigurationProvider provider in Providers)
+				{
+					value = provider.GetValue(key, objectType);
+					if (value != null)
+						break;
+				}
+				if (_cacheValues)
+					Cache[cacheKey] = value;
+				return value;
 			}
 		}
 
@@ -206,7 +220,7 @@ namespace Lexxys.Configuration
 				if (__log == null)
 					Logger.WriteErrorMessage($"ERROR: Cannot load configuration {location?.ToString() ?? "(null)"}.", flaw);
 				else
-					__log.Error(nameof(AddConfiguration), flaw.Add(nameof(location), location?.ToString()));
+					__log.Error(nameof(AddConfiguration), flaw.Add(nameof(location), location));
 				return null;
 			}
 		}
@@ -367,36 +381,6 @@ namespace Lexxys.Configuration
 				LogConfigurationItem(new EventEntry(message, logSource));
 		}
 
-		public static object? GetObjectValue(string key, Type objectType)
-		{
-			if (objectType == null)
-				throw EX.ArgumentNull(nameof(objectType));
-			if (key == null || key.Length <= 0)
-				throw EX.ArgumentNull(nameof(key));
-			if (!_initialized)
-				Initialize();
-
-			string cacheKey = key + "$" + objectType.ToString();
-			if (_cacheValues && Cache.TryGetValue(cacheKey, out object? value))
-				return value;
-
-			lock (SyncRoot)
-			{
-				if (_cacheValues && Cache.TryGetValue(cacheKey, out value))
-					return value;
-				value = null;
-				foreach (IConfigurationProvider provider in Providers)
-				{
-					value = provider.GetValue(key, objectType);
-					if (value != null)
-						break;
-				}
-				if (_cacheValues)
-					Cache[cacheKey] = value;
-				return value;
-			}
-		}
-
 		private static void Initialize()
 		{
 			if (!_initialized && !_initializing)
@@ -418,7 +402,7 @@ namespace Lexxys.Configuration
 						}
 						_initialized = true;
 						_initializing = false;
-						_cacheValues = GetValue(ConfigCachingOption, CachingDefault);
+						_cacheValues = GetValue(ConfigCachingOption, typeof(bool)) is bool b ? b: CachingDefault;
 						Lxx.OnConfigurationInitialized(null, new ConfigurationEventArgs());
 						OnChanged();
 					}

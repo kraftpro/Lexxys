@@ -119,7 +119,7 @@ namespace Lexxys
 			return ss.ToArray();
 		}
 		private static readonly string[] DefaultSystemAssemblyNames = { "CppCodeProvider", "WebDev.", "SMDiagnostics", "mscor", "vshost", "System", "Microsoft", "Windows", "Presentation", "netstandard" };
-		private static readonly IValue<IReadOnlyList<string>> __systemNamesConfig = Config.Default.GetSectionList<string>(ConfigurationSkip);
+		private static readonly IValue<IReadOnlyList<string>> __systemNamesConfig = Config.Default.GetCollection<string>(ConfigurationSkip);
 
 		private static bool IsSystemAssembly(Assembly asm)
 		{
@@ -187,7 +187,7 @@ namespace Lexxys
 				TryLoadAssembly(assemblyName, false);
 			}
 		}
-		private static readonly IValue<IReadOnlyList<string>> __importConfig = Config.Default.GetSectionList<string>(ConfigurationImport);
+		private static readonly IValue<IReadOnlyList<string>> __importConfig = Config.Default.GetCollection<string>(ConfigurationImport);
 
 		private static void OnConfigChanged(object sender, ConfigurationEventArgs e)
 		{
@@ -372,7 +372,7 @@ namespace Lexxys
 
 			return GetTypeInternal(typeName);
 		}
-		private static readonly IValue<IReadOnlyList<KeyValuePair<string, string>>> __synonymsConfig = Config.Default.GetSectionList<KeyValuePair<string, string>>(ConfigurationSynonyms);
+		private static readonly IValue<IReadOnlyList<KeyValuePair<string, string>>> __synonymsConfig = Config.Default.GetCollection<KeyValuePair<string, string>>(ConfigurationSynonyms);
 
 		#region Types synonyms table
 		private static bool __synonymsLoaded;

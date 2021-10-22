@@ -11,6 +11,9 @@ namespace Lexxys
 {
 	public interface IVersionedValue<out T>: IValue<T>
 	{
+		/// <summary>
+		/// Returns a version number starting 0 or -1 no data found.
+		/// </summary>
 		int Version { get; }
 	}
 }

@@ -5,7 +5,9 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 
 #nullable enable
 
@@ -13,81 +15,122 @@ namespace Lexxys.Configuration
 {
 	internal class ConfigSection: IConfigSection
 	{
-		private readonly IConfigValue _config;
+		private readonly string _path;
 
-		private ConfigSection(string path, string? key, IConfigValue config)
+		private ConfigSection(string? path)
 		{
+			_path = path?.Trim(Dots) ?? "";
+		}
+
+		internal static readonly IConfigSection Instance = new ConfigSection(null);
+
+		#region IConfigSection
+
+		event EventHandler<ConfigurationEventArgs> IConfigSection.Changed
+		{
+			add => DefaultConfig.Changed += value;
+			remove => DefaultConfig.Changed -= value;
+		}
+
+		IConfigSection IConfigSection.GetSection(string key)
+			=> new ConfigSection(Key(key));
+
+		int IConfigSection.Version => DefaultConfig.Version;
+
+		void IConfigSection.MapPath(string key, string path)
+		{
+			if (key == null)
+				throw new ArgumentNullException(nameof(key));
 			if (path == null)
 				throw new ArgumentNullException(nameof(path));
-			if (key == null)
-			{ 
-				Path = path;
-				Key = path;
-			}
+			key = key.Trim(Dots);
+			if (key == path)
+				_pathMap.TryRemove(key, out _);
 			else
+				_pathMap[key] = path;
+		}
+		private ConcurrentDictionary<string, string> _pathMap = new();
+
+		void IConfigSection.DefineCollection<T>(string path, IReadOnlyList<T> value)
+			=> Lists<T>.Add(Key(path), value);
+
+		void IConfigSection.DefineValue<T>(string path, T value)
+			=> Values<T>.Add(Key(path), value);
+
+		IValue<IReadOnlyList<T>> IConfigSection.GetCollection<T>(string? key)
+		{
+			var k = Key(key);
+			return Lists<T>.TryGet(k, out var value) ? new Out<IReadOnlyList<T>>(() => value!): new ConfigSectionValue<IReadOnlyList<T>>(() => DefaultConfig.GetList<T>(k) ?? Array.Empty<T>(), GetConfigVersion);
+		}
+
+		#nullable disable
+
+		IValue<T> IConfigSection.GetValue<T>(string key, Func<T> defaultValue)
+		{
+			var k = Key(key);
+			return Values<T>.TryGet(k, out var value) ? new Out<T>(() => value): new ConfigSectionValue<T>(GetConfigValue(Key(k), defaultValue), GetConfigVersion);
+		}
+
+		private static Func<T> GetConfigValue<T>(string key, Func<T> defaultValue)
+			=> defaultValue == null ?
+				() => DefaultConfig.GetValue(key, typeof(T)) is T value ? value : throw new ConfigurationException(key, typeof(T)) :
+				() => DefaultConfig.GetValue(key, typeof(T)) is T value ? value : defaultValue();
+
+		private static int GetConfigVersion() => DefaultConfig.Version;
+
+		#nullable enable
+
+		#endregion
+
+		private string Key(string? key)
+		{
+			if (key == null)
+				return _path;
+			if (key.StartsWith("::", StringComparison.Ordinal))
+				return key.Trim(Dots);
+			var k = key.Trim(Dots);
+			if (_pathMap.TryGetValue(k, out var value))
+				return value;
+			return
+				_path.Length == 0 ? k:
+				k.Length == 0 ? _path: _path + "." + k;
+		}
+		private static readonly char[] Dots = new[] { '.', ':', ' ' };
+
+		private static class Values<T>
+		{
+			private static ConcurrentDictionary<string, T>? _values;
+
+			public static void Add(string key, T value) => (_values ??= new())[key] = value;
+
+#nullable disable
+			public static bool TryGet(string key, out T value)
 			{
-				Path = path + "." + key;
-				Key = key;
+				if (_values == null)
+				{
+					value = default;
+					return false;
+				}
+				return _values.TryGetValue(key, out value);
 			}
-			_config = config;
+#nullable enable
 		}
 
-		public string Key { get; }
-		public string Path {  get; }
-
-		public int Version => DefaultConfig.Version;
-
-		public event EventHandler<ConfigurationEventArgs> Changed
+		private static class Lists<T>
 		{
-			add => _config.Changed += value;
-			remove => _config.Changed -= value;
-		}
+			private static ConcurrentDictionary<string, IReadOnlyList<T>>? _lists;
 
-		public IConfigSection Section(string key)
-			=> key.StartsWith("::", StringComparison.Ordinal) ? new ConfigSection(key.Substring(2), null, _config) : new ConfigSection(Path, key, _config);
+			public static void Add(string key, IReadOnlyList<T> value) => (_lists ??= new())[key] = value;
 
-		public IVersionedValue<T> GetSection<T>(string key, Func<T> defaultValue)
-		{
-			if (key == null || key.Length <= 0)
-				throw new ArgumentNullException(nameof(key));
-			if (defaultValue == null)
-				throw new ArgumentNullException(nameof(defaultValue));
-
-			return new ConfigSectionValue<T>(() => GetConfigValue<T>(key, defaultValue), () => Version);
-		}
-
-		public IVersionedValue<IReadOnlyList<T>> GetSectionList<T>(string key)
-		{
-			if (key == null || key.Length <= 0)
-				throw new ArgumentNullException(nameof(key));
-			return new ConfigSectionValue<IReadOnlyList<T>>(() => GetConfigList<T>(key), () => Version);
-		}
-
-		private T GetConfigValue<T>(string key, Func<T> defaultValue)
-			=> _config.GetValue(key, typeof(T)) is T value ? value : defaultValue(); //, _config.Version);
-
-		private IReadOnlyList<T> GetConfigList<T>(string key)
-			=> _config.GetList<T>(key) ?? Array.Empty<T>();
-
-		internal static readonly IConfigSection Instance = new ConfigSection("configuration", null, ConfigValue.Instace);
-
-		private class ConfigValue: IConfigValue
-		{
-			public static readonly IConfigValue Instace = new ConfigValue();
-
-			public event EventHandler<ConfigurationEventArgs> Changed
+			public static bool TryGet(string key, out IReadOnlyList<T>? value)
 			{
-				add => DefaultConfig.Changed += value;
-				remove => DefaultConfig.Changed -= value;
+				if (_lists == null)
+				{
+					value = default;
+					return false;
+				}
+				return _lists.TryGetValue(key, out value);
 			}
-
-			public int Version => DefaultConfig.Version;
-
-			public IReadOnlyList<T> GetList<T>(string key)
-				=> DefaultConfig.GetList<T>(key);
-
-			public object? GetValue(string key, Type type)
-				=> DefaultConfig.GetObjectValue(key, type);
 		}
 	}
 }

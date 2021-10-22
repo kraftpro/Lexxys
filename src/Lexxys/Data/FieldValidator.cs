@@ -20,7 +20,7 @@ namespace Lexxys.Data
 
 		private static void Config_Changed(object sender = null, ConfigurationEventArgs e = null)
 		{
-			_ignoreReferenceKey = !Config.Default.GetValue(Check.ConfigReference + ":validate", true);
+			_ignoreReferenceKey = !Config.Default.GetValue(Check.ConfigReference + ":validate", true).Value;
 		}
 
 		public static ValidationResults ReferenceKey(IDataContext dc, int? value, string reference, string field) => ReferenceKey(dc, value, reference, field, true);
