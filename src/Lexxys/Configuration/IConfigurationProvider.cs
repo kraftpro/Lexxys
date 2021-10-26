@@ -17,6 +17,7 @@ namespace Lexxys.Configuration
 	{
 		event EventHandler<ConfigurationEventArgs>? Changed;
 		string Name { get; }
+		Uri Location { get; }
 		object? GetValue(string reference, Type returnType);
 		List<T> GetList<T>(string reference);
 	}

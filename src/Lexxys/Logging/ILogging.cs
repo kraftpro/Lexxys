@@ -29,7 +29,7 @@ namespace Lexxys
 
 	}
 
-	public interface ILogging<T>: ILogging, ILogger<T>
+	public interface ILogging<out T>: ILogging, ILogger<T>
 	{
 	}
 }

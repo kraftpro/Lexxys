@@ -113,7 +113,6 @@ namespace Lexxys.Tests.Tokenizer
 		///A test for CalculateForward
 		///</summary>
 		[TestMethod()]
-		[DeploymentItem("Lexxys.dll")]
 		public void CalculateForwardTest()
 		{
 			//PrivateObject param0 = null; // TODO: Initialize to an appropriate value

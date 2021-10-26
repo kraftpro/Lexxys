@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Lexxys.Data;
 using Lexxys.Testing;
+using System.Linq;
 
 namespace Lexxys.Tests.Data
 {
@@ -63,20 +64,6 @@ namespace Lexxys.Tests.Data
 			"121.65.a.10",
 		};
 
-		public DataValidatorTest()
-		{
-		}
-
-		[TestInitialize()]
-		public void Initialize()
-		{
-		}
-
-		[TestCleanup()]
-		public void Cleanup()
-		{
-		}
-
 		[TestMethod]
 		public void TestHttpUrl()
 		{
@@ -102,7 +89,7 @@ namespace Lexxys.Tests.Data
 			const string IsSsn = "value {0} is valid SSN";
 			const string IsNotSsn = "value {0} is not valid SSN";
 			string v;
-			v = R.Digit(9); Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
+			v = R.Digit(9).Enumerate().FirstOrDefault(o => !o.StartsWith("9")); Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
 			v = R.Digit(4); Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
 
 			v = R.Digit(4+1); Assert.IsFalse(Check.SsnCode(v, false), IsSsn, v);

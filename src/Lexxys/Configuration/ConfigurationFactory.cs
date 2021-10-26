@@ -14,7 +14,7 @@ namespace Lexxys.Configuration
 {
 	internal static class ConfigurationFactory
 	{
-		internal static IConfigurationProvider? FindProvider(ConfigurationLocator location, IReadOnlyCollection<string>? parameters)
+		internal static IConfigurationProvider? FindProvider(Uri location, IReadOnlyCollection<string>? parameters)
 		{
 			if (location == null)
 				throw EX.ArgumentNull(nameof(location));
@@ -24,7 +24,7 @@ namespace Lexxys.Configuration
 				.Select(m => m.Invoke(null, arguments) as IConfigurationProvider).FirstOrDefault(o => o != null);
 		}
 
-		internal static IXmlConfigurationSource? FindXmlSource(ConfigurationLocator location, IReadOnlyCollection<string>? parameters)
+		internal static IXmlConfigurationSource? FindXmlSource(Uri location, IReadOnlyCollection<string>? parameters)
 		{
 			if (location == null)
 				throw EX.ArgumentNull(nameof(location));
@@ -33,29 +33,6 @@ namespace Lexxys.Configuration
 			return Factory.Constructors(typeof(IXmlConfigurationSource), "Create", __locationType2)
 				.Select(m => m.Invoke(null, arguments) as IXmlConfigurationSource).FirstOrDefault(o => o != null);
 		}
-		private static readonly Type[] __locationType2 = { typeof(ConfigurationLocator), typeof(IReadOnlyCollection<string>) };
-
-		//internal static IConfigurationProvider FindProvider(ConfigurationLocator location)
-		//{
-		//	if (location == null)
-		//		throw EX.ArgumentNull(nameof(location));
-		//	return Find<IConfigurationProvider>(location);
-		//}
-
-		//internal static IXmlConfigurationSource FindXmlSource(ConfigurationLocator location)
-		//{
-		//	if (location == null)
-		//		throw EX.ArgumentNull(nameof(location));
-		//	return Find<IXmlConfigurationSource>(location);
-		//}
-
-		//private static T Find<T>(ConfigurationLocator parameter)
-		//	where T: class
-		//{
-		//	var parameters = new object[] { parameter };
-		//	return Factory.Constructors(typeof(T), "Create", __locationType)
-		//		.Select(m => m.Invoke(null, parameters) as T).FirstOrDefault(o => o != null);
-		//}
-		//private static readonly Type[] __locationType = { typeof(ConfigurationLocator) };
+		private static readonly Type[] __locationType2 = { typeof(Uri), typeof(IReadOnlyCollection<string>) };
 	}
 }

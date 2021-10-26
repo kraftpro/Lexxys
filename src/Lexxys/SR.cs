@@ -246,21 +246,21 @@ namespace Lexxys
 
 		#region Configuration
 
-		public static Func<string> ConfigurationResourceNotFound(Configuration.ConfigurationLocator location)
+		public static Func<string> ConfigurationResourceNotFound(Uri location)
 		{
 			return () => String.Format(Culture, "Cannot find configuration resource ({0}).", location);
 		}
-		public static Func<string> ConfigurationProviderNotFound(Configuration.ConfigurationLocator location)
+		public static Func<string> ConfigurationProviderNotFound(Uri location)
 		{
 			return () => String.Format(Culture, "Cannot find configuration provider ({0}).", location);
 		}
-		public static Func<string> ConfigurationLoaded(Configuration.ConfigurationLocator location, int position)
+		public static Func<string> ConfigurationLoaded(Uri location, int position)
 		{
 			return () => String.Format(Culture, "Configuration loaded {1}. ({0})", location, position);
 		}
 		public static Func<string> ConfigurationChanged(Configuration.IXmlConfigurationSource source)
 		{
-			return () => String.Format(Culture, "Configuration changed ({0}).", source?.Location.ToString());
+			return () => String.Format(Culture, "Configuration changed ({0}).", source?.Name);
 		}
 		public static Func<string> ConfigurationFileIncluded(string fileName)
 		{
@@ -277,11 +277,11 @@ namespace Lexxys
 		public static string ConfigValueNotFound(string key, Type type)
 		{
 			return
-				type == null ? String.Format(Culture, "Configuration not found for path \"{0}\".", key):
-				String.IsNullOrEmpty(key) ? String.Format(Culture, "Configuration not found for type {0}.", type):
-				String.Format(Culture, "Configuration not found for type {0} and path \"{1}\".", type, key);
+				type == null ? String.Format(Culture, "Configuration at path \"{0}\" not found.", key):
+				String.IsNullOrEmpty(key) ? String.Format(Culture, "Configuration value of type {0} not found.", type):
+				String.Format(Culture, "Configuration value of type {0} not found at path \"{1}\".", type, key);
 		}
-		public static string ConfigurationXmlFile(Configuration.ConfigurationLocator location, string reference)
+		public static string ConfigurationXmlFile(Uri location, string reference)
 		{
 			return String.Format(Culture, "Bad xml configuration source ({0}) or node reference ({1})", location, reference);
 		}

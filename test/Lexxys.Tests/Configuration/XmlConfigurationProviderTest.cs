@@ -28,23 +28,23 @@ namespace Lexxys.Tests.Configuration
 	public class XmlConfigurationProviderTest
 	{
 
-		private TestContext testContextInstance;
+		//private TestContext testContextInstance;
 
 		/// <summary>
 		///Gets or sets the test context which provides
 		///information about and functionality for the current test run.
 		///</summary>
-		public TestContext TestContext
-		{
-			get
-			{
-				return testContextInstance;
-			}
-			set
-			{
-				testContextInstance = value;
-			}
-		}
+		//public TestContext TestContext
+		//{
+		//	get
+		//	{
+		//		return testContextInstance;
+		//	}
+		//	set
+		//	{
+		//		testContextInstance = value;
+		//	}
+		//}
 
 		#region Additional test attributes
 		// 
@@ -337,7 +337,7 @@ Setting
 
 		private static IConfigurationProvider CreateConfig(string value, IReadOnlyCollection<string> parameters)
 		{
-			return XmlConfigurationProvider.Create(new ConfigurationLocator(value), parameters) ?? throw new InvalidOperationException("Cannot create configuration");
+			return XmlConfigurationProvider.Create(new Uri(value), parameters) ?? throw new InvalidOperationException("Cannot create configuration");
 		}
 
 

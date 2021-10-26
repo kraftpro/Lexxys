@@ -17,7 +17,12 @@ namespace Lexxys.Configuration
 {
 	class EnvironmentConfigurationProvider: IConfigurationProvider
 	{
+		private static readonly Uri Uri = new Uri("system:environment");
+
 		public string Name => "System.Environment";
+
+		public Uri Location => Uri;
+
 		public object? GetValue(string reference, Type returnType)
 		{
 			if (reference == null)
@@ -27,9 +32,18 @@ namespace Lexxys.Configuration
 			return XmlTools.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out object result) ? result : null;
 		}
 
-		public List<T> GetList<T>(string reference) => new List<T>();
-		
-		#pragma warning disable CS0067 
+		public List<T> GetList<T>(string reference)
+		{
+			if (reference == null)
+				return null;
+			if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
+				reference = reference.Substring(5);
+			if (XmlTools.TryGetValue<T>(Environment.GetEnvironmentVariable(reference), out var value))
+				return new List<T> { value };
+			return new List<T>();
+		}
+
+#pragma warning disable CS0067
 		public event EventHandler<ConfigurationEventArgs>? Changed;
 	}
 }

@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+using Lexxys;
+
 using Lexxys.Xml;
 
 #nullable enable
@@ -23,22 +25,20 @@ namespace Lexxys.Configuration
 		private readonly Func<string, string, IReadOnlyList<XmlLiteNode>> _converter;
 		private List<string>? _includes;
 		private IReadOnlyList<XmlLiteNode>? _content;
-		private readonly ConfigurationLocator _location;
+		private readonly Uri _location;
 
-		private LocalFileConfigurationSource(FileInfo file, string sourceType, ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		private LocalFileConfigurationSource(Uri location, IReadOnlyCollection<string> parameters)
 		{
-			if (file == null)
-				throw new ArgumentNullException(nameof(file));
-			if (!file.Exists)
-				throw new ArgumentOutOfRangeException(nameof(file), file, null);
-			_file = file;
-			_converter = XmlConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
+			_file = new FileInfo(location.LocalPath);
 			_location = location;
+			_converter = XmlConfigurationProvider.GetSourceConverter(_file.Extension, OptionHandler, parameters);
 		}
 
 		#region IConfigurationSource
 
 		public string Name => _file.FullName;
+
+		public Uri Location => _location;
 
 		public IReadOnlyList<XmlLiteNode> Content
 		{
@@ -58,8 +58,6 @@ namespace Lexxys.Configuration
 				return _content;
 			}
 		}
-
-		public ConfigurationLocator Location => _location;
 
 		public event EventHandler<ConfigurationEventArgs>? Changed;
 
@@ -113,18 +111,13 @@ namespace Lexxys.Configuration
 			return ConfigurationSource.HandleInclude(LogSource, parameters, _file.DirectoryName, ref _includes, OnChanged);
 		}
 
-		public static LocalFileConfigurationSource? Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		public static LocalFileConfigurationSource? Create(Uri location, IReadOnlyCollection<string> parameters)
 		{
-			if (location == null)
+			if (location == null || !location.IsAbsoluteUri || !location.IsFile)
 				return null;
-			if (location.SchemaType != ConfigLocatorSchema.File && location.SchemaType != ConfigLocatorSchema.Undefined)
+			if (!File.Exists(location.LocalPath))
 				return null;
-			if (!File.Exists(location.Path))
-				return null;
-			var file = new FileInfo(location.Path);
-			if (!file.Exists)
-				return null;
-			return new LocalFileConfigurationSource(file, location.SourceType, location, parameters);
+			return new LocalFileConfigurationSource(location, parameters);
 		}
 	}
 }

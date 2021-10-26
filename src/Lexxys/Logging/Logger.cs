@@ -22,15 +22,15 @@ namespace Lexxys
 
 	public class Logger<T>: Logger, ILogging<T>
 	{
-		public new static readonly ILogging<T> Empty = new Dummy();
+		public new static readonly ILogging<T> Empty = new EmptyLogger();
 
 		public Logger(): base(typeof(T).GetTypeName())
 		{
 		}
 
-		private class Dummy: ILogging<T>, ILogging
+		private class EmptyLogger: ILogging<T>, ILogging
 		{
-			public string Source => "Dummy";
+			public string Source => "Empty";
 
 			public IDisposable? BeginScope<TState>(TState state) => null;
 
@@ -54,7 +54,7 @@ namespace Lexxys
 
 	public class Logger: ILogging
 	{
-		public static readonly ILogging Empty = new Dummy();
+		public static readonly ILogging Empty = new EmptyLogger();
 
 		private LogRecordsListener[] _listeners;
 		private LogTypeMask _levels;
@@ -67,9 +67,24 @@ namespace Lexxys
 			LoggingContext.Register(this);
 		}
 
-		public static Logger? TryCreate(string source)
+		public static ILogging? TryCreate(string source)
 		{
-			return LoggingContext.IsInitialized ? new Logger(source): null;
+			return LoggingContext.IsInitialized ? new Logger(source) : null;
+		}
+
+		public static ILogging Create(string source)
+		{
+			return LoggingContext.IsInitialized ? new Logger(source): throw new InvalidOperationException("Logging service was not initializes.");
+		}
+
+		public static ILogging<T>? TryCreate<T>()
+		{
+			return LoggingContext.IsInitialized ? new Logger<T>() : null;
+		}
+
+		public static ILogging<T> Create<T>()
+		{
+			return LoggingContext.IsInitialized ? new Logger<T>(): throw new InvalidOperationException("Logging service was not initializes.");
 		}
 
 		internal void SetListeners(LogRecordsListener[] listeners)
@@ -138,22 +153,7 @@ namespace Lexxys
 
 		#region Global methods and static helpers
 
-		public static OrderedBag<string, object?>? Args(params object?[] args)
-		{
-			return LogRecord.Args(args);
-		}
-
 		public static bool Initialized => LoggingContext.IsInitialized;
-
-		public static void Flush()
-		{
-			LoggingContext.FlushBuffers();
-		}
-
-		public static void Close()
-		{
-			LoggingContext.Stop();
-		}
 
 		/// <summary>
 		/// Write a message to the Debugger console
@@ -312,9 +312,9 @@ namespace Lexxys
 			}
 		}
 
-		private class Dummy : ILogging
+		private class EmptyLogger: ILogging
 		{
-			public string Source => "Dummy";
+			public string Source => "Empty";
 
 			public IDisposable? BeginScope<TState>(TState state) => null;
 

@@ -45,8 +45,7 @@ namespace Lexxys.Testing
 		int ranf_arr_ptr = ran_arr_started;								/* the next random fraction, or -1 */
 		public double[] ran_u = new double[KK];							/* the generator state */
 
-		private object syncDbl = new object();
-		private object syncInt = new object();
+		private object syncObj = new object();
 
 		public RndKnuth(int seed = -1)
 		{
@@ -70,6 +69,42 @@ namespace Lexxys.Testing
 
 		/* the following routines are from exercise 3.6--15 */
 		/* after calling ran_start, get new randoms by, e.g., "x=ran_arr_next()" */
+
+		#region IRand
+
+		void IRand.Reset(int seed)
+		{
+			lock (syncObj)
+			{
+				Reset(seed);
+			}
+		}
+
+		int IRand.NextInt()
+		{
+			lock (syncObj)
+			{
+				return NextInt();
+			}
+		}
+
+		double IRand.NextDouble()
+		{
+			lock (syncObj)
+			{
+				return NextDouble();
+			}
+		}
+
+		void IRand.NextBytes(byte[] buffer)
+		{
+			lock (syncObj)
+			{
+				NextBytes(buffer);
+			}
+		}
+
+		#endregion
 
 		public void Reset(int seed)
 		{
@@ -141,15 +176,12 @@ namespace Lexxys.Testing
 
 		private int CycleLong()
 		{
-			lock (syncInt)
-			{
-				if (!_integerInitialized)
-					StartInt(_seed);
-				InitLongArray(ran_arr_buf, QUALITY);
-				ran_arr_buf[KK] = -1;
-				ran_arr_ptr = 1;
-				return ran_arr_buf[0];
-			}
+			if (!_integerInitialized)
+				StartInt(_seed);
+			InitLongArray(ran_arr_buf, QUALITY);
+			ran_arr_buf[KK] = -1;
+			ran_arr_ptr = 1;
+			return ran_arr_buf[0];
 		}
 
 		public void InitDoubleArray(double[] aa, int n) /* put n new random fractions in aa */
@@ -225,15 +257,12 @@ namespace Lexxys.Testing
 
 		double CycleDouble()
 		{
-			lock (syncDbl)
-			{
-				if (!_doubleInitialized)
-					StartDouble(_seed);
-				InitDoubleArray(ranf_arr_buf, QUALITY);
-				ranf_arr_buf[KK] = -1;
-				ranf_arr_ptr = 1;
-				return ranf_arr_buf[0];
-			}
+			if (!_doubleInitialized)
+				StartDouble(_seed);
+			InitDoubleArray(ranf_arr_buf, QUALITY);
+			ranf_arr_buf[KK] = -1;
+			ranf_arr_ptr = 1;
+			return ranf_arr_buf[0];
 		}
 
 		public unsafe void NextBytes(byte[] buffer)

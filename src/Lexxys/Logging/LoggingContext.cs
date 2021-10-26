@@ -23,9 +23,8 @@ namespace Lexxys.Logging
 		internal const int LogTypeCount = (int)LogType.MaxValue + 1;
 
 		private static readonly LoggingConfiguration[] DefaultLoggingConfiguration = new [] {
-			new LoggingConfiguration
-			{
-				LogItems = new List<XmlLiteNode>
+			new LoggingConfiguration(null, null, null, 
+				new List<XmlLiteNode>
 				{
 					new XmlLiteBuilder(true)
 						.Element("logger")
@@ -36,13 +35,12 @@ namespace Lexxys.Logging
 								.Attrib("level", "TRACE")
 							.End()
 						.End().GetFirstNode()
-				}
-			}};
+				})
+			};
 
 		internal const int FlushBoundMultiplier = 1024;
 
 		private static readonly List<Logger> _loggers = new List<Logger>(64);
-		private static volatile bool _enabled = true;
 		private static volatile int _lockDepth;
 		private static volatile bool _initialized;
 		private static volatile bool _stopped;
@@ -136,7 +134,7 @@ namespace Lexxys.Logging
 
 		private static IEnumerable<ILogWriter> GetLogWriters(IEnumerable<LoggingConfiguration> config)
 		{
-			var writers = config.SelectMany(o => o.LogItems).Select(o => LogWriter.FromXml(o)).Where(o => o != null).ToList();
+			var writers = config.SelectMany(o => o.Loggers).Select(o => LogWriter.FromXml(o)).Where(o => o != null).ToList();
 			if (System.Diagnostics.Debugger.IsLogging())
 			{
 				foreach (var item in writers)
@@ -170,13 +168,7 @@ namespace Lexxys.Logging
 
 		public static event EventHandler<EventArgs> Changed;
 
-		public static void ClearBuffers()
-		{
-			if (_initialized)
-				LogRecordsListener.ClearBuffers();
-		}
-
-		public static void FlushBuffers()
+		internal static void FlushBuffers()
 		{
 			if (_initialized)
 				LogRecordsListener.FlushBuffers();
@@ -190,47 +182,11 @@ namespace Lexxys.Logging
 			{
 				if (_stopped || !_initialized)
 					return;
-				Disable();
+				foreach (Logger t in _loggers)
+					t.TurnOff();
 				LogRecordsListener.StopAll(force);
 				_initialized = true;
 				_stopped = true;
-			}
-		}
-
-		public static void Enable()
-		{
-			if (_enabled || _stopped || !IsInitialized)
-				return;
-			lock (SyncRoot)
-			{
-				if (_enabled || _stopped)
-					return;
-				_enabled = true;
-				foreach (Logger t in _loggers)
-				{
-					t.TurnOn();
-				}
-			}
-		}
-
-		public static void Disable()
-		{
-			if (_enabled)
-			{
-				lock (SyncRoot)
-				{
-					if (_enabled)
-					{
-						_enabled = false;
-						if (IsInitialized)
-						{
-							foreach (Logger t in _loggers)
-							{
-								t.TurnOff();
-							}
-						}
-					}
-				}
 			}
 		}
 
@@ -238,7 +194,7 @@ namespace Lexxys.Logging
 
 		public static int UnlockLogging() => Interlocked.Decrement(ref _lockDepth);
 
-		public static bool IsEnabled => _enabled && !_stopped && _lockDepth <= 0;
+		public static bool IsEnabled => !_stopped && _lockDepth <= 0;
 
 		public static bool IsInitialized => _initialized;
 
@@ -280,29 +236,34 @@ namespace Lexxys.Logging
 		{
 			if (_stopped)
 				return;
-			EventHandler<EventArgs> ch = Changed;
-			ch?.Invoke(null, EventArgs.Empty);
+			Changed?.Invoke(null, EventArgs.Empty);
 		}
 
 		private class LoggingConfiguration
 		{
-			public TimeSpan? LogoffTimeout;
-			public string Exclude;
-			public int? MaxQueueSize;
-			public List<XmlLiteNode> LogItems;
+			public TimeSpan? LogoffTimeout { get; }
+			public string Exclude { get; }
+			public int? MaxQueueSize { get; }
+			public List<XmlLiteNode> Loggers { get; }
+
+			public LoggingConfiguration(TimeSpan? logoffTimeout, string exclude, int? maxQueueSize, List<XmlLiteNode> loggers)
+			{
+				LogoffTimeout = logoffTimeout;
+				Exclude = exclude;
+				MaxQueueSize = maxQueueSize;
+				Loggers = loggers ?? new List<XmlLiteNode>();
+			}
 
 			public static LoggingConfiguration FromXml(XmlLiteNode config)
 			{
 				if (config == null || config.IsEmpty)
 					return null;
 
-				return new LoggingConfiguration
-				{
-					Exclude = XmlTools.GetString(config["exclude"], null),
-					LogoffTimeout = XmlTools.GetTimeSpan(config["logoffTimeout"], null),
-					MaxQueueSize = XmlTools.GetInt32(config["maxQueueSize"], null),
-					LogItems = config.Where("logger").Where(o => !o.IsEmpty).ToList(),
-				};
+				return new LoggingConfiguration(
+					exclude: XmlTools.GetString(config["exclude"], null),
+					logoffTimeout: XmlTools.GetTimeSpan(config["logoffTimeout"], null),
+					maxQueueSize: XmlTools.GetInt32(config["maxQueueSize"], null),
+					loggers: config.Where("logger").Where(o => !o.IsEmpty).ToList());
 			}
 		}
 	}

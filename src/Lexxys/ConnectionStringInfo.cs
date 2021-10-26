@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Lexxys.Configuration;
+using Lexxys.Extensions;
 using Lexxys.Xml;
 
 namespace Lexxys
@@ -49,15 +50,7 @@ namespace Lexxys
 		{
 			if (String.IsNullOrEmpty(connectionString))
 				return;
-			var pairs = connectionString.Split(';')
-				.Where(o => !String.IsNullOrWhiteSpace(o))
-				.Select(o =>
-				{
-					int i = o.IndexOf('=');
-					return i < 0 ? new KeyValuePair<string, string>(o, null):
-						new KeyValuePair<string, string>(o.Substring(0, i), o.Substring(i+1));
-				});
-			Define(pairs);
+			Define(SplitParameters(connectionString));
 		}
 
 		public ConnectionStringInfo(string server, string database, IEnumerable<KeyValuePair<string, string>> pairs = null)
@@ -68,17 +61,41 @@ namespace Lexxys
 			Define(pairs);
 		}
 
-		public ConnectionStringInfo(ConfigurationLocator location)
+		public ConnectionStringInfo(Uri location)
 			: this()
 		{
 			if (location == null)
 				throw new ArgumentNullException(nameof(location));
-			Define(location.QueryParameters);
-			string s = location.Host + location.Path;
-			if (s.StartsWith("^"))
-				Append(Config.Default.GetValue<ConnectionStringInfo>(s.Substring(1)).Value);
-			else if (!String.IsNullOrWhiteSpace(s))
-				Server = s;
+			if (location.Scheme != "database")
+				throw new ArgumentOutOfRangeException(nameof(location), location, null);
+
+			if (!String.IsNullOrEmpty(location.Host))
+			{
+				Server = S(location.Host);
+				Database = S(location.LocalPath.Trim('/'));
+			}
+			else if (location.LocalPath.StartsWith("^", StringComparison.Ordinal))
+			{
+				Append(Config.Default.GetValue<ConnectionStringInfo>(location.LocalPath.Substring(1)).Value);
+			}
+			else if (location.LocalPath.Length > 1)
+			{
+				int i = location.LocalPath.IndexOf('/');
+				if (i < 0)
+				{
+					Server = S(location.LocalPath);
+				}
+				else
+				{
+					if (i > 0)
+						Server = S(location.LocalPath.Substring(0, i));
+					if (i + 1 < location.LocalPath.Length)
+						Database = S(location.LocalPath.Substring(i + 1).Trim('/'));
+				}
+			}
+			Define(location.SplitQuery());
+
+			static string S(string s) => String.IsNullOrWhiteSpace(s) ? null: s;
 		}
 
 		public ConnectionStringInfo(ConnectionStringInfo value)
@@ -409,6 +426,19 @@ namespace Lexxys
 			if (integratedSecurity)
 				Password = null;
 		}
+
+		private static IEnumerable<KeyValuePair<string, string>> SplitParameters(string value)
+		{
+			return value.Split(';')
+				.Where(o => !String.IsNullOrWhiteSpace(o))
+				.Select(o =>
+				{
+					int i = o.IndexOf('=');
+					return i < 0 ? new KeyValuePair<string, string>(o, null) :
+						new KeyValuePair<string, string>(o.Substring(0, i), o.Substring(i + 1));
+				});
+		}
+
 
 		#region Tables
 		private static readonly Dictionary<string, string> _synonyms = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

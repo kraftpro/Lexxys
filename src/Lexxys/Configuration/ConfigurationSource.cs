@@ -20,8 +20,8 @@ namespace Lexxys.Configuration
 				Config.LogConfigurationEvent(logSource, SR.OptionIncludeFileNotFound(null, directory));
 				return null;
 			}
-			var cl = new ConfigurationLocator(include).Locate(String.IsNullOrEmpty(directory) ? null : new[] { directory }, null);
-			if (!cl.IsLocated)
+			var cl = Config.LocateFile(include!, String.IsNullOrEmpty(directory) ? null: new[] { directory! }, null);
+			if (cl == null)
 			{
 				Config.LogConfigurationEvent(logSource, SR.OptionIncludeFileNotFound(include, directory));
 				return null;
@@ -34,11 +34,11 @@ namespace Lexxys.Configuration
 
 			if (includes == null)
 				includes = new List<string>();
-			if (!includes.Contains(cl.Path))
+			if (!includes.Contains(cl.AbsoluteUri))
 			{
-				includes.Add(cl.Path);
+				includes.Add(cl.AbsoluteUri);
 			}
-			Config.LogConfigurationEvent(logSource, SR.ConfigurationFileIncluded(cl.Path));
+			Config.LogConfigurationEvent(logSource, SR.ConfigurationFileIncluded(cl.AbsoluteUri));
 			return xs.Content;
 		}
 	}

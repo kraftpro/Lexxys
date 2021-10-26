@@ -16,7 +16,7 @@ namespace Lexxys.Tests.RL
 	///This is a test class for LocalFileSchemeParserTest and is intended
 	///to contain all LocalFileSchemeParserTest Unit Tests
 	///</summary>
-	[TestClass()]
+	//[TestClass()]
 	public class LocalFileSchemeParserTest
 	{
 

@@ -21,17 +21,23 @@ namespace Lexxys.Configuration
 		private List<string>? _includes;
 		private IReadOnlyList<XmlLiteNode>? _content;
 		private readonly Func<string, string?, IReadOnlyList<XmlLiteNode>> _converter;
-		private readonly ConfigurationLocator _location;
+		private readonly string _type;
+		private readonly string _text;
 
-		private StringConfigurationSource(string sourceType, ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		private StringConfigurationSource(Uri location, IReadOnlyCollection<string> parameters)
 		{
-			_location = location ?? throw new ArgumentNullException(nameof(location));
-			_converter = XmlConfigurationProvider.GetSourceConverter(sourceType, OptionHandler, parameters);
+			_type = location.LocalPath.Trim('/', '[', ']');
+			Name = location.Host;
+			Location = location;
+			_text = Uri.UnescapeDataString(location.Query.Substring(1) + location.Fragment);
+			_converter = XmlConfigurationProvider.GetSourceConverter(_type, OptionHandler, parameters);
 		}
 
 		#region IConfigurationSource
 
-		public string Name => _location.Host;
+		public string Name { get; }
+
+		public Uri Location { get; }
 
 		public IReadOnlyList<XmlLiteNode> Content
 		{
@@ -40,14 +46,12 @@ namespace Lexxys.Configuration
 				IReadOnlyList<XmlLiteNode>? content = _content;
 				if (content == null)
 				{
-					Interlocked.CompareExchange(ref _content, _converter(_location.Text, null), null);
+					Interlocked.CompareExchange(ref _content, _converter(_text, null), null);
 					content = _content;
 				}
 				return content;
 			}
 		}
-
-		public ConfigurationLocator Location => _location;
 
 		public event EventHandler<ConfigurationEventArgs>? Changed;
 
@@ -55,12 +59,12 @@ namespace Lexxys.Configuration
 
 		public override bool Equals(object? obj)
 		{
-			return obj is StringConfigurationSource x && x._location.Text == _location.Text;
+			return obj is StringConfigurationSource x && x._type == _type && x._text == _text;
 		}
 
 		public override int GetHashCode()
 		{
-			return _location.Text.GetHashCode();
+			return HashCode.Join(_type.GetHashCode(), _text.GetHashCode());
 		}
 
 		private void OnChanged(object? sender, ConfigurationEventArgs e)
@@ -89,13 +93,16 @@ namespace Lexxys.Configuration
 			return ConfigurationSource.HandleInclude(LogSource, parameters, null, ref _includes, OnChanged);
 		}
 
-		public static StringConfigurationSource? Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		// string://name/txt?configuration_text
+		public static StringConfigurationSource? Create(Uri location, IReadOnlyCollection<string> parameters)
 		{
 			if (location == null)
 				return null;
-			if (location.SchemaType != ConfigLocatorSchema.String)
+			if (location.Scheme != "string")
 				return null;
-			return new StringConfigurationSource(location.SourceType, location, parameters);
+			if (location.Query.Length <= 1)
+				return null;
+			return new StringConfigurationSource(location, parameters);
 		}
 	}
 }

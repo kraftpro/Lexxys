@@ -17,17 +17,18 @@ namespace Lexxys.Tests.Tools
 	[DeploymentItem("application.config.txt")]
 	public class FactoryTest
 	{
-		public FactoryTest()
-		{
-			Config.AddConfiguration("application.config.txt");
-		}
-
 		public struct ZeroElement
 		{
 		}
 
 		private struct PrivateZeroElement
 		{
+		}
+
+		public FactoryTest()
+		{
+			var x = Config.AddConfiguration("application.config.txt");
+			Assert.IsNotNull(x);
 		}
 
 		[TestMethod()]

@@ -18,8 +18,8 @@ namespace Lexxys.Configuration
 	{
 		event EventHandler<ConfigurationEventArgs>? Changed;
 		string Name { get; }
+		Uri Location { get; }
 		IReadOnlyList<XmlLiteNode> Content { get; }
-		ConfigurationLocator Location { get; }
 	}
 }
 

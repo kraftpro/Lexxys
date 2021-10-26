@@ -27,6 +27,7 @@ namespace Lexxys.Configuration
 	internal class DefaultConfig
 	{
 		private const bool CachingDefault = false;
+		private const int UserConfigPosition = 1;
 
 		private const string LogSource = "Lexxys.Configuration";
 		private const string ConfigCachingOption = "lexxys.config:cacheValues";
@@ -39,12 +40,10 @@ namespace Lexxys.Configuration
 		private static bool _initializing;
 		private static bool _cacheValues;
 		private static ILogger? __log;
-		private static List<EventEntry>? __messages;
+		private static ConcurrentQueue<EventEntry>? __messages;
 		private volatile static int __version;
 
-		private static readonly object SyncRoot = new object();
-		private static readonly List<ConfigurationLocator> Locations = new List<ConfigurationLocator>();
-		private static readonly List<IConfigurationProvider> Providers = new List<IConfigurationProvider>();
+		private static volatile List<IConfigurationProvider> Providers = new List<IConfigurationProvider>();
 		private static readonly ConcurrentDictionary<string, object?> Cache = new ConcurrentDictionary<string, object?>();
 
 		static DefaultConfig()
@@ -58,7 +57,7 @@ namespace Lexxys.Configuration
 		{
 			if (e != null)
 			{
-				ConfigurationLocator? locator = GetConfigurationLocator(e.LoadedAssembly);
+				Uri? locator = GetConfigurationLocator(e.LoadedAssembly);
 				if (locator != null)
 					AddConfiguration(locator, null);
 			}
@@ -88,38 +87,36 @@ namespace Lexxys.Configuration
 			if (_cacheValues && Cache.TryGetValue(cacheKey, out object? value))
 				return value as IReadOnlyList<T> ?? EmptyArray<T>.Value;
 
-			lock (SyncRoot)
-			{
-				if (_cacheValues && Cache.TryGetValue(cacheKey, out value))
-					return value as IReadOnlyList<T> ?? EmptyArray<T>.Value;
+			if (_cacheValues && Cache.TryGetValue(cacheKey, out value))
+				return value as IReadOnlyList<T> ?? EmptyArray<T>.Value;
 
-				List<T>? temp = null;
-				bool copy = false;
-				for (int i = Providers.Count - 1; i >= 0; --i)
+			List<T>? temp = null;
+			bool copy = false;
+			var providers = Providers;
+			for (int i = providers.Count - 1; i >= 0; --i)
+			{
+				List<T> x = providers[i].GetList<T>(key);
+				if (x != null && x.Count > 0)
 				{
-					List<T> x = Providers[i].GetList<T>(key);
-					if (x != null && x.Count > 0)
+					if (temp == null)
 					{
-						if (temp == null)
+						temp = x;
+					}
+					else
+					{
+						if (!copy)
 						{
-							temp = x;
+							temp = new List<T>(temp);
+							copy = true;
 						}
-						else
-						{
-							if (!copy)
-							{
-								temp = new List<T>(temp);
-								copy = true;
-							}
-							temp.AddRange(x);
-						}
+						temp.AddRange(x);
 					}
 				}
-				IReadOnlyList<T>? result = temp == null || temp.Count == 0 ? null: ReadOnly.Wrap(temp);
-				if (_cacheValues)
-					Cache[cacheKey] = result;
-				return result ?? EmptyArray<T>.Value;
 			}
+			IReadOnlyList<T>? result = temp == null || temp.Count == 0 ? null: ReadOnly.Wrap(temp);
+			if (_cacheValues)
+				Cache[cacheKey] = result;
+			return result ?? Array.Empty<T>();
 		}
 
 		public static object? GetValue(string key, Type objectType)
@@ -135,21 +132,19 @@ namespace Lexxys.Configuration
 			if (_cacheValues && Cache.TryGetValue(cacheKey, out object? value))
 				return value;
 
-			lock (SyncRoot)
-			{
-				if (_cacheValues && Cache.TryGetValue(cacheKey, out value))
-					return value;
-				value = null;
-				foreach (IConfigurationProvider provider in Providers)
-				{
-					value = provider.GetValue(key, objectType);
-					if (value != null)
-						break;
-				}
-				if (_cacheValues)
-					Cache[cacheKey] = value;
+			if (_cacheValues && Cache.TryGetValue(cacheKey, out value))
 				return value;
+			value = null;
+			var providers = Providers;
+			foreach (IConfigurationProvider provider in providers)
+			{
+				value = provider.GetValue(key, objectType);
+				if (value != null)
+					break;
 			}
+			if (_cacheValues)
+				Cache[cacheKey] = value;
+			return value;
 		}
 
 		public static event EventHandler<ConfigurationEventArgs>? Changed;
@@ -164,54 +159,69 @@ namespace Lexxys.Configuration
 			if (location == null || location.Length <= 0)
 				throw new ArgumentNullException(nameof(location));
 			var (value, parameters) = SplitOptions(location);
-			return AddConfiguration(new ConfigurationLocator(value), parameters);
+			return AddConfiguration(new Uri(value, UriKind.RelativeOrAbsolute), parameters);
 		}
 
 		// TODO: optional
-		public static IConfigurationProvider? AddConfiguration(ConfigurationLocator location, IReadOnlyCollection<string>? parameters) // = null)
+		public static IConfigurationProvider? AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters) // = null)
 		{
 			if (location == null)
 				throw new ArgumentNullException(nameof(location));
 
-			lock (SyncRoot)
-			{
-				int n = Providers.Count;
-				IConfigurationProvider? provider = AddConfiguration(location, parameters, null, 0);
-				if (provider == null)
-					return null;
-				if (n < Providers.Count)
-					OnChanged();
-				return provider;
-			}
+			var (provider, created) = AddConfiguration(location, parameters, UserConfigPosition);
+			if (provider == null)
+				return null;
+			if (created)
+				OnChanged();
+			return provider;
 		}
 
-		private static IConfigurationProvider? AddConfiguration(ConfigurationLocator location, IReadOnlyCollection<string>? parameters, string? currentDirectory, int position)
+		private static int AddProvider(IConfigurationProvider provider, int position)
+		{
+			List<IConfigurationProvider> providers;
+			List<IConfigurationProvider> updated;
+			int inserted;
+			do
+			{
+				providers = Providers;
+				var i = providers.FindIndex(o => o.Location == provider.Location);
+				if (i >= 0)
+					return ~i;
+				updated = new(providers);
+				if (position >= providers.Count || position < 0)
+				{
+					updated.Add(provider);
+					inserted = updated.Count;
+				}
+				else
+				{
+					updated.Insert(position, provider);
+					inserted = position + 1;
+				}
+				Interlocked.CompareExchange(ref Providers, updated, providers);
+			} while (Interlocked.CompareExchange(ref Providers, updated, providers) == providers);
+			return inserted;
+		}
+
+		private static (IConfigurationProvider?, bool) AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters, int position)
 		{
 			try
 			{
-				Logger.WriteDebugMessage("Find Configuration", location.ToString());
-				if (!FindProvider(currentDirectory, ref location, parameters, out var provider))
-					return provider;
+				//Logger.WriteDebugMessage("Find Configuration", location.ToString());
+				if (!CreateProvider(ref location, parameters, out var provider))
+					return (provider, false);
 
 				Debug.Assert(provider != null);
 				Debug.Assert(location != null);
 
-				if (position >= Locations.Count || position < 0)
-				{
-					Locations.Add(location!);
-					Providers.Add(provider!);
-					position = Locations.Count;
-				}
-				else
-				{
-					Locations.Insert(position, location!);
-					Providers.Insert(position, provider!);
-					++position;
-				}
+				position = AddProvider(provider!, position);
+				if (position < 0)
+					return (provider, false);
+
 				LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(location, position));
 				ScanConfigurationFile(provider!, location!, position);
 				provider!.Changed += OnChanged;
-				return provider;
+				return (provider, true);
 			}
 			catch (Exception flaw)
 			{
@@ -221,11 +231,11 @@ namespace Lexxys.Configuration
 					Logger.WriteErrorMessage($"ERROR: Cannot load configuration {location?.ToString() ?? "(null)"}.", flaw);
 				else
 					__log.Error(nameof(AddConfiguration), flaw.Add(nameof(location), location));
-				return null;
+				return (null, false);
 			}
 		}
 
-		private static void ScanConfigurationFile(IConfigurationProvider provider, ConfigurationLocator location, int position)
+		private static void ScanConfigurationFile(IConfigurationProvider provider, Uri location, int position)
 		{
 			if (provider.GetValue("applicationDirectory", typeof(string)) is string home)
 				Lxx.HomeDirectory = home.Trim().TrimEnd(Path.DirectorySeparatorChar).TrimToNull();
@@ -235,10 +245,10 @@ namespace Lexxys.Configuration
 			{
 				foreach (string s in ss)
 				{
-					int k = Locations.Count;
+					int k = Providers.Count;
 					var (value, parameters) = SplitOptions(s);
-					AddConfiguration(new ConfigurationLocator(value), parameters, location.DirectoryName, position);
-					position += Locations.Count - k;
+					AddConfiguration(new Uri(value, UriKind.RelativeOrAbsolute), parameters, position);
+					position += Providers.Count - k;
 				}
 			}
 		}
@@ -252,37 +262,73 @@ namespace Lexxys.Configuration
 		}
 		private static readonly char[] SpaceSeparator = new[] { ' ' };
 
-		private static bool FindProvider(string? currentDirectory, ref ConfigurationLocator location, IReadOnlyCollection<string>? parameters, out IConfigurationProvider? provider)
+		private static bool CreateProvider(ref Uri location, IReadOnlyCollection<string>? parameters, out IConfigurationProvider? provider)
 		{
 			if (!_initialized)
 				Initialize();
-			if (!location.IsLocated && currentDirectory != null)
-				location = location.Locate(new[] { currentDirectory }, Extensions);
-			if (!location.IsLocated)
-				location = location.Locate(ConfigurationDirectories, Extensions);
 
-			lock (SyncRoot)
+			var path = FindLocalFile(location.IsAbsoluteUri ? location.LocalPath: location.OriginalString, ConfigurationDirectories, Extensions);
+			if (path == null)
 			{
-				int i = Locations.IndexOf(location);
-				if (i >= 0)
-				{
-					provider = Providers[i];
-					return false;
-				}
-				provider = ConfigurationFactory.FindProvider(location, parameters);
-				if (provider == null)
-				{
-					//LogConfigurationEvent(LogSource, SR.ConfigurationProviderNotFound(location));
-					return false;
-				}
-				i = Providers.IndexOf(provider);
-				if (i >= 0)
-				{
-					provider = Providers[i];
-					return false;
-				}
-				return true;
+				provider = null;
+				return false;
 			}
+
+			var l = location = new Uri(path);
+			var providers = Providers;
+			int i = providers.FindIndex(o => o.Location == l);
+			if (i >= 0)
+			{
+				provider = providers[i];
+				return false;
+			}
+			provider = ConfigurationFactory.FindProvider(location, parameters);
+			if (provider == null)
+				return false;
+
+			providers = Providers;
+			i = providers.IndexOf(provider);
+			if (i >= 0)
+			{
+				provider = providers[i];
+				return false;
+			}
+			return true;
+		}
+
+		private static string? FindLocalFile(string path, IEnumerable<string> directory, IReadOnlyCollection<string> extension)
+		{
+			bool extFound = false;
+			foreach (string ext in extension)
+			{
+				int i = ext.LastIndexOf('.');
+				string ending = i > 0 ? ext.Substring(i): ext;
+				if (path.EndsWith(ending, StringComparison.OrdinalIgnoreCase))
+				{
+					extFound = true;
+					break;
+				}
+			}
+
+			string? file;
+			if (Path.IsPathRooted(path))
+				file = 
+					extFound ? File.Exists(path) ? path: null:
+					extension
+                        .Select(ext => Path.ChangeExtension(path, ext))
+                        .FirstOrDefault(File.Exists);
+			else if (extFound)
+				file = File.Exists(path) ? path:
+					directory
+						.Select(o => Path.Combine(o, path))
+						.FirstOrDefault(File.Exists);
+			else
+				file = extension.FirstOrDefault(File.Exists) ??
+					directory
+						.SelectMany(_ => extension, (o, e) => Path.Combine(o, Path.ChangeExtension(path, e)))
+						.FirstOrDefault(File.Exists);
+
+			return file == null ? null: Path.GetFullPath(file);
 		}
 
 		private static void OnChanged(object? sender, ConfigurationEventArgs e)
@@ -307,24 +353,22 @@ namespace Lexxys.Configuration
 				SetLogger(new Logger(LogSource));
 		}
 
-		public static void SetLogger(ILogger? logger)
+		public static void SetLogger(ILogger logger)
 		{
-			if (logger == __log)
+			if (__log == logger || logger == null)
 				return;
-			lock (SyncRoot)
+			__log = logger;
+			if (__messages == null)
+				return;
+
+			var messages = Interlocked.Exchange(ref __messages, null);
+			if (messages == null)
+				return;
+
+			while (!messages.IsEmpty)
 			{
-				__log = logger;
-				if (__log != null)
-				{
-					if (__messages != null && __messages.Count > 0)
-					{
-						foreach (EventEntry item in __messages)
-						{
-							LogEventEntry(item);
-						}
-					}
-					__messages = null;
-				}
+				if (messages.TryDequeue(out var message))
+					LogEventEntry(message);
 			}
 		}
 
@@ -364,7 +408,7 @@ namespace Lexxys.Configuration
 		private static void LogConfigurationItem(EventEntry item)
 		{
 			if (__log == null)
-				(__messages ??= new List<EventEntry>()).Add(item);
+				(__messages ??= new ConcurrentQueue<EventEntry>()).Enqueue(item);
 			else
 				LogEventEntry(item);
 		}
@@ -385,37 +429,35 @@ namespace Lexxys.Configuration
 		{
 			if (!_initialized && !_initializing)
 			{
-				lock (SyncRoot)
+				if (!_initialized && !_initializing)
 				{
-					if (!_initialized && !_initializing)
-					{
-						_initializing = true;
-						AddSystem(new ConfigurationLocator("System.Environment"), new EnvironmentConfigurationProvider());
+					_initializing = true;
+					AddSystem(new Uri("system:environment"), new EnvironmentConfigurationProvider());
 #if !NETCOREAPP
-						AddSystem(new ConfigurationLocator("System.Configuration"), new SystemConfigurationProvider());
+					AddSystem(new Uri("system:configuration"), new SystemConfigurationProvider());
 #endif
 
-						IEnumerable<ConfigurationLocator> cc0 = GetInitialConfigurationsLocations();
-						foreach (var c in cc0)
-						{
-							AddConfiguration(c, null, null, -1);
-						}
-						_initialized = true;
-						_initializing = false;
-						_cacheValues = GetValue(ConfigCachingOption, typeof(bool)) is bool b ? b: CachingDefault;
-						Lxx.OnConfigurationInitialized(null, new ConfigurationEventArgs());
-						OnChanged();
+					IEnumerable<Uri> cc0 = GetInitialConfigurationsLocations();
+					foreach (var c in cc0)
+					{
+						AddConfiguration(c, null, -1);
 					}
+					_initialized = true;
+					_initializing = false;
+					_cacheValues = GetValue(ConfigCachingOption, typeof(bool)) is bool b ? b: CachingDefault;
+					Lxx.OnConfigurationInitialized(null, new ConfigurationEventArgs());
+					OnChanged();
 				}
 			}
 		}
 
-		private static void AddSystem(ConfigurationLocator locator, IConfigurationProvider provider)
+		private static void AddSystem(Uri locator, IConfigurationProvider provider)
 		{
-			Locations.Add(locator);
-			Providers.Add(provider);
-			LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(locator, Locations.Count));
-			ScanConfigurationFile(provider, locator, Providers.Count);
+			if (AddProvider(provider, -1) >= 0)
+			{
+				LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(locator, Providers.Count));
+				ScanConfigurationFile(provider, locator, Providers.Count);
+			}
 		}
 
 		private static IReadOnlyList<string> GetConfigurationDerectories()
@@ -442,39 +484,36 @@ namespace Lexxys.Configuration
 		}
 		private static readonly char[] __separators = { ',', ';', ' ', '\t', '\n', '\r' };
 
-		private static IEnumerable<ConfigurationLocator> GetInitialConfigurationsLocations()
+		private static IEnumerable<Uri> GetInitialConfigurationsLocations()
 		{
-			var cc = new OrderedSet<ConfigurationLocator>();
+			var cc = new OrderedSet<Uri>();
 #if !NETCOREAPP
 			string[] ss = ConfigurationManager.AppSettings.GetValues(InitialLocationKey);
 			if (ss != null)
 			{
 				foreach (string s in ss)
 				{
-					var c = new ConfigurationLocator(s);
-					if (c.IsValid)
+					var c = new Uri(s, UriKind.RelativeOrAbsolute);
+					if (c.IsAbsoluteUri)
 						cc.Add(c);
 				}
 			}
 #endif
 			cc.AddRange(Factory.DomainAssemblies.Select(GetConfigurationLocator).Where(o => o != null)!);
 
-			var locator = new ConfigurationLocator("file:///" + Lxx.HomeDirectory + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile, true);
-			if (locator.IsValid)
-				cc.Add(locator);
-			locator = new ConfigurationLocator(Lxx.GlobalConfigurationDirectory + Path.DirectorySeparatorChar + Lxx.GlobalConfigurationFile);
-			if (locator.IsValid)
-				cc.Add(locator);
+			var locator = new Uri("file:///" + Lxx.HomeDirectory + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile);
+			cc.Add(locator);
+			locator = new Uri("file:///" + Lxx.GlobalConfigurationDirectory + Path.DirectorySeparatorChar + Lxx.GlobalConfigurationFile);
+			cc.Add(locator);
 			return cc;
 		}
 
-		private static ConfigurationLocator? GetConfigurationLocator(Assembly? asm)
+		private static Uri? GetConfigurationLocator(Assembly? asm)
 		{
 			string? name;
 			if (asm == null || asm.IsDynamic || String.IsNullOrEmpty(name = asm.GetName().CodeBase))
 				return null;
-			var locator = new ConfigurationLocator(Path.ChangeExtension(name, null), true);
-			return locator.IsValid ? locator: null;
+			return new Uri(name);
 		}
 	}
 }

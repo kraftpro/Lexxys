@@ -313,7 +313,8 @@ configuration
 		{
 			if (File.Exists(@"test.db.config.txt"))
 			{
-				Config.AddConfiguration(@"test.db.config.txt");
+				var p = Config.AddConfiguration(@"test.db.config.txt");
+				Assert.IsNotNull(p);
 				var c = Config.Default.GetValue<ConnectionStringInfo>("database.connection").Value;
 				Assert.IsNotNull(c);
 			}

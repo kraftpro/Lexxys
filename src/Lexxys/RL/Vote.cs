@@ -83,7 +83,7 @@ namespace Lexxys.RL
 		}
 	}
 
-	public struct Vote<T>: IEquatable<Vote<T>>
+	public readonly struct Vote<T>: IEquatable<Vote<T>>
 	{
 		public static readonly Vote<T> Empty = new Vote<T>();
 

@@ -16,7 +16,7 @@ namespace Lexxys.Tests.RL
 	///This is a test class for ResourceLocatorTest and is intended
 	///to contain all ResourceLocatorTest Unit Tests
 	///</summary>
-	[TestClass()]
+	//[TestClass()]
 	public class ResourceLocatorTest
 	{
 

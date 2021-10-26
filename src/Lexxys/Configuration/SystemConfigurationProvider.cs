@@ -21,7 +21,11 @@ namespace Lexxys.Configuration
 	[DebuggerDisplay("[System.Configuration]")]
 	public sealed class SystemConfigurationProvider: IConfigurationProvider
 	{
+		private static readonly Uri Uri = new Uri("system:configuration");
+
 		public string Name => "System.Configuration";
+
+		public Uri Location => Uri;
 
 		public object? GetValue(string reference, Type returnType)
 		{

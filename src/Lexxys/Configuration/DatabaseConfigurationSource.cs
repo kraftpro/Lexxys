@@ -12,28 +12,29 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Lexxys.Data;
-using Lexxys.Xml;
-
 #nullable enable
 
 namespace Lexxys.Configuration
 {
+	using Data;
+	using Xml;
+
 	class DatabaseConfigurationSource: IXmlConfigurationSource
 	{
-		private readonly ConfigurationLocator _location;
+		private readonly Uri _location;
 		private readonly IReadOnlyList<XmlLiteNode> _content;
 
-		public DatabaseConfigurationSource(ConfigurationLocator location)
+		public DatabaseConfigurationSource(Uri location)
 		{
 			if (location == null)
-				throw EX.ArgumentNull(nameof(location));
-			if (location.SchemaType != ConfigLocatorSchema.Database)
-				throw EX.ArgumentOutOfRange("location.SchemaType", location.SchemaType);
+				throw new ArgumentNullException(nameof(location));
+			if (location.Scheme != "database")
+				throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
 			_location = location;
+			// TODO: Connection string
 			using var dc = new DataContext();
-			_content = ReadOnly.Wrap(dc.Map(NodeMapper, location.QueryString), true);
+			_content = ReadOnly.Wrap(dc.Map(NodeMapper, location.Query), true);
 		}
 
 		private static List<XmlLiteNode> NodeMapper(DbCommand cmd)
@@ -64,11 +65,11 @@ namespace Lexxys.Configuration
 
 		#region IXmlConfigurationSource
 
-		public string Name => "Dbatabase";
+		public string Name => _location.ToString();
+
+		public Uri Location => _location;
 
 		public IReadOnlyList<XmlLiteNode> Content => _content;
-
-		public ConfigurationLocator Location => _location;
 
 		public event EventHandler<ConfigurationEventArgs>? Changed
 		{

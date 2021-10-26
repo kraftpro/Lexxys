@@ -29,10 +29,14 @@ namespace Lexxys.Tests.Configuration
 			string configFile = "test.config.txt";
 			if (!File.Exists(configFile))
 				throw new ArgumentOutOfRangeException(nameof(configFile), configFile, null);
-			Config.AddConfiguration(configFile);
+			var provider = Config.AddConfiguration(configFile);
+			if (provider == null)
+				throw new ArgumentNullException(nameof(provider));
 			var nodes = Config.Default.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
 			if (nodes == null)
 				throw new ArgumentNullException(nameof(nodes));
+			if (nodes.Value == null)
+				throw new ArgumentNullException("nodes.Value");
 		}
 
 

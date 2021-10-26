@@ -15,7 +15,6 @@ using Lexxys.Xml;
 
 namespace Lexxys.Configuration
 {
-	[DebuggerDisplay("{_source.Location,nq}")]
 	public class XmlConfigurationProvider: IConfigurationProvider
 	{
 		private const string ConfigurationRoot = "configuration";
@@ -29,6 +28,8 @@ namespace Lexxys.Configuration
 		}
 
 		public string Name => _source.Name;
+
+		public Uri Location => _source.Location;
 
 		public bool IsEmpty => (GetRootNode() ?? XmlLiteNode.Empty).IsEmpty;
 
@@ -65,20 +66,21 @@ namespace Lexxys.Configuration
 				.Select(o => (T)o!).ToList();
 		}
 
-		public static XmlConfigurationProvider? Create(ConfigurationLocator location, IReadOnlyCollection<string> parameters)
+		public static XmlConfigurationProvider? Create(Uri location, IReadOnlyCollection<string> parameters)
 		{
 			if (location == null)
-				throw EX.ArgumentNull(nameof(location));
+				throw new ArgumentNullException(nameof(location));
 
 			IXmlConfigurationSource? source = ConfigurationFactory.FindXmlSource(location, parameters);
 			return source == null ? null: new XmlConfigurationProvider(source);
 		}
 
-		public static Func<string, string?, IReadOnlyList<XmlLiteNode>> GetSourceConverter(string sourceType, TextToXmlOptionHandler? optionHandler, IReadOnlyCollection<string> parameters)
+		public static Func<string, string?, IReadOnlyList<XmlLiteNode>> GetSourceConverter(string extension, TextToXmlOptionHandler? optionHandler, IReadOnlyCollection<string> parameters)
 		{
 			bool ignoreCase = parameters?.FindIndex(o => String.Equals(XmlTools.OptionIgnoreCase, o, StringComparison.OrdinalIgnoreCase)) >= 0;
 			bool forceAttib = parameters?.FindIndex(o => String.Equals(XmlTools.OptionForceAttributes, o, StringComparison.OrdinalIgnoreCase)) >= 0;
 
+			var sourceType = extension.TrimStart('.');
 			if (String.Equals(sourceType, "INI", StringComparison.OrdinalIgnoreCase))
 				return (content, file) => IniToXmlConverter.ConvertLite(content, ignoreCase);
 			if (String.Equals(sourceType, "TXT", StringComparison.OrdinalIgnoreCase) || String.Equals(sourceType, "TEXT", StringComparison.OrdinalIgnoreCase))
