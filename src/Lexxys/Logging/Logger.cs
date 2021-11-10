@@ -6,10 +6,6 @@
 //
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Extensions.Logging;
@@ -32,7 +28,7 @@ namespace Lexxys
 		{
 			public string Source => "Empty";
 
-			public IDisposable? BeginScope<TState>(TState state) => null;
+			public IDisposable BeginScope<TState>(TState state) => LoggingTools.Disposable;
 
 			public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => null;
 
@@ -44,7 +40,7 @@ namespace Lexxys
 			{
 			}
 
-			public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+			public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
 			{
 			}
 
@@ -56,50 +52,24 @@ namespace Lexxys
 	{
 		public static readonly ILogging Empty = new EmptyLogger();
 
-		private LogRecordsListener[] _listeners;
+		private ILogRecordWriter _writer;
 		private LogTypeMask _levels;
 
 		public Logger(string source)
 		{
 			Source = source ?? throw new ArgumentNullException(nameof(source));
-			_listeners = Array.Empty<LogRecordsListener>();
-			_levels = LogTypeMask.None;
-			LoggingContext.Register(this);
+			_writer = LogRecordsService.GetLogRecordWriter(source);
+			_levels = GetLogTypeMask(_writer);
 		}
 
-		public static ILogging? TryCreate(string source)
-		{
-			return LoggingContext.IsInitialized ? new Logger(source) : null;
-		}
-
-		public static ILogging Create(string source)
-		{
-			return LoggingContext.IsInitialized ? new Logger(source): throw new InvalidOperationException("Logging service was not initializes.");
-		}
-
-		public static ILogging<T>? TryCreate<T>()
-		{
-			return LoggingContext.IsInitialized ? new Logger<T>() : null;
-		}
-
-		public static ILogging<T> Create<T>()
-		{
-			return LoggingContext.IsInitialized ? new Logger<T>(): throw new InvalidOperationException("Logging service was not initializes.");
-		}
-
-		internal void SetListeners(LogRecordsListener[] listeners)
-		{
-			_listeners = listeners;
-			_levels = LoggingContext.IsEnabled ? SetToOn(_listeners): LogTypeMask.None;
-		}
-
-		private static LogTypeMask SetToOn(LogRecordsListener[] listeners)
+		private static LogTypeMask GetLogTypeMask(ILogRecordWriter writer)
 		{
 			int levels = 0;
-			for (int i = 0, m = 1; i < listeners.Length; ++i, m <<= 1)
+			int mask = 0;
+			for (LogType i = 0; i <= LogType.MaxValue; ++i, mask <<= 1)
 			{
-				if (listeners[i] != null)
-					levels |= m;
+				if (writer.IsEnabled(i))
+					levels |= mask;
 			}
 			return (LogTypeMask)levels;
 		}
@@ -116,9 +86,7 @@ namespace Lexxys
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Log(LogRecord record)
 		{
-			if (record == null)
-				throw new ArgumentNullException(nameof(record));
-			_listeners[(int)record.LogType]?.Write(record);
+			_writer.Write(record);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -143,7 +111,7 @@ namespace Lexxys
 
 		public void TurnOn()
 		{
-			_levels = SetToOn(_listeners);
+			_levels = GetLogTypeMask(_writer);
 		}
 
 		public void TurnOff()
@@ -153,7 +121,7 @@ namespace Lexxys
 
 		#region Global methods and static helpers
 
-		public static bool Initialized => LoggingContext.IsInitialized;
+		public static bool IsStarted => LogRecordsService.IsStarted;
 
 		/// <summary>
 		/// Write a message to the Debugger console
@@ -225,8 +193,8 @@ namespace Lexxys
 			LogWriter.WriteErrorMessage(source, exception);
 		}
 
-		public static int LockLogging() => LoggingContext.LockLogging();
-		public static int UnlockLogging() => LoggingContext.UnlockLogging();
+		public static int LockLogging() => LogRecordsService.LockLogging();
+		public static int UnlockLogging() => LogRecordsService.UnlockLogging();
 
 		#endregion
 
@@ -241,7 +209,7 @@ namespace Lexxys
 			=> LoggingTools.Log(this, logLevel, eventId, state, exception, formatter);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		IDisposable? ILogger.BeginScope<TState>(TState state)
+		IDisposable ILogger.BeginScope<TState>(TState state)
 			=> LoggingTools.BeginScope(this, state);
 
 		#endregion
@@ -316,7 +284,7 @@ namespace Lexxys
 		{
 			public string Source => "Empty";
 
-			public IDisposable? BeginScope<TState>(TState state) => null;
+			public IDisposable BeginScope<TState>(TState state) => LoggingTools.Disposable;
 
 			public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => null;
 
@@ -328,7 +296,7 @@ namespace Lexxys
 			{
 			}
 
-			public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+			public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
 			{
 			}
 

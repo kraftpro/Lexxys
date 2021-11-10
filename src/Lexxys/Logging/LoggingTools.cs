@@ -29,10 +29,10 @@ namespace Lexxys
 		public static bool IsEnabled(ILogging log, LogLevel logLevel)
 			=> log.IsEnabled(LogTypeFromLogLevel(logLevel));
 
-		public static IDisposable? BeginScope<TState>(ILogging log, TState state)
+		public static IDisposable BeginScope<TState>(ILogging log, TState state)
 		{
 			var section = state?.ToString() ?? typeof(TState).Name;
-			return log.Enter(LogType.Output, section, null);
+			return log.Enter(LogType.Output, section, null) ?? NullDisposable.Value;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,5 +46,20 @@ namespace Lexxys
 			LogLevel.Critical => LogType.Output,
 			_ => LogType.MaxValue
 		};
+
+		public static IDisposable Disposable => NullDisposable.Value;
+
+		sealed class NullDisposable: IDisposable
+		{
+			public static readonly NullDisposable Value = new NullDisposable();
+
+			private NullDisposable()
+			{
+			}
+
+			void IDisposable.Dispose()
+			{
+			}
+		}
 	}
 }

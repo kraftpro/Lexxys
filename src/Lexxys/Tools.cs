@@ -879,13 +879,20 @@ namespace Lexxys
 			Other,
 		}
 
-		private static void ToHexCharArrayInternal(byte[] bitsValue, int offset, int length, char[] hexValue, int outOffset)
+		private static unsafe void ToHexCharArrayInternal(byte[] bitsValue, int offset, int length, char[] hexValue, int outOffset)
 		{
-			while (length-- > 0)
+			fixed (byte* bits = bitsValue)
+			fixed (char* hex = hexValue)
+			fixed (char* digts = __hexDigits)
 			{
-				hexValue[outOffset++] = "0123456789ABCDEF"[bitsValue[offset] >> 4];
-				hexValue[outOffset++] = "0123456789ABCDEF"[bitsValue[offset] & 15];
-				offset++;
+				var b = bits + offset;
+				var h = hex + outOffset;
+				while (--length >= 0)
+				{
+					*h++ = digts[(*b) >> 4];
+					*h++ = digts[(*b) & 15];
+					++b;
+				}
 			}
 		}
 

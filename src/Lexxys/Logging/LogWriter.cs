@@ -12,7 +12,7 @@ using System.IO;
 using System.Xml.Linq;
 using Lexxys.Xml;
 
-using static Lexxys.Xml.TextToXmlConverter;
+#nullable enable
 
 namespace Lexxys.Logging
 {
@@ -30,7 +30,7 @@ namespace Lexxys.Logging
 
 		private readonly LoggingRule _rule;
 
-		public LogWriter(string name, XmlLiteNode config, ILogRecordFormatter formatter = null)
+		public LogWriter(string name, XmlLiteNode config, ILogRecordFormatter? formatter = null)
 		{
 			if (config == null)
 				config = XmlLiteNode.Empty;
@@ -49,7 +49,7 @@ namespace Lexxys.Logging
 
 		protected internal ILogRecordFormatter Formatter { get; }
 
-		public static ILogWriter FromXml(XmlLiteNode node)
+		public static ILogWriter? FromXml(XmlLiteNode node)
 		{
 			if (node == null || node.IsEmpty)
 				return null;
@@ -63,14 +63,14 @@ namespace Lexxys.Logging
 			return null;
 		}
 
-		private static LogWriter CreateLogWriter(string className, string name, XmlLiteNode node)
+		private static LogWriter? CreateLogWriter(string className, string name, XmlLiteNode node)
 		{
 			if (String.IsNullOrEmpty(className))
 				return null;
-			LogWriter writer = null;
+			LogWriter? writer = null;
 			try
 			{
-				Type type = Factory.GetType(className) ??
+				Type? type = Factory.GetType(className) ??
 					(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
 				if (type != null && type.IsSubclassOf(typeof(LogWriter)))
 					writer = Factory.TryGetConstructor(type, false, new[] { typeof(string), typeof(XmlLiteNode) })?
@@ -85,14 +85,14 @@ namespace Lexxys.Logging
 			return writer;
 		}
 
-		private static ILogRecordFormatter CreateFormatter(string className, XmlLiteNode node)
+		private static ILogRecordFormatter? CreateFormatter(string className, XmlLiteNode node)
 		{
 			if (String.IsNullOrEmpty(className))
 				return null;
-			ILogRecordFormatter formatter = null;
+			ILogRecordFormatter? formatter = null;
 			try
 			{
-				Type type = Factory.GetType(className) ??
+				Type? type = Factory.GetType(className) ??
 					(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
 				if (type != null)
 					formatter = Factory.TryGetConstructor(type, false, new[] { typeof(XmlLiteNode) })?
@@ -121,7 +121,7 @@ namespace Lexxys.Logging
 		{
 		}
 
-		public bool WillWrite(string source, LogType type) => _rule.Contains(source, type);
+		public bool Accepts(string? source, LogType type) => _rule.Contains(source, type);
 
 		/// <summary>
 		/// Log the <paramref name="records"/> to the log
@@ -195,7 +195,7 @@ namespace Lexxys.Logging
 			WriteErrorMessage(new LogRecord(LogType.Error, source, message, null));
 		}
 
-		protected internal static void WriteErrorMessage(string source, string message, IDictionary argument)
+		protected internal static void WriteErrorMessage(string source, string message, IDictionary? argument)
 		{
 			WriteErrorMessage(new LogRecord(LogType.Error, source, message, argument));
 		}
@@ -219,7 +219,7 @@ namespace Lexxys.Logging
 		}
 
 
-		protected internal static void WriteEventLogMessage(string source, string message, IDictionary argument)
+		protected internal static void WriteEventLogMessage(string source, string message, IDictionary? argument)
 		{
 			WriteEventLogMessage(new LogRecord(LogType.Information, source, message, argument));
 		}

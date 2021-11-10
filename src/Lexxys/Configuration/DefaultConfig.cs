@@ -282,7 +282,7 @@ namespace Lexxys.Configuration
 				provider = providers[i];
 				return false;
 			}
-			provider = ConfigurationFactory.FindProvider(location, parameters);
+			provider = ConfigurationFactory.TryCreateProvider(location, parameters);
 			if (provider == null)
 				return false;
 

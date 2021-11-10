@@ -65,15 +65,15 @@ namespace Lexxys
 			return (Create(list, 0, boundary), Create(list, boundary));
 		}
 
-		public static Tuple<IReadOnlyList<T>, IReadOnlyList<T>> Split<T>(IReadOnlyList<T> list, int boundary)
+		public static (IReadOnlyList<T>, IReadOnlyList<T>) Split<T>(IReadOnlyList<T> list, int boundary)
 		{
 			if (boundary < 0 || boundary > list.Count)
 				throw new ArgumentOutOfRangeException(nameof(boundary), boundary, null);
 			if (boundary == 0)
-				return new Tuple<IReadOnlyList<T>, IReadOnlyList<T>>(EmptyArray<T>.Value, list);
+				return (EmptyArray<T>.Value, list);
 			if (boundary == list.Count)
-				return new Tuple<IReadOnlyList<T>, IReadOnlyList<T>>(list, EmptyArray<T>.Value);
-			return new Tuple<IReadOnlyList<T>, IReadOnlyList<T>>(Create(list, 0, boundary), Create(list, boundary));
+				return (list, EmptyArray<T>.Value);
+			return (Create(list, 0, boundary), Create(list, boundary));
 		}
 
 		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]

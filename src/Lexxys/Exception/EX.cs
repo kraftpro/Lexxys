@@ -18,7 +18,7 @@ namespace Lexxys
 
 	public static class EX
 	{
-		private static ILogging Log => _loger ??= Logger.TryCreate("Lexxys.EX");
+		private static ILogging Log => _loger ??= Logger.IsStarted ? new Logger("Lexxys.EX"): null;
 		private static ILogging _loger;
 #if DEBUG
 		private static int _debugLogging;
@@ -33,7 +33,7 @@ namespace Lexxys
 			if (_debugLogging >= 0)
 			{
 				Log?.Debug(null, exception);
-				Logging.LoggingContext.FlushBuffers();
+				Logging.LogRecordsService.Flush();
 			}
 #endif
 			return exception;

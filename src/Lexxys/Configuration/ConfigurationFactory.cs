@@ -14,7 +14,7 @@ namespace Lexxys.Configuration
 {
 	internal static class ConfigurationFactory
 	{
-		internal static IConfigurationProvider? FindProvider(Uri location, IReadOnlyCollection<string>? parameters)
+		internal static IConfigurationProvider? TryCreateProvider(Uri location, IReadOnlyCollection<string>? parameters)
 		{
 			if (location == null)
 				throw EX.ArgumentNull(nameof(location));
@@ -24,7 +24,7 @@ namespace Lexxys.Configuration
 				.Select(m => m.Invoke(null, arguments) as IConfigurationProvider).FirstOrDefault(o => o != null);
 		}
 
-		internal static IXmlConfigurationSource? FindXmlSource(Uri location, IReadOnlyCollection<string>? parameters)
+		internal static IXmlConfigurationSource? TryCreateXmlConfigurationSource(Uri location, IReadOnlyCollection<string>? parameters)
 		{
 			if (location == null)
 				throw EX.ArgumentNull(nameof(location));

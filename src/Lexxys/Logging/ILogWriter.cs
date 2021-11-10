@@ -10,7 +10,7 @@ namespace Lexxys.Logging
 		string Target { get; }
 		void Open();
 		void Close();
-		bool WillWrite(string? source, LogType type);
+		bool Accepts(string? source, LogType type);
 		void Write(IEnumerable<LogRecord> records);
 	}
 }

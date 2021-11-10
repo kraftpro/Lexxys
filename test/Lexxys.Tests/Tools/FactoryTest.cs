@@ -29,6 +29,9 @@ namespace Lexxys.Tests.Tools
 		{
 			var x = Config.AddConfiguration("application.config.txt");
 			Assert.IsNotNull(x);
+			var y = Config.Default.GetCollection<Lexxys.Xml.XmlLiteNode>(Lexxys.Factory.ConfigurationSynonyms);
+			Assert.IsNotNull(y.Value);
+			Assert.IsTrue(y.Value.Count > 0);
 		}
 
 		[TestMethod()]

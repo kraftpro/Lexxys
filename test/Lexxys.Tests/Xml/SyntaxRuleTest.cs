@@ -13,6 +13,8 @@ using Lexxys.Xml;
 using System.Collections;
 using System.Text.RegularExpressions;
 
+#if !NETSTANDARD
+
 namespace Lexxys.Tests.Xml
 {
 	[TestClass()]
@@ -229,3 +231,4 @@ namespace Lexxys.Tests.Xml
 		}
 	}
 }
+#endif

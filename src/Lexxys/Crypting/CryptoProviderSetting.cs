@@ -5,11 +5,6 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Xml;
-using Lexxys.Xml;
 
 namespace Lexxys.Crypting
 {
@@ -23,17 +18,34 @@ namespace Lexxys.Crypting
 
 	public class CryptoProviderSettingItem
 	{
-		public CryptoProviderType Type;
+		public CryptoProviderType ProviderType;
 		public string Name;
 		public string Class;
 		public string Assembly;
+		private Type _type;
 
 		public CryptoProviderSettingItem(CryptoProviderType type, string name, string @class, string assembly = null)
 		{
-			Type = type;
+			ProviderType = type;
 			Name = name;
 			Class = @class;
 			Assembly = assembly;
+		}
+
+		public Type Type
+		{
+			get
+			{
+				if (_type == null)
+				{
+					_type = Factory.GetType(Class);
+					if (_type == null && Assembly != null && Factory.TryLoadAssembly(Assembly, false) != null)
+						_type = Factory.GetType(Class);
+					if (_type == null)
+						throw EX.InvalidOperation(SR.CR_CannotCreateAgorithm(Class));
+				}
+				return _type; 
+			}
 		}
 	}
 }

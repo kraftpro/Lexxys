@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
 using Lexxys.Xml;
+using System.IO;
 
 #nullable enable
 
@@ -12,7 +14,7 @@ namespace Lexxys.Configuration
 {
 	internal class ConfigurationSource
 	{
-		public static IEnumerable<XmlLiteNode>? HandleInclude(string logSource, IReadOnlyCollection<string> parameters, string? directory, ref List<string>? includes, EventHandler<ConfigurationEventArgs> eventHandler)
+		internal static IEnumerable<XmlLiteNode>? HandleInclude(string logSource, IReadOnlyCollection<string> parameters, string? directory, ref List<string>? includes, EventHandler<ConfigurationEventArgs> eventHandler)
 		{
 			var include = parameters?.FirstOrDefault();
 			if (String.IsNullOrEmpty(include))
@@ -26,7 +28,7 @@ namespace Lexxys.Configuration
 				Config.LogConfigurationEvent(logSource, SR.OptionIncludeFileNotFound(include, directory));
 				return null;
 			}
-			var xs = ConfigurationFactory.FindXmlSource(cl, parameters);
+			var xs = ConfigurationFactory.TryCreateXmlConfigurationSource(cl, parameters);
 			if (xs == null)
 				return null;
 
@@ -40,6 +42,24 @@ namespace Lexxys.Configuration
 			}
 			Config.LogConfigurationEvent(logSource, SR.ConfigurationFileIncluded(cl.AbsoluteUri));
 			return xs.Content;
+		}
+
+		internal static string GetContent(Uri location, string? currentDirectory = null)
+		{
+			if (!location.IsAbsoluteUri || location.IsFile)
+			{
+				string path = location.IsAbsoluteUri ? location.LocalPath : location.OriginalString;
+				return File.ReadAllText(String.IsNullOrEmpty(currentDirectory) ? path: Path.Combine(currentDirectory, path));
+			}
+
+#if NETCOREAPP
+			if (location.Scheme == Uri.UriSchemeHttp || location.Scheme == Uri.UriSchemeHttps)
+				return new System.Net.Http.HttpClient().GetStringAsync(location).GetAwaiter().GetResult();
+#endif
+			using (var c = new WebClient())
+			{
+				return c.DownloadString(location);
+			}
 		}
 	}
 }

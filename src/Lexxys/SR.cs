@@ -8,6 +8,7 @@ using System;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace Lexxys
 {
@@ -290,9 +291,9 @@ namespace Lexxys
 
 		#region Crypto
 
-		internal static string CR_CannotCreateAgorithm(string type, string name)
+		internal static string CR_CannotCreateAgorithm(string type)
 		{
-			return String.Format(Culture, "Cannot create instance of the cryptographic algorithm (type = {0}, name = {1}).", type, name);
+			return String.Format(Culture, "Cannot create instance of the cryptographic algorithm for type {0}.", type);
 		}
 		internal static string CR_BadCriptingClass()
 		{
@@ -351,6 +352,11 @@ namespace Lexxys
 			return exception == null ?
 				String.Format(Culture, "Cannot create Log Formatter (class={1}).", className) :
 				String.Format(Culture, "Cannot create Log Formatter (class={1})\nException: {2}.", className, exception.Message);
+		}
+
+		internal static string ValueCannotBeGreaterThan(object min, object max)
+		{
+			return String.Format(Culture, "{0} cannot be greater then {1}", min, max);
 		}
 
 		internal static string LOG_MissingLogWriterName()
@@ -583,6 +589,11 @@ namespace Lexxys
 		internal static string ConnectionStringIsEmpty()
 		{
 			return "Connection String is empty";
+		}
+
+		internal static string DifferentCurrencyCodes(Currency left, Currency right)
+		{
+			return String.Format(Culture, "The operands have different currency codes: {0} and {1}.", left?.Code, right?.Code);
 		}
 	}
 }

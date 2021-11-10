@@ -14,7 +14,7 @@ using Lexxys;
 namespace Lexxys.Crypting
 {
 
-	public static class Crypto
+	public static partial class Crypto
 	{
 		public const string ConfigSection = "lexxys.crypto.providers";
 
@@ -91,12 +91,7 @@ namespace Lexxys.Crypting
 
 			try
 			{
-				Type type = Factory.GetType(item.Class);
-				if (type == null && item.Assembly != null && Factory.TryLoadAssembly(item.Assembly, false) != null)
-					type = Factory.GetType(item.Class);
-				if (type == null)
-					throw EX.InvalidOperation(SR.CR_CannotCreateAgorithm(item.Class, name));
-				return args == null || args.Length == 0 ? Factory.TryConstruct(type, true) : Factory.TryConstruct(type, true, args);
+				return args == null || args.Length == 0 ? Factory.TryConstruct(item.Type, true): Factory.TryConstruct(item.Type, true, args);
 			}
 			catch (Exception flaw)
 			{
@@ -132,22 +127,28 @@ namespace Lexxys.Crypting
 							__settings.Add(new CryptoProviderSettingItem(CryptoProviderType.Encryptor, x, Cryptors + x + "Encryptor"));
 							__settings.Add(new CryptoProviderSettingItem(CryptoProviderType.Decryptor, x, Cryptors + x + "Decryptor"));
 						}
-						foreach (var x in __settings.Where(o=> o.Name == "Md5").ToList())
+						var synonyms = new []
 						{
-							__settings.Add(new CryptoProviderSettingItem(x.Type, "Md5p", x.Class, x.Assembly));
-						}
-						foreach (var x in __settings.Where(o => o.Name == "Sha1").ToList())
+							("MD5", new [] { "MD5P" }),
+							("Sha1", new [] { "SHA128", "SHA-128", "SHA" }),
+							("Sha2", new [] { "SHA256", "SHA-256" }),
+							("Sha3", new [] { "SHA384", "SHA-384" }),
+							("Sha5", new [] { "SHA512", "SHA-512" }),
+							("TripleDes", new [] { "3DES", "DES3" }),
+						};
+						foreach (var key in synonyms)
 						{
-							__settings.Add(new CryptoProviderSettingItem(x.Type, "Sha", x.Class, x.Assembly));
-						}
-						foreach (var x in __settings.Where(o=> o.Name == "TripleDes").ToList())
-						{
-							__settings.Add(new CryptoProviderSettingItem(x.Type, "Des3", x.Class, x.Assembly));
+							var i = __settings.FindIndex(o => String.Equals(o.Name, key.Item1, StringComparison.OrdinalIgnoreCase));
+							var x = __settings[i];
+							foreach (var syn in key.Item2)
+							{
+								__settings.Add(new CryptoProviderSettingItem(x.ProviderType, syn, x.Class, x.Assembly));
+							}
 						}
 					}
 				}
 			}
-			return __settings.Find(x => x.Type == providerType && String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+			return __settings.Find(x => x.ProviderType == providerType && String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
 		}
 		private static List<CryptoProviderSettingItem> __settings;
 	}

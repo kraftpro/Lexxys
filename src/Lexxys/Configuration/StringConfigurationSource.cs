@@ -28,8 +28,12 @@ namespace Lexxys.Configuration
 		{
 			_type = location.LocalPath.Trim('/', '[', ']');
 			Name = location.Host;
-			Location = location;
-			_text = Uri.UnescapeDataString(location.Query.Substring(1) + location.Fragment);
+			int i = location.OriginalString.IndexOf('?');
+			_text = i > 0 ? location.OriginalString.Substring(i + 1): ""; // Uri.UnescapeDataString(location.Query.Substring(1) + location.Fragment);
+			if (_text.Length < 128)
+				Location = location;
+			else
+				Location = new Uri(location.OriginalString.Substring(0, i + 1) + Strings.ToHexString(Crypting.Crypto.Hasher("SHA128").Hash(_text)));
 			_converter = XmlConfigurationProvider.GetSourceConverter(_type, OptionHandler, parameters);
 		}
 

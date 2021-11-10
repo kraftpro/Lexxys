@@ -23,7 +23,7 @@ namespace Lexxys
 		bool ILogger.IsEnabled(LogLevel logLevel)
 			=> LoggingTools.IsEnabled(this, logLevel);
 
-		IDisposable? ILogger.BeginScope<TState>(TState state)
+		IDisposable ILogger.BeginScope<TState>(TState state)
 			=> LoggingTools.BeginScope(this, state);
 #endif
 

@@ -62,7 +62,7 @@ namespace Lexxys.Logging
 
 		public string Target => _connectionInfo == null ? "Empty database": $"{_connectionInfo.Server}:{_connectionInfo.Database}.{_schema}.{_table}LogEntries";
 
-		public bool WillWrite(string source, LogType type) => _rule.Contains(source, type);
+		public bool Accepts(string source, LogType type) => _rule.Contains(source, type);
 
 		public void Write(IEnumerable<LogRecord> records)
 		{

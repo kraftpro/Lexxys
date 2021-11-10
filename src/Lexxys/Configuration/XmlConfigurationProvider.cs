@@ -71,7 +71,7 @@ namespace Lexxys.Configuration
 			if (location == null)
 				throw new ArgumentNullException(nameof(location));
 
-			IXmlConfigurationSource? source = ConfigurationFactory.FindXmlSource(location, parameters);
+			IXmlConfigurationSource? source = ConfigurationFactory.TryCreateXmlConfigurationSource(location, parameters);
 			return source == null ? null: new XmlConfigurationProvider(source);
 		}
 
