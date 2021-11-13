@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Lexxys
 {
-#if !NETCOREAPP
+#if NETFRAMEWORK || !NET5_0_OR_GREATER
 
 	static class WriterExtension
 	{

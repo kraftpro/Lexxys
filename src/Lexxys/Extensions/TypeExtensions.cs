@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Microsoft.Extensions.Primitives;
-
-
 #nullable enable
 
 namespace Lexxys
@@ -37,7 +34,7 @@ namespace Lexxys
 				text.Append(c).Append(GetTypeName(item));
 				c = ',';
 			}
-			text.Append(name.StartsWith("ValueTuple`") ? ')': '>');
+			text.Append(name.StartsWith("ValueTuple`") ? ')' : '>');
 			return text.ToString();
 		}
 

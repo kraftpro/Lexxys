@@ -28,7 +28,8 @@ namespace Lexxys.Tests
 		{
 			var a = new Arguments(Args1);
 			a.Append("a");
-			var expected = Args1.Append("a").ToList();
+			var expected = Args1.ToList();
+			expected.Add("a");
 			CollectionAssert.AreEqual(expected, a.Args);
 			a.Append("x", null, "z");
 			expected.AddRange(new[] { "x", null, "z" });
