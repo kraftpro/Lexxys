@@ -21,7 +21,7 @@ namespace Lexxys
 
 	public static class Config
 	{
-		public static readonly IConfigSection Default = ConfigSection.Instance;
+		public static IConfigSection Current => ConfigSection.Instance;
 
 		//public static T? GetValue<T>(string key)
 		//{

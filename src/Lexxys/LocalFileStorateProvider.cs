@@ -1,10 +1,9 @@
 // Lexxys Infrastructural library.
-// file: LocalFileStorateProvider.cs
+// file: LocalFileStorageProvider.cs
 //
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using Lexxys;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,11 +13,13 @@ using System.Threading.Tasks;
 
 namespace Lexxys
 {
+	/// <inheritdoc />
 	public class LocalFileStorageProvider: IBlobStorageProvider
 	{
-		private static readonly IReadOnlyCollection<string> _schemes = ReadOnly.Wrap(new[] { "file" });
+		private static readonly IReadOnlyCollection<string> _schemes = ReadOnly.Wrap(new[] { Uri.UriSchemeFile });
 		public IReadOnlyCollection<string> SupportedSchemes => _schemes;
 
+		/// <inheritdoc />
 		public IBlobInfo GetFileInfo(string uri)
 		{
 			if (!CanOpen(uri))
@@ -27,13 +28,15 @@ namespace Lexxys
 			return IsMe(p.Scheme) ? new LocalFileInfo(p.Path) : null;
 		}
 
+		/// <inheritdoc />
 		public virtual bool CanOpen(string uri)
 		{
 			return uri != null && IsMe(BlobStorage.SplitSchemeAndPath(uri).Scheme);
 		}
 
-		private static bool IsMe(string scheme) => scheme == "file" || String.IsNullOrEmpty(scheme);
+		private static bool IsMe(string scheme) => scheme == Uri.UriSchemeFile || String.IsNullOrEmpty(scheme);
 
+		/// <inheritdoc />
 		public void SaveFile(string uri, Stream stream, bool overwrite)
 		{
 			if (stream == null)
@@ -53,6 +56,7 @@ namespace Lexxys
 				Directory.CreateDirectory(dir);
 		}
 
+		/// <inheritdoc />
 		public async Task SaveFileAsync(string uri, Stream stream, bool overwrite)
 		{
 			if (stream == null)
@@ -65,6 +69,7 @@ namespace Lexxys
 			await stream.CopyToAsync(file).ConfigureAwait(false);
 		}
 
+		/// <inheritdoc />
 		public void MoveFile(string source, string destination)
 		{
 			if (!CanOpen(source))
@@ -76,6 +81,7 @@ namespace Lexxys
 			File.Move(source, destination);
 		}
 
+		/// <inheritdoc />
 		public void DeleteFile(string uri)
 		{
 			if (!CanOpen(uri))
@@ -120,6 +126,7 @@ namespace Lexxys
 				_disposed = true;
 		}
 
+		/// <inheritdoc />
 		public void Dispose()
 		{
 			Dispose(true);

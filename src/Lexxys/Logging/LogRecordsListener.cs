@@ -331,7 +331,7 @@ namespace Lexxys.Logging
 					_writer.Write(new[] { new LogRecord(LogType.Warning, Source, "Terminating...", null) });
 					_writer.Close();
 #if !NETCOREAPP
-					LogWriter.WriteEventLogMessage(Source, "Terminating...", LogRecord.Args("ThreadName", _thread.Name));
+					LogWriter.WriteEventLogMessage(Source, "Terminating...", LogRecord.Args("ThreadName", _thread!.Name));
 					if ((_thread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) == 0)
 						_thread.Abort();
 #endif

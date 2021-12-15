@@ -87,8 +87,7 @@ namespace Lexxys
 
 		private static void OnAssemblyLoad(Assembly asm)
 		{
-			EventHandler<AssemblyLoadEventArgs> e = AssemblyLoad;
-			e?.Invoke(null, new AssemblyLoadEventArgs(asm));
+			AssemblyLoad?.Invoke(null, new AssemblyLoadEventArgs(asm));
 		}
 
 		public static event EventHandler<AssemblyLoadEventArgs> AssemblyLoad;
@@ -119,7 +118,7 @@ namespace Lexxys
 			return ss.ToArray();
 		}
 		private static readonly string[] DefaultSystemAssemblyNames = { "CppCodeProvider", "WebDev.", "SMDiagnostics", "mscor", "vshost", "System", "Microsoft", "Windows", "Presentation", "netstandard" };
-		private static readonly IValue<IReadOnlyList<string>> __systemNamesConfig = Config.Default.GetCollection<string>(ConfigurationSkip);
+		private static readonly IValue<IReadOnlyList<string>> __systemNamesConfig = Config.Current.GetCollection<string>(ConfigurationSkip);
 
 		private static bool IsSystemAssembly(Assembly asm)
 		{
@@ -128,7 +127,7 @@ namespace Lexxys
 				return true;
 #endif
 			string name = asm.FullName;
-			return name.IndexOf("Version=0.0.0.0", StringComparison.OrdinalIgnoreCase) >= 0 || Array.FindIndex(__systemAssemblyNames, s => name.StartsWith(s, StringComparison.Ordinal)) >= 0;
+			return name == null || name.IndexOf("Version=0.0.0.0", StringComparison.OrdinalIgnoreCase) >= 0 || Array.FindIndex(__systemAssemblyNames!, s => name.StartsWith(s, StringComparison.Ordinal)) >= 0;
 		}
 
 		private static void CollectAssemblies()
@@ -136,9 +135,9 @@ namespace Lexxys
 			__systemAssemblyNames = SystemAssemblyNames();
 			AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
 			AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
-			var asms = AppDomain.CurrentDomain.GetAssemblies().ToList();
-			__assemblies = new ConcurrentBag<Assembly>(asms.Where(a => !IsSystemAssembly(a)));
-			__systemAssemblies = new ConcurrentBag<Assembly>(asms.Where(IsSystemAssembly));
+			var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
+			__assemblies = new ConcurrentBag<Assembly>(assemblies.Where(a => !IsSystemAssembly(a)));
+			__systemAssemblies = new ConcurrentBag<Assembly>(assemblies.Where(IsSystemAssembly));
 		}
 
 		private static void CurrentDomain_AssemblyLoad(object sender, AssemblyLoadEventArgs args)
@@ -160,7 +159,8 @@ namespace Lexxys
 
 		private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
 		{
-			var domain = (AppDomain)sender;
+			if (sender is not AppDomain domain)
+				return null;
 			foreach (var assembly in domain.GetAssemblies())
 			{
 				if (assembly.FullName == args.Name)
@@ -187,7 +187,7 @@ namespace Lexxys
 				TryLoadAssembly(assemblyName, false);
 			}
 		}
-		private static readonly IValue<IReadOnlyList<string>> __importConfig = Config.Default.GetCollection<string>(ConfigurationImport);
+		private static readonly IValue<IReadOnlyList<string>> __importConfig = Config.Current.GetCollection<string>(ConfigurationImport);
 
 		private static void OnConfigChanged(object sender, ConfigurationEventArgs e)
 		{
@@ -315,8 +315,8 @@ namespace Lexxys
 			if (type == null)
 				throw EX.ArgumentNull(nameof(type));
 
-			if (types != null && types.Length == 0)
-				types = null;
+			if (types == null)
+				types = Type.EmptyTypes;
 
 			return String.IsNullOrEmpty(methodName) ?
 				Factory.Types(type)
@@ -324,7 +324,7 @@ namespace Lexxys
 					.Where(m => m != null)
 					.ToList():
 				Factory.Types(type)
-					.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types ?? Type.EmptyTypes, null))
+					.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null))
 					.Where(m => m != null && type.IsAssignableFrom(m.ReturnType))
 					.ToList();
 		}
@@ -372,7 +372,7 @@ namespace Lexxys
 
 			return GetTypeInternal(typeName);
 		}
-		private static readonly IValue<IReadOnlyList<KeyValuePair<string, string>>> __synonymsConfig = Config.Default.GetCollection<KeyValuePair<string, string>>(ConfigurationSynonyms);
+		private static readonly IValue<IReadOnlyList<KeyValuePair<string, string>>> __synonymsConfig = Config.Current.GetCollection<KeyValuePair<string, string>>(ConfigurationSynonyms);
 
 		#region Types synonyms table
 		private static bool __synonymsLoaded;
@@ -433,6 +433,9 @@ namespace Lexxys
 
 		private static Type GetTypeInternal(string typeName)
 		{
+			if (typeName == null)
+				throw new ArgumentNullException(nameof(typeName));
+
 			int i = typeName.IndexOf(',');
 			if (i < 0)
 				return GetType(typeName, DomainAssemblies);
@@ -459,8 +462,7 @@ namespace Lexxys
 				Type t = asm.GetType(typeName, false, true);
 				if (t != null)
 					return t;
-				if (result == null)
-					result = asm.SelectTypes(o => String.Equals(o.Name, typeName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+				result ??= asm.SelectTypes(o => String.Equals(o.Name, typeName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 			}
 			return result;
 		}
@@ -529,14 +531,12 @@ namespace Lexxys
 
 		public static T TryConstruct<T>(bool throwOnError)
 		{
-			object result = TryConstruct(typeof(T), throwOnError);
-			return result == null ? default: (T)result;
+			return TryConstruct(typeof(T), throwOnError) is T result ? result: default;
 		}
 
 		public static T TryConstruct<T>(bool throwOnError, params object[] arguments)
 		{
-			object result = TryConstruct(typeof(T), throwOnError, arguments);
-			return result == null ? default: (T)result;
+			return TryConstruct(typeof(T), throwOnError, arguments) is T result ? result: default;
 		}
 
 		public static object Construct(string typeName)
@@ -617,10 +617,7 @@ namespace Lexxys
 			var argType = new Type[args.Length];
 			for (int i = 0; i < args.Length; ++i)
 			{
-				if (args[i] == null)
-					argType[i] = null;
-				else
-					argType[i] = args[i].GetType();
+				argType[i] = args[i]?.GetType();
 			}
 
 			Func<object[], object> f = TryGetConstructor(type, throwOnError, argType);
@@ -668,7 +665,7 @@ namespace Lexxys
 #endif
 			}
 
-			ConstructorInfo ci = !type.IsInterface ? type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null):
+			ConstructorInfo ci = !type.IsInterface ? type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null) :
 				Classes(type).Select(o => o.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null)).FirstOrDefault(o => o != null);
 			if (ci == null)
 				if (throwOnError)
@@ -691,7 +688,7 @@ namespace Lexxys
 				else
 					return null;
 			Func<object[], object> c = TryGetConstructor(type, throwOnError, new[] { argType });
-			return c == null ? (Func<object, object>)null: o => c(new[] {o});
+			return c == null ? null: o => c(new[] {o});
 		}
 
 		//public static Func<object[], object> TryGetConstructor(Type type, int parametersCount)
@@ -773,8 +770,7 @@ namespace Lexxys
 					throw EX.ArgumentNull(nameof(type));
 				else
 					return null;
-			if (argType == null)
-				argType = Type.EmptyTypes;
+			argType ??= Type.EmptyTypes;
 
 			ConstructorInfo constructor = Array.IndexOf(argType, null) < 0 ? type.GetConstructor(argType): null;
 			if (constructor != null)
@@ -835,7 +831,7 @@ namespace Lexxys
 			ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
 
 			Expression call = Expression.New(constructor, parameters.Select((p, i) => ConvertParameter(Expression.ArrayAccess(args, Expression.Constant(i)), p.ParameterType)));
-			if (constructor.DeclaringType != null && constructor.DeclaringType.IsValueType)
+			if (constructor.DeclaringType is { IsValueType: true })
 				call = Expression.TypeAs(call, typeof(object));
 
 			return Expression.Lambda<Func<object[], object>>(call, args)
@@ -859,7 +855,7 @@ namespace Lexxys
 				method = __conversionMethod[Type.GetTypeCode(Enum.GetUnderlyingType(parameterType))];
 				cvt = Expression.Convert(
 					Expression.Call(
-						typeof(Enum).GetMethod("ToObject", new[] { typeof(Type), method.ReturnType }),
+						typeof(Enum).GetMethod("ToObject", new[] { typeof(Type), method.ReturnType })!,
 						Expression.Constant(parameterType, typeof(Type)),
 						Expression.Convert(parameter, method.ReturnType, method)),
 					parameterType);
@@ -931,7 +927,7 @@ namespace Lexxys
 						return mi;
 					}
 				}
-			NextMember: ;
+				NextMember: ;
 			}
 			return null;
 		}
@@ -1365,7 +1361,7 @@ namespace Lexxys
 			ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
 			Expression[] pp = CompileParameters(constructor, args);
 			Expression call = Expression.New(constructor, pp);
-			if (constructor.ReflectedType != null && constructor.ReflectedType.IsValueType)
+			if (constructor.ReflectedType is { IsValueType: true })
 				call = Expression.TypeAs(call, typeof(object));
 
 			return Expression.Lambda<Func<object, object[], object>>(call, instance, args)
@@ -1400,7 +1396,7 @@ namespace Lexxys
 			if (requiredType.IsAssignableFrom(objType))
 				return obj;
 
-			return __stubs.GetOrAdd(Tuple.Create(objType, requiredType), o => null);
+			return __stubs.GetOrAdd(Tuple.Create(objType, requiredType), _ => null);
 
 		}
 		private static readonly ConcurrentDictionary<Tuple<Type, Type>, Func<object, object>> __stubs = new ConcurrentDictionary<Tuple<Type, Type>, Func<object, object>>();

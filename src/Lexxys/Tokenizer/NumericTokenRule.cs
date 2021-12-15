@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+#nullable enable
+
 namespace Lexxys.Tokenizer
 {
 	[Flags]
@@ -78,16 +80,19 @@ namespace Lexxys.Tokenizer
 		private const string Digits = "0123456789";
 		private const string DigitsWithSign = "0123456789-";
 
-		public override string BeginningChars { get; }
+		public override string? BeginningChars { get; }
 
 		public LexicalTokenType TokenType { get; }
 
-		public override bool TestBeginning(char value)
-		{
-			return value >= '0' && value <= '9' || ((_style & NumericTokenStyles.StartingWithDot) != 0 && value == '.');
-		}
+		public override bool TestBeginning(char value) => value switch {
+			>= '0' and <= '9' => true,
+			'.' => (_style & NumericTokenStyles.StartingWithDot) != 0,
+			'-' => (_style & NumericTokenStyles.NegativeSign) != 0,
+			'+' => (_style & NumericTokenStyles.PositiveSign) != 0,
+			_ => false
+		};
 
-		public override LexicalToken TryParse(CharStream stream)
+		public override LexicalToken? TryParse(CharStream stream)
 		{
 			var text = new StringBuilder();
 			int i = 0;
@@ -193,7 +198,7 @@ namespace Lexxys.Tokenizer
 			return null;
 		}
 
-		private LexicalToken TryParseBinary(CharStream stream)
+		private LexicalToken? TryParseBinary(CharStream stream)
 		{
 			ulong x = 0;
 			int i = 2;

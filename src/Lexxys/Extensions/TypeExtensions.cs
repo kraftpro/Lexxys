@@ -3,40 +3,143 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using Microsoft.Extensions.Primitives;
+
+
 #nullable enable
 
 namespace Lexxys
 {
 	public static class TypeExtensions
 	{
-		public static string GetTypeName(this Type type)
+		public static string GetTypeName(this Type type, bool fullName = false)
 		{
 			if (type == null)
 				throw new ArgumentNullException(nameof(type));
-			if (type.HasElementType)
-				return GetTypeName(type.GetElementType() ?? typeof(void)) + (type.IsArray ? "[]" : type.IsByRef ? "^" : "*");
-			if (!type.IsGenericType)
-				return __builtinTypes.TryGetValue(type, out var s) ? s : type.Name;
 			var text = new StringBuilder();
+			if (fullName)
+				text.Append(type.Namespace).Append('.');
+			BuildTypeName(text, type);
+			return text.ToString();
+		}
+
+		static void BuildTypeName(StringBuilder text, Type type)
+		{
+			if (type.HasElementType)
+			{
+				if (type.IsArray)
+				{
+					BuildArrayTypeName(text, type);
+					return;
+				}
+				BuildTypeName(text, type.GetElementType() ?? typeof(void));
+				text.Append(type.IsPointer ? '*': '^');
+				return;
+			}
+
+			if (type.IsGenericParameter)
+			{
+				text.Append(type.Name);
+				return;
+			}
+
+			if (type.IsGenericType || type.IsGenericTypeDefinition)
+			{
+				var genericArguments = type.GetGenericArguments();
+				BuildGenericTypeName(text, type, genericArguments, genericArguments.Length);
+				return;
+			}
+
+			if (type.DeclaringType != null)
+			{
+				BuildTypeName(text, type.DeclaringType);
+				text.Append('.');
+			}
+
 			var name = type.Name;
+			int i = name.IndexOf('`');
+			if (i < 0)
+			{
+				text.Append(SimpleName(type));
+				return;
+			}
+
 			char c;
-			if (name.StartsWith("ValueTuple`"))
+			bool valueType = name.StartsWith("ValueTuple`");
+			if (valueType)
 			{
 				c = '(';
 			}
 			else
 			{
 				c = '<';
-				text.Append(type.Name.Substring(0, type.Name.IndexOf('`')));
+				text.Append(name.Substring(0, i));
 			}
 			foreach (var item in type.GetGenericArguments())
 			{
-				text.Append(c).Append(GetTypeName(item));
+				text.Append(c);
+				BuildTypeName(text, item);
 				c = ',';
 			}
-			text.Append(name.StartsWith("ValueTuple`") ? ')' : '>');
-			return text.ToString();
+			text.Append(valueType ? ')' : '>');
 		}
+
+		private static void BuildArrayTypeName(StringBuilder text, Type type)
+		{
+			Type elementType = type;
+			while (elementType.IsArray)
+			{
+				elementType = elementType.GetElementType()!;
+			}
+			BuildTypeName(text, elementType);
+			while (type.IsArray)
+			{
+				text.Append('[');
+				text.Append(',', type.GetArrayRank() - 1);
+				text.Append(']');
+				type = type.GetElementType()!;
+			}
+		}
+
+		private static void BuildGenericTypeName(StringBuilder text, Type type, Type[] args, int lenth)
+		{
+			int offset = 0;
+			if (type.IsNested)
+				offset = type.DeclaringType!.GetGenericArguments().Length;
+			if (type.DeclaringType != null)
+			{
+				BuildGenericTypeName(text, type.DeclaringType, args, offset);
+				text.Append('.');
+			}
+
+			var name = type.Name;
+			int index = name.IndexOf('`');
+			if (index < 0)
+			{
+				text.Append(SimpleName(type));
+				return;
+			}
+			char c;
+			bool valueType = name.StartsWith("ValueTuple`");
+			if (valueType)
+			{
+				c = '(';
+			}
+			else
+			{
+				c = '<';
+				text.Append(name, 0, index);
+			}
+			for (int i = offset; i < lenth; ++i)
+			{
+				text.Append(c);
+				BuildTypeName(text, args[i]);
+				c = ',';
+			}
+			text.Append(valueType ? ')' : '>');
+		}
+
+		private static string SimpleName(Type type) => __builtinTypes.TryGetValue(type, out var s) ? s : type.Name;
 
 		private static readonly Dictionary<Type, string> __builtinTypes = new()
 		{

@@ -8,13 +8,15 @@ using System;
 using System.Security.Cryptography;
 using System.Xml;
 
+#nullable enable
+
 namespace Lexxys.Crypting.Cryptors
 {
 	public sealed class MD5Hasher: IHasherAlgorythm, IDisposable
 	{
 		private readonly MD5 _h;
 
-		public MD5Hasher() => _h = new MD5CryptoServiceProvider();
+		public MD5Hasher() => _h = MD5.Create();
 		public bool SupportsStream => true;
 		public bool SupportsBlock => true;
 		public int HashSize => 128 / 8;
@@ -36,7 +38,7 @@ namespace Lexxys.Crypting.Cryptors
 	{
 		private readonly SHA1 _h;
 
-		public Sha1Hasher() => _h = new SHA1Managed();
+		public Sha1Hasher() => _h = SHA1.Create();
 		public bool SupportsStream => true;
 		public bool SupportsBlock => true;
 		public int HashSize => 128 / 8;
@@ -125,7 +127,7 @@ namespace Lexxys.Crypting.Cryptors
 		private readonly KeyedHashAlgorithm _h;
 
 		public HmaHasher() => _h = new HMACSHA1();
-		public HmaHasher(object key) => _h = new HMACSHA1(key as byte[]);
+		public HmaHasher(object key) => _h = key is byte[] bk ? new HMACSHA1(bk): throw new ArgumentTypeException(nameof(key), key?.GetType());
 		public bool SupportsStream => true;
 		public bool SupportsBlock => true;
 		public int HashSize => 20;

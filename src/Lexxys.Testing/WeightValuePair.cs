@@ -5,7 +5,7 @@ namespace Lexxys.Testing
 	/// <summary>
 	/// Represents <see cref="Weight"/> and <see cref="Value"/> pair.
 	/// </summary>
-	public interface IWeightValuePair<T>
+	public interface IWeightValuePair<out T>
 	{
 		T Value { get; }
 		double Weight { get; }

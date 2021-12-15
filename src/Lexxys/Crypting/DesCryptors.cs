@@ -10,6 +10,8 @@ using System.Xml;
 using System.Text;
 using System.IO;
 
+#nullable enable
+
 namespace Lexxys.Crypting.Cryptors
 {
 	public class DesCryptoBase: IEncryptorAlgorythm, IDecryptorAlgorythm, IDisposable
@@ -33,9 +35,9 @@ namespace Lexxys.Crypting.Cryptors
 			}
 			int len = bk.Length;
 			if (len == 8)
-				_h = new DESCryptoServiceProvider();
+				_h = DES.Create();
 			else if (len == 16 || len == 24)
-				_h = new TripleDESCryptoServiceProvider();
+				_h = TripleDES.Create();
 			else
 				throw new ArgumentOutOfRangeException(nameof(key), key, null);
 			_h.IV = _staticIV;

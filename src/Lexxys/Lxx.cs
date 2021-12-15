@@ -89,7 +89,7 @@ namespace Lexxys
 			{
 				if (_productName == null)
 				{
-					string temp = Config.Default.GetValue("ProductVersion:Name", () => AppVersion.ProductName).Value;
+					string temp = Config.Current.GetValue("ProductVersion:Name", () => AppVersion.ProductName).Value;
 					if (!Configuration.DefaultConfig.IsInitialized)
 						return temp;
 					Interlocked.CompareExchange(ref _productName, temp, null);
@@ -107,8 +107,7 @@ namespace Lexxys
 				{
 					lock (SyncRoot)
 					{
-						if (_appVersion == null)
-							_appVersion = FileVersionInfo.GetVersionInfo(GetEntry().Location);
+						_appVersion ??= FileVersionInfo.GetVersionInfo(GetEntry().Location);
 					}
 				}
 				return _appVersion;
@@ -121,11 +120,11 @@ namespace Lexxys
 			if (a == null || a.IsDynamic)
 			{
 				StackFrame[] sf = new StackTrace().GetFrames();
-				if (sf != null && sf.Length > 0)
+				if (sf.Length > 0)
 				{
 					for (int i = sf.Length - 1; i >= 0; --i)
 					{
-						a = sf[i].GetMethod().DeclaringType?.Assembly;
+						a = sf[i].GetMethod()?.DeclaringType?.Assembly;
 						if (a != null && !a.IsDynamic)
 							break;
 					}
@@ -135,7 +134,6 @@ namespace Lexxys
 				if (a.IsDynamic)
 					a = Assembly.GetExecutingAssembly();
 			}
-			Debug.Assert(a != null);
 			Debug.Assert(!a.IsDynamic);
 			return a;
 		}
@@ -163,7 +161,7 @@ namespace Lexxys
 					if (!_initialized)
 					{
 						_initialized = true;
-						Config.Default.Changed += OnConfigChanged;
+						Config.Current.Changed += OnConfigChanged;
 						AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 						Type type = Factory.GetType("System.Windows.Forms.Application", Factory.SystemAssemblies);
 						if (type != null)
@@ -180,13 +178,9 @@ namespace Lexxys
 
 		private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
 		{
-			EventHandler<ThreadExceptionEventArgs> eh = UnhandledException;
-			if (eh != null)
-			{
-				Exception ex = e.ExceptionObject as Exception;
-				if (!ex.IsCriticalException())
-					eh(sender, new ThreadExceptionEventArgs(ex));
-			}
+			EventHandler<ThreadExceptionEventArgs> handler = UnhandledException;
+			if (handler != null && e.ExceptionObject is Exception x && !x.IsCriticalException())
+				handler(sender, new ThreadExceptionEventArgs(x));
 		}
 
 		private static void OnGuiUnhandedException(object sender, ThreadExceptionEventArgs e)

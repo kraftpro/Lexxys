@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+#nullable enable
+
 namespace Lexxys.Tokenizer
 {
 	public class NameTokenRule: LexicalTokenRule
@@ -18,7 +20,7 @@ namespace Lexxys.Tokenizer
 		private bool _extra = true;
 		private Func<char, bool> _isNameStartCharacter = o => IsNameStartCharacter(o);
 		private Func<char, bool> _isNamePartCharacter = o => IsNamePartCharacter(o);
-		private Func<string, string> _cleanupResult;
+		private Func<string, string>? _cleanupResult;
 
 		public NameTokenRule(LexicalTokenType nameTokenType, bool ignoreCase)
 		{
@@ -41,12 +43,9 @@ namespace Lexxys.Tokenizer
 
 		public override bool HasExtraBeginning => _extra;
 
-		public override bool TestBeginning(char value)
-		{
-			return _isNameStartCharacter(value);
-		}
+		public override bool TestBeginning(char value) => _isNameStartCharacter(value);
 
-		public NameTokenRule WithNameRecognition(Func<char, bool> nameStart, Func<char, bool> namePart, Func<string, string> cleanup)
+		public NameTokenRule WithNameRecognition(Func<char, bool>? nameStart, Func<char, bool>? namePart, Func<string, string>? cleanup)
 		{
 			if (nameStart != null)
 				NameStartCharacter = nameStart;
@@ -57,7 +56,7 @@ namespace Lexxys.Tokenizer
 			return this;
 		}
 
-		public NameTokenRule WithNameRecognition(Func<char, bool> nameStart, Func<char, bool> namePart, Func<string, string> cleanup, string beginning, bool extra)
+		public NameTokenRule WithNameRecognition(Func<char, bool>? nameStart, Func<char, bool>? namePart, Func<string, string>? cleanup, string beginning, bool extra)
 		{
 			if (nameStart != null)
 				NameStartCharacter = nameStart;
@@ -87,15 +86,15 @@ namespace Lexxys.Tokenizer
 			set => _isNamePartCharacter = value ?? throw new ArgumentNullException(nameof(value));
 		}
 
-		public Func<string, string> CleanupResult
+		public Func<string, string>? CleanupResult
 		{
 			get => _cleanupResult;
-			set => _cleanupResult = value ?? throw new ArgumentNullException(nameof(value));
+			set => _cleanupResult = value;
 		}
 
 		public LexicalTokenType TokenType { get; }
 
-		public override LexicalToken TryParse(CharStream stream)
+		public override LexicalToken? TryParse(CharStream stream)
 		{
 			char ch = stream[0];
 			if (!_isNameStartCharacter(ch))
@@ -117,20 +116,11 @@ namespace Lexxys.Tokenizer
 			return stream.Token(TokenType, text.Length, text);
 		}
 
-		public static bool IsNameStartCharacter(char value)
-		{
-			return (Char.IsLetter(value) || value == '_');
-		}
+		public static bool IsNameStartCharacter(char value) => (Char.IsLetter(value) || value == '_');
 
-		public static bool IsNamePartCharacter(char value)
-		{
-			return (Char.IsLetterOrDigit(value) || value == '_');
-		}
+		public static bool IsNamePartCharacter(char value) => (Char.IsLetterOrDigit(value) || value == '_');
 
-		public static string ToUppercase(string name)
-		{
-			return name.ToUpperInvariant();
-		}
+		public static string ToUppercase(string name) => name.ToUpperInvariant();
 	}
 }
 

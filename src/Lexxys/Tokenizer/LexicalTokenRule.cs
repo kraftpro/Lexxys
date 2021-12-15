@@ -8,7 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Globalization;
-using Lexxys;
+
+#nullable enable
 
 namespace Lexxys.Tokenizer
 {
@@ -20,7 +21,7 @@ namespace Lexxys.Tokenizer
 		/// <summary>
 		/// List of the possible starting characters for the parsing token.
 		/// </summary>
-		public virtual string BeginningChars => null;
+		public virtual string? BeginningChars => null;
 
 		/// <summary>
 		/// Specifies that the parsing token could contains extra characters not included in the <see cref="BeginningChars"/>.
@@ -34,7 +35,7 @@ namespace Lexxys.Tokenizer
 		/// <returns></returns>
 		public virtual bool TestBeginning(char value)
 		{
-			string s = BeginningChars;
+			string? s = BeginningChars;
 			return s == null || s.IndexOf(value) >= 0;
 		}
 
@@ -43,7 +44,7 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="stream"></param>
 		/// <returns>Extracted token or null.</returns>
-		public abstract LexicalToken TryParse(CharStream stream);
+		public abstract LexicalToken? TryParse(CharStream stream);
 	}
 
 	/// <summary>
@@ -52,9 +53,9 @@ namespace Lexxys.Tokenizer
 	public class TokenRule: LexicalTokenRule
 	{
 		public delegate LexicalToken Parser(CharStream stream);
-		private readonly string _start;
 		private readonly Parser _parser;
-		private readonly Func<char, bool> _test;
+		private readonly string? _start;
+		private readonly Func<char, bool>? _test;
 
 		/// <summary>
 		/// Creates a new <see cref="LexicalTokenRule"/> with the specified fuctions for testing and parsing.
@@ -62,7 +63,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="parser">Function that will be used to extract a token from a stream.</param>
 		/// <param name="start">List of the possible starting characters for the parsing token.</param>
 		/// <param name="test">Function that will be used to test that a character could be start of a new token.</param>
-		public TokenRule(Parser parser, string start = null, Func<char, bool> test = null)
+		public TokenRule(Parser parser, string? start = null, Func<char, bool>? test = null)
 		{
 			_parser = parser ?? throw new ArgumentNullException(nameof(parser));
 			_start = start;
@@ -70,7 +71,7 @@ namespace Lexxys.Tokenizer
 		}
 
 		/// <ingeritdoc />
-		public override string BeginningChars => _start;
+		public override string? BeginningChars => _start;
 
 		/// <ingeritdoc />
 		public override bool TestBeginning(char value)
@@ -79,7 +80,7 @@ namespace Lexxys.Tokenizer
 		}
 
 		/// <ingeritdoc />
-		public override LexicalToken TryParse(CharStream stream)
+		public override LexicalToken? TryParse(CharStream stream)
 		{
 			return _parser(stream);
 		}

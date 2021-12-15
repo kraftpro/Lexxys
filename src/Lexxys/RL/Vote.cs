@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+#nullable enable
+
 namespace Lexxys.RL
 {
 	public static class Vote
@@ -97,7 +99,7 @@ namespace Lexxys.RL
 
 		public VoteScore Score { get; }
 
-		public override bool Equals(object obj) => obj is Vote<T> vote && Equals(vote);
+		public override bool Equals(object? obj) => obj is Vote<T> vote && Equals(vote);
 
 		public bool Equals(Vote<T> other) => Score == other.Score && EqualityComparer<T>.Default.Equals(Value, other.Value);
 

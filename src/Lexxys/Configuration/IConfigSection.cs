@@ -22,9 +22,8 @@ namespace Lexxys.Configuration
 		void MapPath(string key, string value);
 
 		void DefineValue<T>(string key, T value);
-		#nullable disable
-		IValue<T> GetValue<T>(string key, Func<T> defaultValue = null);
-		#nullable enable
+
+		IValue<T> GetValue<T>(string key, Func<T>? defaultValue = null);
 
 		void DefineCollection<T>(string key, IReadOnlyList<T> value);
 		IValue<IReadOnlyList<T>> GetCollection<T>(string key);

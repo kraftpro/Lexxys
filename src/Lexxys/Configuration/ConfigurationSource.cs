@@ -52,14 +52,16 @@ namespace Lexxys.Configuration
 				return File.ReadAllText(String.IsNullOrEmpty(currentDirectory) ? path: Path.Combine(currentDirectory, path));
 			}
 
-#if NETCOREAPP
+#if !NETFRAMEWORK
 			if (location.Scheme == Uri.UriSchemeHttp || location.Scheme == Uri.UriSchemeHttps)
 				return new System.Net.Http.HttpClient().GetStringAsync(location).GetAwaiter().GetResult();
-#endif
+			throw new NotSupportedException($"Specified url \"{location}\" is not supported");
+#else
 			using (var c = new WebClient())
 			{
 				return c.DownloadString(location);
 			}
+#endif
 		}
 	}
 }

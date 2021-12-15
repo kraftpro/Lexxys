@@ -108,7 +108,7 @@ namespace Lexxys.Logging
 
 		private static void ApplyConfiguration()
 		{
-			var config = Config.Default.GetCollection<LoggingConfiguration>("logging").Value;
+			var config = Config.Current.GetCollection<LoggingConfiguration>("logging").Value;
 			if (config.Count == 0)
 			{
 				Config.LogConfigurationEvent("Lexxys.LoggingContext", SR.LoggingConfidurationMissing());

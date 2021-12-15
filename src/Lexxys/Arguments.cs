@@ -22,13 +22,13 @@ namespace Lexxys
 
 		public bool Exists(string argument, bool missingValue = false) => Value(argument, (p, d) => p.Length == 0 || p.AsBoolean(d), true, missingValue);
 
-		public bool? Option(string argument, bool? missingValue = null) => Value(argument, (p, d) => p.Length == 0 || p.AsBoolean(false) == true, true, missingValue);
+		public bool? Option(string argument, bool? missingValue = null) => Value(argument, (p, _) => p.Length == 0 || p.AsBoolean(false), true, missingValue);
 
 		public T Value<T>(string argument, T defaultValue = default) => Value(argument, (p, d) => p.AsValue(d), defaultValue);
 		public T Value<T>(string argument, T defaultValue, T missingValue) => Value(argument, (p, d) => p.AsValue(d), defaultValue, missingValue);
 
 		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue) => Value(argument, parser, defaultValue, defaultValue);
-		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue, T missingValue = default)
+		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue, T missingValue)
 		{
 			for (int i = 0; i < Args.Count; ++i)
 			{
@@ -56,25 +56,25 @@ namespace Lexxys
 
 		class PositionalArguments: IEnumerable<string>
 		{
-			private readonly List<string> Args;
+			private readonly List<string> _args;
 
 			public PositionalArguments(Arguments args)
 			{
-				Args = args.Args;
+				_args = args.Args;
 			}
 
 			public IEnumerator<string> GetEnumerator()
 			{
-				for (int i = 0; i < Args.Count; ++i)
+				for (int i = 0; i < _args.Count; ++i)
 				{
-					string item = Args[i];
+					string item = _args[i];
 					if (item == null)
 						continue;
 					string arg = item.Trim();
 					if (arg.Length > 1 && (arg[0] == '-' || arg[0] == '/'))
 					{
 						int k = arg.IndexOfAny(Separators);
-						if (k > 0 && k == arg.Length - 1 && i < Args.Count - 1)
+						if (k > 0 && k == arg.Length - 1 && i < _args.Count - 1)
 							++i;
 						continue;
 					}

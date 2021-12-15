@@ -40,7 +40,7 @@ namespace Lexxys.Testing
 				throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
 			if (generator == null)
 				throw new ArgumentNullException(nameof(generator));
-			_items = new[] { new WeightFunctionPair<T>(weight, generator) };
+			_items = new IWeightValuePair<T>[] { new WeightFunctionPair<T>(weight, generator) };
 			Weight = weight;
 		}
 
@@ -53,7 +53,7 @@ namespace Lexxys.Testing
 		{
 			if (weight < 0)
 				throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
-			_items = new[] { new WeightValuePair<T>(weight, value) };
+			_items = new IWeightValuePair<T>[] { new WeightValuePair<T>(weight, value) };
 			Weight = weight;
 		}
 
@@ -257,7 +257,7 @@ namespace Lexxys.Testing
 
 		public static implicit operator Func<T>(RandItem<T> value)
 		{
-			return value == null ? () => default: (Func<T>)value.NextValue;
+			return value == null ? () => default: value.NextValue;
 		}
 	}
 }

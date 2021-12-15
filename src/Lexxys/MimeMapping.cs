@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+// ReSharper disable StringLiteralTypo
 
 namespace Lexxys
 {
@@ -41,7 +42,7 @@ namespace Lexxys
 				//
 				// any mime types on left side not pre-loaded on right side, are added automatically
 				// some mime types can map to multiple extensions, so to get a deterministic mapping,
-				// add those to the dictionary specifcially
+				// add those to the dictionary specifically
 				//
 				// combination of values from Windows 7 Registry and 
 				// from C:\Windows\System32\inetsrv\config\applicationHost.config
@@ -661,7 +662,7 @@ namespace Lexxys
 				{"application/x-x509-ca-cert", ".cer"},
 				{"application/x-zip-compressed", ".zip"},
 				{"application/xhtml+xml", ".xhtml"},
-				{"application/xml", ".xml"},  // anomoly, .xml -> text/xml, but application/xml -> many thingss, but all are xml, so safest is .xml
+				{"application/xml", ".xml"},  // anomaly, .xml -> text/xml, but application/xml -> many things, but all are xml, so safest is .xml
 				{"audio/aac", ".aac"},
 				{"audio/aiff", ".aiff"},
 				{"audio/basic", ".snd"},
@@ -696,7 +697,7 @@ namespace Lexxys
 				#endregion
 			};
 
-			XmlLiteNode node = Config.Default.GetValue(ConfigSection, XmlLiteNode.Empty).Value;
+			XmlLiteNode node = Config.Current.GetValue(ConfigSection, XmlLiteNode.Empty).Value;
 
 			foreach (var item in node.Where("map"))
 			{
@@ -736,6 +737,9 @@ namespace Lexxys
 		{
 			if (mimeType == null)
 				throw new ArgumentNullException(nameof(mimeType));
+			int i = mimeType.IndexOf(';');
+			if (i >= 0)
+				mimeType = mimeType.Substring(0, i).TrimEnd();
 			if (mimeType.StartsWith("."))
 				return mimeType.ToLowerInvariant();
 			if (mimeType.IndexOf('/') < 0)

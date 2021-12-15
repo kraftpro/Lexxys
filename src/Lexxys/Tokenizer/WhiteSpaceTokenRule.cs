@@ -56,7 +56,7 @@ namespace Lexxys.Tokenizer
 			stream.Forward(len);
 
 			return NewLineTokenType == LexicalTokenType.IGNORE || nl == 0 ?
-				new LexicalToken(WhiteSpaceTokenType, text, position, stream.CultureInfo) :
+				new LexicalToken(WhiteSpaceTokenType, text, position, stream.CultureInfo):
 				new LexicalToken(NewLineTokenType, text, position, nl, stream.CultureInfo);
 		}
 	}

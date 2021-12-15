@@ -10,16 +10,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Lexxys;
-
-using Lexxys.Logging;
-
 using Microsoft.Extensions.Logging;
 
 #nullable enable
 
 namespace Lexxys.Configuration
 {
+	using Logging;
+
 	internal class ConfigProvidersCollection
 	{
 		private const int UserConfigPosition = 1;
@@ -30,7 +28,6 @@ namespace Lexxys.Configuration
 		private const string ConfigurationDerectoryKey = "configurationDirectory";
 		private static readonly string[] Extensions = { ".config.xml", ".config.txt", ".config.ini", ".config.json" };
 
-		private IReadOnlyList<string>? _configurationDirectory;
 		private bool _initialized;
 		private bool _initializing;
 		private ILogger? __log;
@@ -91,19 +88,21 @@ namespace Lexxys.Configuration
 		{
 			try
 			{
-				if (!CreateProvider1(ref location, parameters, out provider))
+				if (!CreateProvider1(location, parameters, out provider))
 					return false;
 
-				Debug.Assert(provider != null);
-				Debug.Assert(location != null);
+				System.Diagnostics.Contracts.Contract.Assume(parameters != null);
+				System.Diagnostics.Contracts.Contract.Assert(parameters != null);
+				//Debug.Assert(provider != null);
+				//Debug.Assert(location != null);
 
-				position = AddProvider(provider, position);
+				position = AddProvider(provider!, position);
 				if (position < 0)
 					return false;
 
 				LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(location, position));
-				ScanConfigurationFile(provider, location, position);
-				provider.Changed += OnChanged;
+				ScanConfigurationFile(provider!, location, position);
+				provider!.Changed += OnChanged;
 				return true;
 			}
 			catch (Exception flaw)
@@ -119,7 +118,7 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private bool CreateProvider1(ref Uri location, IReadOnlyCollection<string>? parameters, [NotNullWhen(true)] out IConfigurationProvider? provider)
+		private bool CreateProvider1(Uri location, IReadOnlyCollection<string>? parameters, [NotNullWhen(true)] out IConfigurationProvider? provider)
 		{
 			var path = location.IsAbsoluteUri ?
 				File.Exists(location.LocalPath) ? Path.GetFullPath(location.LocalPath): null:
@@ -144,13 +143,13 @@ namespace Lexxys.Configuration
 				Debug.Assert(provider != null);
 				Debug.Assert(location != null);
 
-				position = AddProvider(provider, position);
+				position = AddProvider(provider!, position);
 				if (position < 0)
 					return false;
 
 				LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(location, position));
-				ScanConfigurationFile(provider, location, position);
-				provider.Changed += OnChanged;
+				ScanConfigurationFile(provider!, location!, position);
+				provider!.Changed += OnChanged;
 				return true;
 			}
 			catch (Exception flaw)

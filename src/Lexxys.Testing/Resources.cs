@@ -8,8 +8,6 @@ namespace Lexxys.Testing
 {
 	public static partial class Resources
 	{
-		private const string Nil = null;
-
 		public static IDictionary<string, RandItem<string>> Resource { get; } = LoadResources("resource*.json");
 
 		public static RandItem<string> Phone { get; } = R.Concat(R.Pic("###-###-####", "(###) ###-####", "1-###-###-####", "###.###.####") | R.Pic(R.P(5, ""), R.P(" x ###"), R.P(" x ####")));

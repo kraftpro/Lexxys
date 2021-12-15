@@ -9,11 +9,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+#nullable enable
+
 namespace Lexxys.Tokenizer
 {
 	public class StringTokenRule: LexicalTokenRule
 	{
-		public const char NoEscape = Char.MaxValue;
+		public const char NoEscape = '\0';
 
 		public StringTokenRule(char escapeChar = '\0', LexicalTokenType tokenType = default)
 		{
@@ -23,14 +25,11 @@ namespace Lexxys.Tokenizer
 
 		public char EscapeChar { get; }
 		public LexicalTokenType TokenType { get; }
-		public override string BeginningChars => "\"'";
+		public override string? BeginningChars => "\"'";
 
-		public override bool TestBeginning(char value)
-		{
-			return value == '"' || value == '\'';
-		}
+		public override bool TestBeginning(char value) => value == '"' || value == '\'';
 
-		public override LexicalToken TryParse(CharStream stream)
+		public override LexicalToken? TryParse(CharStream stream)
 		{
 			if (stream[0] != '"' && stream[0] != '\'')
 				return null;
@@ -74,10 +73,11 @@ namespace Lexxys.Tokenizer
 			}
 		}
 
-		private static char ParseEscape(CharStream stream, int position, out int next)
+		public static char ParseEscape(CharStream stream, int position, out int next)
 		{
 			int k;
 			int i = position;
+			int j;
 			char c;
 			switch (stream[i])
 			{
@@ -103,21 +103,37 @@ namespace Lexxys.Tokenizer
 				case 'v':
 					c = '\v';
 					break;
+				case 'e':
+					c = '\x18';
+					break;
+				case 'N':
+					c = '\x85';
+					break;
+				case '_':
+					c = '\xA0';
+					break;
+				case 'L':
+					c = '\u2028';
+					break;
+				case 'P':
+					c = '\u2029';
+					break;
 
 				// Ctrl+CHAR symbol: \c[A-Z]
 				case 'c':
-					c = stream[i++];
-					if (c < 'A' || c > 'Z')
-						throw stream.SyntaxException(SR.UnrecognizedEscapeSequence(c));
-					c = (char)(c - 'A' + 1);
+					c = stream[++i];
+					if (c >= 'A' && c <= 'Z')
+						c = (char)(c - 'A' + 1);
+					else
+						c = stream[--i];
 					break;
 
 				// Octal value: \0[0-7]?[0-7]?[0-7]?
 				case '0':
 					k = 0;
-					for (int j = 0; j < 3; ++j)
+					for (j = 0; j < 3; ++j)
 					{
-						c = stream[i++];
+						c = stream[++i];
 						if (!(c >= '0' && c <= '7'))
 						{
 							--i;
@@ -132,9 +148,9 @@ namespace Lexxys.Tokenizer
 				case 'x':
 				case 'u':
 					k = 0;
-					for (int j = 0; j < 4; ++j)
+					for (j = 0; j < 4; ++j)
 					{
-						c = stream[i++];
+						c = stream[++i];
 						int l;
 						if (c >= '0' && c <= '9')
 						{
@@ -155,7 +171,10 @@ namespace Lexxys.Tokenizer
 						}
 						k = k * 16 + l;
 					}
-					c = (char)k;
+					if (j > 0)
+						c = (char)k;
+					else
+						c = stream[i];
 					break;
 
 				default:

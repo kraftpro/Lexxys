@@ -13,6 +13,12 @@ using Lexxys.Configuration;
 using Lexxys.Extensions;
 using Lexxys.Xml;
 
+// ReSharper disable StringLiteralTypo
+// ReSharper disable MemberCanBePrivate.Global
+#pragma warning disable CS1591
+
+#nullable enable
+
 namespace Lexxys
 {
 	/// <summary>
@@ -26,9 +32,9 @@ namespace Lexxys
 		public static readonly TimeSpan DefaultCommandAuditThreshold = new TimeSpan(0, 0, 5);
 		public static readonly TimeSpan DefaultBatchAuditThreshold = new TimeSpan(0, 0, 20);
 
-		private Dictionary<string, string> _properties;
+		private readonly Dictionary<string, string>? _properties;
 
-		public ConnectionStringInfo()
+		private ConnectionStringInfo()
 		{
 			Workstation = Tools.MachineName;
 			Application = Lxx.ProductName;
@@ -39,287 +45,70 @@ namespace Lexxys
 			//CommandTimeout = DefaultCommandTimeout;
 		}
 
-		public ConnectionStringInfo(IEnumerable<KeyValuePair<string, string>> pairs)
-			: this()
+		public ConnectionStringInfo(IEnumerable<KeyValuePair<string?, string?>>? attribs)
+			: this(null, attribs)
 		{
-			Define(pairs);
 		}
 
 		public ConnectionStringInfo(string connectionString)
-			: this()
+			: this(SplitParameters(connectionString))
 		{
-			if (String.IsNullOrEmpty(connectionString))
-				return;
-			Define(SplitParameters(connectionString));
 		}
 
-		public ConnectionStringInfo(string server, string database, IEnumerable<KeyValuePair<string, string>> pairs = null)
-			: this()
+		public ConnectionStringInfo(string server, string database, IEnumerable<KeyValuePair<string?, string?>>? pairs = null)
+			: this(pairs)
 		{
-			Server = String.IsNullOrWhiteSpace(server) ? null: server;
-			Database = String.IsNullOrWhiteSpace(database) ? null: database;
-			Define(pairs);
+			if (!String.IsNullOrWhiteSpace(server))
+				Server = server;
+			if (!String.IsNullOrWhiteSpace(database))
+				Database = database;
 		}
 
 		public ConnectionStringInfo(Uri location)
-			: this()
+			: this(location.SplitQuery())
 		{
-			if (location == null)
-				throw new ArgumentNullException(nameof(location));
 			if (location.Scheme != "database")
 				throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
-			if (!String.IsNullOrEmpty(location.Host))
-			{
-				Server = S(location.Host);
-				Database = S(location.LocalPath.Trim('/'));
-			}
-			else if (location.LocalPath.StartsWith("^", StringComparison.Ordinal))
-			{
-				Append(Config.Default.GetValue<ConnectionStringInfo>(location.LocalPath.Substring(1)).Value);
-			}
-			else if (location.LocalPath.Length > 1)
-			{
-				int i = location.LocalPath.IndexOf('/');
-				if (i < 0)
-				{
-					Server = S(location.LocalPath);
-				}
-				else
-				{
-					if (i > 0)
-						Server = S(location.LocalPath.Substring(0, i));
-					if (i + 1 < location.LocalPath.Length)
-						Database = S(location.LocalPath.Substring(i + 1).Trim('/'));
-				}
-			}
-			Define(location.SplitQuery());
-
-			static string S(string s) => String.IsNullOrWhiteSpace(s) ? null: s;
+			string? s;
+			if ((s = location.Host.TrimToNull()) != null)
+				Server = s;
+			if ((s = location.LocalPath.Trim('/').TrimToNull()) != null)
+				Database = s;
 		}
 
-		public ConnectionStringInfo(ConnectionStringInfo value)
+		public ConnectionStringInfo(ConnectionStringInfo? connectionString, IEnumerable<KeyValuePair<string?, string?>>? attribs)
 			: this()
 		{
-			if (value == null)
-				throw new ArgumentNullException(nameof(value));
-
-			Server = value.Server;
-			Database = value.Database;
-			Application = value.Application;
-			Workstation = value.Workstation;
-			UserId = value.UserId;
-			Password = value.Password;
-			ConnectionTimeout = value.ConnectionTimeout;
-			ConnectionAuditThreshold = value.ConnectionAuditThreshold;
-			CommandTimeout = value.CommandTimeout;
-			CommandAuditThreshold = value.CommandAuditThreshold;
-			BatchAuditThreshold = value.BatchAuditThreshold;
-			if (value._properties != null)
-				_properties = new Dictionary<string,string>(value._properties);
-		}
-
-		public string Server { get; private set; }
-		public string Database { get; private set; }
-		public string Application { get; set; }
-		public string Workstation { get; private set; }
-		public string UserId { get; private set; }
-		public string Password { get; private set; }
-		public TimeSpan ConnectionTimeout { get; private set; }
-		public TimeSpan ConnectionAuditThreshold { get; private set; }
-		public TimeSpan CommandTimeout { get; private set; }
-		public TimeSpan CommandAuditThreshold { get; private set; }
-		public TimeSpan BatchAuditThreshold { get; private set; }
-
-		public bool IsEmpty => Server == null && Database == null && _properties == null;
-
-		public string this[string property]
-		{
-			get
+			if (connectionString != null)
 			{
-				if (_properties == null)
-					return null;
-				_properties.TryGetValue(property, out string value);
-				return value;
+				Server = connectionString.Server;
+				Database = connectionString.Database;
+				Application = connectionString.Application;
+				Workstation = connectionString.Workstation;
+				UserId = connectionString.UserId;
+				Password = connectionString.Password;
+				ConnectionTimeout = connectionString.ConnectionTimeout;
+				ConnectionAuditThreshold = connectionString.ConnectionAuditThreshold;
+				CommandTimeout = connectionString.CommandTimeout;
+				CommandAuditThreshold = connectionString.CommandAuditThreshold;
+				BatchAuditThreshold = connectionString.BatchAuditThreshold;
+				if (connectionString._properties != null)
+					_properties = new Dictionary<string, string>(connectionString._properties);
 			}
-		}
-
-		public string GetConnectionString()
-		{
-			return ToString(true);
-		}
-
-		public void Append(ConnectionStringInfo value)
-		{
-			if (value == null)
-				return;
-
-			if (!String.IsNullOrEmpty(value.Server))
-				Server = value.Server;
-			if (!String.IsNullOrEmpty(value.Database))
-				Database = value.Database;
-			if (!String.IsNullOrEmpty(value.Application))
-				Application = value.Application;
-			if (!String.IsNullOrEmpty(value.Workstation))
-				Workstation = value.Workstation;
-			if (!String.IsNullOrEmpty(value.UserId))
-				UserId = value.UserId;
-			if (!String.IsNullOrEmpty(value.Password))
-				Password = value.Password;
-			if (value.ConnectionTimeout != TimeSpan.Zero)
-				value.ConnectionTimeout = value.ConnectionTimeout;
-			if (value.ConnectionAuditThreshold != TimeSpan.Zero)
-				ConnectionAuditThreshold = value.ConnectionAuditThreshold;
-
-			if (value._properties != null && _properties.Count > 0)
-			{
-				if (_properties == null || _properties.Count == 0)
-				{
-					_properties = new Dictionary<string,string>(value._properties);
-				}
-				else
-				{
-					foreach (var item in value._properties)
-					{
-						_properties[item.Key] = item.Value;
-					}
-				}
-			}
-		}
-
-		private string ToString(bool includeCredentials)
-		{
-			var connection = new StringBuilder(128);
-			if (Server != null)
-				connection.Append("server=").Append(Server).Append(';');
-			if (Database != null)
-				connection.Append("database=").Append(Database).Append(';');
-			if (Application != null)
-				connection.Append("app=").Append(Application).Append(';');
-			if (Workstation != null)
-				connection.Append("wsid=").Append(Workstation).Append(';');
-			if (ConnectionTimeout.Ticks > 0)
-				connection.Append("timeout=").Append(ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).Append(';');
-
-			if (Password == null)
-			{
-				connection.Append("integrated security=SSPI;");
-			}
-			else
-			{
-				connection.Append("uid=").Append(String.IsNullOrEmpty(UserId) ? "sa": UserId).Append(';');
-				if (includeCredentials)
-					connection.Append("pwd=").Append(Password).Append(';');
-			}
-			if (_properties != null)
-			{
-				foreach (var item in _properties)
-				{
-					connection.Append(item.Key).Append('=').Append(item.Value).Append(';');
-				}
-			}
-			if (connection.Length > 0)
-				--connection.Length;
-			return connection.ToString();
-		}
-
-		public override string ToString()
-		{
-			return ToString(false);
-		}
-
-		public override bool Equals(object obj)
-		{
-			return obj is ConnectionStringInfo other && Equals(other);
-		}
-
-		public override int GetHashCode()
-		{
-			return HashCode.Join(
-				Server?.GetHashCode() ?? 0,
-				Database?.GetHashCode() ?? 0,
-				Workstation?.GetHashCode() ?? 0,
-				Application?.GetHashCode() ?? 0,
-				UserId?.GetHashCode() ?? 0,
-				Password?.GetHashCode() ?? 0,
-				ConnectionTimeout.GetHashCode(),
-				ConnectionAuditThreshold.GetHashCode(),
-				CommandTimeout.GetHashCode(),
-				CommandAuditThreshold.GetHashCode(),
-				BatchAuditThreshold.GetHashCode()
-				);
-		}
-
-		public bool Equals(ConnectionStringInfo other)
-		{
-			if (other == null)
-				return false;
-
-			bool fieldsEqual = Server == other.Server &&
-				Database == other.Database &&
-				Workstation == other.Workstation &&
-				Application == other.Application &&
-				UserId == other.UserId &&
-				Password == other.Password &&
-				ConnectionTimeout == other.ConnectionTimeout &&
-				ConnectionAuditThreshold == other.ConnectionAuditThreshold &&
-				CommandTimeout == other.CommandTimeout &&
-				CommandAuditThreshold == other.CommandAuditThreshold &&
-				BatchAuditThreshold == other.BatchAuditThreshold;
-			if (!fieldsEqual)
-				return false;
-			if (_properties == null || _properties.Count == 0)
-				return other._properties == null || other._properties.Count == 0;
-			if (_properties.Count != other._properties.Count)
-				return false;
-			using (var ai = _properties.GetEnumerator())
-			using (var bi = _properties.GetEnumerator())
-			{
-				while (ai.MoveNext() && bi.MoveNext())
-				{
-					if (ai.Current.Key != bi.Current.Key || ai.Current.Value != bi.Current.Value)
-						return false;
-				}
-			}
-			return true;
-		}
-
-		public static ConnectionStringInfo Create(XmlLiteNode config)
-		{
-			if (config == null || config.IsEmpty)
-				return null;
-
-			string reference = XmlTools.GetString(config.Value, null);
-			if (reference == null)
-				return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
-
-			ConnectionStringInfo that = Config.Default.GetValue<ConnectionStringInfo>(reference).Value;
-			if (that == null)
-				return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
-
-			if (config.Attributes.Count > 0)
-			{
-				that = new ConnectionStringInfo(that);
-				that.Define(config.Attributes);
-			}
-
-			return that;
-		}
-
-		private void Define(IEnumerable<KeyValuePair<string, string>> pairs)
-		{
-			if (pairs == null)
+			
+			if (attribs == null)
 				return;
 
 			bool integratedSecurity = false;
-			foreach (var item in pairs)
+			foreach (var item in attribs)
 			{
 				if (String.IsNullOrWhiteSpace(item.Key))
 					continue;
-				string name = item.Key.Trim();
-				string value = item.Value?.Trim() ?? "";
+				string name = item.Key!.Trim();
+				string? value = item.Value?.Trim() ?? "";
 				string lookup = name.Replace(" ", "");
-				if (_synonyms.TryGetValue(lookup, out string key))
+				if (_synonyms.TryGetValue(lookup, out string? key))
 					lookup = key;
 				else
 					key = name;
@@ -418,8 +207,7 @@ namespace Lexxys
 				}
 				if (value != null)
 				{
-					if (_properties == null)
-						_properties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+					_properties ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 					_properties[key.ToLowerInvariant()] = value;
 				}
 			}
@@ -427,15 +215,159 @@ namespace Lexxys
 				Password = null;
 		}
 
-		private static IEnumerable<KeyValuePair<string, string>> SplitParameters(string value)
+		public string? Server { get; }
+		public string? Database { get; }
+		public string? Application { get; }
+		public string? Workstation { get; }
+		public string? UserId { get; }
+		public string? Password { get; }
+		public TimeSpan ConnectionTimeout { get; }
+		public TimeSpan ConnectionAuditThreshold { get; }
+		public TimeSpan CommandTimeout { get; }
+		public TimeSpan CommandAuditThreshold { get; }
+		public TimeSpan BatchAuditThreshold { get; }
+
+		public bool IsEmpty => Server == null && Database == null && _properties == null;
+
+		public string? this[string property]
 		{
-			return value.Split(';')
+			get
+			{
+				if (_properties == null)
+					return null;
+				_properties.TryGetValue(property, out string? value);
+				return value;
+			}
+		}
+
+		public string GetConnectionString()
+		{
+			return ToString(true);
+		}
+
+		private string ToString(bool includeCredentials)
+		{
+			var connection = new StringBuilder(128);
+			if (Server != null)
+				connection.Append("server=").Append(Server).Append(';');
+			if (Database != null)
+				connection.Append("database=").Append(Database).Append(';');
+			if (Application != null)
+				connection.Append("app=").Append(Application).Append(';');
+			if (Workstation != null)
+				connection.Append("wsid=").Append(Workstation).Append(';');
+			if (ConnectionTimeout.Ticks > 0)
+				connection.Append("timeout=").Append(ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).Append(';');
+
+			if (Password == null)
+			{
+				connection.Append("integrated security=SSPI;");
+			}
+			else
+			{
+				connection.Append("uid=").Append(String.IsNullOrEmpty(UserId) ? "sa": UserId).Append(';');
+				if (includeCredentials)
+					connection.Append("pwd=").Append(Password).Append(';');
+			}
+			if (_properties != null)
+			{
+				foreach (var item in _properties)
+				{
+					connection.Append(item.Key).Append('=').Append(item.Value).Append(';');
+				}
+			}
+			if (connection.Length > 0)
+				--connection.Length;
+			return connection.ToString();
+		}
+
+		public override string ToString()
+		{
+			return ToString(false);
+		}
+
+		public override bool Equals(object? obj)
+		{
+			return obj is ConnectionStringInfo other && Equals(other);
+		}
+
+		public override int GetHashCode()
+		{
+			return HashCode.Join(
+				Server?.GetHashCode() ?? 0,
+				Database?.GetHashCode() ?? 0,
+				Workstation?.GetHashCode() ?? 0,
+				Application?.GetHashCode() ?? 0,
+				UserId?.GetHashCode() ?? 0,
+				Password?.GetHashCode() ?? 0,
+				ConnectionTimeout.GetHashCode(),
+				ConnectionAuditThreshold.GetHashCode(),
+				CommandTimeout.GetHashCode(),
+				CommandAuditThreshold.GetHashCode(),
+				BatchAuditThreshold.GetHashCode()
+				);
+		}
+
+		public bool Equals(ConnectionStringInfo? other)
+		{
+			if (other == null)
+				return false;
+
+			bool fieldsEqual = Server == other.Server &&
+				Database == other.Database &&
+				Workstation == other.Workstation &&
+				Application == other.Application &&
+				UserId == other.UserId &&
+				Password == other.Password &&
+				ConnectionTimeout == other.ConnectionTimeout &&
+				ConnectionAuditThreshold == other.ConnectionAuditThreshold &&
+				CommandTimeout == other.CommandTimeout &&
+				CommandAuditThreshold == other.CommandAuditThreshold &&
+				BatchAuditThreshold == other.BatchAuditThreshold;
+			if (!fieldsEqual)
+				return false;
+			if (_properties == null || _properties.Count == 0)
+				return other._properties == null || other._properties.Count == 0;
+			if (other._properties == null || _properties.Count != other._properties.Count)
+				return false;
+			using var ai = _properties.GetEnumerator();
+			using var bi = _properties.GetEnumerator();
+			while (ai.MoveNext() && bi.MoveNext())
+			{
+				if (ai.Current.Key != bi.Current.Key || ai.Current.Value != bi.Current.Value)
+					return false;
+			}
+			return true;
+		}
+
+		public static ConnectionStringInfo? Create(XmlLiteNode? config)
+		{
+			if (config == null || config.IsEmpty)
+				return null;
+
+			string reference = XmlTools.GetString(config.Value, null);
+			if (reference == null)
+				return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
+
+			ConnectionStringInfo that = Config.Current.GetValue<ConnectionStringInfo>(reference).Value;
+			if (that == null)
+				return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
+
+			if (config.Attributes.Count > 0)
+				return new ConnectionStringInfo(that, config.Attributes);
+
+			return that;
+		}
+
+		private static IEnumerable<KeyValuePair<string?, string?>>? SplitParameters(string? value)
+		{
+			return String.IsNullOrWhiteSpace(value) ? null: value!.Split(';')
 				.Where(o => !String.IsNullOrWhiteSpace(o))
 				.Select(o =>
 				{
 					int i = o.IndexOf('=');
-					return i < 0 ? new KeyValuePair<string, string>(o, null) :
-						new KeyValuePair<string, string>(o.Substring(0, i), o.Substring(i + 1));
+					return i < 0 ? new KeyValuePair<string?, string?>(o, null) :
+						new KeyValuePair<string?, string?>(o.Substring(0, i), o.Substring(i + 1));
 				});
 		}
 
@@ -483,9 +415,9 @@ namespace Lexxys
 				{ "initialCatalog",				"database" },
 				{ "catalog",					"database" },
 
-				{ "integrated",					"integratedsecurity" },
-				{ "trusted",					"integratedsecurity" },
-				{ "trustedConnection",			"integratedsecurity" },
+				{ "integrated",					"integratedSecurity" },
+				{ "trusted",					"integratedSecurity" },
+				{ "trustedConnection",			"integratedSecurity" },
 
 				{ "poolSize",					"maxPoolSize" },
 

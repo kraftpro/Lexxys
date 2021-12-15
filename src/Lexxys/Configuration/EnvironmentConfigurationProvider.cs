@@ -35,7 +35,7 @@ namespace Lexxys.Configuration
 		public List<T> GetList<T>(string reference)
 		{
 			if (reference == null)
-				return null;
+				return new List<T>();
 			if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
 				reference = reference.Substring(5);
 			if (XmlTools.TryGetValue<T>(Environment.GetEnvironmentVariable(reference), out var value))

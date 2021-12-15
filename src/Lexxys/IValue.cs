@@ -5,7 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 
-#nullable disable
+#nullable enable
 
 namespace Lexxys
 {
@@ -16,7 +16,7 @@ namespace Lexxys
 
 	public interface IValue
 	{
-		object Value { get; }
+		object? Value { get; }
 	}
 
 #if !NETCOREAPP

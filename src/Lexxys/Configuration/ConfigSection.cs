@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 #nullable enable
@@ -59,26 +60,24 @@ namespace Lexxys.Configuration
 
 		IValue<IReadOnlyList<T>> IConfigSection.GetCollection<T>(string? key)
 		{
-			var k = Key(key);
-			return Lists<T>.TryGet(k, out var value) ? new Out<IReadOnlyList<T>>(() => value!): new ConfigValue<IReadOnlyList<T>>(() => DefaultConfig.GetList<T>(k) ?? Array.Empty<T>(), GetConfigVersion);
+			var fullKey = Key(key);
+			return new ConfigValue<IReadOnlyList<T>>(GetConfigValue, GetConfigVersion);
+
+			IReadOnlyList<T> GetConfigValue()
+				=> Lists<T>.TryGet(fullKey, out var value) ? value: DefaultConfig.GetList<T>(fullKey) ?? Array.Empty<T>();
 		}
 
-		#nullable disable
-
-		IValue<T> IConfigSection.GetValue<T>(string key, Func<T> defaultValue)
+		IValue<T> IConfigSection.GetValue<T>(string key, Func<T>? defaultValue)
 		{
-			var k = Key(key);
-			return Values<T>.TryGet(k, out var value) ? new Out<T>(() => value): new ConfigValue<T>(GetConfigValue(Key(k), defaultValue), GetConfigVersion);
-		}
+			return new ConfigValue<T>(GetConfigValue(Key(key), defaultValue), GetConfigVersion);
 
-		private static Func<T> GetConfigValue<T>(string key, Func<T> defaultValue)
-			=> defaultValue == null ?
-				() => DefaultConfig.GetValue(key, typeof(T)) is T value ? value : throw new ConfigurationException(key, typeof(T)) :
-				() => DefaultConfig.GetValue(key, typeof(T)) is T value ? value : defaultValue();
+			static Func<T> GetConfigValue(string key, Func<T>? defaultValue)
+				=> defaultValue == null ?
+					() => Values<T>.TryGet(key, out var value) ? value : DefaultConfig.GetValue(key, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(key, typeof(T)) :
+					() => Values<T>.TryGet(key, out var value) ? value : DefaultConfig.GetValue(key, typeof(T)) is T value2 ? value2 : defaultValue();
+		}
 
 		private static int GetConfigVersion() => DefaultConfig.Version;
-
-		#nullable enable
 
 		#endregion
 
@@ -103,17 +102,15 @@ namespace Lexxys.Configuration
 
 			public static void Add(string key, T value) => (_values ??= new())[key] = value;
 
-#nullable disable
-			public static bool TryGet(string key, out T value)
+			public static bool TryGet(string key, [MaybeNullWhen(false)] out T value)
 			{
 				if (_values == null)
 				{
-					value = default;
+					value = default!;
 					return false;
 				}
 				return _values.TryGetValue(key, out value);
 			}
-#nullable enable
 		}
 
 		private static class Lists<T>
@@ -122,11 +119,11 @@ namespace Lexxys.Configuration
 
 			public static void Add(string key, IReadOnlyList<T> value) => (_lists ??= new())[key] = value;
 
-			public static bool TryGet(string key, out IReadOnlyList<T>? value)
+			public static bool TryGet(string key, [MaybeNullWhen(false)] out IReadOnlyList<T> value)
 			{
 				if (_lists == null)
 				{
-					value = default;
+					value = default!;
 					return false;
 				}
 				return _lists.TryGetValue(key, out value);

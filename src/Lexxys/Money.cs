@@ -4,6 +4,7 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+#undef CSHARP_PREVIEW
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace Lexxys
 	/// Represents a money value.
 	/// </summary>
 	public readonly struct Money :
-#if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER && CSHARP_PREVIEW
 		ISignedNumber<Money>, IConvertible, IDumpValue, IDumpXml, IDumpJson
 #else
 		IFormattable, IComparable, IConvertible, IComparable<Money>, IEquatable<Money>, IDumpValue, IDumpXml, IDumpJson
@@ -289,19 +290,16 @@ namespace Lexxys
 
 		public override string ToString()
 		{
-			Contract.Ensures(Contract.Result<String>() != null);
 			return Amount.ToString("N" + Currency.Precision) + " " + Currency.Code;
 		}
 
 		public string ToString(string format)
 		{
-			Contract.Ensures(Contract.Result<String>() != null);
 			return Amount.ToString(format).Replace("s", Currency.Symbol).Replace("S", Currency.Code);
 		}
 
 		public string ToString(string? format, IFormatProvider? formatProvider)
 		{
-			Contract.Ensures(Contract.Result<String>() != null);
 			return Amount.ToString(format, formatProvider).Replace("s", Currency.Symbol).Replace("S", Currency.Code);
 		}
 
@@ -328,7 +326,7 @@ namespace Lexxys
 
 		#region INumber
 
-#if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER && CSHARP_PREVIEW
 		static Money ISignedNumber<Money>.NegativeOne => __negOne;
 		private static readonly Money __negOne = new Money(-1);
 		static Money INumber<Money>.One => __one;
@@ -355,7 +353,7 @@ namespace Lexxys
 			return value < min ? min : value > max ? max : value;
 		}
 
-#if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER && CSHARP_PREVIEW
 		static Money INumber<Money>.Sign(Money value)
 		{
 			return value._value < 0 ? value.Currency.MinusOne : value._value > 0 ? value.Currency.One : value.Currency.Zero;
@@ -422,6 +420,7 @@ namespace Lexxys
 			return value;
 		}
 
+#if CSHARP_PREVIEW
 		static bool INumber<Money>.TryCreate<TOther>(TOther value, out Money result) => TryCreate(value, out result);
 
 		private static bool TryCreate<TOther>(TOther value, out Money result) where TOther : INumber<TOther>
@@ -441,6 +440,7 @@ namespace Lexxys
 
 			static bool TryCreate<T>(TOther value, out T result) where T : INumber<T> => T.TryCreate(value, out result);
 		}
+#endif
 
 		public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
 		{
@@ -475,7 +475,6 @@ namespace Lexxys
 				charsWritten = 0;
 				return false;
 			}
-			var rest = destination.Slice(written);
 			if (!start && !Append(destination, code, false))
 			{
 				charsWritten = 0;
@@ -496,10 +495,7 @@ namespace Lexxys
 				value.CopyTo(span);
 				span = span.Slice(value.Length);
 				if (start)
-				{
 					span[0] = ' ';
-					span = span.Slice(1);
-				}
 				return true;
 			}
 		}
@@ -1007,7 +1003,7 @@ namespace Lexxys
 			return value;
 		}
 
-#if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER && PREVIW
 		static Money IDivisionOperators<Money, Money, Money>.operator /(Money left, Money right)
 		{
 			return left / (decimal)right;

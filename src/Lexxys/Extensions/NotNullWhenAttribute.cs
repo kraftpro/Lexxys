@@ -17,5 +17,16 @@ namespace Lexxys
 			ReturnValue = returnValue;
 		}
 	}
+
+	[AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+	sealed class MaybeNullWhenAttribute : Attribute
+	{
+		public bool ReturnValue { get; }
+
+		public MaybeNullWhenAttribute(bool returnValue)
+		{
+			ReturnValue = returnValue;
+		}
+	}
 }
 #endif

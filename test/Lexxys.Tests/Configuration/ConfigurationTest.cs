@@ -20,7 +20,7 @@ namespace Lexxys.Tests.Configuration
 	[DeploymentItem("test.config.txt")]
 	public class ConfiguraitionTest
 	{
-		private IValue<object> SharedConfiguration => __config ??= Config.Default.GetValue<object>("scattergories.lists");
+		private IValue<object> SharedConfiguration => __config ??= Config.Current.GetValue<object>("scattergories.lists");
 		private IValue<object> __config;
 
 		[TestInitialize]
@@ -32,7 +32,7 @@ namespace Lexxys.Tests.Configuration
 			var provider = Config.AddConfiguration(configFile);
 			if (provider == null)
 				throw new ArgumentNullException(nameof(provider));
-			var nodes = Config.Default.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
+			var nodes = Config.Current.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
 			if (nodes == null)
 				throw new ArgumentNullException(nameof(nodes));
 			if (nodes.Value == null)

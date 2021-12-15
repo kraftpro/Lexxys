@@ -11,6 +11,8 @@ using Lexxys.Configuration;
 using System.Linq;
 using Lexxys;
 
+#nullable enable
+
 namespace Lexxys.Crypting
 {
 
@@ -47,22 +49,22 @@ namespace Lexxys.Crypting
 		{
 			public static readonly IEqualityComparer<AlgKeyPair> Comparer = new EqualityComparer();
 			public readonly string Algorithm;
-			public readonly object Key;
+			public readonly object? Key;
 
-			public AlgKeyPair(string algorithm, object key)
+			public AlgKeyPair(string algorithm, object? key)
 			{
 				Algorithm = algorithm ?? throw EX.ArgumentNull(nameof(algorithm));
 				Key = key;
 			}
 
-			public override bool Equals(object obj)
+			public override bool Equals(object? obj)
 			{
 				return obj is AlgKeyPair akp && Equals(akp);
 			}
 
 			public bool Equals(AlgKeyPair other)
 			{
-				return Algorithm == other.Algorithm && EqualityComparer<object>.Default.Equals(Key, other.Key);
+				return Algorithm == other.Algorithm && (Key is null ? other.Key is null: other.Key is null ? false: EqualityComparer<object>.Default.Equals(Key, other.Key));
 			}
 
 			public override int GetHashCode()
@@ -72,7 +74,7 @@ namespace Lexxys.Crypting
 
 			public override string ToString()
 			{
-				return Algorithm + ": " + (Key == null ? "<null>": Key.ToString());
+				return Algorithm + ": " + (Key?.ToString() ?? "<null>");
 			}
 
 			private class EqualityComparer : IEqualityComparer<AlgKeyPair>
@@ -82,9 +84,9 @@ namespace Lexxys.Crypting
 			}
 		}
 
-		private static object CreateInstance(CryptoProviderType providerType, string name, params object[] args)
+		private static object CreateInstance(CryptoProviderType providerType, string name, params object?[] args)
 		{
-			CryptoProviderSettingItem item = Settings(providerType, name);
+			CryptoProviderSettingItem? item = Settings(providerType, name);
 			if (item == null)
 				throw new ArgumentOutOfRangeException(nameof(name), name, null)
 					.Add(nameof(providerType), providerType);
@@ -103,7 +105,7 @@ namespace Lexxys.Crypting
 			}
 		}
 
-		private static CryptoProviderSettingItem Settings(CryptoProviderType providerType, string name)
+		private static CryptoProviderSettingItem? Settings(CryptoProviderType providerType, string name)
 		{
 			if (__settings == null)
 			{
@@ -112,7 +114,7 @@ namespace Lexxys.Crypting
 					if (__settings == null)
 					{
 						const string Cryptors = "Lexxys.Crypting.Cryptors.";
-						__settings = Config.Default.GetCollection<CryptoProviderSettingItem>(ConfigSection).Value?.ToList() ?? new List<CryptoProviderSettingItem>();
+						__settings = Config.Current.GetCollection<CryptoProviderSettingItem>(ConfigSection).Value?.ToList() ?? new List<CryptoProviderSettingItem>();
 						foreach (var x in new[] { "Md5", "Sha1", "Sha2", "Sha3", "Sha5", "Des", "Hma" })
 						{
 							__settings.Add(new CryptoProviderSettingItem(CryptoProviderType.Hasher, x, Cryptors + x + "Hasher"));
@@ -150,6 +152,6 @@ namespace Lexxys.Crypting
 			}
 			return __settings.Find(x => x.ProviderType == providerType && String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
 		}
-		private static List<CryptoProviderSettingItem> __settings;
+		private static List<CryptoProviderSettingItem>? __settings;
 	}
 }

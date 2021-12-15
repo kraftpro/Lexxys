@@ -244,7 +244,7 @@ namespace Lexxys
 							text.Append("\\v");
 							break;
 						case '\a':
-							text.Append("\\b");
+							text.Append("\\a");
 							break;
 						case '\b':
 							text.Append("\\b");
@@ -316,7 +316,7 @@ namespace Lexxys
 							text.Write("\\v");
 							break;
 						case '\a':
-							text.Write("\\b");
+							text.Write("\\a");
 							break;
 						case '\b':
 							text.Write("\\b");
@@ -392,7 +392,7 @@ namespace Lexxys
 							break;
 						case '\a':
 							yield return '\\';
-							yield return 'b';
+							yield return 'a';
 							break;
 						case '\b':
 							yield return '\\';
@@ -495,7 +495,7 @@ namespace Lexxys
 								memory.WriteByte((byte)'v');
 								break;
 							case '\a':
-								memory.WriteByte((byte)'b');
+								memory.WriteByte((byte)'a');
 								break;
 							case '\b':
 								memory.WriteByte((byte)'b');

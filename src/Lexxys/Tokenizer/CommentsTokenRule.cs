@@ -140,4 +140,39 @@ namespace Lexxys.Tokenizer
 			return null;
 		}
 	}
+
+
+	public class PythonCommentsTokenRule: LexicalTokenRule
+	{
+		public PythonCommentsTokenRule()
+		{
+			TokenType = LexicalTokenType.COMMENT;
+		}
+
+		public PythonCommentsTokenRule(LexicalTokenType comment)
+		{
+			TokenType = comment;
+		}
+
+		public override string BeginningChars => "#";
+
+		public LexicalTokenType TokenType { get; }
+
+		public override bool TestBeginning(char value)
+		{
+			return value == '#';
+		}
+
+		public override LexicalToken TryParse(CharStream stream)
+		{
+			if (stream[0] == '#')
+			{
+				int i = stream.IndexOf('\n', 2);
+				if (i < 0)
+					i = stream.Length;
+				return stream.Token(TokenType, i, stream.Substring(2, i - 2));
+			}
+			return null;
+		}
+	}
 }

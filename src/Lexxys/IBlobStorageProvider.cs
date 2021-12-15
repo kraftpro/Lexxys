@@ -13,7 +13,15 @@ namespace Lexxys
 {
 	public interface IBlobStorageProvider: IDisposable
 	{
+		/// <summary>
+		/// Collection of supported schemes
+		/// </summary>
 		IReadOnlyCollection<string> SupportedSchemes { get; }
+		/// <summary>
+		/// Determines if this provider can open a blob at the specified <paramref name="uri"/>. 
+		/// </summary>
+		/// <param name="uri">Blob location</param>
+		/// <returns></returns>
 		bool CanOpen(string uri);
 		IBlobInfo GetFileInfo(string uri);
 		void SaveFile(string uri, Stream stream, bool overwrite);

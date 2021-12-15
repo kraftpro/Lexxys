@@ -10,10 +10,13 @@ using System.Linq;
 using System.Text;
 using System.Collections;
 using System.Collections.Concurrent;
+using Lexxys;
+
+#nullable enable
 
 namespace Lexxys
 {
-	public class CircleCacheBuffer<TKey, TValue>
+	public class CircleCacheBuffer<TKey, TValue> where TKey: notnull
 	{
 		private const int MaxCapacity = 128 * 1024;
 		private const int MinCapacity = 4;
@@ -25,7 +28,7 @@ namespace Lexxys
 		private readonly Func<TValue, TKey> _extractKey;
 		private readonly Func<TValue, bool> _testDirty;
 
-		public CircleCacheBuffer(int capacity, Func<TValue, TKey> extractKey, Func<TValue, bool> testDirty = null)
+		public CircleCacheBuffer(int capacity, Func<TValue, TKey> extractKey, Func<TValue, bool>? testDirty = null)
 		{
 			if (capacity < MinCapacity || capacity > MaxCapacity)
 				throw new ArgumentOutOfRangeException(nameof(capacity), capacity, null);
@@ -38,6 +41,9 @@ namespace Lexxys
 
 		public CircleCacheBuffer(CircleCacheBuffer<TKey, TValue> that)
 		{
+			if (that == null)
+				throw new ArgumentNullException(nameof(that));
+
 			_map = new ConcurrentDictionary<TKey, int>(that._map);
 			_buffer = new TValue[that._buffer.Length];
 			that._buffer.CopyTo(_buffer, 0);
@@ -106,7 +112,7 @@ namespace Lexxys
 			_buffer[i] = value;
 		}
 
-		public TValue Get(TKey key)
+		public TValue? Get(TKey key)
 		{
 			int i = IndexOf(key);
 			return i < 0 ? default: _buffer[i];
@@ -120,10 +126,14 @@ namespace Lexxys
 		public TValue Remove(TKey key)
 		{
 			if (!_map.TryGetValue(key, out int i))
+#pragma warning disable CS8603 // Possible null reference return.
 				return default;
+#pragma warning restore CS8603 // Possible null reference return.
 			TValue value = _buffer[i];
 			_map.TryRemove(key, out i);
+#pragma warning disable CS8601 // Possible null reference assignment.
 			_buffer[i] = default;
+#pragma warning restore CS8601 // Possible null reference assignment.
 			_used[i] = false;
 			if (i == _top - 1 || _top == 0 && i == _buffer.Length - 1)
 				_top = i;
@@ -137,7 +147,9 @@ namespace Lexxys
 			if (!_testDirty(_buffer[i]))
 				return i;
 			_map.TryRemove(key, out i);
+#pragma warning disable CS8601 // Possible null reference assignment.
 			_buffer[i] = default;
+#pragma warning restore CS8601 // Possible null reference assignment.
 			_used[i] = false;
 			if (i == _top - 1 || _top == 0 && i == _buffer.Length - 1)
 				_top = i;

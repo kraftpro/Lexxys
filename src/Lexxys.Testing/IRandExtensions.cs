@@ -8,7 +8,7 @@ using System;
 
 namespace Lexxys.Testing
 {
-	public static class IRandExtensions
+	public static class RandExtensions
 	{
 		public static int NextInt(this IRand rnd, int max)
 		{

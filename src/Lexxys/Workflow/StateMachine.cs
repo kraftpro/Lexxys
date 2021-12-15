@@ -29,7 +29,7 @@ namespace Lexxys.Workflow
 			xpathQuery = i > 0 ?
 				stateMachinePath.Substring(0, i) + "/stateMachines/stateMachine[@name=\"" + xpathQuery.Substring(i + 1) + "\"]":
 				"//stateMachines/stateMachine[@name=\"" + xpathQuery + "\"]";
-			StateMachine sm = Config.Default.GetValue<StateMachine>(xpathQuery).Value;
+			StateMachine sm = Config.Current.GetValue<StateMachine>(xpathQuery).Value;
 			return sm?.Clone();
 		}
 
