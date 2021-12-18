@@ -7,51 +7,57 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
+
+#nullable enable
 
 namespace Lexxys
 {
-	public class LocalCache<TKey, TValue>
+	/// <summary>
+	/// Represents in-local memory cache using a dictionary to store cache items.
+	/// </summary>
+	/// <typeparam name="TKey">Type of the cache item key.</typeparam>
+	/// <typeparam name="TValue">Type of the cache item value.</typeparam>
+	public class LocalCache<TKey, TValue> where TKey: notnull
 	{
 		private const long MinTimeToLive = 1 * TimeSpan.TicksPerSecond;
 		private const long MaxTimeToLive = TimeSpan.TicksPerDay;
 		private const long DefaultTimeToLive = 5 * TimeSpan.TicksPerMinute;
 		private const int MinCapacity = 31;
-		private const int DefaultCapacity = 128;
-		private const int MaxCapacity = 1024 * 128;
+		private const int DefaultCapacity = 256;
+		private const int MaxCapacity = 1024 * 256;
 
 		private readonly ConcurrentDictionary<TKey, CacheItem> _cache;
-		private readonly string _name;
+		private readonly string? _name;
 		private int _capacity;
-		private int _growFactor;
 		private readonly long _timeToLive;
 		private readonly long _slidingExpiration;
-		private readonly Func<TKey, TValue> _factory;
+		private readonly Func<TKey, TValue>? _factory;
 
-		public LocalCache(TimeSpan timeToLive = default, Func<TKey, TValue> factory = null, IEqualityComparer<TKey> comparer = null)
+		public LocalCache(TimeSpan timeToLive = default, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null)
 			: this(null, 0, 0, timeToLive, default, factory, comparer)
 		{
 		}
 
-		public LocalCache(TimeSpan timeToLive, TimeSpan slidingExpiration, Func<TKey, TValue> factory = null, IEqualityComparer<TKey> comparer = null)
+		public LocalCache(TimeSpan timeToLive, TimeSpan slidingExpiration, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null)
 			: this(null, 0, 0, timeToLive, slidingExpiration, factory, comparer)
 		{
 		}
 
-		public LocalCache(int capacity, int concurrencyLevel, TimeSpan timeToLive, Func<TKey, TValue> factory, IEqualityComparer<TKey> comparer = null)
+		public LocalCache(int capacity, int concurrencyLevel, TimeSpan timeToLive, Func<TKey, TValue>? factory, IEqualityComparer<TKey>? comparer = null)
 			: this(null, capacity, concurrencyLevel, timeToLive, default, factory, comparer)
 		{
 		}
 
-		public LocalCache(int capacity, int concurrencyLevel = 0, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, Func<TKey, TValue> factory = null, IEqualityComparer<TKey> comparer = null)
+		public LocalCache(int capacity, int concurrencyLevel = 0, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null)
 			: this(null, capacity, concurrencyLevel, timeToLive, slidingExpiration, factory, comparer)
 		{
 		}
 
-		public LocalCache(string name, int capacity, int concurrencyLevel = 0, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, Func<TKey, TValue> factory = null, IEqualityComparer<TKey> comparer = null, int growFactor = 0)
+		public LocalCache(string? name, int capacity, int concurrencyLevel = 0, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, Func<TKey, TValue> ?factory = null, IEqualityComparer<TKey>? comparer = null)
 		{
 			_name = name;
 			if (capacity == 0)
@@ -64,7 +70,6 @@ namespace Lexxys
 				concurrencyLevel = 4 * Environment.ProcessorCount;
 			_cache = new ConcurrentDictionary<TKey, CacheItem>(concurrencyLevel, Math.Max((MinCapacity + 1) / 2, capacity / 8), comparer ?? EqualityComparer<TKey>.Default);
 			_capacity = capacity;
-			_growFactor = growFactor;
 			_factory = factory;
 			_timeToLive = timeToLive == default ? DefaultTimeToLive:
 				timeToLive.Ticks < MinTimeToLive ? MinTimeToLive:
@@ -74,9 +79,10 @@ namespace Lexxys
 				slidingExpiration.Ticks > MaxTimeToLive ? MaxTimeToLive: slidingExpiration.Ticks;
 		}
 
+		[MaybeNull]
 		public TValue this[TKey index]
 		{
-			get { TryGet(index, out TValue x); return x; }
+			get { TryGet(index, out var x); return x; }
 			set { Add(index, value); }
 		}
 
@@ -85,18 +91,23 @@ namespace Lexxys
 			return _cache.ContainsKey(key);
 		}
 
-		public bool TryGet(TKey key, out TValue result)
+		public bool TryGet(TKey key, [MaybeNullWhen(false)] out TValue result)
 		{
-			if (!_cache.TryGetValue(key, out CacheItem item))
+			if (!_cache.TryGetValue(key, out CacheItem? item))
 			{
 				result = default;
 				return false;
 			}
 			if (item.IsDirty(_timeToLive, _slidingExpiration))
 			{
-				_cache.TryRemove(key, out _);
-				result = default;
-				return false;
+				// It's possible to remove a freshly added item.
+				if (!_cache.TryRemove(key, out var it) || it == item)
+				{
+					result = default;
+					return false;
+				}
+				_cache.TryAdd(key, it);
+				item = it;
 			}
 			item.Touch();
 			result = item.Value;
@@ -106,101 +117,98 @@ namespace Lexxys
 		public void Add(TKey key, TValue value)
 		{
 			var item = new CacheItem(value);
-			item.Touch();
-			CheckCapacity();
-			_cache[key] = item;
+			bool created = true;
+			_cache.AddOrUpdate(key, item, (_, _) =>
+			{
+				created = false;
+				return item;
+			});
+			if (created)
+				CheckCapacity();
 		}
 
 		public void Add(TKey key, Func<TValue> factory)
 		{
 			var item = new CacheItem(factory);
-			item.Touch();
-			CheckCapacity();
-			_cache[key] = item;
+			bool created = true;
+			_cache.AddOrUpdate(key, item, (_, _) =>
+			{
+				created = false;
+				return item;
+			});
+			if (created)
+				CheckCapacity();
 		}
 
-		public TValue Get(TKey key, Func<TKey, TValue> factory = null)
+		public TValue Get(TKey key, Func<TKey, TValue>? factory = null)
 		{
-			if (factory == null)
-				factory = _factory ?? throw new ArgumentNullException(nameof(factory));
-			CacheItem item = _cache.GetOrAdd(key, o => new CacheItem(o, factory));
-			if (item.IsDirty(_timeToLive, _slidingExpiration))
-				item = _cache[key] = new CacheItem(key, factory);
-			item.Touch();
-			CheckCapacity();
+			factory ??= _factory ?? throw new ArgumentNullException(nameof(factory));
+			bool created = false;
+			CacheItem item = _cache.GetOrAdd(key, o => 
+			{
+				created = true;
+				return new CacheItem(o, factory);
+			});
+			if (created)
+				CheckCapacity();
+			else if (item.IsDirty(_timeToLive, _slidingExpiration))
+				_cache[key] = item = new CacheItem(key, factory);
+			else
+				item.Touch();
 			return item.Value;
 		}
 
-		public bool Remove(TKey key)
-		{
-			return _cache.TryRemove(key, out var _);
-		}
+		public bool Remove(TKey key) => _cache.TryRemove(key, out _);
 
-		public void Clear()
-		{
-			_cache.Clear();
-		}
+		public void Clear() => _cache.Clear();
 
 		private void CheckCapacity()
 		{
 			if (_capacity >= _cache.Count)
 				return;
-			DateTime bound = DateTime.UtcNow - TimeSpan.FromTicks(_timeToLive);
+
+			DateTime absoluteTimeToLive = DateTime.UtcNow - TimeSpan.FromTicks(_timeToLive);
 			var dirty = _cache.ToList();
-			int n0 = dirty.Count;
-			int n1 = n0 * 3 / 4;
-			for (int i = dirty.Count - 1; i >= 0; --i)
-			{
-				_cache.TryRemove(dirty[i].Key, out _);
-			}
-			if (dirty.Count <= n1)
-				return;
-			if (_growFactor > 0)
-			{
-				if (_name != null)
-					Lxx.Log.Trace($"LocalCache '{_name}' capacity doubled ({_capacity} -> {_capacity * 2}).");
-				--_growFactor;
-				_capacity += _capacity;
-				return;
-			}
-
-			dirty.Sort((p, q) => CompareItems(q.Value, p.Value, bound));
+			dirty.Sort((p, q) => -CompareItems(p.Value, q.Value));
+			int n1 = dirty.Count / 4;
 			if (_name != null)
-				Lxx.Log.Trace($"LocalCache '{_name}' capacity ({_capacity}) is low: {dirty.Count - n1} valid item(s) have been cleared. (TTL={TimeSpan.FromTicks(_timeToLive)}, EXP={TimeSpan.FromTicks(_slidingExpiration)}).");
-			for (int i = dirty.Count - 1; i >= n1; --i)
+				Lxx.Log.Trace($"LocalCache '{_name}' capacity ({_capacity}) is low: {n1} valid item(s) have been cleared. (TTL={TimeSpan.FromTicks(_timeToLive)}, EXP={TimeSpan.FromTicks(_slidingExpiration)}).");
+			for (int i = 0; i < n1; ++i)
 			{
 				_cache.TryRemove(dirty[i].Key, out _);
 			}
+
+			int CompareItems(CacheItem left, CacheItem right)
+			{
+				if (left.TouchStamp < absoluteTimeToLive || right.TouchStamp < absoluteTimeToLive)
+					return left.TouchStamp.CompareTo(right.TouchStamp);
+				return left.CompareTo(right);
+			}
 		}
 
-		private static int CompareItems(CacheItem left, CacheItem right, DateTime bound)
-		{
-			if (left.TouchStamp < bound || right.TouchStamp < bound)
-				return left.TouchStamp.CompareTo(right.TouchStamp);
-			return left.CompareTo(right);
-		}
-
-		private class CacheItem: IComparable<CacheItem>
+		private class CacheItem
 		{
 			private const int DurationMultiplier = 4;
+			private const long EmptyDuration = TimeSpan.TicksPerMillisecond / 10;
 
 			public readonly TValue Value;
-			private int _count;
-			private long _touchStamp;
 			private readonly long _timeStamp;
 			private readonly long _duration;
+			private int _count;
+			private long _touchStamp;
 
 			public CacheItem(TValue value /*, TimeSpan timeToLive*/)
 			{
 				Value = value;
 				_timeStamp = _touchStamp = DateTime.UtcNow.Ticks;
+				_duration = EmptyDuration;
 			}
 
 			public CacheItem(Func<TValue> factory)
 			{
 				long start = WatchTimer.Start();
 				Value = factory();
-				_duration = WatchTimer.ToTimeSpan(WatchTimer.Stop(start) * DurationMultiplier).Ticks;
+				_duration = Math.Max(EmptyDuration, WatchTimer.ToTimeSpan(WatchTimer.Stop(start) * DurationMultiplier).Ticks);
 				_timeStamp = _touchStamp = DateTime.UtcNow.Ticks;
 			}
 
@@ -208,13 +216,13 @@ namespace Lexxys
 			{
 				long start = WatchTimer.Start();
 				Value = factory(key);
-				_duration = WatchTimer.ToTimeSpan(WatchTimer.Stop(start) * DurationMultiplier).Ticks;
+				_duration = Math.Max(EmptyDuration, WatchTimer.ToTimeSpan(WatchTimer.Stop(start) * DurationMultiplier).Ticks);
 				_timeStamp = _touchStamp = DateTime.UtcNow.Ticks;
 			}
 
 			public void Touch()
 			{
-				++_count;
+				Interlocked.Increment(ref _count);
 				_touchStamp = DateTime.UtcNow.Ticks;
 			}
 
@@ -226,12 +234,9 @@ namespace Lexxys
 				return (now - _timeStamp) > timeToLiveTicks || (now - _touchStamp) > slidingExpiration;
 			}
 
-			public int CompareTo(CacheItem other)
-			{
-				return other == null ? 1:
-					_count > other._count ? 1:
-					_count < other._count ? -1: TouchStamp.CompareTo(other.TouchStamp);
-			}
+			public int CompareTo(CacheItem other) => StampValue.CompareTo(other.StampValue);
+
+			private long StampValue => _touchStamp + _count * _duration;
 		}
 	}
 }

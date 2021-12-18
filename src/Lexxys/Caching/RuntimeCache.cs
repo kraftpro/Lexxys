@@ -13,11 +13,16 @@ using Microsoft.Extensions.Caching.Memory;
 using System.Runtime.Caching;
 #endif
 
+#nullable enable
+
 namespace Lexxys
 {
+	/// <summary>
+	/// Represent a set of methods to work with in-local memory cache.
+	/// </summary>
 	public static class RuntimeCache
 	{
-#if NETCOREAPP
+#if NET5_0_OR_GREATER
 		private static readonly MemoryCache Default = new MemoryCache(new OptOut<MemoryCacheOptions>(() => new MemoryCacheOptions { CompactionPercentage = 0.5, ExpirationScanFrequency = TimeSpan.FromMinutes(2) }));
 #else
 		private static readonly MemoryCache Default = MemoryCache.Default;
@@ -54,10 +59,16 @@ namespace Lexxys
 		/// <summary>16 hours</summary>
 		public static readonly TimeSpan DefaultTimeToLiveWithSliding = Permanent;
 
+		/// <summary>
+		/// Gets or adds the item associated with this <paramref name="key"/> if present.
+		/// </summary>
+		/// <param name="key">An object identifying the requested entry.</param>
+		/// <param name="producer">A function produces a new value if the item not found.</param>
+		/// <param name="timeToLive">Time to live for the item.</param>
 		public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive = default)
 			where TValue: class
 		{
-#if NETCOREAPP
+#if NET5_0_OR_GREATER
 			if (Default.TryGetValue<TValue>(key, out var value))
 #else
 			if (Default[key] is TValue value)
@@ -75,10 +86,17 @@ namespace Lexxys
 			return value;
 		}
 
+		/// <summary>
+		/// Gets or adds the item associated with this <paramref name="key"/> if present.
+		/// </summary>
+		/// <param name="key">An object identifying the requested entry.</param>
+		/// <param name="producer">A function produces a new value if the item not found.</param>
+		/// <param name="timeToLive">The time to live for the item.</param>
+		/// <param name="slidingExpiration">The sliding expiration.</param>
 		public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive, TimeSpan slidingExpiration)
 			where TValue: class
 		{
-#if NETCOREAPP
+#if NET5_0_OR_GREATER
 			if (Default.TryGetValue<TValue>(key, out var value))
 #else
 			if (Default[key] is TValue value)
@@ -100,7 +118,7 @@ namespace Lexxys
 				timeToLive = MinTimeToLive;
 			value = producer();
 			Default.Set(key, value,
-#if NETCOREAPP
+#if NET5_0_OR_GREATER
 				new MemoryCacheEntryOptions { AbsoluteExpiration = DateTime.UtcNow + timeToLive, SlidingExpiration = slidingExpiration }
 #else
 				new CacheItemPolicy { AbsoluteExpiration = DateTime.UtcNow + timeToLive, SlidingExpiration = slidingExpiration }
@@ -109,24 +127,41 @@ namespace Lexxys
 			return value;
 		}
 
+		/// <summary>
+		/// Gets or adds the item associated with this <paramref name="key"/> if present.
+		/// </summary>
+		/// <param name="key">An object identifying the requested entry.</param>
+		/// <param name="producer">A function produces a new value if the item not found.</param>
+		/// <param name="timeToLive">Time to live for the item.</param>
 		public static TValue GetValue<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive = default)
 			where TValue : struct
 		{
 			return (TValue?)Get(key, () => (object)producer(), timeToLive) ?? default;
 		}
 
+		/// <summary>
+		/// Gets or adds the item associated with this <paramref name="key"/> if present.
+		/// </summary>
+		/// <param name="key">An object identifying the requested entry.</param>
+		/// <param name="producer">A function produces a new value if the item not found.</param>
+		/// <param name="timeToLive">The time to live for the item.</param>
+		/// <param name="slidingExpiration">The sliding expiration.</param>
 		public static TValue GetValue<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive, TimeSpan slidingExpiration)
 			where TValue : struct
 		{
 			return (TValue?)Get(key, () => (object)producer(), timeToLive, slidingExpiration) ?? default;
 		}
 
+		/// <summary>
+		/// Removes the object associated with the given key.
+		/// </summary>
+		/// <param name="key">An object identifying the entry.</param>
 		public static void Remove(string key)
 		{
 			Default.Remove(key);
 		}
 
-		private struct CollectionDefinition: IEquatable<CollectionDefinition>
+		private readonly struct CollectionDefinition: IEquatable<CollectionDefinition>
 		{
 			public readonly Func<object> Constructor;
 			public readonly TimeSpan TimeToLive;
@@ -155,19 +190,45 @@ namespace Lexxys
 		}
 		private static readonly ConcurrentDictionary<string, CollectionDefinition> __collectionDefinitions = new ConcurrentDictionary<string, CollectionDefinition>();
 
-		public static CollectionKey<TKey, TValue> DefineCollection<TKey, TValue>(string key, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, TimeSpan collectionTimeToLive = default, int capacity = 0, Func<TKey, TValue> factory = null, IEqualityComparer<TKey> comparer = null, int growFactor = 0)
+		/// <summary>
+		/// Defines a new caches collection for the specified <paramref name="key"/> and the collection parameters. 
+		/// </summary>
+		/// <param name="key">Collection key.</param>
+		/// <param name="timeToLive">Cache time to live.</param>
+		/// <param name="slidingExpiration">Cache sliding expiration.</param>
+		/// <param name="collectionTimeToLive">Collection item sliding expiration</param>
+		/// <param name="capacity">Collection capacity</param>
+		/// <param name="factory">Default collection item factory.</param>
+		/// <param name="comparer">Collection item key comparer.</param>
+		/// <param name="growFactor">Collection grow factor</param>
+		/// <typeparam name="TKey"></typeparam>
+		/// <typeparam name="TValue"></typeparam>
+		/// <returns>The <see cref="CollectionKey{TKey,TValue}"/> for the created collection definition.</returns>
+		/// <exception cref="ArgumentNullException"></exception>
+		public static CollectionKey<TKey, TValue> DefineCollection<TKey, TValue>(string key, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, TimeSpan collectionTimeToLive = default, int capacity = 0, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null)
+			where TKey: notnull
 		{
 			if (key == null || key.Length <= 0)
 				throw new ArgumentNullException(nameof(key));
 			if (collectionTimeToLive < MinTimeToLive)
 				collectionTimeToLive = DefaultCollectionTimeToLive;
 
-			object Fact() => new LocalCache<TKey, TValue>(key, capacity, timeToLive: timeToLive, slidingExpiration: slidingExpiration, factory: factory, comparer: comparer, growFactor: growFactor);
-			__collectionDefinitions.AddOrUpdate(key, new CollectionDefinition(Fact, collectionTimeToLive), (o, _) => new CollectionDefinition(Fact, collectionTimeToLive));
+			object Fact() => new LocalCache<TKey, TValue>(key, capacity, timeToLive: timeToLive, slidingExpiration: slidingExpiration, factory: factory, comparer: comparer);
+			__collectionDefinitions.AddOrUpdate(key, new CollectionDefinition(Fact, collectionTimeToLive), (_, _) => new CollectionDefinition(Fact, collectionTimeToLive));
 			return new CollectionKey<TKey, TValue>(key);
 		}
 
+		/// <summary>
+		/// Returns the cashes collection for the specified collection <paramref name="key"/>.
+		/// </summary>
+		/// <param name="key">Collection key</param>
+		/// <typeparam name="TKey"></typeparam>
+		/// <typeparam name="TValue"></typeparam>
+		/// <returns></returns>
+		/// <exception cref="ArgumentNullException"></exception>
+		/// <exception cref="ArgumentOutOfRangeException"></exception>
 		public static LocalCache<TKey, TValue> Collection<TKey, TValue>(CollectionKey<TKey, TValue> key)
+			where TKey : notnull
 		{
 			if (key == null)
 				throw new ArgumentNullException(nameof(key));
@@ -185,24 +246,21 @@ namespace Lexxys
 			Default.Set(key.Value, collection, DateTime.UtcNow + definition.TimeToLive);
 			return collection;
 		}
-
-		//public static LocalCache<TKey, TValue> Collection<TKey, TValue>(string collectionKey, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, TimeSpan collectionTimeToLive = default, int capacity = 0, Func<TKey, TValue> factory = null, IEqualityComparer<TKey> comparer = null, int growFactor = 0)
-		//{
-		//	if (collectionTimeToLive == default)
-		//		collectionTimeToLive = DefaultCollectionTimeToLive;
-		//	else if (collectionTimeToLive > MaxTimeToLive)
-		//		collectionTimeToLive = MaxTimeToLive;
-		//	else if (collectionTimeToLive < MinTimeToLive)
-		//		collectionTimeToLive = timeToLive;
-
-		//	return Get(collectionKey, () => new LocalCache<TKey, TValue>(collectionKey, capacity, timeToLive: timeToLive, slidingExpiration: slidingExpiration, factory: factory, comparer: comparer, growFactor: growFactor), collectionTimeToLive);
-		//}
 	}
 
+	/// <summary>
+	/// Represents a collection key for the specified <typeparamref name="TKey"/> / <typeparamref	name="TValue"/> pair.
+	/// </summary>
+	/// <typeparam name="TKey"></typeparam>
+	/// <typeparam name="TValue"></typeparam>
 	public class CollectionKey<TKey, TValue>
 	{
 		internal string Value { get; }
 
+		/// <summary>
+		/// Created a collection key.
+		/// </summary>
+		/// <param name="value">The collection key value.</param>
 		public CollectionKey(string value) => Value = value;
 	}
 }

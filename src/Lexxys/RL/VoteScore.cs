@@ -10,6 +10,8 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 
+#nullable enable
+
 namespace Lexxys.RL
 {
 	public readonly struct VoteScore: IEquatable<VoteScore>
@@ -88,7 +90,7 @@ namespace Lexxys.RL
 				left.Value > right.Value ? 1: 0;
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is VoteScore score && Value == score.Value;
 		}
