@@ -193,12 +193,12 @@ namespace Lexxys
 
 		#region DC
 
-		public static string ConnectionInitialized(ConnectionStringInfo connectionInfo)
+		public static string ConnectionInitialized(Data.ConnectionStringInfo connectionInfo)
 		{
 			return String.Format(Culture, "Connection initialized: {0}", connectionInfo);
 		}
 
-		public static string ConnectionChanged(ConnectionStringInfo connectionInfo)
+		public static string ConnectionChanged(Data.ConnectionStringInfo connectionInfo)
 		{
 			return String.Format(Culture, "Connection changed: {0}", connectionInfo);
 		}

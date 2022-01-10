@@ -8,14 +8,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using Lexxys.Xml;
 
 #nullable enable
 
 namespace Lexxys.Configuration
 {
+	using Xml;
 
-	class StringConfigurationSource: IXmlConfigurationSource
+	class StringConfigurationSource : IXmlConfigurationSource
 	{
 		private const string LogSource = "Lexxys.Configuration.StringConfigurationSource";
 		private List<string>? _includes;

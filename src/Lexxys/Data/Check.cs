@@ -6,6 +6,7 @@
 //
 using System;
 
+#nullable enable
 
 namespace Lexxys.Data
 {
@@ -37,7 +38,7 @@ namespace Lexxys.Data
 			return value == null ? nullable: ReferenceKey(dc, value.GetValueOrDefault(), table, key);
 		}
 
-		public static bool ReferenceKey(IDataContext dc, int value, string table, string key = null)
+		public static bool ReferenceKey(IDataContext dc, int value, string table, string? key = null)
 		{
 			if (dc == null)
 				throw new ArgumentNullException(nameof(dc));
@@ -51,28 +52,28 @@ namespace Lexxys.Data
 				key = null;
 			return __localCache.Get((table, key, value), o => IsReferenceKey(dc, o.Value, o.Table, o.Key));
 		}
-		private static readonly LocalCache<(string Table, string Key, int Value), bool> __localCache = new LocalCache<(string, string, int), bool>(
+		private static readonly LocalCache<(string Table, string? Key, int Value), bool> __localCache = new LocalCache<(string, string?, int), bool>(
 			capacity: Config.Current.GetValueInRange(ConfigReference + ":cacheCapacity", 16, 128 * 1024, 8 * 1024),
 			timeToLive: Config.Current.GetValueInRange(ConfigReference + ":cacheTimeout", new TimeSpan(0, 0, 10), new TimeSpan(1, 0, 0), new TimeSpan(0, 10, 0)));
 
-		private static bool IsReferenceKey(IDataContext dc, int value, string table, string key)
+		private static bool IsReferenceKey(IDataContext dc, int value, string table, string? key = null)
 		{
 			return 1 == dc.GetValue<int>("select top 1 1 from " + Dc.Name(table) + " where " + Dc.Name(key ?? "ID") + "=@I", Dc.Parameter("@I", value));
 		}
 
-		public static bool Range<T>(T? value, ValueTuple<T, T>[] ranges)
+		public static bool Range<T>(T? value, ValueTuple<T, T>[]? ranges)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
 			return value == null || Range(value.GetValueOrDefault(), ranges);
 		}
 
-		public static bool Range<T>(T? value, ValueTuple<T, T>[] ranges, bool nullable)
+		public static bool Range<T>(T? value, ValueTuple<T, T>[]? ranges, bool nullable)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
 			return value == null ? nullable: Range(value.GetValueOrDefault(), ranges);
 		}
 
-		public static bool Range<T>(T value, ValueTuple<T, T>[] ranges)
+		public static bool Range<T>(T value, ValueTuple<T, T>[]? ranges)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
 			if (ranges != null)
@@ -86,26 +87,26 @@ namespace Lexxys.Data
 			return false;
 		}
 
-		public static bool Range<T>(T? value, T[] ranges)
-			where T : struct, IComparable<T>, IEquatable<T>
+		public static bool Range<T>(T? value, T[]? values)
+			where T : struct, IEquatable<T>
 		{
-			return value == null || Range(value.GetValueOrDefault(), ranges);
+			return value == null || Range(value.GetValueOrDefault(), values);
 		}
 
-		public static bool Range<T>(T? value, T[] ranges, bool nullable)
-			where T : struct, IComparable<T>, IEquatable<T>
+		public static bool Range<T>(T? value, T[]? values, bool nullable)
+			where T : struct, IEquatable<T>
 		{
-			return value == null ? nullable : Range(value.GetValueOrDefault(), ranges);
+			return value == null ? nullable : Range(value.GetValueOrDefault(), values);
 		}
 
-		public static bool Range<T>(T value, T[] ranges)
-			where T : struct, IComparable<T>, IEquatable<T>
+		public static bool Range<T>(T value, T[]? values)
+			where T : struct, IEquatable<T>
 		{
-			if (ranges != null)
+			if (values != null)
 			{
-				for (int i = 0; i < ranges.Length; ++i)
+				for (int i = 0; i < values.Length; ++i)
 				{
-					if (value.Equals(ranges[i]))
+					if (value.Equals(values[i]))
 						return true;
 				}
 			}
@@ -130,27 +131,27 @@ namespace Lexxys.Data
 			return value.CompareTo(min) >= 0 && value.CompareTo(max) <= 0;
 		}
 
-		public static bool FieldValue(string value, int length, bool nullable)
+		public static bool FieldValue(string? value, int length, bool nullable)
 		{
 			return value == null ? nullable: (length <= 0 || value.Length <= length);
 		}
 
-		public static bool FieldValue(byte[] value, int length, bool nullable)
+		public static bool FieldValue(byte[]? value, int length, bool nullable)
 		{
 			return value == null ? nullable: (length <= 0 || value.Length <= length);
 		}
 
-		public static bool EmailAddress(string value, int length, bool nullable)
+		public static bool EmailAddress(string? value, int length, bool nullable)
 		{
 			return value == null ? nullable: ValueValidator.IsEmail(value, length);
 		}
 
-		public static bool PhoneNumber(string value, int length, bool nullable, bool strict = false)
+		public static bool PhoneNumber(string? value, int length, bool nullable, bool strict = false)
 		{
 			return value == null ? nullable: ValueValidator.IsPhone(value, length, strict);
 		}
 
-		public static bool HttpAddress(string value, int length, bool nullable)
+		public static bool HttpAddress(string? value, int length, bool nullable)
 		{
 			return value == null ? nullable: ValueValidator.IsHttpUrl(value, length);
 		}
@@ -170,7 +171,7 @@ namespace Lexxys.Data
 			return ValueValidator.IsEin(value);
 		}
 
-		public static bool EinCode(string value, int length, bool nullable)
+		public static bool EinCode(string? value, int length, bool nullable)
 		{
 			return value == null ? nullable: (length <= 0 || value.Length <= length) && ValueValidator.IsEin(value);
 		}
@@ -190,34 +191,34 @@ namespace Lexxys.Data
 			return ValueValidator.IsSsn(value);
 		}
 
-		public static bool SsnCode(string value, bool nullable)
+		public static bool SsnCode(string? value, bool nullable)
 		{
 			return value == null ? nullable: ValueValidator.IsSsn(value);
 		}
 
-		public static bool SsnCode(string value, int length, bool nullable)
+		public static bool SsnCode(string? value, int length, bool nullable)
 		{
 			return value == null ? nullable: (length <= 0 || value.Length <= length) && ValueValidator.IsSsn(value);
 		}
 
-		public static bool UsZipCode(string value, int length, bool nullable)
+		public static bool UsZipCode(string? value, int length, bool nullable)
 		{
 			return value == null ? nullable: (length <= 0 || value.Length <= length) && ValueValidator.IsUsZipCode(value);
 		}
 
-		public static bool UsStateCode(string value, bool nullable)
+		public static bool UsStateCode(string? value, bool nullable)
 		{
 			return value == null ? nullable : (value = value.Trim()).Length == 2 && UsStateCodes.Value.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
 		}
 		private static readonly IValue<string> UsStateCodes = Config.Current.GetValue("Lexxys.Check.UsStateCodes", "AA AK AL AP AR AS AZ CA CO CT DC DE FL FM GA GU HI IA ID IL IN KS KY LA MA MD ME MI MN MO MP MS MT NC ND NE NH NJ NM NV NY OH OK OR PA PR PW RI SC SD TN TX UT VA VI VT WA WI WV WY");
 
-		public static bool CountryCode(string value, bool nullable)
+		public static bool CountryCode(string? value, bool nullable)
 		{
 			return value == null ? nullable : (value = value.Trim()).Length == 2 && CountryCodes.Value.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
 		}
 		private static readonly IValue<string> CountryCodes = Config.Current.GetValue("Lexxys.Check.CountryCodesCodes", "AD AE AF AG AI AL AM AN AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR ST SV SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW");
 
-		public static bool PostalCode(string value, int length, bool nullable = false)
+		public static bool PostalCode(string? value, int length, bool nullable = false)
 		{
 			return value == null ? nullable: (length <= 0 || value.Length <= length) && ValueValidator.IsPostalCode(value);
 		}
@@ -232,7 +233,7 @@ namespace Lexxys.Data
 		/// <param name="keyField">primary key field</param>
 		/// <param name="keyValue">value of primary key to skip</param>
 		/// <returns>true if the value is unique</returns>
-		public static bool UniqueField(IDataContext dc, string value, string table, string field, string keyField = null, int keyValue = 0)
+		public static bool UniqueField(IDataContext dc, string value, string table, string field, string? keyField = null, int keyValue = 0)
 		{
 			if (table == null || table.Length == 0)
 				throw EX.ArgumentNull(nameof(table));
@@ -246,7 +247,7 @@ namespace Lexxys.Data
 			return 0 == dc.GetValue<int>(query);
 		}
 
-		public static bool UniqueField(IDataContext dc, int value, string table, string field, string keyField = null, int keyValue = 0)
+		public static bool UniqueField(IDataContext dc, int value, string table, string field, string? keyField = null, int keyValue = 0)
 		{
 			if (table == null || table.Length == 0)
 				throw EX.ArgumentNull(nameof(table));
@@ -260,7 +261,7 @@ namespace Lexxys.Data
 			return 0 == dc.GetValue<int>(query);
 		}
 
-		public static bool IsId(string value)
+		public static bool IsId(string? value)
 		{
 			return Int32.TryParse(value, out int id) && id > 0 && Char.IsDigit(value, 0);
 		}
@@ -275,7 +276,7 @@ namespace Lexxys.Data
 			return value > 0;
 		}
 
-		public static bool Name(string value, string specialChars = null, bool nullable = false)
+		public static bool Name(string? value, string? specialChars = null, bool nullable = false)
 		{
 			if (value == null || (value = value.Trim()).Length == 0)
 				return nullable;

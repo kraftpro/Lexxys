@@ -9,12 +9,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-using Lexxys.Xml;
-
 #nullable enable
 
 namespace Lexxys.Configuration
 {
+	using Xml;
+
 	public class XmlConfigurationProvider: IConfigurationProvider
 	{
 		private const string ConfigurationRoot = "configuration";

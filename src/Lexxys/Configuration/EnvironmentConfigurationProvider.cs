@@ -9,13 +9,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Lexxys.Xml;
 
 #nullable enable
 
 namespace Lexxys.Configuration
 {
-	class EnvironmentConfigurationProvider: IConfigurationProvider
+	using Xml;
+
+	class EnvironmentConfigurationProvider : IConfigurationProvider
 	{
 		private static readonly Uri Uri = new Uri("system:environment");
 

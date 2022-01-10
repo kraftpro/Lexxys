@@ -733,7 +733,7 @@ namespace Lexxys.Tokenizer
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format(_culture, "{0}: {1}", _position, _buffer == null ? "(null)": Strings.Ellipsis(Strings.EscapeCsString(Substring(0, 120)), 120, "...\""));
+			return String.Format(_culture, "{0}: {1}", _position, _buffer == null ? "(null)": Strings.Ellipsis(Strings.EscapeCsString(Substring(0, 120)), 120, "…\""));
 		}
 	}
 }

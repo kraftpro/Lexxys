@@ -10,6 +10,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lexxys.Xml;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
+
+#nullable enable
 
 namespace Lexxys
 {
@@ -39,22 +42,22 @@ namespace Lexxys
 
 		public static string Left(this string value, int width)
 		{
-			return value == null ? null:
-				value.Length <= width ? value:
-				value.Substring(0, width);
+			if (value == null)
+				throw new ArgumentNullException(nameof(value));
+			return value.Length <= width ? value: value.Substring(0, width);
 		}
 
 		public static string Right(this string value, int width)
 		{
-			return value == null ? null:
-				value.Length <= width ? value:
-				value.Substring(value.Length - width, width);
+			if (value == null)
+				throw new ArgumentNullException(nameof(value));
+			return value.Length <= width ? value: value.Substring(value.Length - width, width);
 		}
 
 		public static string Slice(this string value, int left, int right)
 		{
 			if (value == null)
-				return null;
+				throw new ArgumentNullException(nameof(value));
 			if (left < 0)
 				left += value.Length;
 			if (right < 0)
@@ -66,12 +69,13 @@ namespace Lexxys
 			return left >= value.Length || left >= right ? "" : right >= value.Length ? value.Substring(left) : value.Substring(left, right - left);
 		}
 
-		public static string TrimToNull(this string value)
+		public static string? TrimToNull(this string? value)
 		{
 			return value == null || (value = value.Trim()).Length == 0 ? null: value;
 		}
 
-		public static unsafe string TrimSpace(this string value, string emptyValue = null, string space = null)
+		[return: NotNullIfNotNull("emptyValue")]
+		public static unsafe string? TrimSpace(this string? value, string? emptyValue = null, string? space = null)
 		{
 			if (value == null)
 				return emptyValue;
@@ -106,7 +110,7 @@ namespace Lexxys
 			}
 		}
 
-		public static bool IsWhiteSpace(this string value)
+		public static bool IsWhiteSpace(this string? value)
 		{
 			if (value == null)
 				return true;
@@ -118,7 +122,7 @@ namespace Lexxys
 			return true;
 		}
 
-		public static string JoinWith(this string left, string right, string delimiter = null, string space = null)
+		public static string JoinWith(this string? left, string? right, string? delimiter = null, string? space = null)
 		{
 			if (left == null)
 				left = "";
@@ -334,12 +338,13 @@ namespace Lexxys
 			return XmlTools.GetChar(value, defaultValue);
 		}
 
-		public static String AsString(this string value)
+		public static string? AsString(this string? value)
 		{
 			return XmlTools.GetString(value, null);
 		}
 
-		public static string AsString(this string value, String defaultValue)
+		[return: NotNullIfNotNull("defaultValue")]
+		public static string? AsString(this string? value, string? defaultValue)
 		{
 			return XmlTools.GetString(value, defaultValue);
 		}

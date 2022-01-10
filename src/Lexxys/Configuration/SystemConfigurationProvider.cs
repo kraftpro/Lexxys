@@ -9,15 +9,14 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using Lexxys.Xml;
 
 
 #nullable enable
 
 namespace Lexxys.Configuration
 {
+	using Xml;
+
 	[DebuggerDisplay("[System.Configuration]")]
 	public sealed class SystemConfigurationProvider: IConfigurationProvider
 	{

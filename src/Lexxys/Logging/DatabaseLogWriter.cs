@@ -16,6 +16,7 @@ using System.Text.RegularExpressions;
 namespace Lexxys.Logging
 {
 	using Xml;
+	using Data;
 
 	class DatabaseLogWriter : ILogWriter, IDisposable
 	{

@@ -7,37 +7,33 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+
+#nullable enable
 
 namespace Lexxys
 {
 	public static class Comparer
 	{
-		public static IComparer<T> Create<T>(Func<T, T, int> compare) => new GenericComparer<T>(compare);
+		public static IComparer<T> Create<T>(Func<T, T, int> compare)
+			=> new GenericComparer<T>(compare ?? throw new ArgumentNullException(nameof(compare)));
 
-		public static IComparer Create<T1, T2>(Func<T1, T2, int> compare) => new GenericComparer<T1, T2>(compare);
+		public static IComparer Create<T1, T2>(Func<T1, T2, int> compare)
+			=> new GenericComparer<T1, T2>(compare ?? throw new ArgumentNullException(nameof(compare)));
 
 		public static IEqualityComparer<T> Create<T>(Func<T, T, bool> compare)
-		{
-			if (compare == null)
-				throw new ArgumentNullException(nameof(compare));
-			return new GenericEqualityComparer<T>(compare);
-		}
+			=> new GenericEqualityComparer<T>(compare ?? throw new ArgumentNullException(nameof(compare)));
 
 		public static IEqualityComparer<T> Create<T>(Func<T, T, bool> compare, Func<T, int> hash)
-		{
-			if (compare == null)
-				throw new ArgumentNullException(nameof(compare));
-			return new GenericEqualityComparer<T>(compare, hash);
-		}
+			=> new GenericEqualityComparer<T>(compare ?? throw new ArgumentNullException(nameof(compare)), hash ?? throw new ArgumentNullException(nameof(hash)));
 
-		public static bool Equals<T>(IEnumerable<T> left, IEnumerable<T> right, IEqualityComparer<T> comparer = null)
+		public static bool Equals<T>(IEnumerable<T>? left, IEnumerable<T>? right, IEqualityComparer<T>? comparer = null)
 		{
 			if (left == null || right == null)
 				return Object.ReferenceEquals(left, right);
@@ -45,8 +41,7 @@ namespace Lexxys
 			if (left is ICollection cl && right is ICollection cr && cl.Count != cr.Count)
 				return false;
 
-			if (comparer == null)
-				comparer = EqualityComparer<T>.Default;
+			comparer ??= EqualityComparer<T>.Default;
 
 			using IEnumerator<T> enumerator1 = left.GetEnumerator();
 			using IEnumerator<T> enumerator2 = right.GetEnumerator();
@@ -60,7 +55,7 @@ namespace Lexxys
 			return !enumerator2.MoveNext();
 		}
 
-		public static int CompareBytes(byte[] left, byte[] right, bool forEqualsOnly)
+		public static int CompareBytes(byte[]? left, byte[]? right, bool forEqualsOnly)
 		{
 			if (left == null)
 				return (right == null) ? 0: -1;
@@ -84,30 +79,18 @@ namespace Lexxys
 		{
 			private readonly Func<T1, T2, int> _compare;
 
-			public GenericComparer(Func<T1, T2, int> compare)
-			{
-				_compare = compare;
-			}
+			public GenericComparer(Func<T1, T2, int> compare) => _compare = compare;
 
-			public int Compare(object x, object y)
-			{
-				return x is T1 t1 && y is T2 t2 ? _compare(t1, t2) : 2;
-			}
+			public int Compare(object? x, object? y) => x is T1 t1 && y is T2 t2 ? _compare(t1, t2) : 2;
 		}
 
 		private class GenericComparer<T>: IComparer<T>
 		{
 			private readonly Func<T, T, int> _compare;
 
-			public GenericComparer(Func<T, T, int> compare)
-			{
-				_compare = compare;
-			}
+			public GenericComparer(Func<T, T, int> compare) => _compare = compare;
 
-			public int Compare(T x, T y)
-			{
-				return _compare(x, y);
-			}
+			public int Compare(T? x, T? y) => x is null ? (y is null ? 0 : 1) : y is null ? -1 : _compare(x, y);
 		}
 
 		private class GenericEqualityComparer<T>: IEqualityComparer<T>
@@ -116,26 +99,14 @@ namespace Lexxys
 			private readonly Func<T, int> _hash;
 
 			public GenericEqualityComparer(Func<T, T, bool> equals)
-			{
-				_equals = equals;
-				_hash = o => o == null ? 0: o.GetHashCode();
-			}
+				=> (_equals, _hash) = (equals, o => o?.GetHashCode() ?? 0);
 
 			public GenericEqualityComparer(Func<T, T, bool> equals, Func<T, int> hash)
-			{
-				_equals = equals;
-				_hash = hash;
-			}
+				=> (_equals, _hash) = (equals, hash);
 
-			public bool Equals(T x, T y)
-			{
-				return _equals(x, y);
-			}
+			public bool Equals(T? x, T? y) => x is null ? y is null : y is not null && _equals(x, y);
 
-			public int GetHashCode(T obj)
-			{
-				return _hash(obj);
-			}
+			public int GetHashCode(T obj) => _hash(obj);
 		}
 
 		#endregion
@@ -173,7 +144,7 @@ namespace Lexxys
 			return h;
 		}
 
-		public static int Join(int offset, IEnumerable<int> items)
+		public static int Join(int offset, IEnumerable<int>? items)
 		{
 			if (items != null)
 			{
@@ -185,7 +156,7 @@ namespace Lexxys
 			return offset;
 		}
 
-		public static int Join<T>(int offset, IEnumerable<T> items)
+		public static int Join<T>(int offset, IEnumerable<T>? items)
 		{
 			if (items != null)
 			{
@@ -547,10 +518,11 @@ namespace Lexxys
 		}
 		private static readonly byte[] __hexB = { (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f' };
 
-		public static string RemoveExtraBraces(string value)
+		[return: NotNullIfNotNull("value")]
+		public static string? RemoveExtraBraces(string? value)
 		{
 			if (value == null)
-				return null;
+				return default;
 			var str = value.AsSpan().Trim();
 			while (str.Length > 1 && str[0] == '(' && str[str.Length - 1] == ')')
 			{
@@ -559,51 +531,7 @@ namespace Lexxys
 			return str.Length == value.Length ? value: str.ToString();
 		}
 
-		//public static string[] SplitByCapitals(string identifier)
-		//{
-		//	if (identifier == null || identifier.Length == 0)
-		//		return EmptyArray<string>.Value;
-		//	var ss = new List<string>();
-		//	var cc = identifier.AsSpan();
-		//	var c = cc[0];
-		//	CharType ot =
-		//		Char.IsUpper(c) ? CharType.Upper:
-		//		Char.IsLower(c) ? CharType.Lower:
-		//		Char.IsDigit(c) ? CharType.Digit: CharType.Other;
-
-		//	for (int i = 1; i < cc.Length; ++i)
-		//	{
-		//		c = cc[i];
-		//		CharType ct =
-		//			Char.IsUpper(c) ? CharType.Upper:
-		//			Char.IsLower(c) ? CharType.Lower:
-		//			Char.IsDigit(c) ? CharType.Digit: CharType.Other;
-
-		//		if (ct == ot)
-		//			continue;
-
-		//		if (ct > ot || ot == CharType.Other)
-		//		{
-		//			ss.Add(cc.Slice(0, i).ToString());
-		//			cc = cc.Slice(i);
-		//			i = 0;
-		//		}
-		//		else if (ct == CharType.Lower && ot == CharType.Upper && i > 1)
-		//		{
-		//			ss.Add(cc.Slice(0, i - 1).ToString());
-		//			cc = cc.Slice(i - 1);
-		//			i = 0;
-		//		}
-
-		//		ot = ct;
-		//	}
-
-		//	if (cc.Length > 0)
-		//		ss.Add(cc.ToString());
-		//	return ss.ToArray();
-		//}
-
-		public static (int Index, int Length)[] SplitByCapitals(string identifier)
+		public static (int Index, int Length)[] SplitByCapitals(string? identifier)
 		{
 			if (identifier == null || identifier.Length == 0)
 				return Array.Empty<(int, int)>();
@@ -651,9 +579,8 @@ namespace Lexxys
 			return ss.ToArray();
 		}
 
-		public static (int Index, int Length)[] SplitByWordBound(string value, int width, int count = 0)
+		public static (int Index, int Length)[] SplitByWordBound(string? value, int width, int count = 0)
 		{
-			Contract.Ensures(Contract.Result<(int Index, int Length)[]>() != null);
 			if (value == null)
 				return Array.Empty<(int, int)>();
 			if (count == 1 || value.Length <= width)
@@ -718,9 +645,10 @@ namespace Lexxys
 		}
 		private static readonly char[] CrLf = new[] {'\n', '\r'};
 
-		public static string ToTitleCase(string value)
+		[return: NotNullIfNotNull("value")]
+		public static string? ToTitleCase(string? value)
 		{
-			if (String.IsNullOrEmpty(value))
+			if (value == null || value.Length == 0)
 				return value;
 			var a = new char[value.Length];
 			a[0] = Char.ToUpperInvariant(value[0]);
@@ -728,56 +656,46 @@ namespace Lexxys
 			return new String(a);
 		}
 
-		public static string ToCamelCase(string value)
+		[return: NotNullIfNotNull("value")]
+		public static string? ToCamelCase(string? value)
 		{
-			if (String.IsNullOrEmpty(value))
+			if (value == null || value.Length == 0)
 				return value;
 
 			bool upper = false;
-			var ix = 0;
 			var ax = new char[value.Length].AsSpan();
+			value.AsSpan().ToLowerInvariant(ax);
 			foreach (var (index, length) in SplitByCapitals(value))
 			{
-				var f = value[index];
-				if (length == 0 || (length == 1 && f == '_'))
+				var f = ax[index];
+				if (length == 1 && f == '_')
 					continue;
 				if (upper)
-				{
-					ax[ix] = Char.ToUpperInvariant(f);
-					value.AsSpan(index + 1, length - 1).ToLowerInvariant(ax.Slice(ix + 1));
-				}
-				else
-				{
-					value.AsSpan(index, length).ToLowerInvariant(ax.Slice(ix));
-				}
-				ix += length;
+					ax[index] = Char.ToUpperInvariant(f);
 				upper = Char.IsLetter(f);
 			}
-			return ax.Slice(0, ix).ToString();
+			return ax.ToString();
 		}
 
-		public static string ToPascalCase(string value)
+		[return: NotNullIfNotNull("value")]
+		public static string? ToPascalCase(string? value)
 		{
-			if (String.IsNullOrEmpty(value))
+			if (value == null || value.Length == 0)
 				return value;
 
-			var ix = 0;
 			var ax = new char[value.Length].AsSpan();
+			value.AsSpan().ToLowerInvariant(ax);
 			foreach (var (index, length) in SplitByCapitals(value))
 			{
-				var f = value[index];
-				if (length == 0 || (length == 1 && f == '_'))
-					continue;
-				ax[ix] = Char.ToUpperInvariant(f);
-				value.AsSpan(index + 1, length - 1).ToLowerInvariant(ax.Slice(ix + 1));
-				ix += length;
+				ax[index] = Char.ToUpperInvariant(ax[index]);
 			}
-			return ax.Slice(0, ix).ToString();
+			return ax.ToString();
 		}
 
-		public static string ToDashed(string value, bool pascalCase, params char[] dash)
+		[return: NotNullIfNotNull("value")]
+		public static string? ToDashed(string? value, bool pascalCase, params char[] dash)
 		{
-			if (String.IsNullOrEmpty(value))
+			if (value == null || value.Length == 0)
 				return value;
 			if (dash == null || dash.Length == 0)
 				dash = __dashes;
@@ -812,9 +730,10 @@ namespace Lexxys
 		}
 		private static readonly char[] __dashes = new[] {'-'};
 
-		public static string ToNamingRule(string value, NamingCaseRule rule)
+		[return: NotNullIfNotNull("value")]
+		public static string? ToNamingRule(string? value, NamingCaseRule rule)
 		{
-			if (String.IsNullOrEmpty(value))
+			if (value == null || value.Length == 0)
 				return value;
 			return (rule & ~NamingCaseRule.Force) switch
 			{
@@ -822,27 +741,28 @@ namespace Lexxys
 				NamingCaseRule.PreferCamelCase => Strings.ToCamelCase(value),
 				NamingCaseRule.PreferPascalCase => Strings.ToPascalCase(value),
 				NamingCaseRule.PreferUpperCase => value.ToUpperInvariant(),
-				NamingCaseRule.PreferLowerCaseWithDashes => Strings.ToDashed(value, false, __dashChars).ToLowerInvariant(),
-				NamingCaseRule.PreferUpperCaseWithDashes => Strings.ToDashed(value, false, __dashChars).ToUpperInvariant(),
+				NamingCaseRule.PreferLowerCaseWithDashes => Strings.ToDashed(value, false, __dashChars)!.ToLowerInvariant(),
+				NamingCaseRule.PreferUpperCaseWithDashes => Strings.ToDashed(value, false, __dashChars)!.ToUpperInvariant(),
 				NamingCaseRule.PreferPascalCaseWithDashes => Strings.ToDashed(value, true, __dashChars),
-				NamingCaseRule.PreferLowerCaseWithUnserscores => Strings.ToDashed(value, false, __underscoreChars).ToLowerInvariant(),
-				NamingCaseRule.PreferUpperCaseWithUnserscores => Strings.ToDashed(value, false, __underscoreChars).ToUpperInvariant(),
-				NamingCaseRule.PreferPascalCaseWithUnserscores => Strings.ToDashed(value, true, __underscoreChars),
+				NamingCaseRule.PreferLowerCaseWithUnderscores => Strings.ToDashed(value, false, __underscoreChars)!.ToLowerInvariant(),
+				NamingCaseRule.PreferUpperCaseWithUnderscores => Strings.ToDashed(value, false, __underscoreChars)!.ToUpperInvariant(),
+				NamingCaseRule.PreferPascalCaseWithUnderscores => Strings.ToDashed(value, true, __underscoreChars),
 				_ => value,
 			};
 		}
 		private static readonly char[] __dashChars = new[] { '-', '_' };
 		private static readonly char[] __underscoreChars = new[] { '_', '-' };
 
-		public static string Ellipsis(string value, int length, string pad = null)
+		[return: NotNullIfNotNull("value")]
+		public static string? Ellipsis(string? value, int length, string? pad = null)
 		{
-			if (pad == null)
-				pad = "...";
-			return value == null ? null: value.Length <= length ? value:
-				length <= pad.Length ? pad.Substring(0, length): value.Substring(0, length - pad.Length) + pad;
+			if (value == null || value.Length <= length)
+				return value;
+			pad ??= "…";
+			return length <= pad.Length ? pad.Substring(0, length): value.Substring(0, length - pad.Length) + pad;
 		}
 
-		public static string JoinAnd(IEnumerable<string> values, string comma = null, string and = null)
+		public static string JoinAnd(IEnumerable<string>? values, string? comma = null, string? and = null)
 		{
 			if (values == null)
 				return "";
@@ -945,7 +865,8 @@ namespace Lexxys
 			return chars;
 		}
 
-		public static string ToHexString(byte[] value, string prefix = null)
+		[return: NotNullIfNotNull("value")]
+		public static string? ToHexString(byte[]? value, string? prefix = null)
 		{
 			if (value == null)
 				return null;
@@ -954,13 +875,14 @@ namespace Lexxys
 			char[] chars = new char[offset + length * 2];
 			for (int i = 0; i < offset; ++i)
 			{
-				chars[i] = prefix[i];
+				chars[i] = prefix![i];
 			}
 			ToHexCharArrayInternal(value, 0, length, chars, offset);
 			return new string(chars);
 		}
 
-		public static string ToBitsString(byte[] value)
+		[return: NotNullIfNotNull("value")]
+		public static string? ToBitsString(byte[]? value)
 		{
 			if (value == null)
 				return null;
@@ -983,7 +905,7 @@ namespace Lexxys
 			"1100", "1101", "1110", "1111",
 		};
 
-		public static string CutIndents(string[] source, int tabSize = 4, string newLine = null)
+		public static string CutIndents(string[]? source, int tabSize = 4, string? newLine = null)
 		{
 			if (tabSize < 1 || tabSize > 32)
 				throw new ArgumentOutOfRangeException(nameof(tabSize));
@@ -992,8 +914,7 @@ namespace Lexxys
 				return "";
 			if (source.Length == 1)
 				return source[0]?.Trim() ?? "";
-			if (newLine == null)
-				newLine = Environment.NewLine;
+			newLine ??= Environment.NewLine;
 			var result = new StringBuilder(source.Length * 80);
 			if ((source[source.Length - 1]?.Length ?? 0) == 0)
 			{
@@ -1063,7 +984,8 @@ namespace Lexxys
 			return result.ToString(0, result.Length - newLine.Length);
 		}
 
-		public static unsafe string EncodeUrl(string value)
+		[return: NotNullIfNotNull("value")]
+		public static unsafe string? EncodeUrl(string? value)
 		{
 			if (value == null)
 				return null;
@@ -1134,7 +1056,8 @@ namespace Lexxys
 		}
 		private static readonly char[] __hexDigits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-		public static unsafe string DecodeUrl(string value)
+		[return: NotNullIfNotNull("value")]
+		public static unsafe string? DecodeUrl(string? value)
 		{
 			if (value == null)
 				return null;
@@ -1243,7 +1166,7 @@ namespace Lexxys
 		/// <param name="directory">Directory to create temporary file or null to use curren user's temporary directory</param>
 		/// <param name="suffix">Temporary file suffix</param>
 		/// <returns><see cref="FileInfo"/> of the temporary file.</returns>
-		public static FileInfo GetTempFile(string directory, string suffix = null)
+		public static FileInfo GetTempFile(string? directory, string? suffix = null)
 		{
 			if (directory == null)
 				directory = Path.GetTempPath();
@@ -1279,7 +1202,7 @@ namespace Lexxys
 		/// <param name="directory">Directory to create temporary file or null to use curren user's temporary directory</param>
 		/// <param name="suffix">Temporary file suffix</param>
 		/// <param name="action">Action to execute for the created file</param>
-		public static void ActTempFile(string directory, string suffix, Action<FileInfo> action)
+		public static void ActTempFile(string? directory, string? suffix, Action<FileInfo> action)
 		{
 			if (action == null)
 				throw new ArgumentNullException(nameof(action));
@@ -1292,7 +1215,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="directory">Directory to create temporary file or null to use curren user's temporary directory</param>
 		/// <param name="action">Action to execute for the created file</param>
-		public static void ActTempFile(string directory, Action<FileInfo> action)
+		public static void ActTempFile(string? directory, Action<FileInfo> action)
 		{
 			if (action == null)
 				throw new ArgumentNullException(nameof(action));
@@ -1306,9 +1229,9 @@ namespace Lexxys
 		/// <param name="directory"></param>
 		/// <param name="suffix"></param>
 		/// <returns></returns>
-		public static async Task<FileInfo> GetTempFileAsync(string directory, string suffix = null)
+		public static Task<FileInfo> GetTempFileAsync(string? directory, string? suffix = null)
 		{
-			return await Task.Factory.StartNew(() => GetTempFile(directory, suffix)).ConfigureAwait(false);
+			return Task.Factory.StartNew(() => GetTempFile(directory, suffix));
 		}
 
 		/// <summary>
@@ -1318,12 +1241,12 @@ namespace Lexxys
 		/// <param name="suffix"></param>
 		/// <param name="action"></param>
 		/// <returns></returns>
-		public static async Task ActTempFileAsync(string directory, string suffix, Action<FileInfo> action)
+		public static Task ActTempFileAsync(string directory, string suffix, Action<FileInfo> action)
 		{
 			if (action == null)
 				throw new ArgumentNullException(nameof(action));
 
-			await Task.Factory.StartNew(() => ActTempFile(directory, suffix, action)).ConfigureAwait(false);
+			return Task.Factory.StartNew(() => ActTempFile(directory, suffix, action));
 		}
 
 		/// <summary>
@@ -1332,12 +1255,12 @@ namespace Lexxys
 		/// <param name="directory"></param>
 		/// <param name="action"></param>
 		/// <returns></returns>
-		public static async Task ActTempFileAsync(string directory, Action<FileInfo> action)
+		public static Task ActTempFileAsync(string directory, Action<FileInfo> action)
 		{
 			if (action == null)
 				throw new ArgumentNullException(nameof(action));
 
-			await Task.Factory.StartNew(() => ActTempFile(directory, action)).ConfigureAwait(false);
+			return Task.Factory.StartNew(() => ActTempFile(directory, action));
 		}
 
 		private static string OrderedName()
@@ -1486,7 +1409,7 @@ namespace Lexxys
 			999999999999999999L,
 		};
 
-		public static object GetUnderlyingValue(object value)
+		public static object? GetUnderlyingValue(object? value)
 		{
 			if (value == null)
 				return null;
@@ -1494,7 +1417,7 @@ namespace Lexxys
 				value = iv.Value;
 			if (DBNull.Value.Equals(value))
 				return null;
-			if (!value.GetType().IsEnum)
+			if (!value!.GetType().IsEnum)
 				return value;
 
 			return (Type.GetTypeCode(Enum.GetUnderlyingType(value.GetType()))) switch
@@ -1569,7 +1492,7 @@ namespace Lexxys
 		/// <summary>
 		/// Get executable name of the current module.
 		/// </summary>
-		internal static string ModuleFileName => System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+		internal static string? ModuleFileName => System.Diagnostics.Process.GetCurrentProcess()?.MainModule?.FileName;
 
 		internal static string DomainName
 		{

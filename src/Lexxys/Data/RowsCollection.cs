@@ -122,113 +122,75 @@ namespace Lexxys.Data
 	public sealed class RowsCollection
 	{
 		private readonly IFieldsCollection _fields;
-		private readonly object[][] _data;
+		private readonly List<object[]> _data;
 		private int _currentIndex;
 
-		public RowsCollection(DataTable table)
+		public RowsCollection(IDataReader reader)
 		{
-			if (table == null)
-				throw EX.ArgumentNull(nameof(table));
-			if (table == null)
-				throw EX.ArgumentNull(nameof(table));
-
-			_data = new object[table.Rows.Count][];
-			for (int i = 0; i < _data.Length; ++i)
+			if (reader == null)
+				throw new ArgumentNullException(nameof(reader));
+			_data = new List<object[]>();
+			while (reader.Read())
 			{
-				var row = table.Rows[i].ItemArray;
-				for (int j = 0; j < row.Length; j++)
-				{
-					if (row[j] == Convert.DBNull)
-						row[j] = null;
-				}
-				_data[i] = row;
+				object[] values = new object[reader.FieldCount];
+				reader.GetValues(values);
+				_data.Add(values);
 			}
-			_fields = new FieldsCollection(table.Columns.OfType<DataColumn>().Select(col => new DataTableField(col.ColumnName, col.DataType, this, col.Ordinal)).ToList());
-		}
-
-		private object[] Row
-		{
-			get
+			var fields = new DataTableField[reader.FieldCount];
+			for (int i = 0; i < fields.Length; ++i)
 			{
-				if (Eof)
-					throw EX.InvalidOperation();
-				//return _table.Rows[_currentIndex];
-				return _data[_currentIndex];
+				fields[i] = new DataTableField(reader.GetName(i), reader.GetFieldType(i), this, i);
 			}
+			_fields = new FieldsCollection(fields);
 		}
 
-		public bool Eof
-		{
-			get { return _currentIndex >= _data.Length; }
-		}
+		private object[] Row => !Eof ? _data[_currentIndex]: throw EX.InvalidOperation();
 
-		public int Count
-		{
-			get { return _data.Length; }
-		}
+		public bool Eof => _currentIndex >= _data.Count;
 
-		public IFieldsCollection Fields
-		{
-			get { return _fields; }
-		}
+		public int Count => _data.Count;
+
+		public IFieldsCollection Fields => _fields;
 
 		public void MoveFirst()
 		{
 			_currentIndex = 0;
 		}
 
-		public void MoveNext()
+		public bool MoveNext()
 		{
-			if (Eof)
-				throw EX.InvalidOperation();
+			if (_currentIndex >= _data.Count)
+				return false;
 			++_currentIndex;
+			return true;
 		}
 
 		private class FieldsCollection: IFieldsCollection
 		{
-			private readonly IList<DataTableField> _fields;
+			private readonly AField[] _fields;
 			private readonly IDictionary<string, DataTableField> _fildsDict;
 
-			public FieldsCollection(IList<DataTableField> fields)
+			public FieldsCollection(DataTableField[] fields)
 			{
 				_fields = fields ?? throw EX.ArgumentNull(nameof(fields));
-				_fildsDict = _fields.ToDictionary(f => f.Name, StringComparer.OrdinalIgnoreCase);
+				_fildsDict = fields.ToDictionary(f => f.Name, StringComparer.OrdinalIgnoreCase);
 			}
 
 			#region IFieldsCollection Members
 
-			public int Count
-			{
-				get { return _fields.Count; }
-			}
+			public int Count => _fields.Length;
 
-			public AField this[string index]
-			{
-				get { return _fildsDict[index]; }
-			}
+			public AField this[string index] => _fildsDict[index];
 
-			public AField this[int index]
-			{
-				get { return _fields[index]; }
-			}
-
-			#endregion
-
-			#region IEnumerable<IField> Members
-
-			public IEnumerator<AField> GetEnumerator()
-			{
-				return _fields.GetEnumerator();
-			}
+			public AField this[int index] => _fields[index];
 
 			#endregion
 
 			#region IEnumerable Members
 
-			System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-			{
-				return _fields.GetEnumerator();
-			}
+			public IEnumerator<AField> GetEnumerator() => ((IEnumerable<AField>)_fields).GetEnumerator();
+
+			System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _fields.GetEnumerator();
 
 			#endregion
 		}
@@ -262,21 +224,15 @@ namespace Lexxys.Data
 
 			#region IField Members
 
-			public override string Name
-			{
-				get { return _name; }
-			}
+			public override string Name => _name;
 
 			public override object Value
 			{
-				get { return _records.Row[_columnIndex]; }
-				set { _records.Row[_columnIndex] = value; }
+				get => _records.Row[_columnIndex];
+				set => _records.Row[_columnIndex] = value;
 			}
 
-			public override DbType Type
-			{
-				get { return _type; }
-			}
+			public override DbType Type => _type;
 			private static readonly DbType[] _typeCodeMap =
 			{
 				(DbType)(-1), (DbType)(-1), (DbType)(-1),
@@ -294,37 +250,37 @@ namespace Lexxys.Data
 			public override bool? GetBoolean()
 			{
 				object value = _records.Row[_columnIndex];
-				return value == null ? (bool?)null: Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+				return value == null ? default: Convert.ToBoolean(value, CultureInfo.InvariantCulture);
 			}
 
 			public override short? GetInt16()
 			{
 				object value = _records.Row[_columnIndex];
-				return value == null ? (short?)null: Convert.ToInt16(value, CultureInfo.InvariantCulture);
+				return value == null ? default: Convert.ToInt16(value, CultureInfo.InvariantCulture);
 			}
 
 			public override int? GetInt32()
 			{
 				object value = _records.Row[_columnIndex];
-				return value == null ? (int?)null: Convert.ToInt32(value, CultureInfo.InvariantCulture);
+				return value == null ? default: Convert.ToInt32(value, CultureInfo.InvariantCulture);
 			}
 
 			public override long? GetInt64()
 			{
 				object value = _records.Row[_columnIndex];
-				return value == null ? (long?)null: Convert.ToInt64(value, CultureInfo.InvariantCulture);
+				return value == null ? default: Convert.ToInt64(value, CultureInfo.InvariantCulture);
 			}
 
 			public override double? GetDouble()
 			{
 				object value = _records.Row[_columnIndex];
-				return value == null ? (double?)null: Convert.ToDouble(value);
+				return value == null ? default: Convert.ToDouble(value);
 			}
 
 			public override DateTime? GetDateTime()
 			{
 				object value = _records.Row[_columnIndex];
-				return value == null ? (DateTime?)null: Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+				return value == null ? default: Convert.ToDateTime(value, CultureInfo.InvariantCulture);
 			}
 
 			public override string GetString()
@@ -335,7 +291,7 @@ namespace Lexxys.Data
 			public override decimal? GetDecimal()
 			{
 				object value = _records.Row[_columnIndex];
-				return value == null ? (decimal?)null: Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+				return value == null ? default: Convert.ToDecimal(value, CultureInfo.InvariantCulture);
 			}
 
 			public override byte[] GetBytes()

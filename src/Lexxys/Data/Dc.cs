@@ -10,22 +10,19 @@ using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace Lexxys.Data
 {
-	public interface ITransactable : IDisposable
-	{
-		void Commit();
-		void Rollback();
-	}
 
 	public static class Dc
 	{
@@ -33,10 +30,29 @@ namespace Lexxys.Data
 		public const string ConfigSection = "database.connection";
 
 		public static ILogging Log => __log ??= new Logger("Dc");
-		private static ILogging __log;
+		private static ILogging? __log;
 
 		public static ILogging Timing => __logTrace ??= new Logger("Dc-Timing");
-		private static ILogging __logTrace;
+		private static ILogging? __logTrace;
+
+		private static IValue<ConnectionStringInfo> __connectionInfo = Config.Current.GetValue<ConnectionStringInfo>(ConfigSection);
+		private static IDataContextFactory __staticDataFactory = new SimpleDataFactory();
+		[ThreadStatic]
+		private static IDataContext? __instance;
+
+		public static IDataContextFactory StaticDataFactory
+		{
+			get => __staticDataFactory;
+			set => __staticDataFactory = value ?? throw new ArgumentNullException(nameof(value));
+		}
+
+		private class SimpleDataFactory: IDataContextFactory
+		{
+			public IDataContext CreateContext(ConnectionStringInfo connectionInfo) => new DataContext(connectionInfo);
+		}
+
+		public static IDataContext Instance => __instance ??= StaticDataFactory.CreateContext(__connectionInfo.Value);
+
 
 		#region Tools
 
@@ -220,7 +236,7 @@ namespace Lexxys.Data
 		}
 		public static string Equal(DateTime? value)
 		{
-			return value == null ? IsNullValue: Equal(value.Value);
+			return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
 		}
 		public static string Equal(Guid value)
 		{
@@ -228,7 +244,7 @@ namespace Lexxys.Data
 		}
 		public static string Equal(Guid? value)
 		{
-			return value == null ? IsNullValue: Equal(value.Value);
+			return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
 		}
 		public static string Equal(bool value)
 		{
@@ -236,7 +252,7 @@ namespace Lexxys.Data
 		}
 		public static string Equal(bool? value)
 		{
-			return value == null ? IsNullValue: Equal(value.Value);
+			return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
 		}
 		public static string Equal(int value)
 		{
@@ -244,7 +260,7 @@ namespace Lexxys.Data
 		}
 		public static string Equal(int? value)
 		{
-			return value == null ? IsNullValue: Equal(value.Value);
+			return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
 		}
 		public static string Equal(long value)
 		{
@@ -252,7 +268,7 @@ namespace Lexxys.Data
 		}
 		public static string Equal(long? value)
 		{
-			return value == null ? IsNullValue: Equal(value.Value);
+			return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
 		}
 		public static string Equal(double value)
 		{
@@ -260,7 +276,7 @@ namespace Lexxys.Data
 		}
 		public static string Equal(double? value)
 		{
-			return value == null ? IsNullValue: Equal(value.Value);
+			return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
 		}
 		public static string Equal(decimal value)
 		{
@@ -268,14 +284,14 @@ namespace Lexxys.Data
 		}
 		public static string Equal(decimal? value)
 		{
-			return value == null ? IsNullValue: Equal(value.Value);
+			return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
 		}
-		public static string Equal(byte[] value)
+		public static string Equal(byte[]? value)
 		{
 			return value == null ? IsNullValue: "=0x" + new String(Strings.ToHexCharArray(value));
 		}
 
-		public static string NotEqual(string value)
+		public static string NotEqual(string? value)
 		{
 			return value == null ? IsNotNullValue: "<>" + Value(value);
 		}
@@ -285,7 +301,7 @@ namespace Lexxys.Data
 		}
 		public static string NotEqual(DateTime? value)
 		{
-			return value == null ? IsNotNullValue: Value(value);
+			return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
 		}
 		public static string NotEqual(Guid value)
 		{
@@ -293,7 +309,7 @@ namespace Lexxys.Data
 		}
 		public static string NotEqual(Guid? value)
 		{
-			return value == null ? IsNotNullValue: Value(value);
+			return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
 		}
 		public static string NotEqual(bool value)
 		{
@@ -301,7 +317,7 @@ namespace Lexxys.Data
 		}
 		public static string NotEqual(bool? value)
 		{
-			return value == null ? IsNotNullValue: Value(value);
+			return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
 		}
 		public static string NotEqual(int value)
 		{
@@ -309,7 +325,7 @@ namespace Lexxys.Data
 		}
 		public static string NotEqual(int? value)
 		{
-			return value == null ? IsNotNullValue: Value(value);
+			return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
 		}
 		public static string NotEqual(long value)
 		{
@@ -317,7 +333,7 @@ namespace Lexxys.Data
 		}
 		public static string NotEqual(long? value)
 		{
-			return value == null ? IsNotNullValue: Value(value);
+			return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
 		}
 		public static string NotEqual(double value)
 		{
@@ -325,7 +341,7 @@ namespace Lexxys.Data
 		}
 		public static string NotEqual(double? value)
 		{
-			return value == null ? IsNotNullValue: Value(value);
+			return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
 		}
 		public static string NotEqual(decimal value)
 		{
@@ -333,14 +349,14 @@ namespace Lexxys.Data
 		}
 		public static string NotEqual(decimal? value)
 		{
-			return value == null ? IsNotNullValue: Value(value);
+			return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
 		}
-		public static string NotEqual(byte[] value)
+		public static string NotEqual(byte[]? value)
 		{
 			return value == null ? IsNotNullValue: "<>0x" + new String(Strings.ToHexCharArray(value));
 		}
 
-		public static string IdFilter(IEnumerable<int> ids)
+		public static string IdFilter(IEnumerable<int>? ids)
 		{
 			if (ids == null)
 				return EmptySqlFilter;
@@ -356,7 +372,7 @@ namespace Lexxys.Data
 		{
 			return value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture): "0";
 		}
-		public static string Id(string value)
+		public static string Id(string? value)
 		{
 			return Int32.TryParse(value, out int id) && id > 0 ? id.ToString(CultureInfo.InvariantCulture): "0";
 		}
@@ -364,7 +380,7 @@ namespace Lexxys.Data
 		{
 			return value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture): NullValue;
 		}
-		public static string IdOrNull(string value)
+		public static string IdOrNull(string? value)
 		{
 			return Int32.TryParse(value, out int id) && id > 0 ? id.ToString(CultureInfo.InvariantCulture): NullValue;
 		}
@@ -380,32 +396,33 @@ namespace Lexxys.Data
 		{
 			return value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
 		}
-		public static string Name(string value)
+		public static string Name(string? value)
 		{
 			if (value == null)
-				return null;
+				return String.Empty;
 			Match m = __objectPartsRex.Match(value.Trim());
 			return String.Join("", m.Groups[1].Captures.Cast<Capture>().Select(o => NamePart(o.Value) + ".")) + NamePart(m.Groups[2].Value);
 		}
 		private static readonly Regex __objectPartsRex = new Regex(@"\A(?:(?<a>\[(?:[^\]]|]])*\]|[^\.\[]*)\.){0,3}(?<b>.*)?\z", RegexOptions.IgnoreCase);
-		private static string NamePart(string name)
+		[return: NotNullIfNotNull("name")]
+		private static string NamePart(string? name)
 		{
-			return name == null || name.Length == 0 || (name[0] == '[' && name[name.Length - 1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
+			return name == null ? String.Empty: name.Length == 0 || (name[0] == '[' && name[name.Length - 1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
 		}
-		public static string TextValue(string value)
+		public static string TextValue(string? value)
 		{
-			return "'" + value.Replace("'", "''") + "'";
+			return value == null ? NullValue: "'" + value.Replace("'", "''") + "'";
 		}
-		public static string EscapeLike(string value)
+		public static string EscapeLike(string? value)
 		{
 			if (value == null)
-				return "";
+				return String.Empty;
 			if (value.Length > 2000)
 				value = value.Substring(0, 2000);
 			return value.Replace("[", "[[]").Replace("_", "[_]").Replace("%", "[%]");
 		}
 
-		public static string Value(string value)
+		public static string Value(string? value)
 		{
 			if (value == null)
 				return NullValue;
@@ -413,7 +430,7 @@ namespace Lexxys.Data
 				value = value.Substring(0, MaxStrLen);
 			return "'" + value.Replace("'", "''") + "'";
 		}
-		public static string Value(string value, bool unicode)
+		public static string Value(string? value, bool unicode)
 		{
 			if (value == null)
 				return NullValue;
@@ -495,15 +512,15 @@ namespace Lexxys.Data
 		{
 			return value.Amount.ToString(CultureInfo.InvariantCulture);
 		}
-		public static string Value(byte[] value)
+		public static string Value(byte[]? value)
 		{
-			return value == null ? NullValue: Strings.ToHexString(value, "0x");
+			return Strings.ToHexString(value, "0x") ?? NullValue;
 		}
-		public static string Value(IEnum value)
+		public static string Value(IEnum? value)
 		{
 			return value == null ? NullValue: Value(value.Value);
 		}
-		public static string Value(Enum value)
+		public static string Value(Enum? value)
 		{
 			if (value == null)
 				return NullValue;
@@ -518,10 +535,10 @@ namespace Lexxys.Data
 				TypeCode.UInt32 => Value(((IConvertible)value).ToUInt32(CultureInfo.InvariantCulture)),
 				TypeCode.Int64 => Value(((IConvertible)value).ToInt64(CultureInfo.InvariantCulture)),
 				TypeCode.UInt64 => Value(((IConvertible)value).ToUInt64(CultureInfo.InvariantCulture)),
-				_ => throw EX.ArgumentOutOfRange(nameof(value), value),
+				_ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
 			};
 		}
-		public static string Value(object value)
+		public static string Value(object? value)
 		{
 			if (value == null)
 				return NullValue;
@@ -578,12 +595,14 @@ namespace Lexxys.Data
 					if (value is IEnum enm)
 						return Value(enm.Value);
 
-					throw EX.ArgumentWrongType(nameof(value), type);
+					throw new ArgumentTypeException(nameof(value), type);
 			}
 		}
 		#endregion
 
 		#region Mappers
+
+		#nullable disable
 
 		internal static T ValueMapper<T>(DbCommand cmd)
 		{
@@ -639,12 +658,14 @@ namespace Lexxys.Data
 			return result;
 		}
 
+		#nullable enable
+
 		internal static bool XmlTextMapper(TextWriter text, DbCommand cmd)
 		{
 			if (text == null)
 				throw new ArgumentNullException(nameof(text));
 			bool here = false;
-			using (var reader = ((SqlCommand)cmd).ExecuteReader())
+			using (var reader = cmd.ExecuteReader())
 			{
 				do
 				{
@@ -658,15 +679,9 @@ namespace Lexxys.Data
 						{
 							if (!reader.IsDBNull(i))
 							{
-								var xml = reader.GetXmlReader(i);
-								if (xml.Read())
-								{
-									do
-									{
-										text.Write(xml.ReadOuterXml());
-										here = true;
-									} while (!xml.EOF);
-								}
+								var rdr = reader.GetTextReader(i);
+								text.Write(reader.GetString(i));
+								here = true;
 							}
 						}
 					}
@@ -680,7 +695,7 @@ namespace Lexxys.Data
 			if (text == null)
 				throw new ArgumentNullException(nameof(text));
 			bool here = false;
-			using (var reader = await ((SqlCommand)cmd).ExecuteReaderAsync().ConfigureAwait(false))
+			using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
 			{
 				do
 				{
@@ -694,15 +709,9 @@ namespace Lexxys.Data
 						{
 							if (!await reader.IsDBNullAsync(i).ConfigureAwait(false))
 							{
-								var xml = reader.GetXmlReader(i);
-								if (await xml.ReadAsync().ConfigureAwait(false))
-								{
-									do
-									{
-										await text.WriteAsync(await xml.ReadOuterXmlAsync().ConfigureAwait(false));
-										here = true;
-									} while (!xml.EOF);
-								}
+								var rdr = reader.GetTextReader(i);
+								text.Write(reader.GetString(i));
+								here = true;
 							}
 						}
 					}
@@ -714,7 +723,7 @@ namespace Lexxys.Data
 		internal static List<Xml.XmlLiteNode> XmlMapper(DbCommand cmd)
 		{
 			var result = new List<Xml.XmlLiteNode>();
-			using (var reader = ((SqlCommand)cmd).ExecuteReader())
+			using (var reader = cmd.ExecuteReader())
 			{
 				do
 				{
@@ -727,16 +736,7 @@ namespace Lexxys.Data
 						for (int i = 0; i < width; ++i)
 						{
 							if (!reader.IsDBNull(i))
-							{
-								var xml = reader.GetXmlReader(i);
-								if (xml.Read())
-								{
-									do
-									{
-										result.AddRange(Xml.XmlLiteNode.FromXmlFragment(xml));
-									} while (!xml.EOF);
-								}
-							}
+								result.AddRange(Xml.XmlLiteNode.FromXmlFragment(reader.GetString(i)));
 						}
 					}
 				} while (reader.NextResult());
@@ -747,7 +747,7 @@ namespace Lexxys.Data
 		internal static async Task<List<Xml.XmlLiteNode>> XmlMapperAsync(DbCommand cmd)
 		{
 			var result = new List<Xml.XmlLiteNode>();
-			using (var reader = await ((SqlCommand)cmd).ExecuteReaderAsync().ConfigureAwait(false))
+			using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
 			{
 				do
 				{
@@ -760,16 +760,7 @@ namespace Lexxys.Data
 						for (int i = 0; i < width; ++i)
 						{
 							if (!await reader.IsDBNullAsync(i).ConfigureAwait(false))
-							{
-								var xml = reader.GetXmlReader(i);
-								if (await xml.ReadAsync().ConfigureAwait(false))
-								{
-									do
-									{
-										result.AddRange(Xml.XmlLiteNode.FromXmlFragment(xml));
-									} while (!xml.EOF);
-								}
-							}
+								result.AddRange(Xml.XmlLiteNode.FromXmlFragment(reader.GetString(i)));
 						}
 					}
 				} while (await reader.NextResultAsync().ConfigureAwait(false));
@@ -777,29 +768,7 @@ namespace Lexxys.Data
 			return result;
 		}
 
-		internal static int ActionMapper(DbCommand cmd, int limit, Action<IDataRecord> mapper)
-		{
-			using DbDataReader reader = cmd.ExecuteReader();
-			int count = 0;
-			while (count < limit && reader.Read())
-			{
-				++count;
-				mapper(reader);
-			}
-			return count;
-		}
-
-		internal static async Task<int> ActionMapperAsync(DbCommand cmd, int limit, Action<IDataRecord> mapper)
-		{
-			using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
-			int count = 0;
-			while (count < limit && await reader.ReadAsync().ConfigureAwait(false))
-			{
-				++count;
-				mapper(reader);
-			}
-			return count;
-		}
+		#nullable disable
 
 		private static class AnonymousType<T>
 		{
@@ -849,7 +818,7 @@ namespace Lexxys.Data
 					if (values[i] == DBNull.Value)
 						values[i] = null;
 				}
-				return (T)constructor(values);
+				return (T)constructor(values)!;
 			}
 
 			public static T Construct(IDataRecord reader)
@@ -917,45 +886,52 @@ namespace Lexxys.Data
 
 		#endregion
 
+		#nullable enable
+
 		#endregion
 
 		#region Disposible objects
 
-		internal class Connecting : IDisposable
+		internal class Connecting: IContextHolder
 		{
-			private DataContextImplementation _context;
+			private DataContext _context;
 			private readonly int _count;
+			private bool _disposed;
 
-			public Connecting(DataContextImplementation context)
+			public Connecting(DataContext context)
 			{
-				if (context != null)
-					_count = context.Connect();
 				_context = context;
+				_count = context.Context.Connect();
 			}
+
+			public IDataContext Context => _context;
+
 			public void Dispose()
 			{
-				DataContextImplementation ctx = Interlocked.Exchange(ref _context, null);
-				if (ctx != null)
+				if (!_disposed)
 				{
-					Debug.Assert(ctx.ConnectionsCount == _count);
-					ctx.Disconnect();
+					_disposed = true;
+					Debug.Assert(_context.Context.ConnectionsCount == _count);
+					_context.Context.Disconnect();
 				}
 			}
 		}
 
-		internal class Transacting: ITransactable
+		internal sealed class Transacting: ITransactable
 		{
-			private DataContextImplementation _context;
+			private readonly DataContext _context;
 			private readonly int _count;
 			private readonly bool _autoCommit;
+			private bool _disposed;
 
-			public Transacting(DataContextImplementation context, bool autoCommit, IsolationLevel isolationLevel)
+			public Transacting(DataContext context, bool autoCommit, IsolationLevel isolationLevel)
 			{
-				if (context != null)
-					_count = context.Begin(isolationLevel);
-				_context = context;
+				_context = context ?? throw new ArgumentNullException(nameof(context));
+				_count = _context.Context.Begin(isolationLevel);
 				_autoCommit = autoCommit;
 			}
+
+			public IDataContext Context => _context;
 
 			public void Commit()
 			{
@@ -969,86 +945,112 @@ namespace Lexxys.Data
 
 			public void Dispose()
 			{
-				Close(_autoCommit, true);
+				if (!_disposed)
+				{
+					_disposed = true;
+					Close(_autoCommit, true);
+				}
 			}
 
 			private void Close(bool commit, bool dispose)
 			{
-				DataContextImplementation ctx = Interlocked.Exchange(ref _context, null);
-				if (ctx != null && ctx.TransactionsCount == _count)
+				if (commit)
 				{
-					if (commit)
-					{
-						if (dispose)
-							Log.Debug(SR.TransactionDisposedWithCommit());
-						ctx.Commit();
-					}
-					else
-					{
-						if (dispose)
-							Log.Debug(SR.TransactionDisposedWithRollback());
-						ctx.Rollback();
-					}
+					if (dispose)
+						Log.Debug(SR.TransactionDisposedWithCommit());
+					_context.Commit();
+				}
+				else
+				{
+					if (dispose)
+						Log.Debug(SR.TransactionDisposedWithRollback());
+					_context.Rollback();
 				}
 			}
 		}
 
-		internal class TimeoutLocker : IDisposable
+		internal sealed class ContextHolder: IContextHolder
 		{
-			private DataContextImplementation _context;
+			public ContextHolder(IDataContext context)
+			{
+				Context = context ?? throw new ArgumentNullException(nameof(context));
+			}
+
+			public IDataContext Context { get; }
+
+			public void Dispose()
+			{
+			}
+		}
+
+		internal sealed class TimeoutLocker: IContextHolder
+		{
+			private readonly DataContext _context;
 			private readonly TimeSpan _timeout;
-
-			public TimeoutLocker(DataContextImplementation context, TimeSpan timeout)
-			{
-				if (context != null)
-				{
-					_timeout = context.DefaultCommandTimeout;
-					context.DefaultCommandTimeout = timeout;
-				}
-				_context = context;
-			}
-			public void Dispose()
-			{
-				DataContextImplementation ctx = Interlocked.Exchange(ref _context, null);
-				if (ctx != null)
-					ctx.DefaultCommandTimeout = _timeout;
-			}
-		}
-
-		internal class TimingLocker: IDisposable
-		{
-			private readonly DataContextImplementation _context;
-
-			public TimingLocker(DataContextImplementation context)
-			{
-				context?.LockTiming();
-				_context = context;
-			}
-			public void Dispose()
-			{
-				if (_disposed) return;
-				_disposed = true;
-				_context?.UnlockTiming();
-			}
-			private static bool _disposed;
-		}
-
-		internal class TimeHolder: IDisposable
-		{
-			private readonly DataContextImplementation _context;
 			private bool _disposed;
 
-			public TimeHolder(DataContextImplementation context)
+			public TimeoutLocker(DataContext context, TimeSpan timeout)
 			{
-				_context = context;
+				_context = context ?? throw new ArgumentNullException(nameof(context));
+				_timeout = _context.Context.DefaultCommandTimeout;
+				_context.Context.DefaultCommandTimeout = timeout;
 			}
+
+			public IDataContext Context => _context;
 
 			public void Dispose()
 			{
 				if (!_disposed)
 				{
 					_disposed = true;
-					_context.UnlockNow();
+					_context.Context.DefaultCommandTimeout = _timeout;
+				}
+			}
+		}
+
+		internal sealed class TimingLocker: IContextHolder
+		{
+			private readonly DataContext _context;
+			private bool _disposed;
+
+			public TimingLocker(DataContext context)
+			{
+				_context = context ?? throw new ArgumentNullException(nameof(context));
+				_context.Context.Audit.LockTiming();
+			}
+
+			public IDataContext Context => _context;
+
+			public void Dispose()
+			{
+				if (!_disposed)
+				{
+					_disposed = true;
+					_context.Context.Audit.UnlockTiming();
+				}
+			}
+		}
+
+		internal sealed class TimeHolder: IContextHolder
+		{
+			private readonly DataContext _context;
+			private bool _disposed;
+
+			public TimeHolder(DataContext context)
+			{
+				_context = context ?? throw new ArgumentNullException(nameof(context));
+				if (!_context.Context.LockNow(_context.Context.Time))
+					_disposed = true;
+			}
+
+			public IDataContext Context => _context;
+
+			public void Dispose()
+			{
+				if (!_disposed)
+				{
+					_disposed = true;
+					_context.Context.UnlockNow();
 				}
 			}
 		}

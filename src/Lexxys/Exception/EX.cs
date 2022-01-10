@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys
 {
+	using Data;
 
 	public static class EX
 	{

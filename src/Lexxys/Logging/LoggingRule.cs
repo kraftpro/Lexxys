@@ -112,10 +112,7 @@ namespace Lexxys.Logging
 				return _exclude == null || !_exclude.IsMatch(source);
 			}
 
-			public bool Contains(LogType type)
-			{
-				return (_types & (LogTypeMask)(1 << (int)type)) != 0;
-			}
+			public bool Contains(LogType type) => (_types & (LogTypeMask)(1 << (int)type)) != 0;
 
 			private static Rule Create(string? type, string? include, string? exclude)
 			{

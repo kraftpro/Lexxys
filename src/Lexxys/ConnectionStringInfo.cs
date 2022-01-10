@@ -13,13 +13,9 @@ using Lexxys.Configuration;
 using Lexxys.Extensions;
 using Lexxys.Xml;
 
-// ReSharper disable StringLiteralTypo
-// ReSharper disable MemberCanBePrivate.Global
-#pragma warning disable CS1591
-
 #nullable enable
 
-namespace Lexxys
+namespace Lexxys.Data
 {
 	/// <summary>
 	/// Provides information about connection to database and commands behaviours.
@@ -41,62 +37,63 @@ namespace Lexxys
 			ConnectionAuditThreshold = DefaultConnectionAuditThreshold;
 			CommandAuditThreshold = DefaultCommandAuditThreshold;
 			BatchAuditThreshold = DefaultBatchAuditThreshold;
-			//ConnectionTimeout = DefaultConnectionTimeout;
-			//CommandTimeout = DefaultCommandTimeout;
 		}
 
-		public ConnectionStringInfo(IEnumerable<KeyValuePair<string?, string?>>? attribs)
+		public ConnectionStringInfo(IEnumerable<KeyValuePair<string, string?>>? attribs)
 			: this(null, attribs)
 		{
 		}
 
 		public ConnectionStringInfo(string connectionString)
-			: this(SplitParameters(connectionString))
+			: this(null, ParseParameters(connectionString))
 		{
 		}
 
-		public ConnectionStringInfo(string server, string database, IEnumerable<KeyValuePair<string?, string?>>? pairs = null)
-			: this(pairs)
+		public ConnectionStringInfo(string? server, string? database, IEnumerable<KeyValuePair<string, string?>>? pairs = null)
+			: this(null, pairs)
 		{
 			if (!String.IsNullOrWhiteSpace(server))
-				Server = server;
+				Server = server!.Trim();
 			if (!String.IsNullOrWhiteSpace(database))
-				Database = database;
+				Database = database!.Trim();
 		}
 
 		public ConnectionStringInfo(Uri location)
-			: this(location.SplitQuery())
+			: this(null, location.SplitQuery())
 		{
-			if (location.Scheme != "database")
+			if (!location.IsAbsoluteUri || location.Scheme != "database")
 				throw new ArgumentOutOfRangeException(nameof(location), location, null);
-
-			string? s;
-			if ((s = location.Host.TrimToNull()) != null)
+			string s;
+			if ((s = location.Authority.Trim()).Length > 0)
 				Server = s;
-			if ((s = location.LocalPath.Trim('/').TrimToNull()) != null)
+			if ((s = location.AbsolutePath.Trim('/').Trim()).Length > 0)
 				Database = s;
 		}
 
-		public ConnectionStringInfo(ConnectionStringInfo? connectionString, IEnumerable<KeyValuePair<string?, string?>>? attribs)
+		public ConnectionStringInfo(ConnectionStringInfo? connectionInfo)
 			: this()
 		{
-			if (connectionString != null)
-			{
-				Server = connectionString.Server;
-				Database = connectionString.Database;
-				Application = connectionString.Application;
-				Workstation = connectionString.Workstation;
-				UserId = connectionString.UserId;
-				Password = connectionString.Password;
-				ConnectionTimeout = connectionString.ConnectionTimeout;
-				ConnectionAuditThreshold = connectionString.ConnectionAuditThreshold;
-				CommandTimeout = connectionString.CommandTimeout;
-				CommandAuditThreshold = connectionString.CommandAuditThreshold;
-				BatchAuditThreshold = connectionString.BatchAuditThreshold;
-				if (connectionString._properties != null)
-					_properties = new Dictionary<string, string>(connectionString._properties);
-			}
-			
+			if (connectionInfo == null)
+				return;
+
+			Server = connectionInfo.Server;
+			Database = connectionInfo.Database;
+			Application = connectionInfo.Application;
+			Workstation = connectionInfo.Workstation;
+			UserId = connectionInfo.UserId;
+			Password = connectionInfo.Password;
+			ConnectionTimeout = connectionInfo.ConnectionTimeout;
+			ConnectionAuditThreshold = connectionInfo.ConnectionAuditThreshold;
+			CommandTimeout = connectionInfo.CommandTimeout;
+			CommandAuditThreshold = connectionInfo.CommandAuditThreshold;
+			BatchAuditThreshold = connectionInfo.BatchAuditThreshold;
+			if (connectionInfo._properties != null)
+				_properties = new Dictionary<string, string>(connectionInfo._properties);
+		}
+
+		public ConnectionStringInfo(ConnectionStringInfo? connectionString, IEnumerable<KeyValuePair<string, string?>>? attribs)
+			: this(connectionString)
+		{
 			if (attribs == null)
 				return;
 
@@ -105,8 +102,8 @@ namespace Lexxys
 			{
 				if (String.IsNullOrWhiteSpace(item.Key))
 					continue;
-				string name = item.Key!.Trim();
-				string? value = item.Value?.Trim() ?? "";
+				string name = item.Key.Trim();
+				string? value = item.Value ?? "";
 				string lookup = name.Replace(" ", "");
 				if (_synonyms.TryGetValue(lookup, out string? key))
 					lookup = key;
@@ -208,7 +205,7 @@ namespace Lexxys
 				if (value != null)
 				{
 					_properties ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-					_properties[key.ToLowerInvariant()] = value;
+					_properties[key] = value;
 				}
 			}
 			if (integratedSecurity)
@@ -240,24 +237,24 @@ namespace Lexxys
 			}
 		}
 
-		public string GetConnectionString()
+		public string GetConnectionString(bool odbc = false)
 		{
-			return ToString(true);
+			return ToString(true, odbc);
 		}
 
-		private string ToString(bool includeCredentials)
+		private string ToString(bool includeCredentials, bool odbc = false)
 		{
-			var connection = new StringBuilder(128);
+			StringBuilder connection = new StringBuilder(128);
 			if (Server != null)
-				connection.Append("server=").Append(Server).Append(';');
+				Append("server", Server);
 			if (Database != null)
-				connection.Append("database=").Append(Database).Append(';');
+				Append("database", Database);
 			if (Application != null)
-				connection.Append("app=").Append(Application).Append(';');
+				Append("app", Application);
 			if (Workstation != null)
-				connection.Append("wsid=").Append(Workstation).Append(';');
+				Append("wsid", Workstation);
 			if (ConnectionTimeout.Ticks > 0)
-				connection.Append("timeout=").Append(ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).Append(';');
+				Append("timeout", (ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).ToString());
 
 			if (Password == null)
 			{
@@ -265,21 +262,44 @@ namespace Lexxys
 			}
 			else
 			{
-				connection.Append("uid=").Append(String.IsNullOrEmpty(UserId) ? "sa": UserId).Append(';');
+				Append("uid", String.IsNullOrEmpty(UserId) ? "sa": UserId!);
 				if (includeCredentials)
-					connection.Append("pwd=").Append(Password).Append(';');
+					Append("pwd", Password);
 			}
 			if (_properties != null)
 			{
 				foreach (var item in _properties)
 				{
-					connection.Append(item.Key).Append('=').Append(item.Value).Append(';');
+					Append(item.Key, item.Value);
 				}
 			}
 			if (connection.Length > 0)
 				--connection.Length;
 			return connection.ToString();
+
+			void Append(string name, string value)
+			{
+				connection.Append(name).Append('=').Append(Value(value)).Append(';');
+			}
+
+			string Value(string value)
+			{
+				if (value.Length == 0)
+					return value;
+				if (odbc)
+					return value[0] == '{' || value.IndexOf(';') >= 0 ? "{" + value.Replace("}", "}}") + "}": value;
+
+				return
+					value.IndexOfAny(__adoAny) >= 0 || value.Length != value.Trim().Length || value.Any(Char.IsControl) ?
+						value.IndexOf('"') < 0 ?
+							"\"" + value + "\"":
+						value.IndexOf('\'') < 0 ?
+							"'" + value + "'":
+							"\"" + value.Replace("\"", "\"\"") + "\"":
+						value;
+			}
 		}
+		private static readonly char[] __adoAny = new [] {';', '\'', '"'};
 
 		public override string ToString()
 		{
@@ -304,7 +324,8 @@ namespace Lexxys
 				ConnectionAuditThreshold.GetHashCode(),
 				CommandTimeout.GetHashCode(),
 				CommandAuditThreshold.GetHashCode(),
-				BatchAuditThreshold.GetHashCode()
+				BatchAuditThreshold.GetHashCode(),
+				_properties?.GetHashCode() ?? 0
 				);
 		}
 
@@ -330,14 +351,8 @@ namespace Lexxys
 				return other._properties == null || other._properties.Count == 0;
 			if (other._properties == null || _properties.Count != other._properties.Count)
 				return false;
-			using var ai = _properties.GetEnumerator();
-			using var bi = _properties.GetEnumerator();
-			while (ai.MoveNext() && bi.MoveNext())
-			{
-				if (ai.Current.Key != bi.Current.Key || ai.Current.Value != bi.Current.Value)
-					return false;
-			}
-			return true;
+
+			return other._properties.All(o => _properties.TryGetValue(o.Key, out var value) && o.Value == value);
 		}
 
 		public static ConnectionStringInfo? Create(XmlLiteNode? config)
@@ -359,16 +374,127 @@ namespace Lexxys
 			return that;
 		}
 
-		private static IEnumerable<KeyValuePair<string?, string?>>? SplitParameters(string? value)
+		private static IList<KeyValuePair<string, string?>> ParseParameters(string value)
 		{
-			return String.IsNullOrWhiteSpace(value) ? null: value!.Split(';')
-				.Where(o => !String.IsNullOrWhiteSpace(o))
-				.Select(o =>
+			if (String.IsNullOrWhiteSpace(value))
+				return Array.Empty<KeyValuePair<string, string?>>();
+			var parameters = new List<KeyValuePair<string, string?>>();
+			var p = value.AsSpan();
+			while (p.Length > 0)
+			{
+				var i = p.IndexOf('=');
+				var j = p.IndexOf(';');
+				string name;
+				string val;
+
+				if (i < 0 || j >= 0 && j < i)
 				{
-					int i = o.IndexOf('=');
-					return i < 0 ? new KeyValuePair<string?, string?>(o, null) :
-						new KeyValuePair<string?, string?>(o.Substring(0, i), o.Substring(i + 1));
-				});
+					if (j < 0)
+					{
+						j = p.Length - 1;
+						name = p.Trim().ToString();
+					}
+					else
+					{
+						name = p.Slice(0, j).Trim().ToString();
+					}
+					if (name.Length > 0)
+						parameters.Add(new KeyValuePair<string, string?>(name, null));
+					p = p.Slice(j + 1);
+					continue;
+				}
+
+				name = p.Slice(0, i).Trim().ToString();
+
+				p = SkipSpace(p.Slice(i + 1));
+				if (p.Length == 0 || p[0] == ';')
+				{
+					if (name.Length > 0)
+						parameters.Add(new KeyValuePair<string, string?>(name, null));
+					if (p.Length > 0)
+						p = p.Slice(1);
+					continue;
+				}
+
+				(i, val) = ParseValue(p);
+				p = p.Slice(i);
+				j = p.IndexOf(';');
+				if (j < 0)
+				{
+					if (name.Length > 0)
+						parameters.Add(new KeyValuePair<string, string?>(name, val));
+					return parameters;
+				}
+				if (name.Length > 0)
+					parameters.Add(new KeyValuePair<string, string?>(name, val));
+				p = p.Slice(j + 1);
+			}
+			return parameters;
+
+			ReadOnlySpan<char> SkipSpace(ReadOnlySpan<char> p)
+			{
+				for (int i = 0; i < p.Length; ++i)
+				{
+					if (!Char.IsWhiteSpace(p[i]))
+						return p.Slice(i);
+				}
+				return ReadOnlySpan<char>.Empty;
+			}
+
+			(int Length, string Value) ParseValue(ReadOnlySpan<char> p)
+			{
+				if (p.Length == 0)
+					return (0, String.Empty);
+				if (p[0] is '"' or '\'')
+					return ParseAdoValue(p);
+				if (p[0] is '{')
+					return ParseOdbcValue(p);
+				int i = p.IndexOf(';');
+				return i < 0 ?
+					(p.Length, p.TrimEnd().ToString()) :
+					(i, p.Slice(0, i).TrimEnd().ToString());
+			}
+
+			(int Length, string Value) ParseAdoValue(ReadOnlySpan<char> p)
+			{
+				char d = p[0];
+				if (p.Length == 1)
+					return (1, String.Empty);
+				var text = new StringBuilder();
+				for (int i = 1; i < p.Length; ++i)
+				{
+					char c = p[i];
+					if (c == '\\')
+						text.Append(++i < p.Length ? p[i]: c);
+					else if (c == d)
+						if (++i < p.Length && p[i] == d)
+							text.Append(d);
+						else
+							return (i, text.ToString());
+					else
+						text.Append(c);
+				}
+				return (p.Length, text.ToString());
+			}
+
+			(int Length, string Value) ParseOdbcValue(ReadOnlySpan<char> p)
+			{
+				if (p.Length == 1)
+					return (1, String.Empty);
+				var text = new StringBuilder();
+				for (int i = 1; i < p.Length; ++i)
+				{
+					char c = p[i];
+					if (c == '}')
+						if (++i < p.Length && p[i] == '}')
+							text.Append('}');
+						else
+							return (i, text.ToString());
+					else
+						text.Append(c);
+				}
+				return (p.Length, text.ToString());
+			}
 		}
 
 

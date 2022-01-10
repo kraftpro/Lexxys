@@ -54,8 +54,8 @@ namespace Lexxys.Logging
 			if (node == null || node.IsEmpty)
 				return null;
 
-			string name = node["name"].AsString(null);
-			string className = node["class"].AsString(null);
+			string? name = node["name"].AsString(null);
+			string? className = node["class"].AsString(null);
 			if (className != null)
 				return CreateLogWriter(className, name, node);
 
@@ -63,7 +63,7 @@ namespace Lexxys.Logging
 			return null;
 		}
 
-		private static LogWriter? CreateLogWriter(string className, string name, XmlLiteNode node)
+		private static LogWriter? CreateLogWriter(string className, string? name, XmlLiteNode node)
 		{
 			if (String.IsNullOrEmpty(className))
 				return null;
@@ -74,7 +74,7 @@ namespace Lexxys.Logging
 					(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
 				if (type != null && type.IsSubclassOf(typeof(LogWriter)))
 					writer = Factory.TryGetConstructor(type, false, new[] { typeof(string), typeof(XmlLiteNode) })?
-						.Invoke(new object[] { name, node }) as LogWriter;
+						.Invoke(new object?[] { name, node }) as LogWriter;
 				if (writer == null)
 					LogWriter.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className));
 			}

@@ -315,7 +315,7 @@ configuration
 			{
 				var p = Config.AddConfiguration(@"test.db.config.txt");
 				Assert.IsNotNull(p);
-				var c = Config.Current.GetValue<ConnectionStringInfo>("database.connection").Value;
+				var c = Config.Current.GetValue<Lexxys.Data.ConnectionStringInfo>("database.connection").Value;
 				Assert.IsNotNull(c);
 			}
 		}

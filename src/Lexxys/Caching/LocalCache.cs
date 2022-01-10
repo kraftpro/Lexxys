@@ -95,7 +95,7 @@ namespace Lexxys
 		{
 			if (!_cache.TryGetValue(key, out CacheItem? item))
 			{
-				result = default;
+				result = default!;
 				return false;
 			}
 			if (item.IsDirty(_timeToLive, _slidingExpiration))
@@ -103,7 +103,7 @@ namespace Lexxys
 				// It's possible to remove a freshly added item.
 				if (!_cache.TryRemove(key, out var it) || it == item)
 				{
-					result = default;
+					result = default!;
 					return false;
 				}
 				_cache.TryAdd(key, it);

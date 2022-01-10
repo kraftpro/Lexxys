@@ -7,11 +7,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-#if NETCOREAPP
-using Microsoft.Extensions.Caching.Memory;
-#else
 using System.Runtime.Caching;
-#endif
 
 #nullable enable
 
@@ -22,11 +18,7 @@ namespace Lexxys
 	/// </summary>
 	public static class RuntimeCache
 	{
-#if NET5_0_OR_GREATER
-		private static readonly MemoryCache Default = new MemoryCache(new OptOut<MemoryCacheOptions>(() => new MemoryCacheOptions { CompactionPercentage = 0.5, ExpirationScanFrequency = TimeSpan.FromMinutes(2) }));
-#else
 		private static readonly MemoryCache Default = MemoryCache.Default;
-#endif
 
 		/// <summary>10 Seconds</summary>
 		public static readonly TimeSpan Local = new TimeSpan(0, 0, 10);
@@ -68,11 +60,7 @@ namespace Lexxys
 		public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive = default)
 			where TValue: class
 		{
-#if NET5_0_OR_GREATER
-			if (Default.TryGetValue<TValue>(key, out var value))
-#else
 			if (Default[key] is TValue value)
-#endif
 				return value;
 
 			if (timeToLive == default)
@@ -96,11 +84,7 @@ namespace Lexxys
 		public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive, TimeSpan slidingExpiration)
 			where TValue: class
 		{
-#if NET5_0_OR_GREATER
-			if (Default.TryGetValue<TValue>(key, out var value))
-#else
 			if (Default[key] is TValue value)
-#endif
 				return value;
 
 			if (slidingExpiration == default)
@@ -117,13 +101,7 @@ namespace Lexxys
 			else if (timeToLive < MinTimeToLive)
 				timeToLive = MinTimeToLive;
 			value = producer();
-			Default.Set(key, value,
-#if NET5_0_OR_GREATER
-				new MemoryCacheEntryOptions { AbsoluteExpiration = DateTime.UtcNow + timeToLive, SlidingExpiration = slidingExpiration }
-#else
-				new CacheItemPolicy { AbsoluteExpiration = DateTime.UtcNow + timeToLive, SlidingExpiration = slidingExpiration }
-#endif
-				);
+			Default.Set(key, value, new CacheItemPolicy { AbsoluteExpiration = DateTime.UtcNow + timeToLive, SlidingExpiration = slidingExpiration });
 			return value;
 		}
 
@@ -172,7 +150,7 @@ namespace Lexxys
 				TimeToLive = timeToLive;
 			}
 
-			public override bool Equals(object obj)
+			public override bool Equals(object? obj)
 			{
 				return obj is CollectionDefinition definition && Equals(definition);
 			}
@@ -200,7 +178,6 @@ namespace Lexxys
 		/// <param name="capacity">Collection capacity</param>
 		/// <param name="factory">Default collection item factory.</param>
 		/// <param name="comparer">Collection item key comparer.</param>
-		/// <param name="growFactor">Collection grow factor</param>
 		/// <typeparam name="TKey"></typeparam>
 		/// <typeparam name="TValue"></typeparam>
 		/// <returns>The <see cref="CollectionKey{TKey,TValue}"/> for the created collection definition.</returns>

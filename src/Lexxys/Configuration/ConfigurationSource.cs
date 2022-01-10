@@ -1,17 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
-using Lexxys.Xml;
-using System.IO;
 
 #nullable enable
 
 namespace Lexxys.Configuration
 {
+	using Xml;
+
 	internal class ConfigurationSource
 	{
 		internal static IEnumerable<XmlLiteNode>? HandleInclude(string logSource, IReadOnlyCollection<string> parameters, string? directory, ref List<string>? includes, EventHandler<ConfigurationEventArgs> eventHandler)

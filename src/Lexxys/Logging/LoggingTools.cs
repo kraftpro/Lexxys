@@ -14,7 +14,7 @@ namespace Lexxys
 	{
 		public static void Log<TState>(ILogging log, LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string?>? formatter)
 		{
-			var logType = LogTypeFromLogLevel(logLevel);
+			var logType = ToLogType(logLevel);
 			if (!log.IsEnabled(logType))
 				return;
 			IDictionary? args = state as IDictionary;
@@ -27,7 +27,7 @@ namespace Lexxys
 		}
 
 		public static bool IsEnabled(ILogging log, LogLevel logLevel)
-			=> log.IsEnabled(LogTypeFromLogLevel(logLevel));
+			=> log.IsEnabled(ToLogType(logLevel));
 
 		public static IDisposable BeginScope<TState>(ILogging log, TState state)
 		{
@@ -36,7 +36,7 @@ namespace Lexxys
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static LogType LogTypeFromLogLevel(LogLevel logLevel) => logLevel switch
+		public static LogType ToLogType(LogLevel logLevel) => logLevel switch
 		{
 			LogLevel.Trace => LogType.Trace,
 			LogLevel.Debug => LogType.Debug,
@@ -45,6 +45,18 @@ namespace Lexxys
 			LogLevel.Error => LogType.Error,
 			LogLevel.Critical => LogType.Output,
 			_ => LogType.MaxValue
+		};
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static LogLevel ToLogLevel(LogType logType) => logType switch
+		{
+			LogType.Trace => LogLevel.Trace,
+			LogType.Debug => LogLevel.Debug,
+			LogType.Information => LogLevel.Information,
+			LogType.Warning => LogLevel.Warning,
+			LogType.Error => LogLevel.Error,
+			LogType.Output => LogLevel.Critical,
+			_ => LogLevel.None
 		};
 
 		public static IDisposable Disposable => NullDisposable.Value;

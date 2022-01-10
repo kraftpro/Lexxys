@@ -8,40 +8,48 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
-using Lexxys;
 
 #nullable enable
 
 namespace Lexxys.Data
 {
-	public sealed class DataContext: IDataContext, IDisposable
+	public sealed class DataContext: IDataContext
 	{
-		private static readonly IValue<ConnectionStringInfo?> __globalConnetionString = Config.Current.GetValue<ConnectionStringInfo>(Dc.ConfigSection, null);
+		private static readonly IValue<ConnectionStringInfo> __globalConnetionString = Config.Current.GetValue<ConnectionStringInfo>(Dc.ConfigSection, null);
+		private static Func<string, DbConnection> __defaultConnectionFactory = o => new System.Data.SqlClient.SqlConnection(o);
 
 		private readonly DataContextImplementation _context;
 
+		public static Func<string, DbConnection> DefaultConnectionFactory
+		{
+			get => __defaultConnectionFactory;
+			set => __defaultConnectionFactory = value ?? throw new ArgumentNullException(nameof(value));
+		}
 
-		public DataContext(): this(__globalConnetionString?.Value)
+		public DataContext(Func<string, DbConnection>? factory = null) : this(__globalConnetionString.Value, factory)
 		{
 		}
 
-		public DataContext(ConnectionStringInfo? connectionInfo)
+		public DataContext(ConnectionStringInfo connectionInfo, Func<string, DbConnection>? connectionFactory = null)
 		{
 			if (connectionInfo == null)
 				throw new ArgumentNullException(nameof(connectionInfo));
-			_context = new DataContextImplementation(connectionInfo);
+			connectionFactory ??= __defaultConnectionFactory;
+			_context = new DataContextImplementation(connectionFactory(connectionInfo.GetConnectionString()), connectionInfo.CommandTimeout, new DataAudit(connectionInfo.ConnectionAuditThreshold, connectionInfo.ConnectionAuditThreshold, connectionInfo.BatchAuditThreshold));
 		}
 
-		public TimeSpan ConnectTime => _context.ConnectTime;
+		internal DataContextImplementation Context => _context;
 
-		public TimeSpan TransactTime => _context.TransactTime;
+		public TimeSpan ConnectTime => _context.Audit.ConnectTime;
 
-		public TimeSpan QueryTime => _context.QueryTime;
+		public TimeSpan TransactTime => _context.Audit.TransactTime;
 
-		public TimeSpan TotalTime => _context.TotalTime;
+		public TimeSpan QueryTime => _context.Audit.QueryTime;
+
+		public TimeSpan TotalTime => _context.Audit.TotalTime;
 
 		public event Action Committed
 		{
@@ -63,13 +71,13 @@ namespace Lexxys.Data
 
 		public DateTime Now => _context.Now;
 
-		public IDisposable? HoldTheMoment() => _context.LockNow(_context.Time) ? new Dc.TimeHolder(_context) : null;
+		public IContextHolder HoldTheMoment() => new Dc.TimeHolder(this);
 
-		public IDisposable Connection() => new Dc.Connecting(_context);
+		public IContextHolder Connection() => new Dc.Connecting(this);
 
-		public ITransactable Transaction(bool autoCommit = false, IsolationLevel isolation = default) => new Dc.Transacting(_context, autoCommit, isolation);
+		public ITransactable Transaction(bool autoCommit = false, IsolationLevel isolation = default) => new Dc.Transacting(this, autoCommit, isolation);
 
-		public IDisposable NoTiming() => new Dc.TimingLocker(_context);
+		public IContextHolder NoTiming() => new Dc.TimingLocker(this);
 
 		public void Commit() => _context.Commit();
 
@@ -77,11 +85,12 @@ namespace Lexxys.Data
 
 		public void SetQueryTimeout(TimeSpan timeout) => _context.CommandTimeout = timeout;
 
-		public IDisposable? CommadTimeout(TimeSpan timeout, bool always = false) => always || _context.CommandTimeout < timeout ? new Dc.TimeoutLocker(_context, timeout) : null;
+		public IContextHolder CommadTimeout(TimeSpan timeout, bool always = false) => always || _context.CommandTimeout < timeout ? new Dc.TimeoutLocker(this, timeout): new Dc.ContextHolder(this);
 
-		public void ResetStatistics() => _context.ResetStatistics();
+		public void ResetStatistics() => _context.Audit.Reset();
 
-		public T? GetValue<T>(string query, params DbParameter[] parameters) => Map(Dc.ValueMapper<T>, query, parameters);
+		[return: MaybeNull]
+		public T GetValue<T>(string query, params DbParameter[] parameters) => Map(Dc.ValueMapper<T>, query, parameters);
 
 		public Task<T> GetValueAsync<T>(string query, params DbParameter[] parameters) => MapAsync(Dc.ValueMapperAsync<T>, query, parameters);
 
@@ -99,12 +108,11 @@ namespace Lexxys.Data
 
 		public List<RowsCollection> Records(int count, string query, params DbParameter[] parameters)
 		{
-			long t = 0;
+			long t = _context.Audit.Start();
 			try
 			{
-				t = DataContextImplementation.TimingBegin();
 				var result = _context.Records(count, query, parameters);
-				_context.TimingEnd(query, t);
+				_context.Audit.QueryEnd(query, t);
 				return result;
 			}
 			catch (Exception flaw)
@@ -124,20 +132,6 @@ namespace Lexxys.Data
 			}
 		}
 
-		public int Map(int limit, Action<IDataRecord> mapper, string query, params DbParameter[] parameters)
-		{
-			if (mapper == null)
-				throw new ArgumentNullException(nameof(mapper));
-			return Map(o => Dc.ActionMapper(o, limit, mapper), query, parameters);
-		}
-
-		public Task<int> MapAsync(int limit, Action<IDataRecord> mapper, string query, params DbParameter[] parameters)
-		{
-			if (mapper == null)
-				throw new ArgumentNullException(nameof(mapper));
-			return MapAsync(o => Dc.ActionMapperAsync(o, limit, mapper), query, parameters);
-		}
-
 		public T Map<T>(Func<DbCommand, T> mapper, string query, params DbParameter[] parameters)
 		{
 			if (mapper == null)
@@ -153,9 +147,9 @@ namespace Lexxys.Data
 					using DbCommand cmd = _context.Command(query);
 					if (parameters != null && parameters.Length > 0)
 						cmd.Parameters.AddRange(parameters);
-					t = DataContextImplementation.TimingBegin();
+					t = _context.Audit.Start();
 					T result = mapper(cmd);
-					_context.TimingEnd(query, t);
+					_context.Audit.QueryEnd(query, t);
 					return result;
 				}
 			}
@@ -192,7 +186,7 @@ namespace Lexxys.Data
 				using DbCommand cmd = _context.Command(query);
 				if (parameters != null && parameters.Length > 0)
 					cmd.Parameters.AddRange(parameters);
-				t = DataContextImplementation.TimingBegin();
+				t = _context.Audit.Start();
 				var result = await mapper(cmd).ConfigureAwait(false);
 				return result;
 			}
@@ -214,7 +208,7 @@ namespace Lexxys.Data
 			finally
 			{
 				if (t != 0)
-					_context.TimingEnd(query, t);
+					_context.Audit.QueryEnd(query, t);
 				if (connected)
 					_context.Disconnect();
 			}
@@ -232,9 +226,9 @@ namespace Lexxys.Data
 				{
 					command.Connection = _context.Connection;
 					command.Transaction = _context.Transaction;
-					t = DataContextImplementation.TimingBegin();
+					t = _context.Audit.Start();
 					var result = command.ExecuteNonQuery();
-					_context.TimingEnd(command.CommandText, t);
+					_context.Audit.QueryEnd(command.CommandText, t);
 					return result;
 				}
 			}
@@ -259,7 +253,7 @@ namespace Lexxys.Data
 				connected = true;
 				command.Connection = _context.Connection;
 				command.Transaction = _context.Transaction;
-				t = DataContextImplementation.TimingBegin();
+				t = _context.Audit.Start();
 				var result = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 				return result;
 			}
@@ -272,7 +266,7 @@ namespace Lexxys.Data
 			finally
 			{
 				if (t != 0)
-					_context.TimingEnd(command.CommandText, t);
+					_context.Audit.QueryEnd(command.CommandText, t);
 				if (connected)
 					_context.Disconnect();
 			}
@@ -291,9 +285,9 @@ namespace Lexxys.Data
 					using DbCommand cmd = _context.Command(statement);
 					if (parameters != null && parameters.Length > 0)
 						cmd.Parameters.AddRange(parameters);
-					t = DataContextImplementation.TimingBegin();
+					t = _context.Audit.Start();
 					int result = cmd.ExecuteNonQuery();
-					_context.TimingEnd(statement, t);
+					_context.Audit.QueryEnd(statement, t);
 					return result;
 				}
 			}
@@ -327,9 +321,9 @@ namespace Lexxys.Data
 				using DbCommand cmd = _context.Command(statement);
 				if (parameters != null && parameters.Length > 0)
 					cmd.Parameters.AddRange(parameters);
-				t = DataContextImplementation.TimingBegin();
+				t = _context.Audit.Start();
 				int result = await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-				_context.TimingEnd(statement, t);
+				_context.Audit.QueryEnd(statement, t);
 				return result;
 			}
 			catch (Exception flaw)
@@ -349,11 +343,13 @@ namespace Lexxys.Data
 			finally
 			{
 				if (t != 0)
-					_context.TimingEnd(statement, t);
+					_context.Audit.QueryEnd(statement, t);
 				if (connected)
 					_context.Disconnect();
 			}
 		}
+
+		//public DbCommand CreateCommand() => _context.Connection.CreateCommand();
 
 		public void Dispose()
 		{

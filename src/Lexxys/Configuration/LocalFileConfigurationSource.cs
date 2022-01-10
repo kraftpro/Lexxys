@@ -9,16 +9,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-using Lexxys;
-
-using Lexxys.Xml;
-
 #nullable enable
 
 namespace Lexxys.Configuration
 {
+	using Xml;
 
-	class LocalFileConfigurationSource: IXmlConfigurationSource
+	class LocalFileConfigurationSource : IXmlConfigurationSource
 	{
 		private const string LogSource = "Lexxys.Configuration.LocalFileConfigurationSource";
 		private readonly FileInfo _file;

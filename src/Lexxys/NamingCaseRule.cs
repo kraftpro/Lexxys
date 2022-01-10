@@ -22,9 +22,9 @@ namespace Lexxys
 		PreferLowerCaseWithDashes = 5,
 		PreferPascalCaseWithDashes = 6,
 		PreferUpperCaseWithDashes = 7,
-		PreferLowerCaseWithUnserscores = 8,
-		PreferPascalCaseWithUnserscores = 9,
-		PreferUpperCaseWithUnserscores = 10,
+		PreferLowerCaseWithUnderscores = 8,
+		PreferPascalCaseWithUnderscores = 9,
+		PreferUpperCaseWithUnderscores = 10,
 
 		Force = 32,
 		ForceLowerCase = Force + PreferLowerCase,
@@ -34,9 +34,9 @@ namespace Lexxys
 		ForceLowerCaseWithDashes = Force + PreferLowerCaseWithDashes,
 		ForcePascalCaseWithDashes = Force + PreferPascalCaseWithDashes,
 		ForceUpperCaseWithDashes = Force + PreferUpperCaseWithDashes,
-		ForceLowerCaseWithUnserscores = Force + PreferLowerCaseWithUnserscores,
-		ForceUpperCaseWithUnserscores = Force + PreferUpperCaseWithUnserscores,
-		ForcePascalCaseWithUnserscores = Force + PreferPascalCaseWithUnserscores,
+		ForceLowerCaseWithUnserscores = Force + PreferLowerCaseWithUnderscores,
+		ForceUpperCaseWithUnserscores = Force + PreferUpperCaseWithUnderscores,
+		ForcePascalCaseWithUnserscores = Force + PreferPascalCaseWithUnderscores,
 	}
 }
 

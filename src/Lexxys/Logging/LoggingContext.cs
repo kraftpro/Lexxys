@@ -15,14 +15,14 @@ using Lexxys.Xml;
 
 namespace Lexxys.Logging
 {
-	public static class LoggingContext
+	internal static class LoggingContext
 	{
 		private const int DefaultMaxQueueSize = 256 * 1024;
 		private const int DefaultLogoffTimeout = 5000;
 
-		internal const int LogWatcherSleep = 500;
-
 		internal const int LogTypeCount = (int)LogType.MaxValue + 1;
+		internal const int LogWatcherSleep = 500;
+		internal const int FlushBoundMultiplier = 1024;
 
 		private static readonly LoggingConfiguration[] DefaultLoggingConfiguration = new [] {
 			new LoggingConfiguration(null, null, null, 
@@ -39,8 +39,6 @@ namespace Lexxys.Logging
 						.End().GetFirstNode()
 				})
 			};
-
-		internal const int FlushBoundMultiplier = 1024;
 
 		private static volatile bool _initialized;
 		private static readonly object SyncRoot = new object();

@@ -174,7 +174,7 @@ namespace Lexxys.Tokenizer
 		/// <inheritdoc />
 		public override string ToString()
 		{
-			return String.Format(CultureInfo, "{0}, {1}: {2}", TokenType, Position.ToString(CultureInfo), Text == null ? "(null)" : Strings.Ellipsis(Strings.EscapeCsString(Text.Substring(0, Math.Min(Text.Length, 120))), 120, "...\""));
+			return String.Format(CultureInfo, "{0}, {1}: {2}", TokenType, Position.ToString(CultureInfo), Text == null ? "(null)" : Strings.Ellipsis(Strings.EscapeCsString(Text.Substring(0, Math.Min(Text.Length, 120))), 120, "…\""));
 		}
 	}
 }

@@ -6,6 +6,7 @@
 //
 using System;
 using System.Threading;
+using Microsoft.Extensions.Options;
 
 namespace Lexxys
 {
@@ -21,7 +22,7 @@ namespace Lexxys
 		public virtual T Value
 		{
 			get => _getter();
-			set => throw new NotImplementedException("Out<T>.Value.set in not implemented.");
+			set => throw new NotImplementedException("Out<T>.Value.Set in not implemented.");
 		}
 
 		object IValue.Value => Value;

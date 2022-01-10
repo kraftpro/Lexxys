@@ -8,12 +8,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Lexxys.Xml;
 
 #nullable enable
 
 namespace Lexxys.Configuration
 {
+	using Xml;
+
 	public interface IXmlConfigurationSource
 	{
 		event EventHandler<ConfigurationEventArgs>? Changed;
