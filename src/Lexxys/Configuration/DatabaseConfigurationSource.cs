@@ -6,11 +6,6 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 #nullable enable
 
@@ -28,39 +23,11 @@ namespace Lexxys.Configuration
 		{
 			if (location == null)
 				throw new ArgumentNullException(nameof(location));
-			if (location.Scheme != "database")
+			if (!location.IsAbsoluteUri || location.Scheme != "database")
 				throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
 			_location = location;
-			// TODO: Connection string
-			using var dc = new DataContext();
-			_content = ReadOnly.Wrap(dc.Map(NodeMapper, location.Query), true);
-		}
-
-		private static List<XmlLiteNode> NodeMapper(DbCommand cmd)
-		{
-			var result = new List<XmlLiteNode>();
-			using SqlDataReader reader = ((SqlCommand)cmd).ExecuteReader();
-			do
-			{
-				int width = -1;
-				while (reader.Read())
-				{
-					if (width == -1)
-						width = reader.FieldCount;
-
-					for (int i = 0; i < width; ++i)
-					{
-						if (!reader.IsDBNull(i))
-						{
-							var node = XmlLiteNode.FromXml(reader.GetXmlReader(i));
-							if (!node.IsEmpty)
-								result.Add(node);
-						}
-					}
-				}
-			} while (reader.NextResult());
-			return result;
+			_content = Dc.Instance.ReadXml(location.Query);
 		}
 
 		#region IXmlConfigurationSource

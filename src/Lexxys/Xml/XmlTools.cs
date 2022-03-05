@@ -9,7 +9,9 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Linq.Expressions;
@@ -17,13 +19,18 @@ using System.Reflection;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
+using Lexxys;
+
+using static Lexxys.Tokenizer.TokenRule;
+
+#nullable enable
 
 namespace Lexxys.Xml
 {
 	public static class XmlTools
 	{
 		private static Logger Log => __logger ??= new Logger("XmlTools");
-		private static Logger __logger;
+		private static Logger? __logger;
 
 		public const string OptionIgnoreCase = "opt:ignoreCase";
 		public const string OptionForceAttributes = "opt:forceAttributes";
@@ -208,10 +215,10 @@ namespace Lexxys.Xml
 			return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()): "";
 		}
 
-		public static string Convert(object value, bool encodeQuote = false)
+		public static string? Convert(object? value, bool encodeQuote = false)
 		{
 			if (value == null)
-				return "";
+				return null;
 
 			if (value is IConvertible cn)
 			{
@@ -263,13 +270,15 @@ namespace Lexxys.Xml
 			};
 		}
 
-		public static string ConvertCollection(IEnumerable collection, bool braces = false)
+		public static string ConvertCollection(IEnumerable? collection, bool braces = false)
 		{
 			return ConvertCollection(new StringBuilder(), collection, braces).ToString();
 		}
 
-		public static StringBuilder ConvertCollection(StringBuilder text, IEnumerable collection, bool braces = false)
+		public static StringBuilder ConvertCollection(StringBuilder text, IEnumerable? collection, bool braces = false)
 		{
+			if (text == null)
+				throw new ArgumentNullException(nameof(text));
 			if (collection == null)
 				return text;
 			if (braces)
@@ -278,11 +287,11 @@ namespace Lexxys.Xml
 			foreach (var item in collection)
 			{
 				text.Append(pad);
-				string s = Convert(item);
-				if (s == null)
-					ConvertCollection(text, item as IEnumerable, true);
-				else
+				string? s = Convert(item);
+				if (s != null)
 					text.Append(s);
+				else if (item is IEnumerable ienum)
+					ConvertCollection(text, ienum, true);
 				pad = ",";
 			}
 			if (braces)
@@ -290,8 +299,10 @@ namespace Lexxys.Xml
 			return text;
 		}
 
-		public static unsafe StringBuilder Encode(StringBuilder text, string value, bool encodeQuote = false)
+		public static unsafe StringBuilder Encode(StringBuilder text, string? value, bool encodeQuote = false)
 		{
+			if (text == null)
+				throw new ArgumentNullException(nameof(text));
 			if (value == null)
 				return text;
 
@@ -301,8 +312,10 @@ namespace Lexxys.Xml
 			}
 		}
 
-		public static unsafe StringBuilder Encode(StringBuilder text, string value, int start, int length, bool encodeQuote = false)
+		public static unsafe StringBuilder Encode(StringBuilder text, string? value, int start, int length, bool encodeQuote = false)
 		{
+			if (text == null)
+				throw new ArgumentNullException(nameof(text));
 			if (value == null || length <= 0 || value.Length <= start || start < 0)
 				return text;
 			if (length > value.Length - start)
@@ -313,7 +326,7 @@ namespace Lexxys.Xml
 			}
 		}
 
-		private static unsafe StringBuilder Encode(StringBuilder text, char* source, int length, bool encodeQuote = false)
+		private static unsafe StringBuilder? Encode(StringBuilder text, char* source, int length, bool encodeQuote = false)
 		{
 			(int k, int first) = EncodeSize(source, length, encodeQuote);
 			if (k == length)
@@ -331,7 +344,7 @@ namespace Lexxys.Xml
 		}
 
 
-		public static unsafe string Encode(string value, bool encodeQuote = false)
+		public static unsafe string Encode(string? value, bool encodeQuote = false)
 		{
 			if (value == null)
 				return "";
@@ -342,7 +355,7 @@ namespace Lexxys.Xml
 			}
 		}
 
-		public static unsafe string Encode(string value, int start, int length, bool encodeQuote = false)
+		public static unsafe string Encode(string? value, int start, int length, bool encodeQuote = false)
 		{
 			if (value == null || length <= 0 || value.Length <= start || start < 0)
 				return "";
@@ -354,7 +367,7 @@ namespace Lexxys.Xml
 			}
 		}
 
-		public static unsafe string Encode(char[] value, bool encodeQuote = false)
+		public static unsafe string Encode(char[]? value, bool encodeQuote = false)
 		{
 			if (value == null)
 				return "";
@@ -365,7 +378,7 @@ namespace Lexxys.Xml
 			}
 		}
 
-		public static unsafe string Encode(char[] value, int start, int length, bool encodeQuote = false)
+		public static unsafe string Encode(char[]? value, int start, int length, bool encodeQuote = false)
 		{
 			if (value == null || length <= 0 || value.Length <= start || start < 0)
 				return "";
@@ -378,7 +391,7 @@ namespace Lexxys.Xml
 			}
 		}
 
-		private static unsafe string Encode(char* source, int length, bool encodeQuote = false)
+		private static unsafe string? Encode(char* source, int length, bool encodeQuote = false)
 		{
 			(int k, int first) = EncodeSize(source, length, encodeQuote);
 			if (k == length)
@@ -486,6 +499,11 @@ namespace Lexxys.Xml
 
 		public static unsafe StringBuilder Decode(StringBuilder text, string value)
 		{
+			if (text == null)
+				throw new ArgumentNullException(nameof(text));
+			if (value == null)
+				throw new ArgumentNullException(nameof(value));
+
 			int i = value.IndexOf('&');
 			if (i < 0)
 				return text.Append(value);
@@ -506,6 +524,9 @@ namespace Lexxys.Xml
 
 		public static unsafe string Decode(string value)
 		{
+			if (value == null)
+				throw new ArgumentNullException(nameof(value));
+
 			int i = value.IndexOf('&');
 			if (i < 0)
 				return value;
@@ -635,192 +656,201 @@ namespace Lexxys.Xml
 
 		#region Parse Primitives
 
-		public static byte GetByte(string value)
+		public static byte GetByte(string? value)
 		{
 			return Byte.TryParse(value, out byte result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static byte GetByte(string value, byte defaultValue)
+		public static byte GetByte(string? value, byte defaultValue)
 		{
 			return Byte.TryParse(value, out byte result) ? result: defaultValue;
 		}
 
-		public static byte? GetByte(string value, byte? defaultValue)
+		public static byte? GetByte(string? value, byte? defaultValue)
 		{
 			return Byte.TryParse(value, out byte result) ? result: defaultValue;
 		}
 
-		public static sbyte GetSByte(string value)
+		public static sbyte GetSByte(string? value)
 		{
 			return SByte.TryParse(value, out sbyte result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static sbyte GetSByte(string value, sbyte defaultValue)
+		public static sbyte GetSByte(string? value, sbyte defaultValue)
 		{
 			return SByte.TryParse(value, out sbyte result) ? result: defaultValue;
 		}
 
-		public static sbyte? GetSByte(string value, sbyte? defaultValue)
+		public static sbyte? GetSByte(string? value, sbyte? defaultValue)
 		{
 			return SByte.TryParse(value, out sbyte result) ? result : defaultValue;
 		}
 
-		public static short GetInt16(string value)
+		public static short GetInt16(string? value)
 		{
 			return Int16.TryParse(value, out short result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static short GetInt16(string value, short defaultValue)
+		public static short GetInt16(string? value, short defaultValue)
 		{
 			return Int16.TryParse(value, out short result) ? result: defaultValue;
 		}
 
-		public static short? GetInt16(string value, short? defaultValue)
+		public static short? GetInt16(string? value, short? defaultValue)
 		{
 			return Int16.TryParse(value, out short result) ? result: defaultValue;
 		}
 
-		public static ushort GetUInt16(string value)
+		public static ushort GetUInt16(string? value)
 		{
 			return UInt16.TryParse(value, out ushort result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static ushort GetUInt16(string value, ushort defaultValue)
+		public static ushort GetUInt16(string? value, ushort defaultValue)
 		{
 			return UInt16.TryParse(value, out ushort result) ? result: defaultValue;
 		}
 
-		public static ushort? GetUInt16(string value, ushort? defaultValue)
+		public static ushort? GetUInt16(string? value, ushort? defaultValue)
 		{
 			return UInt16.TryParse(value, out ushort result) ? result : defaultValue;
 		}
 
-		public static int GetInt32(string value)
+		public static int GetInt32(string? value)
 		{
 			return Int32.TryParse(value, out int result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static int GetInt32(string value, int defaultValue)
+		public static int GetInt32(string? value, int defaultValue)
 		{
 			return Int32.TryParse(value, out int result) ? result: defaultValue;
 		}
 
-		public static int? GetInt32(string value, int? defaultValue)
+		public static int? GetInt32(string? value, int? defaultValue)
 		{
 			return Int32.TryParse(value, out int result) ? result: defaultValue;
 		}
 
-		public static int GetInt32(string value, int defaultValue, int minValue, int maxValue)
+		public static int GetInt32(string? value, int defaultValue, int minValue, int maxValue)
 		{
 			return !Int32.TryParse(value, out int result) ? defaultValue: result < minValue ? minValue: result > maxValue ? maxValue: result;
 		}
 
-		public static uint GetUInt32(string value)
+		public static uint GetUInt32(string? value)
 		{
 			return UInt32.TryParse(value, out uint result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static uint GetUInt32(string value, uint defaultValue)
+		public static uint GetUInt32(string? value, uint defaultValue)
 		{
 			return UInt32.TryParse(value, out uint result) ? result: defaultValue;
 		}
 
-		public static uint? GetUInt32(string value, uint? defaultValue)
+		public static uint? GetUInt32(string? value, uint? defaultValue)
 		{
 			return UInt32.TryParse(value, out uint result) ? result: defaultValue;
 		}
 
-		public static long GetInt64(string value)
+		public static long GetInt64(string? value)
 		{
 			return Int64.TryParse(value, out long result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static long GetInt64(string value, long defaultValue)
+		public static long GetInt64(string? value, long defaultValue)
 		{
 			return Int64.TryParse(value, out long result) ? result: defaultValue;
 		}
 
-		public static long? GetInt64(string value, long? defaultValue)
+		public static long? GetInt64(string? value, long? defaultValue)
 		{
 			return Int64.TryParse(value, out long result) ? result: defaultValue;
 		}
 
-		public static ulong GetUInt64(string value)
+		public static ulong GetUInt64(string? value)
 		{
 			return UInt64.TryParse(value, out ulong result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static ulong GetUInt64(string value, ulong defaultValue)
+		public static ulong GetUInt64(string? value, ulong defaultValue)
 		{
 			return UInt64.TryParse(value, out ulong result) ? result: defaultValue;
 		}
 
-		public static ulong? GetUInt64(string value, ulong? defaultValue)
+		public static ulong? GetUInt64(string? value, ulong? defaultValue)
 		{
 			return UInt64.TryParse(value, out ulong result) ? result: defaultValue;
 		}
 
-		public static float GetSingle(string value)
+		public static float GetSingle(string? value)
 		{
 			return Single.TryParse(value, out float result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static float GetSingle(string value, float defaultValue)
+		public static float GetSingle(string? value, float defaultValue)
 		{
 			return Single.TryParse(value, out float result) ? result: defaultValue;
 		}
 
-		public static float? GetSingle(string value, float? defaultValue)
+		public static float? GetSingle(string? value, float? defaultValue)
 		{
 			return Single.TryParse(value, out float result) ? result: defaultValue;
 		}
 
-		public static double GetDouble(string value)
+		public static double GetDouble(string? value)
 		{
 			return Double.TryParse(value, out double result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static double GetDouble(string value, double defaultValue)
+		public static double GetDouble(string? value, double defaultValue)
 		{
 			return Double.TryParse(value, out double result) ? result: defaultValue;
 		}
 
-		public static double? GetDouble(string value, double? defaultValue)
+		public static double? GetDouble(string? value, double? defaultValue)
 		{
 			return Double.TryParse(value, out double result) ? result: defaultValue;
 		}
 
-		public static decimal GetDecimal(string value)
+		public static decimal GetDecimal(string? value)
 		{
 			return Decimal.TryParse(value, out decimal result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static decimal GetDecimal(string value, decimal defaultValue)
+		public static decimal GetDecimal(string? value, decimal defaultValue)
 		{
 			return Decimal.TryParse(value, out decimal result) ? result: defaultValue;
 		}
 
-		public static decimal? GetDecimal(string value, decimal? defaultValue)
+		public static decimal? GetDecimal(string? value, decimal? defaultValue)
 		{
 			return Decimal.TryParse(value, out decimal result) ? result : defaultValue;
 		}
 
-		public static char GetChar(string value)
+		public static char GetChar(string? value)
 		{
-			return TryGetChar(value, out char result) ? result: throw new FormatException(SR.FormatException(value));
+			return TryGetChar(value) ?? throw new FormatException(SR.FormatException(value));
 		}
 
-		public static char GetChar(string value, char defaultValue)
+		public static char GetChar(string? value, char defaultValue)
 		{
-			return TryGetChar(value, out char result) ? result: defaultValue;
+			return TryGetChar(value) ?? defaultValue;
 		}
 
-		public static char? GetChar(string value, char? defaultValue)
+		public static char? GetChar(string? value, char? defaultValue)
 		{
-			return TryGetChar(value, out char result) ? result : defaultValue;
+			return TryGetChar(value) ?? defaultValue;
 		}
 
-		public static bool TryGetChar(string value, out char result)
+		private static char? TryGetChar(string? value)
+		{
+			if (value == null)
+				return null;
+			if (value.Length != 1 && (value = value.Trim()).Length != 1)
+				return null;
+			return value[0];
+		}
+
+		private static bool TryGetChar(string value, out char result)
 		{
 			if (value == null)
 			{
@@ -840,22 +870,23 @@ namespace Lexxys.Xml
 			return true;
 		}
 
-		public static TimeSpan GetTimeSpan(string value)
+
+		public static TimeSpan GetTimeSpan(string? value)
 		{
 			return TryGetTimeSpan(value, out TimeSpan result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static TimeSpan GetTimeSpan(string value, TimeSpan defaultValue)
+		public static TimeSpan GetTimeSpan(string? value, TimeSpan defaultValue)
 		{
 			return TryGetTimeSpan(value, out TimeSpan result) ? result: defaultValue;
 		}
 
-		public static TimeSpan? GetTimeSpan(string value, TimeSpan? defaultValue)
+		public static TimeSpan? GetTimeSpan(string? value, TimeSpan? defaultValue)
 		{
 			return TryGetTimeSpan(value, out TimeSpan result) ? result: defaultValue;
 		}
 
-		public static TimeSpan GetTimeSpan(string value, TimeSpan defaultValue, TimeSpan minValue, TimeSpan maxValue)
+		public static TimeSpan GetTimeSpan(string? value, TimeSpan defaultValue, TimeSpan minValue, TimeSpan maxValue)
 		{
 			return !TryGetTimeSpan(value, out TimeSpan result) ? defaultValue: result < minValue ? minValue: result > maxValue ? maxValue: result;
 		}
@@ -868,7 +899,7 @@ namespace Lexxys.Xml
 		/// <param name="value">A string to convert.</param>
 		/// <param name="result">result of conversion.</param>
 		/// <returns>true if s was converted successfully; otherwise, false.</returns>
-		public static bool TryGetTimeSpan(string value, out TimeSpan result)
+		public static bool TryGetTimeSpan(string? value, out TimeSpan result)
 		{
 			result = new TimeSpan();
 			if (value == null || value.Length == 0)
@@ -1204,22 +1235,22 @@ namespace Lexxys.Xml
 			}
 		}
 
-		public static DateTime GetDateTime(string value)
+		public static DateTime GetDateTime(string? value)
 		{
 			return TryGetDateTime(value, out DateTime result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static DateTime GetDateTime(string value, DateTime defaultValue)
+		public static DateTime GetDateTime(string? value, DateTime defaultValue)
 		{
 			return TryGetDateTime(value, out DateTime result) ? result: defaultValue;
 		}
 
-		public static DateTime GetDateTime(string value, DateTime defaultValue, DateTime minValue, DateTime maxValue)
+		public static DateTime GetDateTime(string? value, DateTime defaultValue, DateTime minValue, DateTime maxValue)
 		{
 			return !TryGetDateTime(value, out DateTime result) ? defaultValue : result < minValue ? minValue: result > maxValue ? maxValue: result;
 		}
 
-		public static bool TryGetDateTime(string value, out DateTime result)
+		public static bool TryGetDateTime(string? value, out DateTime result)
 		{
 			if (!TryGetDateTimeOffset(value, out DateTimeOffset dto, out bool zone))
 			{
@@ -1230,22 +1261,22 @@ namespace Lexxys.Xml
 			return true;
 		}
 
-		public static DateTimeOffset GetDateTimeOffset(string value)
+		public static DateTimeOffset GetDateTimeOffset(string? value)
 		{
 			return TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static DateTimeOffset GetDateTimeOffset(string value, DateTimeOffset defaultValue)
+		public static DateTimeOffset GetDateTimeOffset(string? value, DateTimeOffset defaultValue)
 		{
 			return TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? result: defaultValue;
 		}
 
-		public static DateTimeOffset GetDateTimeOffset(string value, DateTimeOffset defaultValue, DateTimeOffset minValue, DateTimeOffset maxValue)
+		public static DateTimeOffset GetDateTimeOffset(string? value, DateTimeOffset defaultValue, DateTimeOffset minValue, DateTimeOffset maxValue)
 		{
 			return !TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? defaultValue: result < minValue ? minValue: result > maxValue ? maxValue: result;
 		}
 
-		public static bool TryGetDateTimeOffset(string value, out DateTimeOffset result)
+		public static bool TryGetDateTimeOffset(string? value, out DateTimeOffset result)
 		{
 			return TryGetDateTimeOffset(value, out result, out _);
 		}
@@ -1268,7 +1299,7 @@ namespace Lexxys.Xml
 		/// <param name="result">result of conversion.</param>
 		///	<param name="timeZone">Time zone indicator</param>
 		/// <returns>true if s was converted successfully; otherwise, false.</returns>
-		public static bool TryGetDateTimeOffset(string value, out DateTimeOffset result, out bool timeZone)
+		public static bool TryGetDateTimeOffset(string? value, out DateTimeOffset result, out bool timeZone)
 		{
 			result = new DateTimeOffset();
 			timeZone = false;
@@ -1433,37 +1464,37 @@ namespace Lexxys.Xml
 			return true;
 		}
 
-		public static Guid GetGuid(string value)
+		public static Guid GetGuid(string? value)
 		{
 			return Guid.TryParse(value, out Guid result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static Guid GetGuid(string value, Guid defaultValue)
+		public static Guid GetGuid(string? value, Guid defaultValue)
 		{
 			return Guid.TryParse(value, out Guid result) ? result: defaultValue;
 		}
 
-		public static Guid? GetGuid(string value, Guid? defaultValue)
+		public static Guid? GetGuid(string? value, Guid? defaultValue)
 		{
 			return Guid.TryParse(value, out Guid result) ? result : defaultValue;
 		}
 
-		public static bool TryGetGuid(string value, out Guid result)
+		public static bool TryGetGuid(string? value, out Guid result)
 		{
 			return Guid.TryParse(value, out result);
 		}
 
-		public static Type GetType(string value)
+		public static Type GetType(string? value)
 		{
-			return TryGetType(value, out Type result) ? result: throw new FormatException(SR.FormatException(value));
+			return TryGetType(value, out Type? result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static Type GetType(string value, Type defaultValue)
+		public static Type GetType(string? value, Type defaultValue)
 		{
-			return TryGetType(value, out Type result) ? result: defaultValue;
+			return TryGetType(value, out Type? result) ? result: defaultValue;
 		}
 
-		public static bool TryGetType(string value, out Type result)
+		public static bool TryGetType(string? value, [MaybeNullWhen(false)] out Type result)
 		{
 			if (String.IsNullOrWhiteSpace(value))
 			{
@@ -1474,17 +1505,17 @@ namespace Lexxys.Xml
 			return result != null;
 		}
 
-		public static bool GetBoolean(string value, bool defaultValue)
+		public static bool GetBoolean(string? value, bool defaultValue)
 		{
 			return TryGetBoolean(value, out bool result) ? result: defaultValue;
 		}
 
-		public static bool GetBoolean(string value)
+		public static bool GetBoolean(string? value)
 		{
 			return TryGetBoolean(value, out bool result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static bool TryGetBoolean(string value, out bool result)
+		public static bool TryGetBoolean(string? value, out bool result)
 		{
 			if (value != null && value.Length > 0)
 			{
@@ -1504,17 +1535,17 @@ namespace Lexxys.Xml
 			return false;
 		}
 
-		public static Ternary GetTernary(string value)
+		public static Ternary GetTernary(string? value)
 		{
 			return TryGetTernary(value, out Ternary result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static Ternary GetTernary(string value, Ternary defaultValue)
+		public static Ternary GetTernary(string? value, Ternary defaultValue)
 		{
 			return TryGetTernary(value, out Ternary result) ? result: defaultValue;
 		}
 
-		public static bool TryGetTernary(string value, out Ternary result)
+		public static bool TryGetTernary(string? value, out Ternary result)
 		{
 			if (value == null)
 			{
@@ -1541,7 +1572,7 @@ namespace Lexxys.Xml
 			return false;
 		}
 
-		public static int GetIndex(string value, params string[] variants)
+		public static int GetIndex(string? value, params string[] variants)
 		{
 			if (variants == null)
 				throw new ArgumentNullException(nameof(variants));
@@ -1557,7 +1588,7 @@ namespace Lexxys.Xml
 			return -1;
 		}
 
-		public static T GetEnum<T>(string value)
+		public static T GetEnum<T>(string? value)
 			where T: struct
 		{
 			if (TryGetEnum(value, out T result))
@@ -1565,13 +1596,13 @@ namespace Lexxys.Xml
 			throw new FormatException(SR.FormatException(value));
 		}
 
-		public static T GetEnum<T>(string value, T defaultValue)
+		public static T GetEnum<T>(string? value, T defaultValue)
 			where T: struct
 		{
 			return TryGetEnum(value, out T result) ? result: defaultValue;
 		}
 
-		public static T? GetEnum<T>(string value, T? defaultValue)
+		public static T? GetEnum<T>(string? value, T? defaultValue)
 			where T: struct
 		{
 			return TryGetEnum(value, out T result) ? result: defaultValue;
@@ -1582,7 +1613,7 @@ namespace Lexxys.Xml
 			return type.IsEnum;
 		}
 
-		public static bool TryGetEnum<T>(string value, out T result)
+		public static bool TryGetEnum<T>(string? value, out T result)
 			where T: struct
 		{
 			if (value == null || value.Length == 0 || !IsEnum(typeof(T)))
@@ -1608,17 +1639,18 @@ namespace Lexxys.Xml
 			return false;
 		}
 
-		public static object GetEnum(string value, Type enumType)
+		public static object GetEnum(string? value, Type enumType)
 		{
-			return TryGetEnum(value, enumType, out object result) ? result: throw new FormatException(SR.FormatException(value));
+			return TryGetEnum(value, enumType, out object? result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static object GetEnum(string value, Type enumType, object defaultValue)
+		[return: NotNullIfNotNull("defaultValue")]
+		public static object? GetEnum(string? value, Type enumType, object? defaultValue)
 		{
-			return TryGetEnum(value, enumType, out object result) ? result: defaultValue;
+			return TryGetEnum(value, enumType, out object? result) ? result: defaultValue;
 		}
 
-		public static bool TryGetEnum(string value, Type enumType, out object result)
+		public static bool TryGetEnum(string? value, Type enumType, [MaybeNullWhen(false)] out object result)
 		{
 			if (!IsEnum(enumType))
 			{
@@ -1634,7 +1666,7 @@ namespace Lexxys.Xml
 			{
 				if (String.Equals(names[i], value, StringComparison.OrdinalIgnoreCase))
 				{
-					result = Enum.ToObject(enumType, Enum.GetValues(enumType).GetValue(i));
+					result = Enum.ToObject(enumType, Enum.GetValues(enumType).GetValue(i)!);
 					return true;
 				}
 			}
@@ -1654,7 +1686,8 @@ namespace Lexxys.Xml
 			return false;
 		}
 
-		public static string GetString(string value, string defaultValue)
+		[return: NotNullIfNotNull("defaultValue")]
+		public static string? GetString(string? value, string? defaultValue)
 		{
 			if (value == null)
 				return defaultValue;
@@ -1699,45 +1732,51 @@ namespace Lexxys.Xml
 
 		#region Parse Value
 
-		public static object GetValue(string value, Type type, object defaultValue)
+		[return: NotNullIfNotNull("defaultValue")]
+		public static object? GetValue(string? value, Type type, object? defaultValue)
 		{
 			if (type == null)
 				throw new ArgumentNullException(nameof(type));
-			return TryGetValue(value, type, out object result) ? result: defaultValue;
+			return TryGetValue(value, type, out object? result) ? result: defaultValue;
 		}
 
-		public static object GetValue(string value, Type type)
+		public static object GetValue(string? value, Type type)
 		{
 			if (type == null)
 				throw new ArgumentNullException(nameof(type));
-			return TryGetValue(value, type, out object result) ? result: throw new FormatException(SR.FormatException(value));
+			return TryGetValue(value, type, out object? result) ? result!: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static T GetValue<T>(string value, T defaultValue)
+		[return: NotNullIfNotNull("defaultValue")]
+		public static T GetValue<T>(string? value, T defaultValue)
 		{
-			return TryGetValue(value, out T result) ? result: defaultValue;
+			return TryGetValue<T>(value, out var result) ? result: defaultValue;
 		}
 
-		public static T GetValue<T>(string value)
+		public static T GetValue<T>(string? value)
 		{
-			return TryGetValue(value, out T result) ? result: throw new FormatException(SR.FormatException(value));
+			return TryGetValue<T>(value, out var result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static bool TryGetValue<T>(string value, out T result)
+		public static bool TryGetValue<T>(string? value, [MaybeNullWhen(false)] out T result)
 		{
-			bool success = TryGetValue(value, typeof(T), out object temp);
-			result = (T)temp;
-			return success;
+			if (TryGetValue(value, typeof(T), out var temp))
+			{
+				result = (T)temp;
+				return true;
+			}
+			result = default;
+			return false;
 		}
 
-		public static object GetValueOrDefault(string value, Type returnType)
+		public static object GetValueOrDefault(string? value, Type returnType)
 		{
 			if (returnType == null)
 				throw new ArgumentNullException(nameof(returnType));
-			return !TryGetValue(value, returnType, out object result) ? Factory.DefaultValue(returnType): result;
+			return TryGetValue(value, returnType, out object? result) ? result: Factory.DefaultValue(returnType);
 		}
 
-		public static bool TryGetValue(string value, Type returnType, out object result)
+		public static bool TryGetValue(string? value, Type returnType, [MaybeNullWhen(false)] out object result)
 		{
 			if (returnType == null)
 				throw new ArgumentNullException(nameof(returnType));
@@ -1748,7 +1787,7 @@ namespace Lexxys.Xml
 				return false;
 			}
 
-			if (__stringConditionalConstructor.TryGetValue(returnType, out ValueParser parser))
+			if (__stringConditionalConstructor.TryGetValue(returnType, out ValueParser? parser))
 				return parser(value, out result);
 
 			if (String.IsNullOrWhiteSpace(value))
@@ -1762,13 +1801,13 @@ namespace Lexxys.Xml
 				bool nullable = returnType.IsGenericType;
 				Type type1 = nullable ? returnType.GetGenericArguments()[0]: returnType;
 				Type type2 = nullable ? returnType: typeof(Nullable<>).MakeGenericType(returnType);
-				__stringConditionalConstructor.TryAdd(type1, (string x, out object y) => TryGetEnum(x, type1, out y));
-				__stringConditionalConstructor.TryAdd(type2, (string x, out object y) =>
+				__stringConditionalConstructor.TryAdd(type1, (string x, [MaybeNullWhen(false)] out object y) => TryGetEnum(x, type1, out y));
+				__stringConditionalConstructor.TryAdd(type2, (string x, [MaybeNullWhen(false)] out object y) =>
 				{
 					if (String.IsNullOrWhiteSpace(x))
 					{
 						y = null;
-						return true;
+						return false;
 					}
 					return TryGetEnum(x, type1, out y);
 				});
@@ -1781,7 +1820,7 @@ namespace Lexxys.Xml
 				return TryGetEnum(value, type1, out result);
 			}
 
-			TypeConverter converter = GetTypeConverter(returnType);
+			TypeConverter? converter = GetTypeConverter(returnType);
 			if (converter != null)
 				return TryConverter(value, returnType, converter, out result);
 
@@ -1798,12 +1837,12 @@ namespace Lexxys.Xml
 		}
 		private static readonly ConcurrentDictionary<Type, bool> __missingConverters = new ConcurrentDictionary<Type, bool>();
 
-		private static bool TryConverter(string value, Type returnType, TypeConverter converter, out object result)
+		private static bool TryConverter(string value, Type returnType, TypeConverter converter, [MaybeNullWhen(false)]out object result)
 		{
 			try
 			{
 				result = converter.ConvertFromInvariantString(value);
-				return true;
+				return result != null;
 			}
 			catch (NotSupportedException)
 			{
@@ -1815,13 +1854,13 @@ namespace Lexxys.Xml
 			return false;
 		}
 
-		private static TypeConverter GetTypeConverter(Type targetType)
+		private static TypeConverter? GetTypeConverter(Type targetType)
 		{
-			if (__typeConverterTypeMap.TryGetValue(targetType, out Type converterType))
+			if (__typeConverterTypeMap.TryGetValue(targetType, out var converterType))
 				return converterType == null ? null: Factory.Construct(converterType) as TypeConverter;
 
 			converterType = GetConverterType(targetType);
-			TypeConverter converter = null;
+			TypeConverter? converter = null;
 			if (converterType != null)
 			{
 				converter = Factory.Construct(converterType) as TypeConverter;
@@ -1834,9 +1873,9 @@ namespace Lexxys.Xml
 			__typeConverterTypeMap.TryAdd(targetType, converterType);
 			return converter;
 		}
-		private static readonly ConcurrentDictionary<Type, Type> __typeConverterTypeMap = new ConcurrentDictionary<Type, Type>();
+		private static readonly ConcurrentDictionary<Type, Type?> __typeConverterTypeMap = new ConcurrentDictionary<Type, Type?>();
 
-		private static Type GetConverterType(Type type)
+		private static Type? GetConverterType(Type? type)
 		{
 			while (type != null)
 			{
@@ -1856,9 +1895,9 @@ namespace Lexxys.Xml
 			return null;
 		}
 
-		private static ValueParser GetExplicitConverter(Type type)
+		private static ValueParser? GetExplicitConverter(Type type)
 		{
-			MethodInfo parser = type.GetMethod("TryParse", BindingFlags.Static | BindingFlags.Public, null, new[] { typeof(string), type.MakeByRefType() }, null);
+			MethodInfo? parser = type.GetMethod("TryParse", BindingFlags.Static | BindingFlags.Public, null, new[] { typeof(string), type.MakeByRefType() }, null);
 			if (parser != null)
 				return Tgv(parser, type, Factory.IsNullableType(type));
 
@@ -1900,40 +1939,40 @@ namespace Lexxys.Xml
 			ParameterExpression value = Expression.Parameter(typeof(string), "value");
 			ParameterExpression result = Expression.Parameter(typeof(object).MakeByRefType(), "result");
 
-			var operators = type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+			List <(MethodInfo Method, ParameterInfo Parameter, MethodInfo Parser)> operators = type.GetMethods(BindingFlags.Static | BindingFlags.Public)
 				.Select(o =>
 				{
 					if (!type.IsAssignableFrom(o.ReturnType))
-						return null;
+						return default;
 					if (!(o.IsSpecialName && (o.Name == "op_Explicit" || o.Name == "op_Implicit")))
-						return null;
+						return default;
 					ParameterInfo[] pp = o.GetParameters();
 					if (pp.Length != 1 || pp[0].ParameterType == type || pp[0].ParameterType.IsPointer)
-						return null;
+						return default;
 					ParserPair ps = Array.Find(__stringTypedParsers, p => p.Type == pp[0].ParameterType);
 					if (ps.Type == null)
-						return null;
-					return new { Method = o, Parameter = pp[0], Parser = ps.Method };
+						return default;
+					return (o, pp[0], ps.Method);
 				})
-				.Where(o=> o != null).ToList();
+				.Where(o=> o.Method != null).ToList();
 
 			if (operators.Count > 1)
 				operators = __stringTypedParsers.Select(o => operators.FirstOrDefault(p => p.Parameter.ParameterType == o.Type)).ToList();
 
-			var constructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public)
+			List<(ConstructorInfo Constructor, ParameterInfo Parameter, MethodInfo Parser)> constructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public)
 				.Select(o =>
 				{
 					ParameterInfo[] pp = o.GetParameters();
 					if (pp.Length != 1 || pp[0].ParameterType == type || pp[0].ParameterType.IsPointer ||
 						operators.Any(x => x.Parameter.ParameterType == pp[0].ParameterType))
-						return null;
+						return default;
 					ParserPair ps = Array.Find(__stringTypedParsers, p => p.Type == pp[0].ParameterType);
 					if (ps.Type == null)
-						return null;
+						return default;
 
-					return new { Constructor = o, Parameter = pp[0], Parser = ps.Method };
+					return (Constructor:o, Parameter:pp[0], Parser:ps.Method);
 				})
-				.Where(o=> o != null).ToList();
+				.Where(o=> o.Constructor != null).ToList();
 
 			if (constructors.Count > 1)
 				constructors = __stringTypedParsers.Select(o => constructors.FirstOrDefault(p => p.Parameter.ParameterType == o.Type)).ToList();
@@ -1994,7 +2033,7 @@ namespace Lexxys.Xml
 			}
 
 			var stringOperator = operators.FirstOrDefault(o => o.Parameter.ParameterType == typeof(string));
-			if (stringOperator != null)
+			if (stringOperator.Method != null)
 			{
 				Expression last = Expression.Assign(result,
 					type.IsValueType ? (Expression)
@@ -2006,7 +2045,7 @@ namespace Lexxys.Xml
 			else
 			{
 				var stringConstructor = constructors.FirstOrDefault(o => o.Parameter.ParameterType == typeof(string));
-				if (stringConstructor != null)
+				if (stringConstructor.Constructor != null)
 				{
 					Expression last = Expression.Assign(result,
 						type.IsValueType ? (Expression)
@@ -2040,17 +2079,17 @@ namespace Lexxys.Xml
 
 		public static T GetValue<T>(XmlLiteNode node)
 		{
-			return TryGetValue(node, out T result) ? result: throw new FormatException(SR.FormatException(node.ToString().Left(1024), typeof(T)));
+			return TryGetValue<T>(node, out var result) ? result: throw new FormatException(SR.FormatException(node.ToString().Left(1024), typeof(T)));
 		}
 
 		public static T GetValue<T>(XmlLiteNode node, T defaultValue)
 		{
-			return TryGetValue(node, out T result) ? result: defaultValue;
+			return TryGetValue<T>(node, out var result) ? result: defaultValue;
 		}
 
-		public static bool TryGetValue<T>(XmlLiteNode node, out T result)
+		public static bool TryGetValue<T>(XmlLiteNode node, [MaybeNullWhen(false)]out T result)
 		{
-			if (TryGetValue(node, typeof(T), out object temp))
+			if (TryGetValue(node, typeof(T), out var temp))
 			{
 				result = (T)temp;
 				return true;
@@ -2061,12 +2100,10 @@ namespace Lexxys.Xml
 
 		public static object GetValue(XmlLiteNode node, Type returnType)
 		{
-			if (TryGetValue(node, returnType, out object result))
-				return result;
-			throw new FormatException(SR.FormatException(node.ToString().Left(1024), returnType));
+			return TryGetValue(node, returnType, out var result) ? result :throw new FormatException(SR.FormatException(node.ToString().Left(1024), returnType));
 		}
 
-		public static bool TryGetValue(XmlLiteNode node, Type returnType, out object result)
+		public static bool TryGetValue(XmlLiteNode node, Type returnType, [MaybeNullWhen(false)]out object result)
 		{
 			if (node == null || returnType == null)
 			{
@@ -2076,10 +2113,10 @@ namespace Lexxys.Xml
 
 			try
 			{
-				if (__stringConditionalConstructor.TryGetValue(returnType, out ValueParser stringParser))
+				if (__stringConditionalConstructor.TryGetValue(returnType, out ValueParser? stringParser))
 					return stringParser(node.Value, out result);
 
-				if (__nodeConditionalConstructor.TryGetValue(returnType, out TryGetNodeValue nodeParser))
+				if (__nodeConditionalConstructor.TryGetValue(returnType, out TryGetNodeValue? nodeParser))
 				{
 					if (nodeParser == null)
 					{
@@ -2100,7 +2137,7 @@ namespace Lexxys.Xml
 				}
 				if (returnType.IsEnum)
 				{
-					__stringConditionalConstructor.TryAdd(returnType, (string x, out object y) => TryGetEnum(x, returnType, out y));
+					__stringConditionalConstructor.TryAdd(returnType, (string x, [MaybeNullWhen(false)]out object y) => TryGetEnum(x, returnType, out y));
 					return TryGetEnum(node.Value, returnType, out result);
 				}
 
@@ -2123,22 +2160,22 @@ namespace Lexxys.Xml
 			}
 		}
 
-		private static bool TryFromXmlLite(XmlLiteNode node, Type returnType, out object value)
+		private static bool TryFromXmlLite(XmlLiteNode node, Type returnType, [MaybeNullWhen(false)] out object value)
 		{
-			value = __fromXmlLiteNodeParsers[returnType](node);
+			value = __fromXmlLiteNodeParsers[returnType]?.Invoke(node);
 			return value != null;
 		}
 
-		private static bool TryFromXmlReader(XmlLiteNode node, Type returnType, out object value)
+		private static bool TryFromXmlReader(XmlLiteNode node, Type returnType, [MaybeNullWhen(false)] out object value)
 		{
 			using (XmlReader reader = node.ReadSubtree())
 			{
-				value = __fromXmlReaderParsers[returnType](reader);
+				value = __fromXmlReaderParsers[returnType]?.Invoke(reader);
 			}
 			return value != null;
 		}
 
-		private static bool TrySerializer(XmlLiteNode node, Type returnType, out object result)
+		private static bool TrySerializer(XmlLiteNode node, Type returnType, [MaybeNullWhen(false)]out object result)
 		{
 			try
 			{
@@ -2147,7 +2184,8 @@ namespace Lexxys.Xml
 				if (xs.CanDeserialize(reader))
 				{
 					result = xs.Deserialize(reader);
-					return true;
+					if (result != null)
+						return true;
 				}
 			}
 			catch (InvalidOperationException)
@@ -2161,10 +2199,10 @@ namespace Lexxys.Xml
 
 		#region TryGetValue Implementation
 
-		private static bool TestFromXmlLite(XmlLiteNode node, Type returnType, out object value)
+		private static bool TestFromXmlLite(XmlLiteNode node, Type returnType, [MaybeNullWhen(false)] out object value)
 		{
 			value = null;
-			if (!__fromXmlLiteNodeParsers.TryGetValue(returnType, out Func<XmlLiteNode, object> parser))
+			if (!__fromXmlLiteNodeParsers.TryGetValue(returnType, out Func<XmlLiteNode, object>? parser))
 			{
 				Type baseType = Factory.NullableTypeBase(returnType);
 				parser = __fromXmlLiteNodeParsers.GetOrAdd(baseType, type => GetFromXmlConstructor<XmlLiteNode>(type) ?? GetFromXmlStaticConstructor<XmlLiteNode>(type));
@@ -2177,12 +2215,12 @@ namespace Lexxys.Xml
 			value = parser(node);
 			return true;
 		}
-		private static readonly ConcurrentDictionary<Type, Func<XmlLiteNode, object>> __fromXmlLiteNodeParsers = new ConcurrentDictionary<Type, Func<XmlLiteNode, object>>();
+		private static readonly ConcurrentDictionary<Type, Func<XmlLiteNode, object>?> __fromXmlLiteNodeParsers = new ConcurrentDictionary<Type, Func<XmlLiteNode, object>?>();
 
-		private static bool TestFromXmlReader(XmlLiteNode node, Type returnType, out object value)
+		private static bool TestFromXmlReader(XmlLiteNode node, Type returnType, [MaybeNullWhen(false)] out object value)
 		{
 			value = null;
-			if (!__fromXmlReaderParsers.TryGetValue(returnType, out Func<XmlReader, object> parser))
+			if (!__fromXmlReaderParsers.TryGetValue(returnType, out Func<XmlReader, object>? parser))
 			{
 				Type baseType = Factory.NullableTypeBase(returnType);
 				parser = __fromXmlReaderParsers.GetOrAdd(baseType, type => GetFromXmlConstructor<XmlReader>(type) ?? GetFromXmlStaticConstructor<XmlReader>(type));
@@ -2198,12 +2236,12 @@ namespace Lexxys.Xml
 			}
 			return true;
 		}
-		private static readonly ConcurrentDictionary<Type, Func<XmlReader, object>> __fromXmlReaderParsers = new ConcurrentDictionary<Type, Func<XmlReader, object>>();
+		private static readonly ConcurrentDictionary<Type, Func<XmlReader, object>?> __fromXmlReaderParsers = new ConcurrentDictionary<Type, Func<XmlReader, object>?>();
 
-		private static Func<T, object> GetFromXmlConstructor<T>(Type type)
+		private static Func<T, object>? GetFromXmlConstructor<T>(Type type)
 		{
-			Func<T, object> result = null;
-			ConstructorInfo ci = type.GetConstructor(new[] { typeof(T) });
+			Func<T, object>? result = null;
+			ConstructorInfo? ci = type.GetConstructor(new[] { typeof(T) });
 			if (ci != null)
 			{
 				try
@@ -2221,7 +2259,7 @@ namespace Lexxys.Xml
 			return result;
 		}
 
-		private static Func<T, object> GetFromXmlStaticConstructor<T>(Type type)
+		private static Func<T, object>? GetFromXmlStaticConstructor<T>(Type type)
 		{
 			try
 			{
@@ -2255,7 +2293,7 @@ namespace Lexxys.Xml
 			return null;
 		}
 
-		private static bool TestSerializer(XmlLiteNode node, Type returnType, out object result)
+		private static bool TestSerializer(XmlLiteNode node, Type returnType, out object? result)
 		{
 			result = null;
 			if (!returnType.IsPublic)
@@ -2281,7 +2319,7 @@ namespace Lexxys.Xml
 
 		#region Try Reflection
 
-		private static bool TryReflection(XmlLiteNode node, Type returnType, out object result)
+		private static bool TryReflection(XmlLiteNode node, Type returnType, out object? result)
 		{
 			result = Factory.DefaultValue(returnType);
 			if (node == null)
@@ -2339,13 +2377,13 @@ namespace Lexxys.Xml
 				}
 				foreach (PropertyInfo item in returnType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
 				{
-					if (!item.CanWrite || !item.CanWrite || !item.SetMethod.IsPublic || item.GetIndexParameters().Length != 0)
+					if (!item.CanWrite || !item.CanWrite || item.SetMethod == null || !item.SetMethod.IsPublic || item.GetIndexParameters().Length != 0)
 						continue;
 
 					GetFieldValue(node, item.Name, item.PropertyType, missings, () => item.GetValue(obj), o => item.SetValue(obj, o));
 				}
 
-				static void GetFieldValue(XmlLiteNode node, string name, Type itemType, IReadOnlyCollection<string> missings, Func<object> getter, Action<object> setter)
+				static void GetFieldValue(XmlLiteNode node, string name, Type itemType, IReadOnlyCollection<string> missings, Func<object?> getter, Action<object?> setter)
 				{
 					if (missings.FirstOrDefault(o => String.Equals(o, name, StringComparison.OrdinalIgnoreCase)) != null)
 					{
@@ -2358,7 +2396,7 @@ namespace Lexxys.Xml
 						}
 						else
 						{
-							object value = getter();
+							object? value = getter();
 							if (TryCollection(element, element.Elements, itemType, ref value) || TryGetValue(element, itemType, out value))
 								setter(value);
 						}
@@ -2368,7 +2406,7 @@ namespace Lexxys.Xml
 						var singular = Lingua.Singular(name);
 						if (name != singular && missings.FirstOrDefault(o => String.Equals(o, singular, StringComparison.OrdinalIgnoreCase)) != null)
 						{
-							object value = getter();
+							object? value = getter();
 							if (TryCollection(XmlLiteNode.Empty, node.Elements.Where(o => String.Equals(o.Name, singular, StringComparison.OrdinalIgnoreCase)), itemType, ref value))
 								setter(value);
 						}
@@ -2379,35 +2417,31 @@ namespace Lexxys.Xml
 			return true;
 		}
 
-		private class TypesKey: IEquatable<TypesKey>
+		private readonly struct TypesKey: IEquatable<TypesKey>
 		{
-			private readonly Type[] _key;
 			private readonly int _hashCode;
 
 			public TypesKey(Type type, Type[] types)
 			{
-				_key = new Type[types.Length + 1];
-				_key[0] = type;
-				Array.Copy(types, 0, _key, 1, types.Length);
-				_hashCode = HashCode.Join(153173, _key);
+				Type = type;
+				Parameters = types;
+				_hashCode = HashCode.Join(type.GetHashCode(), Parameters);
 			}
 
-			public override int GetHashCode()
-			{
-				return _hashCode;
-			}
+			public Type Type { get; }
 
-			public override bool Equals(object obj)
-			{
-				return Equals(obj as TypesKey);
-			}
+			public Type[] Parameters { get; }
+
+			public override int GetHashCode() => _hashCode;
+
+			public override bool Equals(object? obj) => obj is TypesKey other && Equals(other);
 
 			public bool Equals(TypesKey other)
 			{
-				if (other is null || _hashCode != other._hashCode)
+				if (_hashCode != other._hashCode)
 					return false;
-				var a = _key;
-				var b = other._key;
+				var a = Parameters;
+				var b = other.Parameters;
 				if (a.Length != b.Length)
 					return false;
 				for (int i = 0; i < a.Length; ++i)
@@ -2419,7 +2453,7 @@ namespace Lexxys.Xml
 			}
 		}
 
-		private static (IReadOnlyCollection<string> Missings, object Value) TryConstruct(Type type, Dictionary<string, object> arguments)
+		private static (IReadOnlyCollection<string> Missings, object? Value) TryConstruct(Type type, Dictionary<string, object> arguments)
 		{
 			if (arguments == null || arguments.Count == 0)
 				return (Array.Empty<string>(), Factory.TryConstruct(type, false));
@@ -2429,18 +2463,22 @@ namespace Lexxys.Xml
 				constructor = __attributedConstructors.GetOrAdd(key, AttributedConstructor.Create(type, arguments));
 			return (constructor?.Missings ?? (IReadOnlyCollection<string>)arguments.Keys, constructor?.Invoke(arguments));
 		}
-		private static readonly ConcurrentDictionary<ConstructorKey, AttributedConstructor> __attributedConstructors = new ConcurrentDictionary<ConstructorKey, AttributedConstructor>();
+		private static readonly ConcurrentDictionary<ConstructorKey, AttributedConstructor?> __attributedConstructors = new ConcurrentDictionary<ConstructorKey, AttributedConstructor?>();
 
-		private class ConstructorKey: IEquatable<ConstructorKey>
+		private readonly struct ConstructorKey: IEquatable<ConstructorKey>
 		{
 			private readonly Type _type;
 			private readonly string _key;
 			private readonly int _hashCode;
 
-			public ConstructorKey(Type type, Dictionary<string, object> arguments)
+			public ConstructorKey(Type type, Dictionary<string, object>? arguments)
 			{
-				_type = type;
-				if (arguments != null && arguments.Count > 0)
+				_type = type ?? throw new ArgumentNullException(nameof(type));
+				if (arguments == null || arguments.Count <= 0)
+				{
+					_key = String.Empty;
+				}
+				else
 				{
 					var ss = new StringBuilder(arguments.Count * 12);
 					foreach (var key in arguments.Keys)
@@ -2449,14 +2487,14 @@ namespace Lexxys.Xml
 					}
 					_key = ss.ToString().ToUpperInvariant();
 				}
-				_hashCode = HashCode.Join(_type?.GetHashCode() ?? 0, _key?.GetHashCode() ?? 0);
+				_hashCode = HashCode.Join(_type.GetHashCode(), _key.GetHashCode());
 			}
 
 			public override int GetHashCode() => _hashCode;
 
-			public override bool Equals(object obj) => Equals(obj as ConstructorKey);
+			public override bool Equals(object? obj) => obj is ConstructorKey other && Equals(other);
 
-			public bool Equals(ConstructorKey other) => other != null && _type == other._type && _key == other._key;
+			public bool Equals(ConstructorKey other) => other._hashCode == _hashCode && _type == other._type && _key == other._key;
 		}
 
 		private class AttributedConstructor
@@ -2475,7 +2513,7 @@ namespace Lexxys.Xml
 
 			public IReadOnlyList<string> Missings { get; }
 
-			public object Invoke(Dictionary<string, object> arguments)
+			public object? Invoke(Dictionary<string, object> arguments)
 			{
 				if (_parameters.Length > 0)
 				{
@@ -2492,7 +2530,7 @@ namespace Lexxys.Xml
 						return null;
 					if (value is string s)
 					{
-						if (!TryGetValue(s, _parameters[i].Type, out object v))
+						if (!TryGetValue(s, _parameters[i].Type, out var v))
 						{
 							Log.Trace($"{nameof(AttributedConstructor)}.{nameof(Invoke)}: Cannot parse parameter {_parameters[i].Name} of {_parameters[i].Type.Name} used to construct {_type.Name}.");
 							return null;
@@ -2501,7 +2539,7 @@ namespace Lexxys.Xml
 					}
 					else if (value is XmlLiteNode x)
 					{
-						if (!TryGetValue(x, _parameters[i].Type, out object v))
+						if (!TryGetValue(x, _parameters[i].Type, out var v))
 						{
 							Log.Trace($"{nameof(AttributedConstructor)}.{nameof(Invoke)}: Cannot convert parameter {_parameters[i].Name} to type {_parameters[i].Type.Name} used to construct {_type.Name}.");
 							return null;
@@ -2525,7 +2563,7 @@ namespace Lexxys.Xml
 				return _constructor.Invoke(values);
 			}
 
-			public static AttributedConstructor Create(Type type, Dictionary<string, object> arguments)
+			public static AttributedConstructor? Create(Type type, Dictionary<string, object> arguments)
 			{
 				if (type == null)
 					throw new ArgumentNullException(nameof(type));
@@ -2541,9 +2579,9 @@ namespace Lexxys.Xml
 
 				Array.Sort(parametersSet, constructors, Comparer.Create<ParameterInfo[]>((a, b) => b.Length.CompareTo(a.Length)));
 
-				ParameterInfo[] parameters = null;
-				ConstructorInfo constructor = null;
-				BitArray index = null;
+				ParameterInfo[]? parameters = null;
+				ConstructorInfo? constructor = null;
+				BitArray? index = null;
 				int weight = 0;
 				for (int i = 0; i < constructors.Length; ++i)
 				{
@@ -2554,7 +2592,9 @@ namespace Lexxys.Xml
 					int w = 0;
 					for (int j = 0; j < prm.Length; ++j)
 					{
-						idx[j] = arguments.ContainsKey(prm[j].Name);
+						if (prm[j].Name == null)
+							goto skip;
+						idx[j] = arguments.ContainsKey(prm[j].Name!);
 						if (idx[j])
 							++w;
 						else if (!prm[j].IsOptional)
@@ -2579,6 +2619,7 @@ namespace Lexxys.Xml
 					}
 					parameters = Array.Empty<ParameterInfo>();
 				}
+				Debug.Assert(parameters != null);
 
 				ParameterExpression arg = Expression.Parameter(typeof(object[]));
 				Expression ctor;
@@ -2593,6 +2634,9 @@ namespace Lexxys.Xml
 				}
 				else
 				{
+					Debug.Assert(index != null);
+					Debug.Assert(constructor != null);
+
 					var args = new Expression[index.Length];
 					for (int i = 0; i < index.Length; ++i)
 					{
@@ -2603,7 +2647,7 @@ namespace Lexxys.Xml
 						else
 						{
 							args[i] = Expression.Convert(Expression.ArrayAccess(arg, Expression.Constant(parms.Count)), parameters[i].ParameterType);
-							parms.Add((parameters[i].Name, parameters[i].ParameterType));
+							parms.Add((parameters[i].Name!, parameters[i].ParameterType));
 						}
 					}
 					if (type.IsValueType)
@@ -2611,19 +2655,21 @@ namespace Lexxys.Xml
 					else
 						ctor = Expression.New(constructor, args);
 				}
-				var missings = new List<string>(arguments.Keys.Except(parameters.Select(o => o.Name), StringComparer.OrdinalIgnoreCase));
+				var missings = new List<string>(arguments.Keys.Except(parameters.Select(o => o.Name!), StringComparer.OrdinalIgnoreCase));
 				return new AttributedConstructor(type, Expression.Lambda<Func<object[], object>>(ctor, arg).Compile(), parms.ToArray(), missings);
 			}
 		}
 
-		private static object DefaultParameterValue(ParameterInfo parameter)
+		private static object? DefaultParameterValue(ParameterInfo parameter)
 		{
-			object value = null;
+			object? value = null;
+			if (parameter.ParameterType == typeof(DateTime))
+				return default(DateTime);
 			try { value = parameter.DefaultValue; } catch {}
 			return value ?? Factory.DefaultValue(parameter.ParameterType);
 		}
 
-		private static bool TryCollection(XmlLiteNode node, IEnumerable<XmlLiteNode> items, Type returnType, ref object result)
+		private static bool TryCollection(XmlLiteNode node, IEnumerable<XmlLiteNode> items, Type returnType, ref object? result)
 		{
 			if (returnType.IsInterface)
 			{
@@ -2669,7 +2715,7 @@ namespace Lexxys.Xml
 
 			if (returnType.IsArray)
 			{
-				Type itemType = returnType.GetElementType();
+				Type itemType = returnType.GetElementType()!;
 				returnType = typeof(List<>).MakeGenericType(itemType);
 				bool r = TryParseCollection(node, items, returnType, returnType, itemType, ref result);
 				if (result != null)
@@ -2678,22 +2724,22 @@ namespace Lexxys.Xml
 			}
 
 			Type[] ii = returnType.GetInterfaces();
-			Type ic = ii.FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ICollection<>));
+			Type? ic = ii.FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ICollection<>));
 			return ic != null && TryParseCollection(node, items, returnType, ic, ic.GetGenericArguments()[0], ref result);
 		}
 
-		private static object WrapCollection(object value, Type[] parametersType, Type collectionType)
+		private static object? WrapCollection(object? value, Type[] parametersType, Type collectionType)
 		{
 			if (value == null)
 				return null;
-			Func<object, object> f = __genericReadonlyWrappers.GetOrAdd(new TypesKey(collectionType, parametersType),
+			Func<object, object?>? f = __genericReadonlyWrappers.GetOrAdd(new TypesKey(collectionType, parametersType),
 				key =>
 				{
-					MethodInfo m = Factory.GetGenericMethod(typeof(ReadOnly), "Wrap", new[] { collectionType });
+					MethodInfo? m = Factory.GetGenericMethod(typeof(ReadOnly), "Wrap", new[] { key.Type });
 					if (m == null)
 						return null;
-					Type type = collectionType.MakeGenericType(parametersType);
-					m = m.MakeGenericMethod(parametersType);
+					Type type = key.Type.MakeGenericType(key.Parameters);
+					m = m.MakeGenericMethod(key.Parameters);
 					ParameterExpression arg = Expression.Parameter(typeof(object));
 					return Expression.Lambda<Func<object, object>>(
 						Expression.Call(m, Expression.Convert(arg, type)),
@@ -2701,15 +2747,15 @@ namespace Lexxys.Xml
 				});
 			return f == null ? value: f(value);
 		}
-		private static readonly ConcurrentDictionary<TypesKey, Func<object, object>> __genericReadonlyWrappers = new ConcurrentDictionary<TypesKey, Func<object, object>>();
+		private static readonly ConcurrentDictionary<TypesKey, Func<object, object?>?> __genericReadonlyWrappers = new ConcurrentDictionary<TypesKey, Func<object, object?>?>();
 
-		private static bool TryParseCollection(XmlLiteNode node, IEnumerable<XmlLiteNode> items, Type returnType, Type collectionType, Type itemType, ref object result)
+		private static bool TryParseCollection(XmlLiteNode node, IEnumerable<XmlLiteNode> items, Type returnType, Type collectionType, Type itemType, [MaybeNullWhen(false)] ref object? result)
 		{
-			MethodInfo add = collectionType.GetMethod("Add", new[] { itemType });
+			MethodInfo? add = collectionType.GetMethod("Add", new[] { itemType });
 			if (add == null)
 				return false;
 
-			PropertyInfo readOnly = collectionType.GetProperty("IsReadOnly", typeof(bool));
+			PropertyInfo? readOnly = collectionType.GetProperty("IsReadOnly", typeof(bool));
 			if (readOnly != null && !readOnly.CanRead)
 				readOnly = null;
 			if (result == null || !returnType.IsInstanceOfType(result) ||
@@ -2727,7 +2773,7 @@ namespace Lexxys.Xml
 
 			foreach (var item in items)
 			{
-				if (TryGetValue(item, itemType, out object itemValue))
+				if (TryGetValue(item, itemType, out object? itemValue))
 					Factory.Invoke(result, add, itemValue);
 			}
 			return true;
@@ -2766,7 +2812,7 @@ namespace Lexxys.Xml
 		///			key
 		///			value
 		/// </remarks>
-		private static bool TryKeyValuePair(XmlLiteNode node, Type returnType, out object result)
+		private static bool TryKeyValuePair(XmlLiteNode node, Type returnType, out object? result)
 		{
 			if (node == null)
 				throw new ArgumentNullException(nameof(node));
@@ -2780,8 +2826,8 @@ namespace Lexxys.Xml
 			Type[] typeArgs = returnType.GetGenericArguments();
 			Type keyType = typeArgs[0];
 			Type valueType = typeArgs[1];
-			object parsedKey;
-			object parsedValue;
+			object? parsedKey;
+			object? parsedValue;
 
 			if (node.Attributes.Count == 0)
 			{
@@ -2853,14 +2899,12 @@ namespace Lexxys.Xml
 						return false;
 				}
 			}
-			ConstructorInfo constructor = returnType.GetConstructor(typeArgs);
-			if (constructor == null)
-				throw EX.InvalidOperation(SR.CannotFindConstructor(returnType, typeArgs));
+			ConstructorInfo constructor = returnType.GetConstructor(typeArgs) ?? throw new InvalidOperationException(SR.CannotFindConstructor(returnType, typeArgs));
 			result = Factory.Invoke(constructor, parsedKey, parsedValue);
 			return true;
 		}
 
-		private static bool TryNullable(XmlLiteNode node, Type returnType, out object result)
+		private static bool TryNullable(XmlLiteNode node, Type returnType, out object? result)
 		{
 			if (node == null)
 				throw new ArgumentNullException(nameof(node));
@@ -2874,26 +2918,12 @@ namespace Lexxys.Xml
 				result = null;
 				return true;
 			}
-			if (!TryGetValue(node, returnType.GetGenericArguments()[0], out var value))
-			{
-				result = null;
-				return true;
-			}
-			if (value == null)
-			{
-				result = DefaultValue(returnType);
-				return true;
-			}
-			result = Activator.CreateInstance(returnType, value);
+			TryGetValue(node, returnType.GetGenericArguments()[0], out var value);
+			result = value;
 			return true;
 		}
 
-		private static object DefaultValue(Type type)
-		{
-			return type.IsValueType ? Activator.CreateInstance(type): null;
-		}
-
-		private delegate bool TryGetNodeValue(XmlLiteNode node, Type returnType, out object result);
+		private delegate bool TryGetNodeValue(XmlLiteNode node, Type returnType, out object? result);
 
 		private static bool TryCopy(XmlLiteNode node, Type returnType, out object result)
 		{
@@ -2936,8 +2966,8 @@ namespace Lexxys.Xml
 			result = value;
 			return true;
 		}
-		private delegate bool ConcreteValueParser<T>(string value, out T result);
-		private delegate bool ValueParser(string value, out object result);
+		private delegate bool ConcreteValueParser<T>(string value, [MaybeNullWhen(false)] out T result);
+		private delegate bool ValueParser(string value, [MaybeNullWhen(false)] out object result);
 		private struct ParserPair
 		{
 			public readonly Type Type;

@@ -28,9 +28,9 @@ namespace Lexxys.Logging
 
 	public enum LogGroupingType
 	{
-		Message=0,
-		BeginGroup=1,
-		EndGroup=2
+		Message = 0,
+		BeginGroup = 1,
+		EndGroup = 2
 	}
 
 	public class LogRecord: IDumpJson
@@ -90,11 +90,13 @@ namespace Lexxys.Logging
 		{
 			if (data == null)
 				return null;
-			var bag = new OrderedBag<string, object?>(data.Count);
+			if (data is OrderedBag<string, object?> bag)
+				return bag;
+			bag = new OrderedBag<string, object?>(data.Count);
 			var xx = data.GetEnumerator();
 			while (xx.MoveNext())
 			{
-				bag.Add(new KeyValuePair<string, object?>(xx.Key?.ToString() ?? NullArg, xx.Value));
+				bag.Add(xx.Key?.ToString() ?? NullArg, xx.Value);
 			}
 			return bag;
 		}

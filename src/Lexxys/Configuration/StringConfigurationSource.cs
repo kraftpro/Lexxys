@@ -100,9 +100,7 @@ namespace Lexxys.Configuration
 		// string://name/txt?configuration_text
 		public static StringConfigurationSource? Create(Uri location, IReadOnlyCollection<string> parameters)
 		{
-			if (location == null)
-				return null;
-			if (location.Scheme != "string")
+			if (location == null || !location.IsAbsoluteUri || location.Scheme != "string")
 				return null;
 			if (location.Query.Length <= 1)
 				return null;

@@ -75,25 +75,25 @@ namespace Lexxys
 				logger.Log(new LogRecord(LogType.Trace, logger.Source, message, null));
 		}
 
-		public static void Trace(this ILogging logger, string message, string arg1Name, object arg1Value)
+		public static void Trace<T1>(this ILogging logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger.IsEnabled(LogType.Trace))
 				logger.Log(new LogRecord(LogType.Trace, logger.Source, message,
-					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
+					args: new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }));
 		}
 
-		public static void Trace(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Trace<T1, T2>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger.IsEnabled(LogType.Trace))
 				logger.Log(new LogRecord(LogType.Trace, logger.Source, message,
-					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
+					args: new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
 
-		public static void Trace(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Trace<T1, T2, T3>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger.IsEnabled(LogType.Trace))
 				logger.Log(new LogRecord(LogType.Trace, logger.Source, message,
-					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
+					args: new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
 
 		public static void Trace(this ILogging logger, string message, params object[] args)
@@ -151,25 +151,25 @@ namespace Lexxys
 				logger.Log(new LogRecord(LogType.Debug, logger.Source, message, null));
 		}
 
-		public static void Debug(this ILogging logger, string message, string arg1Name, object arg1Value)
+		public static void Debug<T1>(this ILogging logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger.IsEnabled(LogType.Debug))
 				logger.Log(new LogRecord(LogType.Debug, logger.Source, message,
-					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
+					args: new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }));
 		}
 
-		public static void Debug(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Debug<T1, T2>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger.IsEnabled(LogType.Debug))
 				logger.Log(new LogRecord(LogType.Debug, logger.Source, message,
-					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
+					args: new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
 
-		public static void Debug(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Debug<T1, T2, T3>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger.IsEnabled(LogType.Debug))
 				logger.Log(new LogRecord(LogType.Debug, logger.Source, message,
-					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
+					args: new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
 
 		public static void Debug(this ILogging logger, string message, params object[] args)
@@ -227,25 +227,25 @@ namespace Lexxys
 				logger.Log(new LogRecord(LogType.Information, logger.Source, message, null));
 		}
 
-		public static void Info(this ILogging logger, string message, string arg1Name, object arg1Value)
+		public static void Info<T1>(this ILogging logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger.IsEnabled(LogType.Information))
 				logger.Log(new LogRecord(LogType.Information, logger.Source, message,
-					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
+					args: new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }));
 		}
 
-		public static void Info(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Info<T1, T2>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger.IsEnabled(LogType.Information))
 				logger.Log(new LogRecord(LogType.Information, logger.Source, message,
-					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
+					args: new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
 
-		public static void Info(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Info<T1, T2, T3>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger.IsEnabled(LogType.Information))
 				logger.Log(new LogRecord(LogType.Information, logger.Source, message,
-					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
+					args: new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
 
 		public static void Info(this ILogging logger, string message, params object[] args)
@@ -303,25 +303,25 @@ namespace Lexxys
 				logger.Log(new LogRecord(LogType.Warning, logger.Source, message, null));
 		}
 
-		public static void Warning(this ILogging logger, string message, string arg1Name, object arg1Value)
+		public static void Warning<T1>(this ILogging logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger.IsEnabled(LogType.Warning))
 				logger.Log(new LogRecord(LogType.Warning, logger.Source, message,
-					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
+					args: new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }));
 		}
 
-		public static void Warning(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Warning<T1, T2>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger.IsEnabled(LogType.Warning))
 				logger.Log(new LogRecord(LogType.Warning, logger.Source, message,
-					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
+					args: new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
 
-		public static void Warning(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Warning<T1, T2, T3>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger.IsEnabled(LogType.Warning))
 				logger.Log(new LogRecord(LogType.Warning, logger.Source, message,
-					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
+					args: new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
 
 		public static void Warning(this ILogging logger, string message, params object[] args)
@@ -379,25 +379,25 @@ namespace Lexxys
 				logger.Log(new LogRecord(LogType.Error, logger.Source, message, null));
 		}
 
-		public static void Error(this ILogging logger, string message, string arg1Name, object arg1Value)
+		public static void Error<T1>(this ILogging logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger.IsEnabled(LogType.Error))
 				logger.Log(new LogRecord(LogType.Error, logger.Source, message,
-					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
+					args: new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }));
 		}
 
-		public static void Error(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Error<T1, T2>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger.IsEnabled(LogType.Error))
 				logger.Log(new LogRecord(LogType.Error, logger.Source, message,
-					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
+					args: new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
 
-		public static void Error(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Error<T1, T2, T3>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger.IsEnabled(LogType.Error))
 				logger.Log(new LogRecord(LogType.Error, logger.Source, message,
-					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
+					args: new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
 
 		public static void Error(this ILogging logger, string message, params object[] args)
@@ -455,25 +455,25 @@ namespace Lexxys
 				logger.Log(new LogRecord(LogType.Output, logger.Source, message, null));
 		}
 
-		public static void Write(this ILogging logger, string message, string arg1Name, object arg1Value)
+		public static void Write<T1>(this ILogging logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger.IsEnabled(LogType.Output))
 				logger.Log(new LogRecord(LogType.Output, logger.Source, message,
-					args: new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }));
+					args: new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }));
 		}
 
-		public static void Write(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Write<T1, T2>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger.IsEnabled(LogType.Output))
 				logger.Log(new LogRecord(LogType.Output, logger.Source, message,
-					args: new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
+					args: new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }));
 		}
 
-		public static void Write(this ILogging logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Write<T1, T2, T3>(this ILogging logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger.IsEnabled(LogType.Output))
 				logger.Log(new LogRecord(LogType.Output, logger.Source, message,
-					args: new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
+					args: new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }));
 		}
 
 		public static void Write(this ILogging logger, string message, params object[] args)

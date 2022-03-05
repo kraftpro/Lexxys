@@ -33,7 +33,6 @@ namespace Lexxys
 				new NumericTokenRule(),
 				new NameTokenRule().WithNameRecognition(
 					nameStart: o => o == '@' || o == '$' || Char.IsLetter(o),
-					cleanup: null,
 					namePart: o => o == '@' || o == '$' || o == '.' || o == '-' || Char.IsLetterOrDigit(o),
 					beginning: "@$" + NameTokenRule.DefaultBeginning,
 					extra: true

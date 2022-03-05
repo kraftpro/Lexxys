@@ -22,6 +22,7 @@ namespace Lexxys.Logging
 
 		internal const int LogTypeCount = (int)LogType.MaxValue + 1;
 		internal const int LogWatcherSleep = 500;
+		internal const int FlushTimeout = 1000;
 		internal const int FlushBoundMultiplier = 1024;
 
 		private static readonly LoggingConfiguration[] DefaultLoggingConfiguration = new [] {

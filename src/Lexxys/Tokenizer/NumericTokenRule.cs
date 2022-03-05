@@ -16,7 +16,7 @@ namespace Lexxys.Tokenizer
 	[Flags]
 	public enum NumericTokenStyles
 	{
-		None = 0,
+		Ordinal = 0,
 
 		AllowDecimalPoint = 1,
 		AllowExponent = 2,

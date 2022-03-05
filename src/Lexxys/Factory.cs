@@ -8,15 +8,18 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Text;
+
 
 namespace Lexxys
 {
+	using Tokenizer;
 
 	public static class Factory
 	{
@@ -45,24 +48,7 @@ namespace Lexxys
 		{
 			get
 			{
-				if (__assemblies == null)
-				{
-					lock (SyncRoot)
-					{
-						if (__assemblies == null)
-						{
-							CollectAssemblies();
-							ImportAssemblies();
-						}
-					}
-				}
-				else if (!__assembliesImported)
-				{
-					lock (SyncRoot)
-					{
-						ImportAssemblies();
-					}
-				}
+				CollectOrImportAssemblies();
 				return __assemblies;
 			}
 		}
@@ -71,16 +57,7 @@ namespace Lexxys
 		{
 			get
 			{
-				if (__systemAssemblies == null)
-				{
-					lock (SyncRoot)
-					{
-						if (__systemAssemblies == null)
-						{
-							CollectAssemblies();
-						}
-					}
-				}
+				CollectAssemblies();
 				return __systemAssemblies;
 			}
 		}
@@ -132,6 +109,44 @@ namespace Lexxys
 
 		private static void CollectAssemblies()
 		{
+			if (__assemblies == null)
+			{
+				lock (SyncRoot)
+				{
+					if (__assemblies == null)
+					{
+						CollectAssembliesInternal();
+					}
+				}
+			}
+		}
+
+		public static bool AssembliesImported => __assembliesImported;
+
+		private static void CollectOrImportAssemblies()
+		{
+			if (__assemblies == null)
+			{
+				lock (SyncRoot)
+				{
+					if (__assemblies == null)
+					{
+						CollectAssembliesInternal();
+						ImportAssembliesInternal();
+					}
+				}
+			}
+			else if (!__assembliesImported)
+			{
+				lock (SyncRoot)
+				{
+					ImportAssembliesInternal();
+				}
+			}
+		}
+
+		private static void CollectAssembliesInternal()
+		{
 			__systemAssemblyNames = SystemAssemblyNames();
 			AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
 			AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
@@ -140,9 +155,21 @@ namespace Lexxys
 			__systemAssemblies = new ConcurrentBag<Assembly>(assemblies.Where(IsSystemAssembly));
 		}
 
+		private static void ImportAssembliesInternal()
+		{
+			if (!__assembliesImported)
+			{
+				ImportRestAssemblies();
+				Lxx.ConfigurationChanged += OnConfigChanged;
+				__assembliesImported = true;
+			}
+		}
+		private static bool __assembliesImported;
+
 		private static void CurrentDomain_AssemblyLoad(object sender, AssemblyLoadEventArgs args)
 		{
 			Assembly asm = args.LoadedAssembly;
+			CollectAssemblies();
 			if (IsSystemAssembly(asm))
 			{
 				__systemAssemblies.Add(asm);
@@ -169,17 +196,6 @@ namespace Lexxys
 			return null;
 		}
 
-		private static void ImportAssemblies()
-		{
-			if (!__assembliesImported)
-			{
-				ImportRestAssemblies();
-				Lxx.ConfigurationChanged += OnConfigChanged;
-				__assembliesImported = true;
-			}
-		}
-		private static bool __assembliesImported;
-
 		private static void ImportRestAssemblies()
 		{
 			foreach (string assemblyName in __importConfig.Value)
@@ -192,6 +208,7 @@ namespace Lexxys
 		private static void OnConfigChanged(object sender, ConfigurationEventArgs e)
 		{
 			ImportRestAssemblies();
+			ResetSynonyms();
 		}
 
 
@@ -333,23 +350,64 @@ namespace Lexxys
 		{
 			if (typeName == null || (typeName = typeName.Trim()).Length == 0)
 				return null;
+			return GetSynonym(typeName) ?? GetTypeInternal(typeName);
+		}
 
+		public static void ResetSynonyms()
+		{
+			if (__synonymsLoaded)
+			{
+				lock (SyncRoot)
+				{
+					if (__synonymsLoaded)
+					{
+						__synonymsLoading = false;
+						__synonymsLoaded = false;
+					}
+				}
+			}
+		}
+
+		public static void SetSynonym(string name, Type type)
+		{
+			if (String.IsNullOrEmpty(name))
+				return;
+			lock (SyncRoot)
+			{
+				string key = name.Replace(" ", "");
+				if (type == null)
+				{
+					__typesSynonyms.Remove(key);
+					__typesSynonyms.Remove(key + "?");
+				}
+				else
+				{
+					__typesSynonyms[key] = type;
+					if (!IsNullableType(type) && type != typeof(void))
+						__typesSynonyms[key + "?"] = typeof(Nullable<>).MakeGenericType(type);
+				}
+			}
+		}
+
+		private static Type GetSynonym(string name)
+		{
 			if (!__synonymsLoaded)
 			{
 				lock (SyncRoot)
 				{
-					if (!__synonymsLoaded)
+					if (!__synonymsLoading)
 					{
+						__synonymsLoading = true;
 						var synonyms = __synonymsConfig.Value;
 						if (synonyms.Count > 0)
 						{
 							foreach (var item in synonyms)
 							{
 								var key = (item.Key ?? "").Replace(" ", "");
-								if (key.Length <= 0)
+								if (key.Length == 0)
 									continue;
 								var value = (item.Value ?? "").Replace(" ", "");
-								if (value.Length <= 0)
+								if (value.Length == 0)
 									continue;
 								if (!__typesSynonyms.TryGetValue(value, out var type))
 								{
@@ -366,16 +424,13 @@ namespace Lexxys
 					}
 				}
 			}
-
-			if (__typesSynonyms.TryGetValue(typeName.Replace(" ", ""), out var result))
-				return result;
-
-			return GetTypeInternal(typeName);
+			return __typesSynonyms.GetValueOrDefault(name.Replace(" ", ""));
 		}
 		private static readonly IValue<IReadOnlyList<KeyValuePair<string, string>>> __synonymsConfig = Config.Current.GetCollection<KeyValuePair<string, string>>(ConfigurationSynonyms);
 
 		#region Types synonyms table
 		private static bool __synonymsLoaded;
+		private static bool __synonymsLoading;
 		private static readonly Dictionary<string, Type> __typesSynonyms = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
 			{
 				{ "bool",		typeof(bool) },
@@ -422,6 +477,7 @@ namespace Lexxys
 				{ "float?",		typeof(double?) },
 				{ "double?",	typeof(double?) },
 				{ "single?",	typeof(float?) },
+				{ "string?",	typeof(string) },
 				{ "datetime?",	typeof(DateTime?) },
 				{ "date?",		typeof(DateTime?) },
 				{ "timespan?",	typeof(TimeSpan?) },
@@ -431,21 +487,406 @@ namespace Lexxys
 			};
 		#endregion
 
+		#region Type name parser
+
+		public class TypeNameParser
+		{
+			/*
+
+			fullname			:= shortname ('@' assembly | [ ',' assembly [ ',' option ]* ])
+
+			shortname			:= dottedname [ generic_definition ] [ nullable_suffix ] pointer_suffix* array_suffix*
+			dottedname			:= NAME ('.' NAME)*
+			nullable_suffix		:= '?'
+			pointer_suffix		:= '*'
+			array_suffix		:= '[' (',')+ ']'
+
+			generic_definition	:= generic_sufix
+								|  generic_sufix? '[' param_name (',' param_name)* ']'
+								|  generic_sufix? '<' param_name (',' param_name)* '>'
+			generic_suffix		:= '^' NUMBER
+
+			param_name			:= '[' fullname ']'
+								|	shortname
+			assembly			:= dottedname
+			option				:= NAME '=' VALUE
+			*/
+
+			private const int COMMA = 1;
+			private const int ASTERISK = 3;
+			private const int OPEN_SQRBRC = 4;
+			private const int CLOSE_SQRBRC = 5;
+			private const int BEGIN_GENERICS = 6;
+			private const int END_GENERICS = 7;
+			private const int GENERIC_SUFFIX = 8;
+			private const int QUESTION = 9;
+			private const int EQUAL = 10;
+			private const int AT = 11;
+
+			private static readonly LexicalTokenRule[] __rules = new LexicalTokenRule[]
+			{
+				new WhiteSpaceTokenRule(),
+				new NameTokenRule().WithNameRecognition(
+					nameStart: o => o == '$' || o == '_' || Char.IsLetter(o),
+					namePart: o => o == '$' || o == '_' || o == '.' || o == '+' || Char.IsLetterOrDigit(o),
+					nameEnd: o => o == '$' || o == '_' || Char.IsLetterOrDigit(o),
+					beginning: "@$" + NameTokenRule.DefaultBeginning,
+					extra: true
+					),
+				new NumericTokenRule(Tokenizer.NumericTokenStyles.Ordinal),
+				new SequenceTokenRule()
+					.Add(COMMA, ",")
+					.Add(ASTERISK, "*")
+					.Add(OPEN_SQRBRC, "[")
+					.Add(CLOSE_SQRBRC, "]")
+					.Add(BEGIN_GENERICS, "<")
+					.Add(END_GENERICS, ">")
+					.Add(GENERIC_SUFFIX, "`")
+					.Add(QUESTION, "?")
+					.Add(EQUAL, "=")
+					.Add(AT, "@"),
+			};
+
+			class TokenScanner2: TokenScanner
+			{
+				private readonly OneBackFilter _push;
+				public TokenScanner2(CharStream stream, params LexicalTokenRule[] rules)
+					: base(stream, rules)
+				{
+					_push = new OneBackFilter();
+					SetFilter(_push);
+				}
+
+				public void Back()
+				{
+					_push.Back();
+				}
+			}
+
+			public static Type Parse(string value)
+			{
+				var tree = Parse(new TokenScanner2(new CharStream(value), __rules), true);
+				return tree?.MakeType();
+			}
+
+			public static TypeTree ParseType(string value)
+			{
+				return Parse(new TokenScanner2(new CharStream(value), __rules), true);
+			}
+
+			private static TypeTree Parse(TokenScanner2 scanner, bool fullName)
+			{
+				var t = scanner.Next();
+				if (!t.Is(LexicalTokenType.IDENTIFIER))
+					return null;
+
+				string name = t.Text;
+				int generics = 0;
+				bool nullable = false;
+				int pointer = 0;
+				List<int> rank = null;
+				List<TypeTree> parameters = null;
+
+				t = scanner.Next();
+				if (t.Is(LexicalTokenType.SEQUENCE, GENERIC_SUFFIX))
+				{
+					t = scanner.Next();
+					if (!t.Is(LexicalTokenType.NUMERIC))
+						return null;
+					if (!Int32.TryParse(t.Text, out generics))
+						return null;
+					t = scanner.Next();
+				}
+				if (t.Is(LexicalTokenType.SEQUENCE, BEGIN_GENERICS, OPEN_SQRBRC))
+				{
+					int terminal = t.TokenType.Item + 1;
+					if (scanner.Next().Is(LexicalTokenType.SEQUENCE, COMMA, terminal))
+					{
+						int count = 1;
+						while (!scanner.Current.Is(LexicalTokenType.SEQUENCE, terminal))
+						{
+							if (!scanner.Next().Is(LexicalTokenType.SEQUENCE, COMMA, terminal))
+								return null;
+							++count;
+						}
+						if (terminal == BEGIN_GENERICS + 1)
+							generics = count;
+						else
+							(rank ??= new List<int>()).Add(count);
+					}
+					else
+					{
+						scanner.Back();
+						parameters = ParseParameters(scanner, terminal);
+						if (parameters == null)
+							return null;
+					}
+					t = scanner.Next();
+				}
+				if (t.Is(LexicalTokenType.SEQUENCE, QUESTION))
+				{
+					if (rank != null)
+						return null;
+					nullable = true;
+					t = scanner.Next();
+				}
+				while (t.Is(LexicalTokenType.SEQUENCE, ASTERISK))
+				{
+					if (rank != null)
+						return null;
+					++pointer;
+					t = scanner.Next();
+				}
+				while (t.Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC))
+				{
+					rank ??= new List<int>();
+					int count = 0;
+					do
+					{
+						++count;
+						t = scanner.Next();
+						if (!t.Is(LexicalTokenType.SEQUENCE, COMMA, CLOSE_SQRBRC))
+							return null;
+					} while (t.Is(LexicalTokenType.SEQUENCE, COMMA));
+					rank.Add(count);
+					t = scanner.Next();
+				}
+
+				string assembly = null;
+				OrderedBag<string, string> options = null;
+
+				if (fullName && t.Is(LexicalTokenType.SEQUENCE, COMMA))
+				{
+					t = scanner.Next();
+					if (!t.Is(LexicalTokenType.IDENTIFIER))
+						return null;
+					assembly = t.Text;
+					t = scanner.Next();
+					while (t.Is(LexicalTokenType.SEQUENCE, COMMA))
+					{
+						do
+						{
+							t = scanner.Next();
+						} while (t.Is(LexicalTokenType.SEQUENCE, COMMA));
+						if (!t.Is(LexicalTokenType.IDENTIFIER))
+							return null;
+						string n = t.Text;
+						if (!scanner.Next().Is(LexicalTokenType.SEQUENCE, EQUAL))
+							return null;
+						int i = scanner.Stream.IndexOf(c => !Char.IsWhiteSpace(c));
+						int j = scanner.Stream.IndexOf(c => c != '.' && c != '_' && c != '-' && !Char.IsLetterOrDigit(c), i);
+						if (j == i)
+							return null;
+						(options ??= new OrderedBag<string, string>(StringComparer.OrdinalIgnoreCase))[n] = scanner.Stream.Substring(i, j - i);
+						scanner.Stream.Forward(j);
+						t = scanner.Next();
+					}
+				}
+				else if (t.Is(LexicalTokenType.SEQUENCE, AT))
+				{
+					t = scanner.Next();
+					if (!t.Is(LexicalTokenType.IDENTIFIER))
+						return null;
+					assembly = t.Text;
+					t = scanner.Next();
+				}
+				var tree = new TypeTree
+				{
+					Name = name,
+					PointerCount = pointer,
+					Assembly = assembly,
+					IsNullable = nullable,
+					Generics = generics
+				};
+				if (rank != null)
+					tree.ArrayRank = rank;
+				if (parameters != null)
+					tree.Parameters = parameters;
+				if (options != null)
+					tree.Options = options;
+
+				return tree;
+			}
+
+			private static List<TypeTree> ParseParameters(TokenScanner2 scanner, int terminal)
+			{
+				bool fullName = scanner.Next().Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC);
+				if (!fullName)
+					scanner.Back();
+				TypeTree item = Parse(scanner, fullName);
+				if (item == null)
+					return null;
+				if (fullName)
+					if (!scanner.Current.Is(LexicalTokenType.SEQUENCE, CLOSE_SQRBRC))
+						return null;
+					else
+						scanner.Next();
+
+				List<TypeTree> parameters = new List<TypeTree> { item };
+
+				while (scanner.Current.Is(LexicalTokenType.SEQUENCE, COMMA))
+				{
+					fullName = scanner.Next().Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC);
+					if (!fullName)
+						scanner.Back();
+					item = Parse(scanner, fullName);
+					if (item == null)
+						return null;
+					if (fullName)
+						if (!scanner.Current.Is(LexicalTokenType.SEQUENCE, CLOSE_SQRBRC))
+							return null;
+						else
+							scanner.Next();
+					parameters.Add(item);
+				}
+
+				if (!scanner.Current.Is(LexicalTokenType.SEQUENCE, terminal))
+					return null;
+				
+				return parameters;
+			}
+
+			// type
+			// type[]
+			// type*
+			// type*[]
+			// type?
+			// type?[]
+			// type?*
+			// type?*[]
+			public class TypeTree
+			{
+				public string Name { get; set; }
+				public string Assembly { get; set; }
+				public int PointerCount { get; set; }
+				public bool IsNullable { get; set; }
+				public IReadOnlyList<int> ArrayRank { get; set; } = Array.Empty<int>();
+				public int Generics { get; set; }
+				public IReadOnlyList<TypeTree> Parameters { get; set; } = Array.Empty<TypeTree>();
+				public IReadOnlyDictionary<string, string> Options { get; set; } = ReadOnly.Empty<string, string>();
+
+				public bool IsArray => ArrayRank.Count > 0;
+				public bool IsGeneric => Parameters.Count > 0 || Generics > 0;
+				public int GenericParametersCount => Parameters.Count > 0 ? Parameters.Count: Generics;
+				public bool HasAssemblyReference => !String.IsNullOrEmpty(Assembly);
+
+				public StringBuilder BaseName(StringBuilder text, bool alter = false)
+				{
+					if (IsNullable && !alter)
+						text.Append("System.Nullable`1[[");
+					text.Append(Name);
+					if (IsGeneric)
+					{
+						if (!alter)
+							text.Append('`').Append(GenericParametersCount);
+						if (Parameters.Count > 0)
+						{
+							text.Append(alter ? '<': '[');
+							string prefix = "";
+							foreach (var item in Parameters)
+							{
+								text.Append(prefix);
+								if (!alter)
+									text.Append('[');
+								item.BaseName(text, alter);
+								if (!alter)
+									text.Append(']');
+								prefix = ", ";
+							}
+							text.Append(alter ? '>' : ']');
+						}
+						else if (alter)
+						{
+							text.Append('<').Append(',', Generics - 1).Append('>');
+						}
+					}
+					if (IsNullable)
+						text.Append(alter ? "?": "]]");
+					text.Append('*', PointerCount);
+					foreach (var item in ArrayRank)
+					{
+						text.Append('[').Append(',', item - 1).Append(']');
+					}
+					if (!HasAssemblyReference)
+						return text;
+
+					if (alter)
+						return text.Append('@').Append(Assembly);
+
+					text.Append(", ").Append(Assembly);
+					foreach (var item in Options)
+					{
+						text.Append(", ").Append(item.Key).Append('=').Append(item.Value);
+					}
+					return text;
+				}
+
+				public string BaseName(bool alter = false) => BaseName(new StringBuilder(), alter).ToString();
+
+				public override string ToString()
+				{
+					return BaseName(true);
+				}
+
+				public Type MakeType()
+				{
+					Type type = Type.GetType(BaseName(false));
+					if (type != null)
+						return type;
+					type = FindType();
+					if (type == null || type == typeof(void))
+						return type;
+					if (IsNullable && !Factory.IsNullableType(type))
+						type = typeof(Nullable<>).MakeGenericType(type);
+					for (int i = PointerCount; i > 0; --i)
+					{
+						type = type.MakePointerType();
+					}
+					for (int i = 0; i < ArrayRank.Count; ++i)
+					{
+						type = type.MakeArrayType(ArrayRank[i]);
+					}
+					return type;
+				}
+
+				private Type FindType()
+				{
+					var name = IsGeneric ? Name + "`" + GenericParametersCount.ToString(): Name;
+					var type = GetSynonym(name) ?? (Assembly == null ?
+						Factory.FindType(name, DomainAssemblies) ?? Factory.FindType(name, SystemAssemblies):
+						DomainAssemblies.FirstOrDefault(o => String.Equals(o.GetName().Name, Assembly, StringComparison.OrdinalIgnoreCase))
+						?.GetType(name, false, true));
+
+					if (type == null)
+						return null;
+
+					if (Parameters.Count == 0)
+						return type;
+					var parameters = new Type[Parameters.Count];
+					for (int i = 0; i < parameters.Length; ++i)
+					{
+						parameters[i] = Parameters[i].MakeType();
+						if (parameters[i] == null || parameters[i] == typeof(void))
+							return null;
+					}
+					try
+					{
+						return type.MakeGenericType(parameters);
+					}
+					catch
+					{
+						return null;
+					}
+				}
+			}
+		}
+
+		#endregion
+
 		private static Type GetTypeInternal(string typeName)
 		{
-			if (typeName == null)
-				throw new ArgumentNullException(nameof(typeName));
-
-			int i = typeName.IndexOf(',');
-			if (i < 0)
-				return GetType(typeName, DomainAssemblies);
-
-			string assemblyName = typeName.Substring(i + 1).TrimStart();
-			string className = typeName.Substring(0, i).TrimEnd();
-			if (assemblyName.Length == 0)
-				return GetType(className, DomainAssemblies);
-
-			throw EX.ArgumentOutOfRange(nameof(typeName), typeName);
+			Contract.Requires(!String.IsNullOrEmpty(typeName));
+			return Type.GetType(typeName, false, true) ?? TypeNameParser.Parse(typeName);
 		}
 
 		public static Type GetType(string typeName, IEnumerable<Assembly> assemblies)
@@ -453,18 +894,17 @@ namespace Lexxys
 			if (typeName == null)
 				return null;
 
-			var result = Type.GetType(typeName, false, true);
-			if (result != null || assemblies == null)
-				return result;
+			var type = Type.GetType(typeName, false, true);
+			return type != null || assemblies == null ? type: FindType(typeName, assemblies);
+		}
 
-			foreach (var asm in assemblies)
-			{
-				Type t = asm.GetType(typeName, false, true);
-				if (t != null)
-					return t;
-				result ??= asm.SelectTypes(o => String.Equals(o.Name, typeName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-			}
-			return result;
+		private static Type FindType(string typeName, IEnumerable<Assembly> assemblies)
+		{
+			Contract.Requires(assemblies != null);
+			return typeName.IndexOf('.') >= 0 ?
+				assemblies.Select(o => o.GetType(typeName, false, true)).FirstOrDefault(o => o != null):
+				assemblies.SelectMany(a => a.SelectTypes(o => String.Equals(o.Name, typeName, StringComparison.OrdinalIgnoreCase)))
+				.FirstOrDefault();
 		}
 
 		public static bool IsPublicType(Type type)

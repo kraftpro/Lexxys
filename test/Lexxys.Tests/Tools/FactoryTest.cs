@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Lexxys;
+using System.Diagnostics;
 
 namespace Lexxys.Tests.Tools
 {
@@ -30,6 +31,8 @@ namespace Lexxys.Tests.Tools
 			var x = Config.AddConfiguration("application.config.txt");
 			Assert.IsNotNull(x);
 			var y = Config.Current.GetCollection<Lexxys.Xml.XmlLiteNode>(Lexxys.Factory.ConfigurationSynonyms);
+			if (y.Value == null || y.Value.Count == 0)
+				Debugger.Break();
 			Assert.IsNotNull(y.Value);
 			Assert.IsTrue(y.Value.Count > 0);
 		}
@@ -46,12 +49,12 @@ namespace Lexxys.Tests.Tools
 					{ "ULong ? ",		typeof(ulong?) },
 					{ "date ? ",		typeof(DateTime?) },
 					{ "FT",				typeof(FactoryTest) },
-					{ "FT?",			null },
+					{ "FT?",            typeof(FactoryTest) },
 					{ "X",				typeof(void) },
-					{ "X?",				null },
+					{ "X?",             typeof(void) },
 					{ "Z",				typeof(FactoryTest.ZeroElement) },
 					{ "Z?",				typeof(FactoryTest.ZeroElement?) },
-					{ "Z??",			null },
+					{ "Z??",            typeof(FactoryTest.ZeroElement?) },
 					{ "Z0",				typeof(FactoryTest.PrivateZeroElement) },
 					{ "Z0?",			typeof(FactoryTest.PrivateZeroElement?) },
 					{ "Fiction",		null },

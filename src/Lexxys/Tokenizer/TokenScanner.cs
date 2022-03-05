@@ -212,7 +212,7 @@ namespace Lexxys.Tokenizer
 		/// Parses the next token without affecting <see cref="Current"/> property.
 		/// </summary>
 		/// <returns></returns>
-		public LexicalToken GetNextToken()
+		private LexicalToken GetNextToken()
 		{
 			LexicalToken token;
 			do

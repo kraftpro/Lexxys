@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -16,7 +15,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 
 #nullable enable
@@ -61,159 +59,164 @@ namespace Lexxys.Data
 
 		#region Parameters
 
-		public static DbParameter Parameter(string name, object value, DbType type, int size)
+		public static DataParameter Parameter(string name, DbType type, ParameterDirection direction)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name : "@" + name, value ?? DBNull.Value) { DbType = type, Size = size };
+			return new DataParameter(name.StartsWith("@") ? name : "@" + name, null, type) { Direction = direction };
 		}
 
-		public static DbParameter Parameter(string name, object value, DbType type)
+		public static DataParameter Parameter(string name, object value, DbType type, int size)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? DBNull.Value) { DbType = type };
+			return new DataParameter(name.StartsWith("@") ? name : "@" + name, value ?? DBNull.Value, type, size);
 		}
 
-		public static DbParameter Parameter(string name, object value)
+		public static DataParameter Parameter(string name, object value, DbType type)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? DBNull.Value);
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? DBNull.Value, type);
 		}
 
-		public static DbParameter Parameter(string name, bool value)
+		public static DataParameter Parameter(string name, object value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.Bit };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? DBNull.Value);
 		}
 
-		public static DbParameter Parameter(string name, bool? value)
+		public static DataParameter Parameter(string name, bool value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.Bit };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Boolean);
 		}
 
-		public static DbParameter Parameter(string name, byte value)
+		public static DataParameter Parameter(string name, bool? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.TinyInt };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Boolean);
 		}
 
-		public static DbParameter Parameter(string name, byte? value)
+		public static DataParameter Parameter(string name, byte value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.TinyInt };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Byte);
 		}
 
-		public static DbParameter Parameter(string name, short value)
+		public static DataParameter Parameter(string name, byte? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.SmallInt };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Byte);
 		}
 
-		public static DbParameter Parameter(string name, short? value)
+		public static DataParameter Parameter(string name, short value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.SmallInt };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Int16);
 		}
 
-		public static DbParameter Parameter(string name, int value)
+		public static DataParameter Parameter(string name, short? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.Int };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int16);
 		}
 
-		public static DbParameter Parameter(string name, int? value)
+		public static DataParameter Parameter(string name, int value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.Int };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Int32);
 		}
 
-		public static DbParameter Parameter(string name, long value)
+		public static DataParameter Parameter(string name, int? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.BigInt };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int32);
 		}
 
-		public static DbParameter Parameter(string name, long? value)
+		public static DataParameter Parameter(string name, long value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.BigInt };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Int64);
 		}
 
-		public static DbParameter Parameter(string name, decimal value)
+		public static DataParameter Parameter(string name, long? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.Decimal };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int64);
 		}
 
-		public static DbParameter Parameter(string name, decimal? value)
+		public static DataParameter Parameter(string name, decimal value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.Decimal };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Decimal);
 		}
 
-		public static DbParameter Parameter(string name, Money value)
+		public static DataParameter Parameter(string name, decimal? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name : "@" + name, value.Amount) { SqlDbType = SqlDbType.Money };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Decimal);
 		}
 
-		public static DbParameter Parameter(string name, Money? value)
+		public static DataParameter Parameter(string name, Money value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name : "@" + name, value?.Amount ?? (object)DBNull.Value) { SqlDbType = SqlDbType.Money };
+			return new DataParameter(name.StartsWith("@") ? name : "@" + name, value.Amount, DbType.Currency);
 		}
 
-		public static DbParameter Parameter(string name, float value)
+		public static DataParameter Parameter(string name, Money? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.Real };
+			return new DataParameter(name.StartsWith("@") ? name : "@" + name, value?.Amount ?? (object)DBNull.Value, DbType.Currency);
 		}
 
-		public static DbParameter Parameter(string name, float? value)
+		public static DataParameter Parameter(string name, float value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.Real };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Single);
 		}
 
-		public static DbParameter Parameter(string name, double value)
+		public static DataParameter Parameter(string name, float? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.Float };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Single);
 		}
 
-		public static DbParameter Parameter(string name, double? value)
+		public static DataParameter Parameter(string name, double value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.Float };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Double);
 		}
 
-		public static DbParameter Parameter(string name, DateTime value)
+		public static DataParameter Parameter(string name, double? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.DateTime2 };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Double);
 		}
 
-		public static DbParameter Parameter(string name, DateTime? value)
+		public static DataParameter Parameter(string name, DateTime value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.DateTime2 };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.DateTime2);
 		}
 
-		public static DbParameter Parameter(string name, TimeSpan value)
+		public static DataParameter Parameter(string name, DateTime? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.Time };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.DateTime2);
 		}
 
-		public static DbParameter Parameter(string name, TimeSpan? value)
+		public static DataParameter Parameter(string name, TimeSpan value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.Time };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Time);
 		}
 
-		public static DbParameter Parameter(string name, Guid value)
+		public static DataParameter Parameter(string name, TimeSpan? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value) { SqlDbType = SqlDbType.UniqueIdentifier };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Time);
 		}
 
-		public static DbParameter Parameter(string name, Guid? value)
+		public static DataParameter Parameter(string name, Guid value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.UniqueIdentifier };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Guid);
 		}
 
-		public static DbParameter Parameter(string name, RowVersion value)
+		public static DataParameter Parameter(string name, Guid? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value.GetBits()) { SqlDbType = SqlDbType.Timestamp };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Guid);
 		}
 
-		public static DbParameter Parameter(string name, RowVersion? value)
+		public static DataParameter Parameter(string name, RowVersion value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value == null ? (object)DBNull.Value: value.Value.GetBits()) { SqlDbType = SqlDbType.Timestamp };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value.GetBits(), DbType.Binary);
 		}
 
-		public static DbParameter Parameter(string name, string value)
+		public static DataParameter Parameter(string name, RowVersion? value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.NVarChar };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value == null ? (object)DBNull.Value: value.Value.GetBits(), DbType.Binary);
 		}
 
-		public static DbParameter Parameter(string name, byte[] value)
+		public static DataParameter Parameter(string name, string value)
 		{
-			return new SqlParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value) { SqlDbType = SqlDbType.VarBinary };
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.String);
+		}
+
+		public static DataParameter Parameter(string name, byte[] value)
+		{
+			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Binary);
 		}
 
 		#endregion
@@ -409,9 +412,9 @@ namespace Lexxys.Data
 		{
 			return name == null ? String.Empty: name.Length == 0 || (name[0] == '[' && name[name.Length - 1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
 		}
-		public static string TextValue(string? value)
+		public static string TextValue(string? value, bool unicode = false)
 		{
-			return value == null ? NullValue: "'" + value.Replace("'", "''") + "'";
+			return value == null ? NullValue: (unicode ? "'": "N'") + value.Replace("'", "''") + "'";
 		}
 		public static string EscapeLike(string? value)
 		{
@@ -438,7 +441,7 @@ namespace Lexxys.Data
 			{
 				if (value.Length > MaxNStrLen)
 					value = value.Substring(0, MaxNStrLen);
-				return "n'" + value.Replace("'", "''") + "'";
+				return "N'" + value.Replace("'", "''") + "'";
 			}
 			if (value.Length > MaxStrLen)
 				value = value.Substring(0, MaxStrLen);
@@ -768,7 +771,20 @@ namespace Lexxys.Data
 			return result;
 		}
 
-		#nullable disable
+		internal static List<RowsCollection> RecordsMapper(DbCommand cmd)
+		{
+			var result = new List<RowsCollection>();
+			using (var reader = cmd.ExecuteReader())
+			{
+				do
+				{
+					result.Add(new RowsCollection(reader));
+				} while (reader.NextResult());
+			}
+			return result;
+		}
+
+#nullable disable
 
 		private static class AnonymousType<T>
 		{
@@ -911,7 +927,7 @@ namespace Lexxys.Data
 				if (!_disposed)
 				{
 					_disposed = true;
-					Debug.Assert(_context.Context.ConnectionsCount == _count);
+					Debug.Assert(_context.Context.ConnectionsCount >= _count);
 					_context.Context.Disconnect();
 				}
 			}
@@ -920,14 +936,13 @@ namespace Lexxys.Data
 		internal sealed class Transacting: ITransactable
 		{
 			private readonly DataContext _context;
-			private readonly int _count;
 			private readonly bool _autoCommit;
 			private bool _disposed;
 
 			public Transacting(DataContext context, bool autoCommit, IsolationLevel isolationLevel)
 			{
 				_context = context ?? throw new ArgumentNullException(nameof(context));
-				_count = _context.Context.Begin(isolationLevel);
+				_context.Context.Begin(isolationLevel);
 				_autoCommit = autoCommit;
 			}
 

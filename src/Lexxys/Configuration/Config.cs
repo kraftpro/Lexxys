@@ -15,8 +15,9 @@ namespace Lexxys
 {
 	using Configuration;
 
-	public class ConfigurationEventArgs : EventArgs
+	public class ConfigurationEventArgs: EventArgs
 	{
+		public static new readonly ConfigurationEventArgs Empty = new ConfigurationEventArgs();
 	}
 
 	public static class Config

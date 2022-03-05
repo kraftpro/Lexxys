@@ -118,7 +118,7 @@ namespace Lexxys.Configuration
 				throw new ArgumentNullException(nameof(type));
 			try
 			{
-				XmlTools.TryGetValue(node, type, out object result);
+				XmlTools.TryGetValue(node, type, out object? result);
 				return result;
 			}
 			catch

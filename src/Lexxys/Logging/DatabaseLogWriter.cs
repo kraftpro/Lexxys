@@ -8,279 +8,192 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Globalization;
 using System.Threading;
+using System.Text;
 using System.Text.RegularExpressions;
+
+#nullable enable
 
 namespace Lexxys.Logging
 {
 	using Xml;
 	using Data;
+	using System.Diagnostics;
+using System.Linq;
 
-	class DatabaseLogWriter : ILogWriter, IDisposable
+	public class DatabaseLogWriter: ILogWriter, IDisposable
 	{
+		public const int MaxInsertRowsCount = 1000;
 		public const string DefaultSchema = "log";
 		public const string DefaultTable = "App";
 		private const string LogSource = "Lexxys.Logging.DatabaseLogWriter";
 		public const string ConfigSection = "database.connection";
 
-		private ConnectionStringInfo _connectionInfo;
-		private string _schema;
-		private string _table;
-		private bool _dedicatedConnection;
-		private bool _cloneCommand;
-		private SqlCommand _insertInstanceCommand;
-		private SqlCommand _insertEntryCommand;
-		private SqlCommand _insertArgumentCommand;
-		private SqlConnection _connection;
+		private readonly string _server;
+		private readonly string _database;
+		private readonly string _schema;
+		private readonly string _table;
 		private readonly LoggingRule _rule;
+		private readonly string _connectionString;
+		private IDataContext? _dataContext;
+		//private IContextHolder? _connection;
+		private int _errorsCount;
 
 		public DatabaseLogWriter(string name, XmlLiteNode config)
 		{
-			if (config == null)
-				config = XmlLiteNode.Empty;
-
-			_connectionInfo = ConnectionStringInfo.Create(config.FirstOrDefault("connection")) ??
-				Config.Current.GetValue<ConnectionStringInfo>(XmlTools.GetString(config["connection"], ConfigSection)).Value;
-			if (_connectionInfo == null)
-				LogWriter.WriteErrorMessage(LogSource, SR.CollectionIsEmpty(), null);
-
-			_schema = __cleanRex.Replace(config["schema"] ?? "", "");
-			if (_schema.Length == 0)
-				_schema = DefaultSchema;
-			_table = __cleanRex.Replace(config["table"] ?? "", "");
-			if (_table.Length == 0)
-				_table = DefaultTable;
-			_dedicatedConnection = XmlTools.GetBoolean(config["dedicated"], false);
-			_cloneCommand = XmlTools.GetBoolean(config["clone"], false);
 			Name = name;
+			config ??= XmlLiteNode.Empty;
+
+			ConnectionStringInfo? connectionInfo = ConnectionStringInfo.Create(config.FirstOrDefault("connection")) ??
+				Config.Current.GetValue<ConnectionStringInfo>(XmlTools.GetString(config["connection"], ConfigSection)).Value;
+
+			if (connectionInfo == null)
+			{
+				_connectionString = _server = _database = _schema = _table = "?";
+				_rule = LoggingRule.Empty;
+				LogWriter.WriteErrorMessage(LogSource, SR.ConnectionStringIsEmpty(), null);
+				return;
+			}
+
+			_dataContext = new DataContext(connectionInfo);
+			_connectionString = connectionInfo.ToString();
+			_server = connectionInfo.Server ?? "?";
+			_database = connectionInfo.Database ?? "?";
+			_schema = Clean(config["schema"], DefaultSchema);
+			_table = Clean(config["table"], DefaultTable);
 			_rule = LoggingRule.Create(config);
+
+			static string Clean(string val, string def) => (val = __cleanRex.Replace(val ?? "", "")).Length > 0 ? val : def;
 		}
-		private static readonly Regex __cleanRex = new Regex(@"[\x00- '""\]\[\x7F\*/]");
+		private static readonly Regex __cleanRex = new(@"[\x00- '""\]\[\x7F\*/]");
 
 		public string Name { get; }
 
-		public string Target => _connectionInfo == null ? "Empty database": $"{_connectionInfo.Server}:{_connectionInfo.Database}.{_schema}.{_table}LogEntries";
+		public string Target => $"{_server}:{_database}.{_schema}.{_table}LogEntries";
 
-		public bool Accepts(string source, LogType type) => _rule.Contains(source, type);
+		public bool Accepts(string? source, LogType type) => _rule.Contains(source, type);
+
+		private static int __xyz;
 
 		public void Write(IEnumerable<LogRecord> records)
 		{
-			if (records == null)
+			if (records == null || _dataContext == null || _errorsCount > 10)
 				return;
-
-			if (_connectionInfo == null)
-				return;
-
+			var text = new StringBuilder(8192);
+			bool entry = true;
+			int row = 0;
+			int xyz = Interlocked.Increment(ref __xyz);
+			int total = 0;
+			Console.Write($"beg[{xyz}] ");
 			try
 			{
-				SqlCommand instance = null;
-				SqlCommand entry = null;
-				SqlCommand arument = null;
-				try
+				foreach (var record in records)
 				{
-					SqlConnection connection = OpenDatabaseCommection();
-					entry = GetInsertEntryCommand();
-					entry.Connection = connection;
-					arument = GetInsertArgumentsCommand();
-					arument.Connection = connection;
-
-					foreach (LogRecord item in records)
+					int instanceId = __instancesMap.GetOrAdd((record.Context.MachineName, record.Context.DomainName, record.Context.ProcessId), InsertInstance);
+					AppendInsertEntryStatement(instanceId, record);
+					if (++row >= MaxInsertRowsCount)
 					{
-						LogRecord record = item;
-						int instanceId = __instancesMap.GetOrAdd(
-							new Tuple<string, string, int>(record.Context.MachineName, record.Context.DomainName, record.Context.ProcessId),
-							o=> {
-									if (instance == null)
-									{
-										instance = GetInsertInstanceCommand();
-										instance.Connection = connection;
-									}
-									return InsertInstance(instance, record);
-								});
-							int entryId = InsertEntry(entry, instanceId, record);
-							if (record.Data != null && record.Data.Count > 0)
-								InsertArgument(arument, entryId, record.Data);
+						total += row;
+						_dataContext.Execute(text.ToString());
+						text.Clear();
+						entry = true;
+						row = 0;
 					}
 				}
-				finally
-				{
-					CloseDatabaseCommand(entry);
-					CloseDatabaseCommand(arument);
-					CloseDatabaseCommection();
-				}
+				if (text.Length > 0)
+					_dataContext.Execute(text.ToString());
+				_errorsCount = 0;
 			}
 			catch (Exception exception)
 			{
+				++_errorsCount;
 				LogWriter.WriteErrorMessage("DatabaseLogWriter", exception);
+				Console.WriteLine($"err[{xyz}] {_errorsCount} {exception.Message}");
+			}
+			Console.WriteLine($"end[{xyz}] {total}");
+			void AppendInsertEntryStatement(int instanceId, LogRecord record)
+			{
+				if (entry)
+				{
+					text.Append(_insertEntryTemplate);
+					entry = false;
+				}
+				else
+				{
+					text.Append(',');
+				}
+				text.Append("\n(")
+					.Append(Dc.Value(record.Context.SequentialNumber)).Append(',')
+					.Append(record.Context.UtcTimestamp.ToString(@"\'yyyyMMdd HH:mm:ss.fffffff\'")).Append(',')
+					.Append(Dc.Value(instanceId)).Append(',')
+					.Append(Dc.Value(record.Source)).Append(',')
+					.Append(Dc.Value(record.Context.ThreadId)).Append(',')
+					.Append(Dc.Value(record.Context.ThreadSysId)).Append(',')
+					.Append(Dc.Value((int)record.LogType)).Append(',')
+					.Append(Dc.Value((int)record.RecordType)).Append(',')
+					.Append(Dc.Value(record.Indent)).Append(',')
+					.Append(Dc.TextValue(record.Message)).Append(')');
+				if (record.Data != null && record.Data.Count > 0)
+				{
+					text.Append(';').Append(_insertArgTemplate);
+					int line = 0;
+					foreach (DictionaryEntry item in record.Data)
+					{
+						if (++line >= MaxInsertRowsCount)
+							break;
+						text.Append("\n (@id,")
+							.Append(Dc.Value(item.Key.ToString())).Append(',')
+							.Append(Dc.TextValue(item.Value?.ToString())).Append(')');
+					}
+					text.Append(';');
+					entry = true;
+				}
 			}
 		}
-		private static readonly ConcurrentDictionary<Tuple<string, string, int>, int> __instancesMap = new ConcurrentDictionary<Tuple<string, string, int>, int>();
+
+		private int InsertInstance((string Machine, string Domain, int Process) instance)
+		{
+			Debug.Assert(_dataContext != null);
+			var text = new StringBuilder(_insertInstanceTemplate).Append('(')
+				.Append(DateTime.UtcNow.ToString(@"\'yyyyMMdd HH:mm:ss.fffffff\'")).Append(',')
+				.Append(Dc.Value(instance.Machine)).Append(',')
+				.Append(Dc.Value(instance.Domain)).Append(',')
+				.Append(Dc.Value(instance.Process)).Append(')')
+				.Append(";\nselect cast(scope_identity() as int);");
+			return _dataContext!.GetValue<int>(text.ToString());
+		}
+
+		private static readonly ConcurrentDictionary<(string Machine, string Domain, int Process), int> __instancesMap = new ConcurrentDictionary<(string, string, int), int>();
 
 		public void Open()
 		{
-			if (_connectionInfo == null)
+			//if (_connection != null)
+			//	return;
+			if (_dataContext == null)
 			{
 				LogWriter.WriteErrorMessage("DatabaseLogWriter", SR.ConnectionStringIsEmpty(), null);
 				return;
 			}
-
-			DisposeResources();
 			try
 			{
-				_insertInstanceCommand = CreateInsertInstanceCommand();
-				_insertEntryCommand = CreateInsertEntryCommand();
-				_insertArgumentCommand = CreateInsertArgumentsCommand();
-				_connection = new SqlConnection(_connectionInfo.GetConnectionString());
-				_connection.Open();
-				TestLogTables(_connection, _schema, _table);
-				if (!_dedicatedConnection)
-					_connection.Close();
+				//_connection = _dataContext.Connection();
+				PrepareTables();
+				PrepareTemplates();
 			}
-			catch (Exception exception)
+			catch (Exception flaw)
 			{
-				exception
-					.Add("ConnectionString", _connectionInfo.ToString())
+				flaw.Add("ConnectionString", _connectionString)
 					.Add("Schema", _schema)
 					.Add("Table", _table);
-				LogWriter.WriteErrorMessage("DatabaseLogWriter", exception);
-				DisposeResources();
+				LogWriter.WriteErrorMessage("DatabaseLogWriter", flaw);
+				Close();
 			}
 		}
 
 		public void Close()
 		{
-			DisposeResources();
-		}
-
-		private void DisposeResources()
-		{
-			Interlocked.Exchange(ref _connection, null)?.Dispose();
-			Interlocked.Exchange(ref _insertInstanceCommand, null)?.Dispose();
-			Interlocked.Exchange(ref _insertEntryCommand, null)?.Dispose();
-			Interlocked.Exchange(ref _insertArgumentCommand, null)?.Dispose();
-		}
-
-		private SqlCommand GetInsertInstanceCommand()
-		{
-			return _cloneCommand ? _insertInstanceCommand.Clone(): _insertInstanceCommand;
-		}
-
-		private SqlCommand GetInsertEntryCommand()
-		{
-			return _cloneCommand ? _insertEntryCommand.Clone(): _insertEntryCommand;
-		}
-
-		private SqlCommand GetInsertArgumentsCommand()
-		{
-			return _cloneCommand ? _insertArgumentCommand.Clone(): _insertArgumentCommand;
-		}
-
-		private SqlConnection OpenDatabaseCommection()
-		{
-			if (_connection.State != System.Data.ConnectionState.Open)
-				_connection.Open();
-			return _connection;
-		}
-
-		private void CloseDatabaseCommection()
-		{
-			if (!_dedicatedConnection)
-				_connection.Close();
-		}
-
-		private void CloseDatabaseCommand(SqlCommand command)
-		{
-			if (!_cloneCommand)
-				command?.Dispose();
-		}
-
-		private static int InsertInstance(SqlCommand command, LogRecord record)
-		{
-			command.Parameters[0].Value = record.Context.Timestamp;
-			command.Parameters[1].Value = record.Context.MachineName;
-			command.Parameters[2].Value = record.Context.DomainName;
-			command.Parameters[3].Value = record.Context.ProcessId;
-			command.ExecuteNonQuery();
-			return (int)command.Parameters[4].Value;
-		}
-
-
-		private SqlCommand CreateInsertInstanceCommand()
-		{
-			var command = new SqlCommand(String.Format(CultureInfo.InvariantCulture, InsertInstanceCommandText, _schema, _table));
-			command.Parameters.Add("@LocalTime", System.Data.SqlDbType.DateTime);
-			command.Parameters.Add("@ComputerName", System.Data.SqlDbType.VarChar, 120);
-			command.Parameters.Add("@DomainName", System.Data.SqlDbType.VarChar, 120);
-			command.Parameters.Add("@ProcessId", System.Data.SqlDbType.Int);
-			command.Parameters.Add("@ID", System.Data.SqlDbType.Int);
-			command.Parameters["@ID"].Direction = System.Data.ParameterDirection.Output;
-			return command;
-		}
-
-		private static int InsertEntry(SqlCommand command, int instanceId, LogRecord record)
-		{
-			command.Parameters[0].Value = record.Context.SequentialNumber;
-			command.Parameters[1].Value = record.Context.Timestamp;
-			command.Parameters[2].Value = instanceId;
-			command.Parameters[3].Value = record.Source;
-			command.Parameters[4].Value = record.Context.ThreadId;
-			command.Parameters[5].Value = record.Context.ThreadSysId;
-			command.Parameters[6].Value = (byte)record.LogType;
-			command.Parameters[7].Value = (byte)record.RecordType;
-			command.Parameters[8].Value = record.Indent;
-			command.Parameters[9].Value = record.Message;
-			command.ExecuteNonQuery();
-			return (int)command.Parameters[10].Value;
-		}
-
-		private SqlCommand CreateInsertEntryCommand()
-		{
-			var command = new SqlCommand(String.Format(CultureInfo.InvariantCulture, InsertEntryCommandText, _schema, _table));
-			command.Parameters.Add("@SeqNumber", System.Data.SqlDbType.Int);
-			command.Parameters.Add("@LocalTime", System.Data.SqlDbType.DateTime);
-			command.Parameters.Add("@Instance", System.Data.SqlDbType.Int);
-			command.Parameters.Add("@Source", System.Data.SqlDbType.VarChar, 250);
-			command.Parameters.Add("@ThreadId", System.Data.SqlDbType.Int);
-			command.Parameters.Add("@ThreadSysId", System.Data.SqlDbType.Int);
-			command.Parameters.Add("@LogType", System.Data.SqlDbType.TinyInt);
-			command.Parameters.Add("@RecordType", System.Data.SqlDbType.TinyInt);
-			command.Parameters.Add("@Indentlevel", System.Data.SqlDbType.Int);
-			command.Parameters.Add("@Message", System.Data.SqlDbType.VarChar, -1);
-			command.Parameters.Add("@ID", System.Data.SqlDbType.Int);
-			command.Parameters["@ID"].Direction = System.Data.ParameterDirection.Output;
-			return command;
-		}
-
-		private static void InsertArgument(SqlCommand command, int entryId, IDictionary arguments)
-		{
-			foreach (var key in arguments.Keys)
-			{
-				command.Parameters[0].Value = entryId;
-				command.Parameters[1].Value = key.ToString();
-				command.Parameters[2].Value = arguments[key].ToString();
-				command.ExecuteNonQuery();
-			}
-		}
-
-		private SqlCommand CreateInsertArgumentsCommand()
-		{
-			var command = new SqlCommand(String.Format(CultureInfo.InvariantCulture, InsertArgumentCommandText, _schema, _table));
-			command.Parameters.Add("@Entry", System.Data.SqlDbType.Int);
-			command.Parameters.Add("@ArgName", System.Data.SqlDbType.VarChar, 120);
-			command.Parameters.Add("@ArgValue", System.Data.SqlDbType.VarChar, -1);
-			return command;
-		}
-
-		private static void TestLogTables(SqlConnection connection, string schemaName, string logName)
-		{
-			using var command = new SqlCommand { Connection = connection };
-			foreach (string statement in TestTablesCommandText)
-			{
-				command.CommandText = String.Format(CultureInfo.InvariantCulture, statement, schemaName, logName);
-				command.ExecuteNonQuery();
-			}
+			//Interlocked.Exchange(ref _connection, null)?.Dispose();
+			Interlocked.Exchange(ref _dataContext, null)?.Dispose();
 		}
 
 		public void Dispose()
@@ -288,130 +201,74 @@ namespace Lexxys.Logging
 			Close();
 		}
 
-		#region SQL Statements
-		private static readonly string[] TestTablesCommandText =
+		private void PrepareTemplates()
+		{
+			const string InsertInstanceTemplate = "insert into [{S}].[{T}LogInstances] (LocalTime,ComputerName,DomainName,ProcessId) values ";
+			const string InstertEntryTemplate = "\ninsert into[{S}].[{T}LogEntries] (SeqNumber,LocalTime,InstanceId,Source,ThreadId,ThreadSysId,LogType,RecordType,Indentlevel,Message) values";
+			const string InstertArgTemplate = "\n declare @id int=scope_identity();\n insert into [{S}].[{T}LogArguments] (Entry,ArgName,ArgValue) values";
+
+			_insertInstanceTemplate = InsertInstanceTemplate.Replace("{S}", _schema).Replace("{T}", _table);
+			_insertEntryTemplate = InstertEntryTemplate.Replace("{S}", _schema).Replace("{T}", _table);
+			_insertArgTemplate = InstertArgTemplate.Replace("{S}", _schema).Replace("{T}", _table);
+		}
+		private string? _insertInstanceTemplate;
+		private string? _insertEntryTemplate;
+		private string? _insertArgTemplate;
+
+		private void PrepareTables()
+		{
+			Debug.Assert(_dataContext != null);
+			foreach (string table in CreateTableTemplates)
+			{
+				_dataContext!.Execute(table.Replace("{S}", _schema).Replace("{T}", _table));
+			}
+		}
+
+		private static readonly string[] CreateTableTemplates =
 		{
 			@"
-if (schema_id('{0}') is null)
-	exec ('create schema [{0}]');
-", @"if (object_id('[{0}].[{1}LogInstances]') is null)
-begin
-exec ('
-create table [{0}].[{1}LogInstances]
+if (schema_id('{S}') is null)
+	exec ('create schema [{S}]');
+", @"if (object_id('[{S}].[{T}LogInstances]') is null)
+create table [{S}].[{T}LogInstances]
 	(
 	ID int not null identity (1, 1)
-		constraint [PK_{0}_{1}LogInstances] primary key,
-	LocalTime datetime not null,
+		constraint [PK_{S}_{T}LogInstances] primary key,
+	LocalTime datetime2 not null,
 	ComputerName varchar(120) null,
 	DomainName varchar(120) null,
 	ProcessId int not null,
 	)
-');
-exec dbo.alter_index '[{0}].[{1}LogInstances](unique)', 'ProcessId', 'ComputerName', 'DomainName';
-end;
-", @"if (object_id('[{0}].[{1}LogEntries]') is null)
-exec ('
-create table [{0}].[{1}LogEntries]
+", @"if (object_id('[{S}].[{T}LogEntries]') is null)
+create table [{S}].[{T}LogEntries]
 	(
 	ID int not null identity (1, 1)
-		constraint [PK_{0}_{1}LogEntries] primary key,
+		constraint [PK_{S}_{T}LogEntries] primary key,
 	SeqNumber int not null,
-	LocalTime datetime not null,
-	Instance int not null
-		constraint [FK_{0}_{1}LogEntries_Instance]
-		foreign key references [{0}].[{1}LogInstances] (ID),
+	LocalTime datetime2 not null,
+	InstanceId int not null,
+		-- constraint [FK_{S}_{T}LogEntries_Instance]
+		-- foreign key references [{S}].[{T}LogInstances] (ID),
 	Source varchar(250) null,
 	ThreadId int not null,
 	ThreadSysId int not null,
 	LogType tinyint not null,
 	RecordType tinyint not null,
 	Indentlevel int not null,
-	Message varchar(max) null
+	Message nvarchar(max) null
 	)
-');
-", @"if (object_id('[{0}].[{1}LogArguments]') is null)
-exec ('
-create table [{0}].[{1}LogArguments]
+", @"if (object_id('[{S}].[{T}LogArguments]') is null)
+create table [{S}].[{T}LogArguments]
 	(
 	ID int not null identity (1, 1)
-		constraint [PK_{0}_{1}LogArguments] primary key,
-	Entry int not null
-		constraint [FK_{0}_{1}LogArguments_Entry]
-		foreign key references [{0}].[{1}LogEntries](ID),
+		constraint [PK_{S}_{T}LogArguments] primary key,
+	EntryId int not null,
+	--	constraint [FK_{S}_{T}LogArguments_Entry]
+	--	foreign key references [{S}].[{T}LogEntries](ID),
 	ArgName varchar(120) not null,
-	ArgValue varchar(max)
+	ArgValue nvarchar(max)
 	)
-');
-", @"if (object_id('[{0}].[Insert{1}LogInstance]') is null)
-exec ('
-create proc [{0}].[Insert{1}LogInstance]
-	(
-	@LocalTime datetime,
-	@ComputerName varchar(120),
-	@DomainName varchar(120),
-	@ProcessId int,
-	@ID int output
-	)
-as
-	begin
-	set @ID = (select ID
-		from [{0}].[{1}LogInstances]
-		where ComputerName=@ComputerName
-			and DomainName=@DomainName
-			and ProcessId=@ProcessId
-		);
-	if (@ID is null)
-		begin
-		insert into [{0}].[{1}LogInstances]
-			( LocalTime, ComputerName, DomainName, ProcessId)
-		values
-			(@LocalTime,@ComputerName,@DomainName,@ProcessId);
-		set @ID = scope_identity();
-		end;
-	end;
-');
-", @"if (object_id('[{0}].[Insert{1}LogEntry]') is null)
-exec ('
-create proc [{0}].[Insert{1}LogEntry]
-	(
-	@SeqNumber int,
-	@LocalTime datetime,
-	@Instance int,
-	@Source varchar(250),
-	@ThreadId int,
-	@ThreadSysId int,
-	@LogType tinyint,
-	@RecordType tinyint,
-	@Indentlevel int,
-	@Message varchar(max),
-	@ID int output
-	)
-as
-	begin
-	declare @proc int;
-	insert into [{0}].[{1}LogEntries]
-		( SeqNumber, LocalTime, Instance, Source, ThreadId, ThreadSysId, LogType, RecordType, Indentlevel, Message)
-	values
-		(@SeqNumber,@LocalTime,@Instance,@Source,@ThreadId,@ThreadSysId,@LogType,@RecordType,@Indentlevel,@Message);
-	set @ID = scope_identity();
-	end
-');
-", @"if (object_id('[{0}].[Insert{1}LogArgument]') is null)
-exec ('
-create proc [{0}].[Insert{1}LogArgument](@Entry int, @ArgName varchar(120), @ArgValue varchar(max))
-as
-	insert into [{0}].[{1}LogArguments]
-		( Entry, ArgName, ArgValue)
-	values
-		(@Entry, @ArgName, @ArgValue);
-');
-"
+",
 		};
-
-		private const string InsertInstanceCommandText = @"exec [{0}].[Insert{1}LogInstance] @LocalTime,@ComputerName,@DomainName,@ProcessId,@ID output;";
-		private const string InsertEntryCommandText = @"exec [{0}].[Insert{1}LogEntry] @SeqNumber,@LocalTime,@Instance,@Source,@ThreadId,@ThreadSysId,@LogType,@RecordType,@Indentlevel,@Message,@ID output;";
-		private const string InsertArgumentCommandText = @"exec [{0}].[Insert{1}LogArgument] @Entry,@ArgName,@ArgValue;";
-
-		#endregion
 	}
 }

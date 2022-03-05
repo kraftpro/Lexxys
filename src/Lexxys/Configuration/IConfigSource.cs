@@ -11,21 +11,11 @@ using System.Collections.Generic;
 
 namespace Lexxys.Configuration
 {
-	public interface IConfigSection
+	public interface IConfigSource
 	{
 		event EventHandler<ConfigurationEventArgs>? Changed;
-
 		int Version { get; }
-
-		IConfigSection GetSection(string key);
-
-		void MapPath(string key, string value);
-
-		void DefineValue<T>(string key, T value);
-
-		IValue<T> GetValue<T>(string key, Func<T>? defaultValue = null);
-
-		void DefineCollection<T>(string key, IReadOnlyList<T> value);
-		IValue<IReadOnlyList<T>> GetCollection<T>(string key);
+		IReadOnlyList<T> GetList<T>(string key);
+		object? GetValue(string key, Type objectType);
 	}
 }

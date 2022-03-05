@@ -16,10 +16,11 @@ namespace Lexxys.Tokenizer
 	public class NameTokenRule: LexicalTokenRule
 	{
 		public const string DefaultBeginning = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-		private string _beginning = DefaultBeginning;
+		private string? _beginning = DefaultBeginning;
 		private bool _extra = true;
 		private Func<char, bool> _isNameStartCharacter = o => IsNameStartCharacter(o);
 		private Func<char, bool> _isNamePartCharacter = o => IsNamePartCharacter(o);
+		private Func<char, bool> _isNameEndCharacter = o => true;
 		private Func<string, string>? _cleanupResult;
 
 		public NameTokenRule(LexicalTokenType nameTokenType, bool ignoreCase)
@@ -39,39 +40,27 @@ namespace Lexxys.Tokenizer
 		{
 		}
 
-		public override string BeginningChars => _beginning;
+		public override string? BeginningChars => _beginning;
 
 		public override bool HasExtraBeginning => _extra;
 
 		public override bool TestBeginning(char value) => _isNameStartCharacter(value);
 
-		public NameTokenRule WithNameRecognition(Func<char, bool>? nameStart, Func<char, bool>? namePart, Func<string, string>? cleanup)
+		public NameTokenRule WithNameRecognition(Func<char, bool>? nameStart = null, Func<char, bool>? namePart = null, Func<char, bool>? nameEnd = null, Func<string, string>? cleanup = null, string beginning = "", bool? extra = null)
 		{
 			if (nameStart != null)
 				NameStartCharacter = nameStart;
 			if (namePart != null)
 				NamePartCharacter = namePart;
+			if (nameEnd != null)
+				NameEndCharacter = nameEnd;
 			if (cleanup != null)
 				CleanupResult = cleanup;
+			if (beginning != "")
+				_beginning = beginning;
+			if (extra != null)
+				_extra = extra.GetValueOrDefault();
 			return this;
-		}
-
-		public NameTokenRule WithNameRecognition(Func<char, bool>? nameStart, Func<char, bool>? namePart, Func<string, string>? cleanup, string beginning, bool extra)
-		{
-			if (nameStart != null)
-				NameStartCharacter = nameStart;
-			if (namePart != null)
-				NamePartCharacter = namePart;
-			if (cleanup != null)
-				CleanupResult = cleanup;
-			SetBeginning(beginning, extra);
-			return this;
-		}
-
-		public void SetBeginning(string beginning, bool extra)
-		{
-			_beginning = beginning;
-			_extra = extra;
 		}
 
 		public Func<char, bool> NameStartCharacter
@@ -84,6 +73,12 @@ namespace Lexxys.Tokenizer
 		{
 			get => _isNamePartCharacter;
 			set => _isNamePartCharacter = value ?? throw new ArgumentNullException(nameof(value));
+		}
+
+		public Func<char, bool> NameEndCharacter
+		{
+			get => _isNameEndCharacter;
+			set => _isNameEndCharacter = value ?? throw new ArgumentNullException(nameof(value));
 		}
 
 		public Func<string, string>? CleanupResult
@@ -105,6 +100,13 @@ namespace Lexxys.Tokenizer
 			{
 				ch = stream[++i];
 			} while (_isNamePartCharacter(ch));
+
+			while (i > 0 && !_isNameEndCharacter(stream[i - 1]))
+			{
+				--i;
+			}
+			if (i == 0)
+				return null;
 
 			string text = stream.Substring(0, i);
 			if (_cleanupResult != null)

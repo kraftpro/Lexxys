@@ -773,6 +773,8 @@ namespace Lexxys.Xml
 			return result;
 		}
 
+		public static List<XmlLiteNode> FromXmlFragment(XmlReader reader, bool ignoreCase = false) => FromXmlFragment(reader, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
 		public static List<XmlLiteNode> FromXmlFragment(string value, IEqualityComparer<string> comparer)
 		{
 			if (String.IsNullOrEmpty(value))
@@ -781,12 +783,16 @@ namespace Lexxys.Xml
 			return FromXmlFragment(reader, comparer);
 		}
 
+		public static List<XmlLiteNode> FromXmlFragment(string value, bool ignoreCase = false) => FromXmlFragment(value, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
 		public static XmlLiteNode FromXml(XmlReader reader, IEqualityComparer<string> comparer)
 		{
 			if (reader == null)
 				return null;
 			return reader.ReadState == ReadState.EndOfFile ? Empty : new XmlLiteNode(reader, comparer);
 		}
+
+		public static XmlLiteNode FromXml(XmlReader reader, bool ignoreCase = false) => FromXml(reader, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
 		public static XmlLiteNode FromXml(string value, IEqualityComparer<string> comparer)
 		{
@@ -796,13 +802,7 @@ namespace Lexxys.Xml
 			return new XmlLiteNode(reader, comparer);
 		}
 
-		public static XmlLiteNode FromXml(XmlReader reader, bool ignoreCase = false) => FromXml(reader, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-
 		public static XmlLiteNode FromXml(string value, bool ignoreCase = false) => FromXml(value, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-
-		public static List<XmlLiteNode> FromXmlFragment(XmlReader reader, bool ignoreCase = false) => FromXmlFragment(reader, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-
-		public static List<XmlLiteNode> FromXmlFragment(string value, bool ignoreCase = false) => FromXmlFragment(value, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
 		public static XmlLiteNode FromJson(string value, string root, bool ignoreCase = false, bool forceAttributes = false)
 		{

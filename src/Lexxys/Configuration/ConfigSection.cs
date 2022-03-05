@@ -14,29 +14,37 @@ using System.Threading;
 
 namespace Lexxys.Configuration
 {
-	internal class ConfigSection: IConfigSection
+	public class ConfigSection: IConfigSection
 	{
 		private readonly string _path;
+		private readonly IConfigSource _configSource;
 
-		private ConfigSection(string? path)
+		public ConfigSection(IConfigSource configSource)
 		{
-			_path = path?.Trim(Dots) ?? "";
+			_path = String.Empty;
+			_configSource = configSource;
 		}
 
-		internal static readonly IConfigSection Instance = new ConfigSection(null);
+		private ConfigSection(IConfigSource configSource, string path)
+		{
+			_path = path.Trim(Dots);
+			_configSource = configSource;
+		}
+
+		internal static readonly IConfigSection Instance = new ConfigSection(DefaultConfig.ConfigSourceInstance);
 
 		#region IConfigSection
 
-		event EventHandler<ConfigurationEventArgs> IConfigSection.Changed
+		event EventHandler<ConfigurationEventArgs>? IConfigSection.Changed
 		{
-			add => DefaultConfig.Changed += value;
-			remove => DefaultConfig.Changed -= value;
+			add => _configSource.Changed += value;
+			remove => _configSource.Changed -= value;
 		}
 
 		IConfigSection IConfigSection.GetSection(string key)
-			=> new ConfigSection(Key(key));
+			=> new ConfigSection(_configSource, Key(key));
 
-		int IConfigSection.Version => DefaultConfig.Version;
+		int IConfigSection.Version => _configSource.Version;
 
 		void IConfigSection.MapPath(string key, string path)
 		{
@@ -64,20 +72,20 @@ namespace Lexxys.Configuration
 			return new ConfigValue<IReadOnlyList<T>>(GetConfigValue, GetConfigVersion);
 
 			IReadOnlyList<T> GetConfigValue()
-				=> Lists<T>.TryGet(fullKey, out var value) ? value: DefaultConfig.GetList<T>(fullKey) ?? Array.Empty<T>();
+				=> Lists<T>.TryGet(fullKey, out var value) ? value: _configSource.GetList<T>(fullKey) ?? Array.Empty<T>();
 		}
 
 		IValue<T> IConfigSection.GetValue<T>(string key, Func<T>? defaultValue)
 		{
 			return new ConfigValue<T>(GetConfigValue(Key(key), defaultValue), GetConfigVersion);
 
-			static Func<T> GetConfigValue(string key, Func<T>? defaultValue)
+			Func<T> GetConfigValue(string key, Func<T>? defaultValue)
 				=> defaultValue == null ?
-					() => Values<T>.TryGet(key, out var value) ? value : DefaultConfig.GetValue(key, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(key, typeof(T)) :
-					() => Values<T>.TryGet(key, out var value) ? value : DefaultConfig.GetValue(key, typeof(T)) is T value2 ? value2 : defaultValue();
+					() => Values<T>.TryGet(key, out var value) ? value : _configSource.GetValue(key, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(key, typeof(T)) :
+					() => Values<T>.TryGet(key, out var value) ? value : _configSource.GetValue(key, typeof(T)) is T value2 ? value2 : defaultValue();
 		}
 
-		private static int GetConfigVersion() => DefaultConfig.Version;
+		private int GetConfigVersion() => _configSource.Version;
 
 		#endregion
 

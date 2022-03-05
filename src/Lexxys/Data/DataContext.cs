@@ -29,6 +29,11 @@ namespace Lexxys.Data
 			set => __defaultConnectionFactory = value ?? throw new ArgumentNullException(nameof(value));
 		}
 
+		private DataContext(DataContextImplementation context)
+		{
+			_context = context;
+		}
+
 		public DataContext(Func<string, DbConnection>? factory = null) : this(__globalConnetionString.Value, factory)
 		{
 		}
@@ -38,7 +43,8 @@ namespace Lexxys.Data
 			if (connectionInfo == null)
 				throw new ArgumentNullException(nameof(connectionInfo));
 			connectionFactory ??= __defaultConnectionFactory;
-			_context = new DataContextImplementation(connectionFactory(connectionInfo.GetConnectionString()), connectionInfo.CommandTimeout, new DataAudit(connectionInfo.ConnectionAuditThreshold, connectionInfo.ConnectionAuditThreshold, connectionInfo.BatchAuditThreshold));
+			string connectionString = connectionInfo.GetConnectionString();
+			_context = new DataContextImplementation(() => connectionFactory(connectionString), connectionInfo.CommandTimeout, new DataAudit(connectionInfo.ConnectionAuditThreshold, connectionInfo.ConnectionAuditThreshold, connectionInfo.BatchAuditThreshold));
 		}
 
 		internal DataContextImplementation Context => _context;
@@ -79,6 +85,8 @@ namespace Lexxys.Data
 
 		public IContextHolder NoTiming() => new Dc.TimingLocker(this);
 
+		public IDataContext Clone() => new DataContext(_context.Clone());
+
 		public void Commit() => _context.Commit();
 
 		public void Rollback() => _context.Rollback();
@@ -89,50 +97,7 @@ namespace Lexxys.Data
 
 		public void ResetStatistics() => _context.Audit.Reset();
 
-		[return: MaybeNull]
-		public T GetValue<T>(string query, params DbParameter[] parameters) => Map(Dc.ValueMapper<T>, query, parameters);
-
-		public Task<T> GetValueAsync<T>(string query, params DbParameter[] parameters) => MapAsync(Dc.ValueMapperAsync<T>, query, parameters);
-
-		public List<T> GetList<T>(string query, params DbParameter[] parameters) => Map(Dc.ListMapper<T>, query, parameters);
-
-		public Task<List<T>> GetListAsync<T>(string query, params DbParameter[] parameters) => MapAsync(Dc.ListMapperAsync<T>, query, parameters);
-
-		public bool ReadXmlText(TextWriter text, string query, params DbParameter[] parameters) => Map(o => Dc.XmlTextMapper(text, o), query, parameters);
-
-		public Task<bool> ReadXmlTextAsync(TextWriter text, string query, params DbParameter[] parameters) => MapAsync(o => Dc.XmlTextMapperAsync(text, o), query, parameters);
-
-		public List<Xml.XmlLiteNode> ReadXml(string query, params DbParameter[] parameters) => Map(Dc.XmlMapper, query, parameters);
-
-		public Task<List<Xml.XmlLiteNode>> ReadXmlAsync(string query, params DbParameter[] parameters) => MapAsync(Dc.XmlMapperAsync, query, parameters);
-
-		public List<RowsCollection> Records(int count, string query, params DbParameter[] parameters)
-		{
-			long t = _context.Audit.Start();
-			try
-			{
-				var result = _context.Records(count, query, parameters);
-				_context.Audit.QueryEnd(query, t);
-				return result;
-			}
-			catch (Exception flaw)
-			{
-				flaw.Add(nameof(count), count)
-					.Add(nameof(query), query);
-				if (parameters != null && parameters.Length > 0)
-				{
-					foreach (var item in parameters)
-					{
-						if (item != null)
-							flaw.Add(item.ParameterName, $"{item.DbType}, {item.Value}.");
-					}
-				}
-				flaw.Add(t);
-				throw;
-			}
-		}
-
-		public T Map<T>(Func<DbCommand, T> mapper, string query, params DbParameter[] parameters)
+		public T Map<T>(Func<DbCommand, T> mapper, string query, params DataParameter[] parameters)
 		{
 			if (mapper == null)
 				throw new ArgumentNullException(nameof(mapper));
@@ -140,18 +105,14 @@ namespace Lexxys.Data
 				throw new ArgumentNullException(nameof(query));
 
 			long t = 0;
+			int connect = 0;
 			try
 			{
-				using (Connection())
-				{
-					using DbCommand cmd = _context.Command(query);
-					if (parameters != null && parameters.Length > 0)
-						cmd.Parameters.AddRange(parameters);
-					t = _context.Audit.Start();
-					T result = mapper(cmd);
-					_context.Audit.QueryEnd(query, t);
-					return result;
-				}
+				connect = _context.Connect();
+				using DbCommand cmd = _context.Command(query).WithParameters(parameters);
+				t = _context.Audit.Start();
+				T result = mapper(cmd);
+				return result;
 			}
 			catch (Exception flaw)
 			{
@@ -162,15 +123,22 @@ namespace Lexxys.Data
 					foreach (var item in parameters)
 					{
 						if (item != null)
-							flaw.Add(item.ParameterName, $"{item.DbType}, {item.Value}.");
+							flaw.Add(item.Name, $"{item.Type}, {item.Value}.");
 					}
 				}
 				flaw.Add(t);
 				throw;
 			}
+			finally
+			{
+				if (t != 0)
+					_context.Audit.QueryEnd(query, t);
+				if (connect > 0)
+					_context.Disconnect();
+			}
 		}
 
-		public async Task<T> MapAsync<T>(Func<DbCommand, Task<T>> mapper, string query, params DbParameter[] parameters)
+		public async Task<T> MapAsync<T>(Func<DbCommand, Task<T>> mapper, string query, params DataParameter[] parameters)
 		{
 			if (mapper == null)
 				throw new ArgumentNullException(nameof(mapper));
@@ -178,14 +146,11 @@ namespace Lexxys.Data
 				throw new ArgumentNullException(nameof(query));
 
 			long t = 0;
-			bool connected = false;
+			int connect = 0;
 			try
 			{
-				await _context.ConnectAsync();
-				connected = true;
-				using DbCommand cmd = _context.Command(query);
-				if (parameters != null && parameters.Length > 0)
-					cmd.Parameters.AddRange(parameters);
+				connect = await _context.ConnectAsync();
+				using DbCommand cmd = _context.Command(query).WithParameters(parameters);
 				t = _context.Audit.Start();
 				var result = await mapper(cmd).ConfigureAwait(false);
 				return result;
@@ -199,7 +164,7 @@ namespace Lexxys.Data
 					foreach (var item in parameters)
 					{
 						if (item != null)
-							flaw.Add(item.ParameterName, $"{item.DbType}, {item.Value}.");
+							flaw.Add(item.Name, $"{item.Type}, {item.Value}.");
 					}
 				}
 				flaw.Add(t);
@@ -209,7 +174,7 @@ namespace Lexxys.Data
 			{
 				if (t != 0)
 					_context.Audit.QueryEnd(query, t);
-				if (connected)
+				if (connect > 0)
 					_context.Disconnect();
 			}
 		}
@@ -220,23 +185,28 @@ namespace Lexxys.Data
 				throw new ArgumentNullException(nameof(command));
 
 			long t = 0;
+			int connect = 0;
 			try
 			{
-				using (Connection())
-				{
-					command.Connection = _context.Connection;
-					command.Transaction = _context.Transaction;
-					t = _context.Audit.Start();
-					var result = command.ExecuteNonQuery();
-					_context.Audit.QueryEnd(command.CommandText, t);
-					return result;
-				}
+				connect = _context.Connect();
+				command.Connection = _context.Connection;
+				command.Transaction = _context.Transaction;
+				t = _context.Audit.Start();
+				var result = command.ExecuteNonQuery();
+				return result;
 			}
 			catch (Exception flaw)
 			{
 				flaw.Add(nameof(command), command)
 					.Add(t);
 				throw;
+			}
+			finally
+			{
+				if (t != 0)
+					_context.Audit.QueryEnd(command.CommandText, t);
+				if (connect > 0)
+					_context.Disconnect();
 			}
 		}
 
@@ -246,11 +216,10 @@ namespace Lexxys.Data
 				throw new ArgumentNullException(nameof(command));
 
 			long t = 0;
-			bool connected = false;
+			int connect = 0;
 			try
 			{
-				await _context.ConnectAsync();
-				connected = true;
+				connect = await _context.ConnectAsync();
 				command.Connection = _context.Connection;
 				command.Transaction = _context.Transaction;
 				t = _context.Audit.Start();
@@ -267,63 +236,25 @@ namespace Lexxys.Data
 			{
 				if (t != 0)
 					_context.Audit.QueryEnd(command.CommandText, t);
-				if (connected)
+				if (connect > 0)
 					_context.Disconnect();
 			}
 		}
 
-		public int Execute(string statement, params DbParameter[] parameters)
+		public int Execute(string statement, params DataParameter[] parameters)
 		{
 			if (statement == null)
 				throw new ArgumentNullException(nameof(statement));
 
 			long t = 0;
+			int connect = 0;
 			try
 			{
-				using (Connection())
-				{
-					using DbCommand cmd = _context.Command(statement);
-					if (parameters != null && parameters.Length > 0)
-						cmd.Parameters.AddRange(parameters);
-					t = _context.Audit.Start();
-					int result = cmd.ExecuteNonQuery();
-					_context.Audit.QueryEnd(statement, t);
-					return result;
-				}
-			}
-			catch (Exception flaw)
-			{
-				flaw.Add(nameof(statement), statement)
-					.Add(t);
-				if (parameters != null && parameters.Length > 0)
-				{
-					foreach (var item in parameters)
-					{
-						if (item != null)
-							flaw.Add(item.ParameterName, $"{item.DbType}, {item.Value}.");
-					}
-				}
-				throw;
-			}
-		}
-
-		public async Task<int> ExecuteAsync(string statement, params DbParameter[] parameters)
-		{
-			if (statement == null)
-				throw new ArgumentNullException(nameof(statement));
-
-			long t = 0;
-			bool connected = false;
-			try
-			{
-				await _context.ConnectAsync();
-				connected = true;
-				using DbCommand cmd = _context.Command(statement);
-				if (parameters != null && parameters.Length > 0)
-					cmd.Parameters.AddRange(parameters);
+				connect = _context.Connect();
+				using DbCommand cmd = _context.Command(statement).WithParameters(parameters);
 				t = _context.Audit.Start();
-				int result = await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-				_context.Audit.QueryEnd(statement, t);
+				int result = cmd.ExecuteNonQuery();
+				cmd.SetOutput(parameters);
 				return result;
 			}
 			catch (Exception flaw)
@@ -335,7 +266,7 @@ namespace Lexxys.Data
 					foreach (var item in parameters)
 					{
 						if (item != null)
-							flaw.Add(item.ParameterName, $"{item.DbType}, {item.Value}.");
+							flaw.Add(item.Name, $"{item.Type}, {item.Value}.");
 					}
 				}
 				throw;
@@ -344,7 +275,46 @@ namespace Lexxys.Data
 			{
 				if (t != 0)
 					_context.Audit.QueryEnd(statement, t);
-				if (connected)
+				if (connect > 0)
+					_context.Disconnect();
+			}
+		}
+
+		public async Task<int> ExecuteAsync(string statement, params DataParameter[] parameters)
+		{
+			if (statement == null)
+				throw new ArgumentNullException(nameof(statement));
+
+			long t = 0;
+			int connect = 0;
+			try
+			{
+				connect = await _context.ConnectAsync();
+				using DbCommand cmd = _context.Command(statement).WithParameters(parameters);
+				t = _context.Audit.Start();
+				int result = await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+				cmd.SetOutput(parameters);
+				return result;
+			}
+			catch (Exception flaw)
+			{
+				flaw.Add(nameof(statement), statement)
+					.Add(t);
+				if (parameters != null && parameters.Length > 0)
+				{
+					foreach (var item in parameters)
+					{
+						if (item != null)
+							flaw.Add(item.Name, $"{item.Type}, {item.Value}.");
+					}
+				}
+				throw;
+			}
+			finally
+			{
+				if (t != 0)
+					_context.Audit.QueryEnd(statement, t);
+				if (connect > 0)
 					_context.Disconnect();
 			}
 		}

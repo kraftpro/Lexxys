@@ -65,7 +65,7 @@ namespace Lexxys
 		private static LogTypeMask GetLogTypeMask(ILogRecordWriter writer)
 		{
 			int levels = 0;
-			int mask = 0;
+			int mask = 1;
 			for (LogType i = 0; i <= LogType.MaxValue; ++i, mask <<= 1)
 			{
 				if (writer.IsEnabled(i))

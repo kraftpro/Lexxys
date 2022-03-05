@@ -360,7 +360,7 @@ namespace Lexxys.Data
 			if (config == null || config.IsEmpty)
 				return null;
 
-			string reference = XmlTools.GetString(config.Value, null);
+			string? reference = XmlTools.GetString(config.Value, null);
 			if (reference == null)
 				return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
 

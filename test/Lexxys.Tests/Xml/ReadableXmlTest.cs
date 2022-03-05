@@ -13,6 +13,7 @@ using System.IO;
 using Lexxys;
 using Lexxys.Xml;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace Lexxys.Tests.Xml
 {
@@ -315,7 +316,9 @@ configuration
 			{
 				var p = Config.AddConfiguration(@"test.db.config.txt");
 				Assert.IsNotNull(p);
-				var c = Config.Current.GetValue<Lexxys.Data.ConnectionStringInfo>("database.connection").Value;
+				var c = Config.Current.GetValue<Lexxys.Data.ConnectionStringInfo>("database.connection", () => null).Value;
+				if (c == null)
+					Debugger.Break();
 				Assert.IsNotNull(c);
 			}
 		}

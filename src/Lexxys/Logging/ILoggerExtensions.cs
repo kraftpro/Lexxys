@@ -102,28 +102,28 @@ namespace Lexxys
 				logger.Log(LogLevel.Trace, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
-		public static void Trace(this ILogger logger, string message, string arg1Name, object arg1Value)
+		public static void Trace<T1>(this ILogger logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger is ILogging log)
 				log.Trace(message, arg1Name, arg1Value);
 			else
-				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
-		public static void Trace(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Trace<T1, T2>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger is ILogging log)
 				log.Trace(message, arg1Name, arg1Value, arg2Name, arg2Value);
 			else
-				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
-		public static void Trace(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Trace<T1, T2, T3>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger is ILogging log)
 				log.Trace(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
 			else
-				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
 		public static void Trace(this ILogger logger, string message, params object[] args)
@@ -189,28 +189,28 @@ namespace Lexxys
 				logger.Log(LogLevel.Debug, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
-		public static void Debug(this ILogger logger, string message, string arg1Name, object arg1Value)
+		public static void Debug<T1>(this ILogger logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger is ILogging log)
 				log.Debug(message, arg1Name, arg1Value);
 			else
-				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
-		public static void Debug(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Debug<T1, T2>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger is ILogging log)
 				log.Debug(message, arg1Name, arg1Value, arg2Name, arg2Value);
 			else
-				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
-		public static void Debug(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Debug<T1, T2, T3>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger is ILogging log)
 				log.Debug(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
 			else
-				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
 		public static void Debug(this ILogger logger, string message, params object[] args)
@@ -276,28 +276,28 @@ namespace Lexxys
 				logger.Log(LogLevel.Information, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
-		public static void Info(this ILogger logger, string message, string arg1Name, object arg1Value)
+		public static void Info<T1>(this ILogger logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger is ILogging log)
 				log.Info(message, arg1Name, arg1Value);
 			else
-				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
-		public static void Info(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Info<T1, T2>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger is ILogging log)
 				log.Info(message, arg1Name, arg1Value, arg2Name, arg2Value);
 			else
-				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
-		public static void Info(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Info<T1, T2, T3>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger is ILogging log)
 				log.Info(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
 			else
-				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
 		public static void Info(this ILogger logger, string message, params object[] args)
@@ -363,28 +363,28 @@ namespace Lexxys
 				logger.Log(LogLevel.Warning, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
-		public static void Warning(this ILogger logger, string message, string arg1Name, object arg1Value)
+		public static void Warning<T1>(this ILogger logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger is ILogging log)
 				log.Warning(message, arg1Name, arg1Value);
 			else
-				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
-		public static void Warning(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Warning<T1, T2>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger is ILogging log)
 				log.Warning(message, arg1Name, arg1Value, arg2Name, arg2Value);
 			else
-				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
-		public static void Warning(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Warning<T1, T2, T3>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger is ILogging log)
 				log.Warning(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
 			else
-				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
 		public static void Warning(this ILogger logger, string message, params object[] args)
@@ -450,28 +450,28 @@ namespace Lexxys
 				logger.Log(LogLevel.Error, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
-		public static void Error(this ILogger logger, string message, string arg1Name, object arg1Value)
+		public static void Error<T1>(this ILogger logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger is ILogging log)
 				log.Error(message, arg1Name, arg1Value);
 			else
-				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
-		public static void Error(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Error<T1, T2>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger is ILogging log)
 				log.Error(message, arg1Name, arg1Value, arg2Name, arg2Value);
 			else
-				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
-		public static void Error(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Error<T1, T2, T3>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger is ILogging log)
 				log.Error(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
 			else
-				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
 		public static void Error(this ILogger logger, string message, params object[] args)
@@ -537,28 +537,28 @@ namespace Lexxys
 				logger.Log(LogLevel.Information, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
-		public static void Write(this ILogger logger, string message, string arg1Name, object arg1Value)
+		public static void Write<T1>(this ILogger logger, string message, string arg1Name, T1 arg1Value)
 		{
 			if (logger is ILogging log)
 				log.Write(message, arg1Name, arg1Value);
 			else
-				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
-		public static void Write(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value)
+		public static void Write<T1, T2>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value)
 		{
 			if (logger is ILogging log)
 				log.Write(message, arg1Name, arg1Value, arg2Name, arg2Value);
 			else
-				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
-		public static void Write(this ILogger logger, string message, string arg1Name, object arg1Value, string arg2Name, object arg2Value, string arg3Name, object arg3Value)
+		public static void Write<T1, T2, T3>(this ILogger logger, string message, string arg1Name, T1 arg1Value, string arg2Name, T2 arg2Value, string arg3Name, T3 arg3Value)
 		{
 			if (logger is ILogging log)
 				log.Write(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
 			else
-				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
+				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
 		public static void Write(this ILogger logger, string message, params object[] args)

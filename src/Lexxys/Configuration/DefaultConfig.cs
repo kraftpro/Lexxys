@@ -5,15 +5,12 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Threading;
 
 using Microsoft.Extensions.Logging;
@@ -35,6 +32,7 @@ namespace Lexxys.Configuration
 		private const string ConfigurationDerectoryKey = "configurationDirectory";
 		private static readonly string[] Extensions = { ".config.xml", ".config.txt", ".config.ini", ".config.json" };
 
+		private static readonly object SyncObject = new object();
 		private static IReadOnlyList<string>? _configurationDirectory;
 		private static bool _initialized;
 		private static bool _initializing;
@@ -268,14 +266,11 @@ namespace Lexxys.Configuration
 				Initialize();
 
 			var path = FindLocalFile(location.IsAbsoluteUri ? location.LocalPath: location.OriginalString, ConfigurationDirectories, Extensions);
-			if (path == null)
-			{
-				provider = null;
-				return false;
-			}
+			if (path != null)
+				location = new Uri(path);
 
-			var l = location = new Uri(path);
 			var providers = Providers;
+			var l = location;
 			int i = providers.FindIndex(o => o.Location == l);
 			if (i >= 0)
 			{
@@ -333,9 +328,9 @@ namespace Lexxys.Configuration
 
 		private static void OnChanged(object? sender, ConfigurationEventArgs e)
 		{
+			Interlocked.Increment(ref __version);
 			if (!_initialized)
 				return;
-			Interlocked.Increment(ref __version);
 			if (sender != null)
 			{
 				var cs = sender as IXmlConfigurationSource;
@@ -427,14 +422,16 @@ namespace Lexxys.Configuration
 
 		private static void Initialize()
 		{
-			if (!_initialized && !_initializing)
+			if (_initialized || (_initializing && !Factory.AssembliesImported))
+				return;
+			lock (SyncObject)
 			{
 				if (!_initialized && !_initializing)
 				{
 					_initializing = true;
 					AddSystem(new Uri("system:environment"), new EnvironmentConfigurationProvider());
 #if !NETCOREAPP
-					AddSystem(new Uri("system:configuration"), new SystemConfigurationProvider());
+						AddSystem(new Uri("system:configuration"), new SystemConfigurationProvider());
 #endif
 
 					IEnumerable<Uri> cc0 = GetInitialConfigurationsLocations();
@@ -444,7 +441,7 @@ namespace Lexxys.Configuration
 					}
 					_initialized = true;
 					_initializing = false;
-					_cacheValues = GetValue(ConfigCachingOption, typeof(bool)) is bool b ? b: CachingDefault;
+					_cacheValues = GetValue(ConfigCachingOption, typeof(bool)) is bool b ? b : CachingDefault;
 					Lxx.OnConfigurationInitialized(null, new ConfigurationEventArgs());
 					OnChanged();
 				}
@@ -515,5 +512,26 @@ namespace Lexxys.Configuration
 				return null;
 			return new Uri(name);
 		}
+
+		#region IConfigSource
+		
+		public static readonly IConfigSource ConfigSourceInstance = new DefaultConfigSource();
+
+		class DefaultConfigSource: IConfigSource
+		{
+			public int Version => DefaultConfig.Version;
+
+			public event EventHandler<ConfigurationEventArgs>? Changed
+			{
+				add => DefaultConfig.Changed += value;
+				remove => DefaultConfig.Changed -= value;
+			}
+
+			public IReadOnlyList<T> GetList<T>(string key) => DefaultConfig.GetList<T>(key);
+
+			public object? GetValue(string key, Type objectType) => DefaultConfig.GetValue(key, objectType);
+		}
+
+		#endregion
 	}
 }

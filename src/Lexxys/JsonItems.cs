@@ -36,7 +36,7 @@ namespace Lexxys
 			Attributes = attribues ?? Array.Empty<JsonPair>();
 		}
 
-		public abstract XmlLiteNode ToXml(string name, bool ignoreCase, bool forceAttribs);
+		public abstract XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false);
 
 		protected XmlLiteNode ToXml(string name, string value, bool ignoreCase, IEnumerable<XmlLiteNode> properties)
 		{
@@ -139,7 +139,7 @@ namespace Lexxys
 			{
 			}
 
-			public override XmlLiteNode ToXml(string name, bool ignoreCase, bool forceAttribs)
+			public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
 			{
 				return XmlLiteNode.Empty;
 			}
@@ -308,7 +308,7 @@ namespace Lexxys
 			_ => default
 		};
 
-		public override XmlLiteNode ToXml(string name, bool ignoreCase, bool forceAttribs) => ToXml(name, XmlTools.Convert(Value), ignoreCase, null);
+		public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false) => ToXml(name, XmlTools.Convert(Value), ignoreCase, null);
 
 		public override StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
@@ -442,7 +442,7 @@ namespace Lexxys
 			Properties = properties;
 		}
 
-		public override XmlLiteNode ToXml(string name, bool ignoreCase, bool forceAttribs)
+		public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
 		{
 			var attribs = Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value))).ToList();
 			var properties = new List<XmlLiteNode>();
@@ -454,7 +454,7 @@ namespace Lexxys
 						continue;
 					if (prop.Item is JsonScalar scalar)
 					{
-						bool attrib = forceAttribs;
+						bool attrib = attributes;
 						var nm = prop.Name;
 						if (nm.StartsWith("@"))
 						{
@@ -468,7 +468,7 @@ namespace Lexxys
 							continue;
 						}
 					}
-					properties.Add(prop.Item.ToXml(prop.Name, ignoreCase, forceAttribs));
+					properties.Add(prop.Item.ToXml(prop.Name, ignoreCase, attributes));
 				}
 			}
 			return new XmlLiteNode(name, null, ignoreCase, attribs, properties);
@@ -544,9 +544,9 @@ namespace Lexxys
 			Items = items;
 		}
 
-		public override XmlLiteNode ToXml(string name, bool ignoreCase, bool forceAttribs)
+		public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
 		{
-			return ToXml(name, null, ignoreCase, Items?.Where(o => o != null && !o.IsEmpty).Select(o => o.ToXml(XmlItemName, ignoreCase, forceAttribs)));
+			return ToXml(name, null, ignoreCase, Items?.Where(o => o != null && !o.IsEmpty).Select(o => o.ToXml(XmlItemName, ignoreCase, attributes)));
 		}
 
 		public override StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)

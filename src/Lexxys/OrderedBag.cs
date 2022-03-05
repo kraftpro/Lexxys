@@ -11,13 +11,19 @@ using System.Text;
 using System.Collections;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
+using Lexxys;
+using System.Reflection;
+
+
+#nullable enable
 
 namespace Lexxys
 {
 	[Serializable]
-	public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary, IList<KeyValuePair<TKey, TValue>>, IReadOnlyList<KeyValuePair<TKey, TValue>>
+	public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary, IList<(TKey Key, TValue Value)>, IReadOnlyList<(TKey Key, TValue Value)>
 	{
-		protected List<KeyValuePair<TKey, TValue>> List;
+		protected List<(TKey Key, TValue Value)> List;
 		protected IEqualityComparer<TKey> Comparer;
 
 		public OrderedBag(IEqualityComparer<TKey> comparer)
@@ -25,20 +31,20 @@ namespace Lexxys
 		{
 		}
 
-		public OrderedBag(int capacity = 0, IEqualityComparer<TKey> comparer = null)
+		public OrderedBag(int capacity = 0, IEqualityComparer<TKey>? comparer = null)
 		{
 			if (capacity < 0)
 				throw new ArgumentOutOfRangeException(nameof(capacity), capacity, null);
-			List = capacity > 0 ? new List<KeyValuePair<TKey, TValue>>(capacity): new List<KeyValuePair<TKey, TValue>>();
+			List = capacity > 0 ? new List<(TKey, TValue)>(capacity): new List<(TKey, TValue)>();
 			Comparer = comparer ?? EqualityComparer<TKey>.Default;
 		}
 
-		public OrderedBag(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer = null)
+		public OrderedBag(IEnumerable<(TKey, TValue)> collection, IEqualityComparer<TKey>? comparer = null)
 		{
 			if (collection == null)
 				throw new ArgumentNullException(nameof(collection));
 			Comparer = comparer ?? EqualityComparer<TKey>.Default;
-			List = new List<KeyValuePair<TKey, TValue>>(collection);
+			List = new List<(TKey, TValue)>(collection);
 		}
 
 
@@ -59,22 +65,24 @@ namespace Lexxys
 			{
 				int i = IndexOf(key);
 				if (i < 0)
-					List.Add(new KeyValuePair<TKey, TValue>(key, value));
+					List.Add((key, value));
 				else
-					List[i] = new KeyValuePair<TKey, TValue>(key, value);
+					List[i] = (key, value);
 			}
 		}
 
-		public KeyValuePair<TKey, TValue> GetAt(int index) => List[index];
+		public (TKey, TValue) GetAt(int index) => List[index];
 
-		public void SetAt(int index, KeyValuePair<TKey, TValue> value) => List[index] = value;
+		public void SetAt(int index, (TKey, TValue) value) => List[index] = value;
 
-		public void SetAt(int index, TKey key, TValue value) => List[index] = new KeyValuePair<TKey, TValue>(key, value);
+		public void SetAt(int index, TKey key, TValue value) => List[index] = (key, value);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private int IndexOf(TKey key) => List.FindIndex(p => Comparer.Equals(p.Key, key));
 
-		public void Add(TKey key, TValue value) => List.Add(new KeyValuePair<TKey, TValue>(key, value));
+		public void Add(TKey key, TValue value) => List.Add((key, value));
+
+		public void Add(KeyValuePair<TKey, TValue> item) => List.Add((item.Key, item.Value));
 
 		public bool ContainsKey(TKey key) => IndexOf(key) >= 0;
 
@@ -87,33 +95,50 @@ namespace Lexxys
 			return true;
 		}
 
-		public bool TryGetValue(TKey key, out TValue value)
+		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
 		{
 			int i = IndexOf(key);
 			if (i < 0)
 			{
-				value = default;
+				value = default!;
 				return false;
 			}
 			value = List[i].Value;
 			return true;
 		}
 
-		public TValue TryGetValue(TKey key, TValue defaultValue = default)
+		public TValue TryGetValue(TKey key, TValue defaultValue)
 		{
 			int i = IndexOf(key);
 			return i < 0 ? defaultValue: List[i].Value;
 		}
 
-		public void Add(KeyValuePair<TKey, TValue> item) => List.Add(item);
+		public void Add((TKey, TValue) item) => List.Add(item);
 
-		public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection) => List.AddRange(collection);
+		public void AddRange(IEnumerable<(TKey, TValue)> collection) => List.AddRange(collection);
 
 		public void Clear() => List.Clear();
 
 		public bool Contains(KeyValuePair<TKey, TValue> item) => IndexOf(item.Key) >= 0;
 
-		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => List.CopyTo(array, arrayIndex);
+		public bool Contains((TKey, TValue) item) => IndexOf(item.Item1) >= 0;
+
+		public void CopyTo((TKey, TValue)[] array, int arrayIndex) => List.CopyTo(array, arrayIndex);
+
+		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+		{
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
+			if (arrayIndex < 0)
+				throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, null);
+			if (array.Length - arrayIndex < List.Count)
+				throw new ArgumentException($"The number of elements in the collection ({List.Count}) is greater than the available space ({array.Length - arrayIndex}) from index to the end of the destination array.", nameof(array));
+
+			for (int i = 0; i < List.Count; ++i)
+			{
+				array[arrayIndex++] = new KeyValuePair<TKey, TValue>(List[i].Key, List[i].Value);
+			}
+		}
 
 		public int Count => List.Count;
 
@@ -125,6 +150,15 @@ namespace Lexxys
 
 		public object SyncRoot => this;
 
+		public bool Remove((TKey, TValue) item)
+		{
+			int i = IndexOf(item.Item1);
+			if (i < 0)
+				return false;
+			List.RemoveAt(i);
+			return true;
+		}
+
 		public bool Remove(KeyValuePair<TKey, TValue> item)
 		{
 			int i = IndexOf(item.Key);
@@ -134,13 +168,21 @@ namespace Lexxys
 			return true;
 		}
 
-		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => List.GetEnumerator();
+		public IEnumerator<(TKey Key, TValue Value)> GetEnumerator() => List.GetEnumerator();
 
 		IEnumerator IEnumerable.GetEnumerator() => List.GetEnumerator();
 
-		public int IndexOf(KeyValuePair<TKey, TValue> item) => List.IndexOf(item);
+		IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
+		{
+			foreach (var item in List)
+			{
+				yield return new KeyValuePair<TKey, TValue>(item.Key, item.Value);
+			}
+		}
 
-		public void Insert(int index, KeyValuePair<TKey, TValue> item)
+		public int IndexOf((TKey, TValue) item) => List.IndexOf(item);
+
+		public void Insert(int index, (TKey, TValue) item)
 		{
 			if (index < 0 || index > List.Count)
 				throw new ArgumentOutOfRangeException(nameof(index), index, null);
@@ -149,7 +191,7 @@ namespace Lexxys
 
 		public void RemoveAt(int index) => List.RemoveAt(index);
 
-		KeyValuePair<TKey, TValue> IList<KeyValuePair<TKey, TValue>>.this[int index] { get => List[index]; set => List[index] = value; }
+		(TKey Key, TValue Value) IList<(TKey Key, TValue Value)>.this[int index] { get => List[index]; set => List[index] = value; }
 
 		#region Internal classes
 
@@ -293,17 +335,17 @@ namespace Lexxys
 
 		private sealed class DictionaryEnumerator: IDictionaryEnumerator
 		{
-			private List<KeyValuePair<TKey, TValue>>.Enumerator _parent;
+			private List<(TKey Key, TValue Value)>.Enumerator _parent;
 
 			public DictionaryEnumerator(OrderedBag<TKey, TValue> dictionary) => _parent = dictionary.List.GetEnumerator();
 
-			public DictionaryEntry Entry => new DictionaryEntry(_parent.Current.Key, _parent.Current.Value);
+			public DictionaryEntry Entry => new DictionaryEntry(_parent.Current.Key!, _parent.Current.Value);
 
-			public object Key => _parent.Current.Key;
+			public object Key => _parent.Current.Key!;
 
-			public object Value => _parent.Current.Value;
+			public object? Value => _parent.Current.Value;
 
-			public object Current => new DictionaryEntry(_parent.Current.Key, _parent.Current.Value);
+			public object Current => new DictionaryEntry(_parent.Current.Key!, _parent.Current.Value);
 
 			public bool MoveNext() => _parent.MoveNext();
 
@@ -312,7 +354,7 @@ namespace Lexxys
 
 		#endregion
 
-		void IDictionary.Add(object key, object value) => Add((TKey)key, (TValue)value);
+		void IDictionary.Add(object key, object? value) => Add((TKey)key, (TValue)value!);
 
 		bool IDictionary.Contains(object key) => ContainsKey((TKey)key);
 
@@ -320,7 +362,7 @@ namespace Lexxys
 
 		void IDictionary.Remove(object key) => Remove((TKey)key);
 
-		object IDictionary.this[object key] { get => this[(TKey)key]; set => this[(TKey)key] = (TValue)value; }
+		object? IDictionary.this[object key] { get => this[(TKey)key]; set => this[(TKey)key] = (TValue)value!; }
 
 		void ICollection.CopyTo(Array array, int index)
 		{
@@ -335,7 +377,7 @@ namespace Lexxys
 
 			for (int i = 0; i < List.Count; ++i)
 			{
-				array.SetValue(new DictionaryEntry(List[i].Key, List[i].Value), index++);
+				array.SetValue(new DictionaryEntry(List[i].Key!, List[i].Value), index++);
 			}
 		}
 
@@ -347,6 +389,6 @@ namespace Lexxys
 
 		IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
 
-		KeyValuePair<TKey, TValue> IReadOnlyList<KeyValuePair<TKey, TValue>>.this[int index] => List[index];
+		(TKey Key, TValue Value) IReadOnlyList<(TKey Key, TValue Value)>.this[int index] => List[index];
 	}
 }

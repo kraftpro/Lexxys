@@ -30,7 +30,7 @@ namespace Lexxys.Configuration
 				return null;
 			if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
 				reference = reference.Substring(5);
-			return XmlTools.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out object result) ? result : null;
+			return XmlTools.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out var result) ? result: null;
 		}
 
 		public List<T> GetList<T>(string reference)

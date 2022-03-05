@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-
 #nullable enable
 
 namespace Lexxys.Logging
@@ -24,6 +23,7 @@ namespace Lexxys.Logging
 		private static volatile InstanceCollection Instance = new InstanceCollection(Array.Empty<Listener>(), 1);
 		private static readonly Object SyncRoot = new Object();
 		private static volatile int _lockDepth;
+		private static readonly ConcurrentDictionary<string, ILogRecordWriter> _writers = new ConcurrentDictionary<string, ILogRecordWriter>(StringComparer.OrdinalIgnoreCase);
 
 		public static void Start(IEnumerable<ILogWriter> writers)
 		{
@@ -42,7 +42,7 @@ namespace Lexxys.Logging
 
 		public static bool IsStarted => !Instance.IsEmpty;
 
-		public static void Flush() => Instance.Flush();
+		//public static void Flush() => Instance.Flush();
 
 		public static void Stop(bool force = false)
 		{
@@ -114,11 +114,11 @@ namespace Lexxys.Logging
 				}
 			}
 
-			public void Flush()
-			{
-				for (int i = 0; i < _listeners.Length; i++)
-					_listeners[i]?.FLush();
-			}
+			//public void Flush()
+			//{
+			//	for (int i = 0; i < _listeners.Length; i++)
+			//		_listeners[i]?.FLush();
+			//}
 
 			public IEnumerable<Thread> StopParallel(bool force = false)
 			{
@@ -220,7 +220,7 @@ namespace Lexxys.Logging
 						inst = Instance;
 					map = new LogRecordWritersMap(inst.Version, inst.CollectWritersMap(_source));
 					Interlocked.Exchange(ref _map, map);
-				} while (inst.Version == Instance.Version);
+				} while (map.Version != Instance.Version);
 				return (inst, map);
 			}
 		}
@@ -296,13 +296,13 @@ namespace Lexxys.Logging
 					_queue = new LogRecordQueue();
 			}
 
-			public void FLush()
-			{
-				if (!IsStarted || _queue.IsEmpty)
-					return;
-				ConcurrentQueue<LogRecord> queue = Interlocked.Exchange(ref _queue, new LogRecordQueue());
-				_writer.Write(queue);
-			}
+			//public void FLush()
+			//{
+			//	if (!IsStarted || _queue.IsEmpty)
+			//		return;
+			//	ConcurrentQueue<LogRecord> queue = Interlocked.Exchange(ref _queue, new LogRecordQueue());
+			//	_writer.Write(queue);
+			//}
 
 			public void Stop(bool force)
 			{
@@ -311,55 +311,76 @@ namespace Lexxys.Logging
 
 				using EventWaitHandle? handle = Interlocked.Exchange(ref _data, null);
 				if (handle != null)
-				{
-					if (!handle.SafeWaitHandle.IsClosed)
-						handle.Set();
 					Terminate(handle, force);
-				}
 			}
 
 			private void Terminate(EventWaitHandle data, bool force)
 			{
-				if (!IsStarted)
-					return;
-
 				Thread.Sleep(0);
 
 				if (force)
 				{
-					_queue = new LogRecordQueue();
-					_writer.Write(new[] { new LogRecord(LogType.Warning, Source, "Terminating...", null) });
-					_writer.Close();
 #if !NETCOREAPP
+					Interlocked.Exchange(ref _queue, new LogRecordQueue());
+#else
+					_queue.Clear();
+#endif
+					if (!data.SafeWaitHandle.IsClosed)
+						data.Set();
+					Thread.Sleep(0);
+					if ((_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0)
+						_thread!.Join(100);
 					LogWriter.WriteEventLogMessage(Source, "Terminating...", LogRecord.Args("ThreadName", _thread!.Name));
+#if !NETCOREAPP
 					if ((_thread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) == 0)
 						_thread.Abort();
 #endif
+					_writer.Write(new[] { new LogRecord(LogType.Warning, Source, "Terminating...", null) });
 				}
 				else
 				{
 					try
 					{
-						if (!_queue.IsEmpty)
-							_writer.Write(_queue);
+						if (!data.SafeWaitHandle.IsClosed)
+							data.Set();
+						Thread.Sleep(0);
 
-						_writer.Write(new[] { new LogRecord(LogType.Trace, Source, "Exiting...", null) });
-						_writer.Close();
-						if ((_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0)
-							return;
-						if (_thread.Join(0))
-							return;
-						LogWriter.WriteEventLogMessage(Source, "Waiting for working thread", LogRecord.Args("ThreadName", _thread.Name));
-						if (_thread.Join(LoggingContext.LogoffTimeout))
-							return;
-						LogWriter.WriteErrorMessage(Source, "Thread join operation has been timed out", LogRecord.Args("time-out", LoggingContext.LogoffTimeout));
+						var stopped = (_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0 || _thread!.Join(LoggingContext.FlushTimeout);
+						if (!stopped)
+						{
+							LogWriter.WriteEventLogMessage(Source, "Waiting for working thread", LogRecord.Args("ThreadName", _thread.Name));
+							stopped = (_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0 || _thread!.Join(LoggingContext.LogoffTimeout);
+							if (!stopped)
+							{
+								LogWriter.WriteErrorMessage(Source, "Thread join operation has been timed out", LogRecord.Args("time-out", LoggingContext.LogoffTimeout));
 #if !NETCOREAPP
-						_thread.Abort();
+								Interlocked.Exchange(ref _queue, new LogRecordQueue());
+#else
+								_queue.Clear();
 #endif
+								if (!data.SafeWaitHandle.IsClosed)
+									data.Set();
+								_thread!.Join(10);
+							}
+						}
+#if !NETCOREAPP
+						if ((_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0)
+							_thread.Abort();
+#endif
+						_writer.Write(new[] { new LogRecord(LogType.Trace, Source, "Exiting...", null) });
 					}
-					catch (Exception ex)
+					catch (Exception flaw)
 					{
-						if (ex.IsCriticalException())
+						if (flaw.IsCriticalException())
+							throw;
+					}
+					try
+					{
+						_writer.Close();
+					}
+					catch (Exception flaw)
+					{
+						if (flaw.IsCriticalException())
 							throw;
 					}
 				}
@@ -412,6 +433,14 @@ namespace Lexxys.Logging
 
 			class LogRecordQueue : ConcurrentQueue<LogRecord>, IEnumerable<LogRecord>
 			{
+				public LogRecordQueue()
+				{
+				}
+
+				public LogRecordQueue(IEnumerable<LogRecord> records): base(records)
+				{
+				}
+
 				IEnumerator<LogRecord> IEnumerable<LogRecord>.GetEnumerator()
 				{
 					while (TryDequeue(out LogRecord? rec))

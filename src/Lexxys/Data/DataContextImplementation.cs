@@ -24,6 +24,7 @@ namespace Lexxys.Data
 
 		private int _transactionsCount;
 		private int _connectionsCount;
+		private readonly Func<DbConnection> _connectionFactory;
 		private readonly DbConnection _connection;
 		private DbTransaction? _transaction;
 		private TimeSpan _commandTimeout;
@@ -36,12 +37,13 @@ namespace Lexxys.Data
 		private Action? _cancelled;
 		private readonly Dictionary<object, ICommitAction> _broadcast;
 
-		public DataContextImplementation(DbConnection connection, TimeSpan commandTimeout, DataAudit audit)
+		public DataContextImplementation(Func<DbConnection> connectionFactory, TimeSpan commandTimeout, DataAudit audit)
 		{
-			_connection = connection ?? throw new ArgumentNullException(nameof(connection));
+			_connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+			_connection = connectionFactory() ?? throw new InvalidOperationException("cannot create a connection");
 			_broadcast = new Dictionary<object, ICommitAction>();
 			_commandTimeout = _defaultCommandTimeout = commandTimeout;
-			if (_timeSyncMap.TryGetValue(connection.ConnectionString, out var sync))
+			if (_timeSyncMap.TryGetValue(_connection.ConnectionString, out var sync))
 			{
 				_timeSyncStamp = sync.Stamp;
 				_timeSyncOffset = sync.Offset;
@@ -129,6 +131,13 @@ namespace Lexxys.Data
 		public DateTime Time => DateTime.Now + TimeSpan.FromTicks(_timeSyncOffset);
 
 		public DateTime Now => _lockedTime == default ? DateTime.Now + TimeSpan.FromTicks(_timeSyncOffset): _lockedTime;
+
+		public DataContextImplementation Clone()
+			=> new DataContextImplementation(_connectionFactory, _commandTimeout, Audit.Clone())
+			{
+				_timeSyncOffset = _timeSyncOffset,
+				_timeSyncStamp = _timeSyncStamp,
+			};
 
 		public bool LockNow(DateTime now)
 		{
@@ -402,15 +411,12 @@ namespace Lexxys.Data
 			}
 		}
 
-		public DbCommand Command(string query, params DbParameter[] parameters)
+		public DbCommand Command(string query, params DataParameter[] parameters)
 		{
 			if (query == null || query.Length == 0)
 				throw new ArgumentNullException(nameof(query));
 
-			var command = SetTimeout(NewCommand(query));
-			if (parameters != null && parameters.Length > 0)
-				command.Parameters.AddRange(parameters);
-			return command;
+			return SetTimeout(NewCommand(query).WithParameters(parameters));
 		}
 
 		private DbCommand SetTimeout(DbCommand command)
@@ -446,37 +452,6 @@ namespace Lexxys.Data
 			}
 		}
 
-		public List<RowsCollection> Records(int count, string query, params IDataParameter[] parameters)
-		{
-			if (count < 0)
-				throw new ArgumentOutOfRangeException(nameof(count));
-			if (query == null || query.Length == 0)
-				throw new ArgumentNullException(nameof(query));
-			if (_connectionsCount < 1)
-				throw new InvalidOperationException();
-			if (count == 0)
-				return new List<RowsCollection>();
-
-			using IDbCommand command = SetTimeout(NewCommand(query));
-			if (parameters != null)
-			{
-				foreach (var parameter in parameters)
-				{
-					if (parameter != null)
-						command.Parameters.Add(parameter);
-				}
-			}
-			using IDataReader reader = command.ExecuteReader();
-
-			var result = new List<RowsCollection>();
-			int i = 0;
-			do
-			{
-				result.Add(new RowsCollection(reader));
-			} while (++i < count && reader.NextResult());
-			return result;
-		}
-
 		public void Dispose()
 		{
 			if (!__disposed)
@@ -507,12 +482,20 @@ namespace Lexxys.Data
 
 		private ILogging _log;
 
-		public DataAudit(TimeSpan connectionAudit, TimeSpan commandAudit, TimeSpan batchAudit, ILogging? log = null)
+		public DataAudit(TimeSpan connectionAudit, TimeSpan commandAudit, TimeSpan batchAudit, ILogging? log = null): this(
+			Math.Max(0, connectionAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
+			Math.Max(0, commandAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
+			Math.Max(0, batchAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
+			log ?? Dc.Timing)
 		{
-			_connectionAudit = Math.Max(0, connectionAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond);
-			_commandAudit = Math.Max(0, commandAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond);
-			_batchAudit = Math.Max(0, batchAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond);
-			_log = log ?? Dc.Timing;
+		}
+
+		private DataAudit(long connectionAudit, long commandAudit, long batchAudit, ILogging log)
+		{
+			_connectionAudit = connectionAudit;
+			_commandAudit = commandAudit;
+			_batchAudit = batchAudit;
+			_log = log;
 			_timingGroupItems = new List<TimingNode>();
 		}
 
@@ -598,6 +581,10 @@ namespace Lexxys.Data
 			_timingGroupItems.Clear();
 		}
 
+		public DataAudit Clone()
+		{
+			return new DataAudit(_connectionAudit, _commandAudit, _batchAudit, _log);
+		}
 
 		private void LogGroupTiming()
 		{

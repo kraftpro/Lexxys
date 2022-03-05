@@ -32,10 +32,7 @@ namespace Lexxys
 		{
 #if DEBUG
 			if (_debugLogging >= 0)
-			{
 				Log?.Debug(null, exception);
-				Logging.LogRecordsService.Flush();
-			}
 #endif
 			return exception;
 		}
