@@ -116,12 +116,9 @@ namespace Lexxys.Data
 		/// <param name="parameters">Database parameters</param>
 		/// <returns>Number of records affected</returns>
 		Task<int> ExecuteAsync(string statement, params DataParameter[] parameters);
-		[return: MaybeNull]
 		T Map<T>(Func<DbCommand, T> mapper, string query, params DataParameter[] parameters);
 
-		#nullable disable
 		Task<T> MapAsync<T>(Func<DbCommand, Task<T>> mapper, string query, params DataParameter[] parameters);
-		#nullable enable
 		//DbCommand CreateCommand();
 		IDataContext Clone();
 	}

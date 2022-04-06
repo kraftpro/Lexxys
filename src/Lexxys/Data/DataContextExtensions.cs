@@ -98,12 +98,11 @@ namespace Lexxys.Data
 			}
 		}
 
-		[return: MaybeNull]
-		public static T GetValue<T>(this IDataContext context, string query, params DataParameter[] parameters) => context.Map(Dc.ValueMapper<T>, query, parameters);
+		public static T? GetValue<T>(this IDataContext context, string query, params DataParameter[] parameters) => context.Map(Dc.ValueMapper<T>, query, parameters);
 
-		public static Task<T> GetValueAsync<T>(this IDataContext context, string query, params DataParameter[] parameters) => context.MapAsync(Dc.ValueMapperAsync<T>, query, parameters);
+		public static Task<T?> GetValueAsync<T>(this IDataContext context, string query, params DataParameter[] parameters) => context.MapAsync(Dc.ValueMapperAsync<T>, query, parameters);
 
-		public static List<T> GetList<T>(this IDataContext context, string query, params DataParameter[] parameters) => context.Map(Dc.ListMapper<T>, query, parameters)!;
+		public static List<T> GetList<T>(this IDataContext context, string query, params DataParameter[] parameters) => context.Map(Dc.ListMapper<T>, query, parameters);
 
 		public static Task<List<T>> GetListAsync<T>(this IDataContext context, string query, params DataParameter[] parameters) => context.MapAsync(Dc.ListMapperAsync<T>, query, parameters);
 
@@ -111,10 +110,10 @@ namespace Lexxys.Data
 
 		public static Task<bool> ReadXmlTextAsync(this IDataContext context, TextWriter text, string query, params DataParameter[] parameters) => context.MapAsync(o => Dc.XmlTextMapperAsync(text, o), query, parameters);
 
-		public static List<Xml.XmlLiteNode> ReadXml(this IDataContext context, string query, params DataParameter[] parameters) => context.Map(Dc.XmlMapper, query, parameters)!;
+		public static List<Xml.XmlLiteNode> ReadXml(this IDataContext context, string query, params DataParameter[] parameters) => context.Map(Dc.XmlMapper, query, parameters);
 
 		public static Task<List<Xml.XmlLiteNode>> ReadXmlAsync(this IDataContext context, string query, params DataParameter[] parameters) => context.MapAsync(Dc.XmlMapperAsync, query, parameters);
 
-		public static List<RowsCollection> Records(this IDataContext context, int count, string query, params DataParameter[] parameters) => context.Map(Dc.RecordsMapper, query, parameters)!;
+		public static List<RowsCollection> Records(this IDataContext context, int count, string query, params DataParameter[] parameters) => context.Map(Dc.RecordsMapper, query, parameters);
 	}
 }

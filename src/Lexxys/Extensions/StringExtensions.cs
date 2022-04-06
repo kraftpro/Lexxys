@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-using Lexxys.Xml;
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 
@@ -16,10 +15,15 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Lexxys
 {
+	using Xml;
+
 	public static class StringExtensions
 	{
 		public static string Format(this string value, IFormatProvider formatProvider, IDictionary<string, object> data)
 		{
+			if (value == null)
+				throw new ArgumentNullException(nameof(value));
+
 			return __formattingElement.Replace(value, m =>
 			{
 				string key = m.Groups[1].Value;
@@ -37,6 +41,8 @@ namespace Lexxys
 
 		public static string Format(this string value, IDictionary<string, object> data)
 		{
+			if (value == null)
+				throw new ArgumentNullException(nameof(value));
 			return value.Format(CultureInfo.CurrentCulture, data);
 		}
 
@@ -158,182 +164,182 @@ namespace Lexxys
 		}
 
 		#region String as Value
-		public static byte AsByte(this string value)
+		public static byte AsByte(this string? value)
 		{
 			return XmlTools.GetByte(value);
 		}
 
-		public static byte AsByte(this string value, byte defaultValue)
+		public static byte AsByte(this string? value, byte defaultValue)
 		{
 			return XmlTools.GetByte(value, defaultValue);
 		}
 
-		public static byte? AsByte(this string value, byte? defaultValue)
+		public static byte? AsByte(this string? value, byte? defaultValue)
 		{
 			return XmlTools.GetByte(value, defaultValue);
 		}
 
-		public static sbyte AsSByte(this string value)
+		public static sbyte AsSByte(this string? value)
 		{
 			return XmlTools.GetSByte(value);
 		}
 
-		public static sbyte AsSByte(this string value, sbyte defaultValue)
+		public static sbyte AsSByte(this string? value, sbyte defaultValue)
 		{
 			return XmlTools.GetSByte(value, defaultValue);
 		}
 
-		public static sbyte? AsSByte(this string value, sbyte? defaultValue)
+		public static sbyte? AsSByte(this string? value, sbyte? defaultValue)
 		{
 			return XmlTools.GetSByte(value, defaultValue);
 		}
 
-		public static Int16 AsInt16(this string value)
+		public static Int16 AsInt16(this string? value)
 		{
 			return XmlTools.GetInt16(value);
 		}
 
-		public static Int16 AsInt16(this string value, Int16 defaultValue)
+		public static Int16 AsInt16(this string? value, Int16 defaultValue)
 		{
 			return XmlTools.GetInt16(value, defaultValue);
 		}
 
-		public static Int16? AsInt16(this string value, Int16? defaultValue)
+		public static Int16? AsInt16(this string? value, Int16? defaultValue)
 		{
 			return XmlTools.GetInt16(value, defaultValue);
 		}
 
-		public static UInt16 AsUInt16(this string value)
+		public static UInt16 AsUInt16(this string? value)
 		{
 			return XmlTools.GetUInt16(value);
 		}
 
-		public static UInt16 AsUInt16(this string value, UInt16 defaultValue)
+		public static UInt16 AsUInt16(this string? value, UInt16 defaultValue)
 		{
 			return XmlTools.GetUInt16(value, defaultValue);
 		}
 
-		public static UInt16? AsUInt16(this string value, UInt16? defaultValue)
+		public static UInt16? AsUInt16(this string? value, UInt16? defaultValue)
 		{
 			return XmlTools.GetUInt16(value, defaultValue);
 		}
 
-		public static Int32 AsInt32(this string value)
+		public static Int32 AsInt32(this string? value)
 		{
 			return XmlTools.GetInt32(value);
 		}
 
-		public static Int32 AsInt32(this string value, Int32 defaultValue)
+		public static Int32 AsInt32(this string? value, Int32 defaultValue)
 		{
 			return XmlTools.GetInt32(value, defaultValue);
 		}
 
-		public static Int32? AsInt32(this string value, Int32? defaultValue)
+		public static Int32? AsInt32(this string? value, Int32? defaultValue)
 		{
 			return XmlTools.GetInt32(value, defaultValue);
 		}
 
-		public static UInt32 AsUInt32(this string value)
+		public static UInt32 AsUInt32(this string? value)
 		{
 			return XmlTools.GetUInt32(value);
 		}
 
-		public static UInt32 AsUInt32(this string value, UInt32 defaultValue)
+		public static UInt32 AsUInt32(this string? value, UInt32 defaultValue)
 		{
 			return XmlTools.GetUInt32(value, defaultValue);
 		}
 
-		public static UInt32? AsUInt32(this string value, UInt32? defaultValue)
+		public static UInt32? AsUInt32(this string? value, UInt32? defaultValue)
 		{
 			return XmlTools.GetUInt32(value, defaultValue);
 		}
 
-		public static Int64 AsInt64(this string value)
+		public static Int64 AsInt64(this string? value)
 		{
 			return XmlTools.GetInt64(value);
 		}
 
-		public static Int64 AsInt64(this string value, Int64 defaultValue)
+		public static Int64 AsInt64(this string? value, Int64 defaultValue)
 		{
 			return XmlTools.GetInt64(value, defaultValue);
 		}
 
-		public static Int64? AsInt64(this string value, Int64? defaultValue)
+		public static Int64? AsInt64(this string? value, Int64? defaultValue)
 		{
 			return XmlTools.GetInt64(value, defaultValue);
 		}
 
-		public static UInt64 AsUInt64(this string value)
+		public static UInt64 AsUInt64(this string? value)
 		{
 			return XmlTools.GetUInt64(value);
 		}
 
-		public static UInt64 AsUInt64(this string value, UInt64 defaultValue)
+		public static UInt64 AsUInt64(this string? value, UInt64 defaultValue)
 		{
 			return XmlTools.GetUInt64(value, defaultValue);
 		}
 
-		public static UInt64? AsUInt64(this string value, UInt64? defaultValue)
+		public static UInt64? AsUInt64(this string? value, UInt64? defaultValue)
 		{
 			return XmlTools.GetUInt64(value, defaultValue);
 		}
 
-		public static Single AsSingle(this string value)
+		public static Single AsSingle(this string? value)
 		{
 			return XmlTools.GetSingle(value);
 		}
 
-		public static Single AsSingle(this string value, Single defaultValue)
+		public static Single AsSingle(this string? value, Single defaultValue)
 		{
 			return XmlTools.GetSingle(value, defaultValue);
 		}
 
-		public static Single? AsSingle(this string value, Single? defaultValue)
+		public static Single? AsSingle(this string? value, Single? defaultValue)
 		{
 			return XmlTools.GetSingle(value, defaultValue);
 		}
 
-		public static Double AsDouble(this string value)
+		public static Double AsDouble(this string? value)
 		{
 			return XmlTools.GetDouble(value);
 		}
 
-		public static Double AsDouble(this string value, Double defaultValue)
+		public static Double AsDouble(this string? value, Double defaultValue)
 		{
 			return XmlTools.GetDouble(value, defaultValue);
 		}
 
-		public static Double? AsDouble(this string value, Double? defaultValue)
+		public static Double? AsDouble(this string? value, Double? defaultValue)
 		{
 			return XmlTools.GetDouble(value, defaultValue);
 		}
 
-		public static Decimal AsDecimal(this string value)
+		public static Decimal AsDecimal(this string? value)
 		{
 			return XmlTools.GetDecimal(value);
 		}
 
-		public static Decimal AsDecimal(this string value, decimal defaultValue)
+		public static Decimal AsDecimal(this string? value, decimal defaultValue)
 		{
 			return XmlTools.GetDecimal(value, defaultValue);
 		}
 
-		public static Decimal? AsDecimal(this string value, decimal? defaultValue)
+		public static Decimal? AsDecimal(this string? value, decimal? defaultValue)
 		{
 			return XmlTools.GetDecimal(value, defaultValue);
 		}
 
-		public static Char AsChar(this string value)
+		public static Char AsChar(this string? value)
 		{
 			return XmlTools.GetChar(value);
 		}
 
-		public static Char AsChar(this string value, Char defaultValue)
+		public static Char AsChar(this string? value, Char defaultValue)
 		{
 			return XmlTools.GetChar(value, defaultValue);
 		}
 
-		public static Char? AsChar(this string value, Char? defaultValue)
+		public static Char? AsChar(this string? value, Char? defaultValue)
 		{
 			return XmlTools.GetChar(value, defaultValue);
 		}
@@ -349,125 +355,125 @@ namespace Lexxys
 			return XmlTools.GetString(value, defaultValue);
 		}
 
-		public static TimeSpan AsTimeSpan(this string value)
+		public static TimeSpan AsTimeSpan(this string? value)
 		{
 			return XmlTools.GetTimeSpan(value);
 		}
 
-		public static TimeSpan AsTimeSpan(this string value, TimeSpan defaultValue)
+		public static TimeSpan AsTimeSpan(this string? value, TimeSpan defaultValue)
 		{
 			return XmlTools.GetTimeSpan(value, defaultValue);
 		}
 
-		public static TimeSpan? AsTimeSpan(this string value, TimeSpan? defaultValue)
+		public static TimeSpan? AsTimeSpan(this string? value, TimeSpan? defaultValue)
 		{
 			return XmlTools.GetTimeSpan(value, defaultValue);
 		}
 
-		public static DateTime AsDateTime(this string value)
+		public static DateTime AsDateTime(this string? value)
 		{
 			return XmlTools.GetDateTime(value);
 		}
 
-		public static DateTime AsDateTime(this string value, DateTime defaultValue)
+		public static DateTime AsDateTime(this string? value, DateTime defaultValue)
 		{
 			return XmlTools.GetDateTime(value, defaultValue);
 		}
 
-		public static DateTime? AsDateTime(this string value, DateTime? defaultValue)
+		public static DateTime? AsDateTime(this string? value, DateTime? defaultValue)
 		{
 			return XmlTools.TryGetDateTime(value, out var result) ? result: defaultValue;
 		}
 
-		public static DateTimeOffset AsDateTimeOffset(this string value)
+		public static DateTimeOffset AsDateTimeOffset(this string? value)
 		{
 			return XmlTools.GetDateTime(value);
 		}
 
-		public static DateTimeOffset AsDateTimeOffset(this string value, DateTimeOffset defaultValue)
+		public static DateTimeOffset AsDateTimeOffset(this string? value, DateTimeOffset defaultValue)
 		{
 			return XmlTools.GetDateTimeOffset(value, defaultValue);
 		}
 
-		public static DateTimeOffset? AsDateTimeOffset(this string value, DateTimeOffset? defaultValue)
+		public static DateTimeOffset? AsDateTimeOffset(this string? value, DateTimeOffset? defaultValue)
 		{
 			return XmlTools.TryGetDateTimeOffset(value, out var result) ? result : defaultValue;
 		}
 
-		public static Guid AsGuid(this string value)
+		public static Guid AsGuid(this string? value)
 		{
 			return XmlTools.GetGuid(value);
 		}
 
-		public static Guid AsGuid(this string value, Guid defaultValue)
+		public static Guid AsGuid(this string? value, Guid defaultValue)
 		{
 			return XmlTools.GetGuid(value, defaultValue);
 		}
 
-		public static Guid? AsGuid(this string value, Guid? defaultValue)
+		public static Guid? AsGuid(this string? value, Guid? defaultValue)
 		{
 			return XmlTools.GetGuid(value, defaultValue);
 		}
 
-		public static T AsEnum<T>(this string value)
+		public static T AsEnum<T>(this string? value)
 			where T: struct
 		{
 			return XmlTools.GetEnum<T>(value);
 		}
 
-		public static T AsEnum<T>(this string value, T defaultValue)
+		public static T AsEnum<T>(this string? value, T defaultValue)
 			where T: struct
 		{
 			return XmlTools.GetEnum(value, defaultValue);
 		}
 
-		public static T? AsEnum<T>(this string value, T? defaultValue)
+		public static T? AsEnum<T>(this string? value, T? defaultValue)
 			where T: struct
 		{
 			return XmlTools.GetEnum(value, defaultValue);
 		}
 
-		public static Boolean AsBoolean(this string value)
+		public static Boolean AsBoolean(this string? value)
 		{
 			return XmlTools.GetBoolean(value);
 		}
 
-		public static Boolean AsBoolean(this string value, Boolean defaultValue)
+		public static Boolean AsBoolean(this string? value, Boolean defaultValue)
 		{
 			return XmlTools.GetBoolean(value, defaultValue);
 		}
 
-		public static Boolean? AsBoolean(this string value, Boolean? defaultValue)
+		public static Boolean? AsBoolean(this string? value, Boolean? defaultValue)
 		{
 			return XmlTools.TryGetBoolean(value, out bool result) ? result : defaultValue;
 		}
 
-		public static Ternary AsTernary(this string value)
+		public static Ternary AsTernary(this string? value)
 		{
 			return XmlTools.GetTernary(value);
 		}
 
-		public static Ternary AsTernary(this string value, Ternary defaultValue)
+		public static Ternary AsTernary(this string? value, Ternary defaultValue)
 		{
 			return XmlTools.GetTernary(value, defaultValue);
 		}
 
-		public static T AsValue<T>(this string value)
+		public static T AsValue<T>(this string? value)
 		{
 			return XmlTools.GetValue<T>(value);
 		}
 
-		public static T AsValue<T>(this string value, T defaultValue)
+		public static T AsValue<T>(this string? value, T defaultValue)
 		{
 			return XmlTools.GetValue(value, defaultValue);
 		}
 
-		public static object AsValue(this string value, Type returnType)
+		public static object AsValue(this string? value, Type returnType)
 		{
 			return XmlTools.GetValue(value, returnType);
 		}
 
-		public static object AsValue(this string value, Type returnType, object defaultValue)
+		public static object AsValue(this string? value, Type returnType, object defaultValue)
 		{
 			return XmlTools.GetValue(value, returnType, defaultValue);
 		}

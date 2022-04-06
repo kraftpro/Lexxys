@@ -7,6 +7,7 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -34,8 +35,12 @@ namespace Lexxys.Data
 	{
 		public static DbCommand WithParameters(this DbCommand command, params DataParameter[] parameters) => WithParameters(command, (IEnumerable<DataParameter>)parameters);
 
-		public static DbCommand WithParameters(this DbCommand command, IEnumerable<DataParameter>? parameters)
+		public static DbCommand WithParameters(this DbCommand command, IEnumerable<DataParameter>? parameters, bool append = false)
 		{
+			if (command is null)
+				throw new ArgumentNullException(nameof(command));
+			if (!append)
+				command.Parameters.Clear();
 			if (parameters == null)
 				return command;
 			foreach (var p in parameters)
@@ -58,12 +63,16 @@ namespace Lexxys.Data
 
 		public static void SetOutput(this DbCommand command, IReadOnlyList<DataParameter>? parameters)
 		{
+			if (command is null)
+				throw new ArgumentNullException(nameof(command));
 			if (parameters == null || parameters.Count == 0)
 				return;
-			for (int i = 0; i < parameters.Count; ++i)
+
+			foreach (var parameter in parameters)
 			{
-				if (parameters[i].Direction is ParameterDirection.InputOutput or ParameterDirection.Output or ParameterDirection.ReturnValue)
-					parameters[i].Value = command.Parameters[i].Value;
+				if (parameter.Direction is ParameterDirection.InputOutput or ParameterDirection.Output or ParameterDirection.ReturnValue &&
+					command.Parameters.Contains(parameter.Name))
+					parameter.Value = command.Parameters[parameter.Name].Value;
 			}
 		}
 	}

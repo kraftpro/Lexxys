@@ -605,9 +605,7 @@ namespace Lexxys.Data
 
 		#region Mappers
 
-		#nullable disable
-
-		internal static T ValueMapper<T>(DbCommand cmd)
+		internal static T? ValueMapper<T>(DbCommand cmd)
 		{
 			if (AnonymousType<T>.IsBuiltinType)
 			{
@@ -623,7 +621,7 @@ namespace Lexxys.Data
 			}
 		}
 
-		internal static async Task<T> ValueMapperAsync<T>(DbCommand cmd)
+		internal static async Task<T?> ValueMapperAsync<T>(DbCommand cmd)
 		{
 			if (AnonymousType<T>.IsBuiltinType)
 			{
@@ -660,8 +658,6 @@ namespace Lexxys.Data
 			}
 			return result;
 		}
-
-		#nullable enable
 
 		internal static bool XmlTextMapper(TextWriter text, DbCommand cmd)
 		{
@@ -784,11 +780,9 @@ namespace Lexxys.Data
 			return result;
 		}
 
-#nullable disable
-
 		private static class AnonymousType<T>
 		{
-			private static readonly SortedList<int, Func<object[], object>> Constructors;
+			private static readonly SortedList<int, Func<object?[], object?>> Constructors;
 			public static bool IsBuiltinType { get; }
 
 			static AnonymousType()
@@ -796,7 +790,7 @@ namespace Lexxys.Data
 				Type type = typeof(T);
 				if (__systemTypes.TryGetValue(type, out var f))
 				{
-					Constructors = new SortedList<int, Func<object[], object>>
+					Constructors = new SortedList<int, Func<object?[], object?>>
 					{
 						{ 1, f },
 					};
@@ -806,16 +800,16 @@ namespace Lexxys.Data
 				Type t = Factory.NullableTypeBase(type);
 				if (t.IsEnum)
 				{
-					Constructors = new SortedList<int, Func<object[], object>>
+					Constructors = new SortedList<int, Func<object?[], object?>>
 					{
 						{ 1, t == type ?
-							(Func<object[], object>)(o => (T)(object)((int?)o[0] ?? 0)):
-							(Func<object[], object>)(o => (T)(object)(int?)o[0]) }
+							(Func<object?[], object?>)(o => (T)(object)((int?)o[0] ?? 0)):
+							(Func<object?[], object?>)(o => (T?)(object?)(int?)o[0]) }
 					};
 					return;
 				}
 				ConstructorInfo[] cc = type.GetConstructors();
-				var constructors = new SortedList<int, Func<object[], object>>();
+				var constructors = new SortedList<int, Func<object?[], object?>>();
 				for (int i = 0; i < cc.Length; ++i)
 				{
 					Type[] parameters = Array.ConvertAll(cc[i].GetParameters(), o => o.ParameterType);
@@ -825,9 +819,9 @@ namespace Lexxys.Data
 				Constructors = constructors;
 			}
 
-			public static T Construct(object[] values)
+			public static T Construct(object?[] values)
 			{
-				if (!Constructors.TryGetValue(values.Length, out Func<object[], object> constructor))
+				if (!Constructors.TryGetValue(values.Length, out var constructor))
 					throw EX.InvalidOperation(SR.Factory_CannotFindConstructor(typeof(T), values.Length));
 				for (int i = 0; i < values.Length; ++i)
 				{
@@ -847,7 +841,7 @@ namespace Lexxys.Data
 
 		#region System types constructors
 
-		private static readonly Dictionary<Type, Func<object[], object>> __systemTypes = new Dictionary<Type, Func<object[], object>>
+		private static readonly Dictionary<Type, Func<object?[], object?>> __systemTypes = new Dictionary<Type, Func<object?[], object?>>
 			{
 				{ typeof(bool), o => (bool?)o[0] ?? default },
 				{ typeof(byte), o => (byte?)o[0] ?? default },
@@ -872,8 +866,8 @@ namespace Lexxys.Data
 					return v == null ? default: v is byte[] b ? new RowVersion(b): new RowVersion((long)v);
 				} },
 
-				{ typeof(string), o => (string)o[0] },
-				{ typeof(byte[]), o => (byte[])o[0] },
+				{ typeof(string), o => (string?)o[0] },
+				{ typeof(byte[]), o => (byte[]?)o[0] },
 				{ typeof(object), o => o[0] },
 
 				{ typeof(bool?), o => (bool?)o[0] },
@@ -901,8 +895,6 @@ namespace Lexxys.Data
 			};
 
 		#endregion
-
-		#nullable enable
 
 		#endregion
 
