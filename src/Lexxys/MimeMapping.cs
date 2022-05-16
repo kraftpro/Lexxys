@@ -713,9 +713,7 @@ namespace Lexxys
 			foreach (var mapping in mappings.ToList())
 			{
 				if (!mappings.ContainsKey(mapping.Value))
-				{
 					mappings.Add(mapping.Value, mapping.Key);
-				}
 			}
 			return ReadOnly.Wrap(mappings);
 		}

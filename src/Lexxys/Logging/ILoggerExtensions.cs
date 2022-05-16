@@ -74,7 +74,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Trace(source, message, exception, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Trace))
 				logger.Log(Type2Level(LogType.Trace), 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
@@ -82,7 +82,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Trace(source, exception);
-			else
+			else if (logger.IsEnabled(LogLevel.Trace))
 				logger.Log(LogLevel.Trace, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
@@ -90,7 +90,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Trace(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Trace))
 				logger.Log(LogLevel.Trace, 0, new TState(null, message, args), null, TState.Formatter);
 		}
 
@@ -98,7 +98,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Trace(message);
-			else
+			else if (logger.IsEnabled(LogLevel.Trace))
 				logger.Log(LogLevel.Trace, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
@@ -106,7 +106,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Trace(message, arg1Name, arg1Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Trace))
 				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
@@ -114,7 +114,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Trace(message, arg1Name, arg1Value, arg2Name, arg2Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Trace))
 				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
@@ -122,7 +122,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Trace(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Trace))
 				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
@@ -130,8 +130,16 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Trace(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Trace))
 				logger.Log(LogLevel.Trace, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
+		}
+
+		public static void Trace(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (logger is ILogging log)
+				log.Trace(message, args);
+			else if (logger.IsEnabled(LogLevel.Trace))
+				logger.Log(LogLevel.Trace, 0, new TState(null, message(), args?.Invoke()), null, TState.Formatter);
 		}
 
 		public static IDisposable? TraceEnter(this ILogger logger, string? message, IDictionary? args = null)
@@ -161,7 +169,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Debug(source, message, exception, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Debug))
 				logger.Log(Type2Level(LogType.Debug), 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
@@ -169,7 +177,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Debug(source, exception);
-			else
+			else if (logger.IsEnabled(LogLevel.Debug))
 				logger.Log(LogLevel.Debug, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
@@ -177,7 +185,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Debug(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Debug))
 				logger.Log(LogLevel.Debug, 0, new TState(null, message, args), null, TState.Formatter);
 		}
 
@@ -185,7 +193,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Debug(message);
-			else
+			else if (logger.IsEnabled(LogLevel.Debug))
 				logger.Log(LogLevel.Debug, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
@@ -193,7 +201,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Debug(message, arg1Name, arg1Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Debug))
 				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
@@ -201,7 +209,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Debug(message, arg1Name, arg1Value, arg2Name, arg2Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Debug))
 				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
@@ -209,7 +217,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Debug(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Debug))
 				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
@@ -217,8 +225,16 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Debug(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Debug))
 				logger.Log(LogLevel.Debug, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
+		}
+
+		public static void Debug(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (logger is ILogging log)
+				log.Debug(message, args);
+			else if (logger.IsEnabled(LogLevel.Debug))
+				logger.Log(LogLevel.Debug, 0, new TState(null, message(), args?.Invoke()), null, TState.Formatter);
 		}
 
 		public static IDisposable? DebugEnter(this ILogger logger, string? message, IDictionary? args = null)
@@ -248,7 +264,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Info(source, message, exception, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(Type2Level(LogType.Information), 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
@@ -256,7 +272,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Info(source, exception);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
@@ -264,7 +280,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Info(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, args), null, TState.Formatter);
 		}
 
@@ -272,7 +288,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Info(message);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
@@ -280,7 +296,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Info(message, arg1Name, arg1Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
@@ -288,7 +304,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Info(message, arg1Name, arg1Value, arg2Name, arg2Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
@@ -296,7 +312,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Info(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
@@ -304,8 +320,16 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Info(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
+		}
+
+		public static void Info(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (logger is ILogging log)
+				log.Info(message, args);
+			else if (logger.IsEnabled(LogLevel.Information))
+				logger.Log(LogLevel.Information, 0, new TState(null, message(), args?.Invoke()), null, TState.Formatter);
 		}
 
 		public static IDisposable? InfoEnter(this ILogger logger, string? message, IDictionary? args = null)
@@ -335,7 +359,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Warning(source, message, exception, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Warning))
 				logger.Log(Type2Level(LogType.Warning), 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
@@ -343,7 +367,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Warning(source, exception);
-			else
+			else if (logger.IsEnabled(LogLevel.Warning))
 				logger.Log(LogLevel.Warning, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
@@ -351,7 +375,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Warning(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Warning))
 				logger.Log(LogLevel.Warning, 0, new TState(null, message, args), null, TState.Formatter);
 		}
 
@@ -359,7 +383,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Warning(message);
-			else
+			else if (logger.IsEnabled(LogLevel.Warning))
 				logger.Log(LogLevel.Warning, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
@@ -367,7 +391,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Warning(message, arg1Name, arg1Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Warning))
 				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
@@ -375,7 +399,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Warning(message, arg1Name, arg1Value, arg2Name, arg2Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Warning))
 				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
@@ -383,7 +407,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Warning(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Warning))
 				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
@@ -391,8 +415,16 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Warning(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Warning))
 				logger.Log(LogLevel.Warning, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
+		}
+
+		public static void Warning(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (logger is ILogging log)
+				log.Warning(message, args);
+			else if (logger.IsEnabled(LogLevel.Warning))
+				logger.Log(LogLevel.Warning, 0, new TState(null, message(), args?.Invoke()), null, TState.Formatter);
 		}
 
 		public static IDisposable? WarningEnter(this ILogger logger, string? message, IDictionary? args = null)
@@ -422,7 +454,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Error(source, message, exception, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Error))
 				logger.Log(Type2Level(LogType.Error), 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
@@ -430,7 +462,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Error(source, exception);
-			else
+			else if (logger.IsEnabled(LogLevel.Error))
 				logger.Log(LogLevel.Error, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
@@ -438,7 +470,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Error(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Error))
 				logger.Log(LogLevel.Error, 0, new TState(null, message, args), null, TState.Formatter);
 		}
 
@@ -446,7 +478,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Error(message);
-			else
+			else if (logger.IsEnabled(LogLevel.Error))
 				logger.Log(LogLevel.Error, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
@@ -454,7 +486,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Error(message, arg1Name, arg1Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Error))
 				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
@@ -462,7 +494,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Error(message, arg1Name, arg1Value, arg2Name, arg2Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Error))
 				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
@@ -470,7 +502,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Error(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Error))
 				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
@@ -478,8 +510,16 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Error(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Error))
 				logger.Log(LogLevel.Error, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
+		}
+
+		public static void Error(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (logger is ILogging log)
+				log.Error(message, args);
+			else if (logger.IsEnabled(LogLevel.Error))
+				logger.Log(LogLevel.Error, 0, new TState(null, message(), args?.Invoke()), null, TState.Formatter);
 		}
 
 		public static IDisposable? ErrorEnter(this ILogger logger, string? message, IDictionary? args = null)
@@ -509,15 +549,15 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Write(source, message, exception, args);
-			else
-				logger.Log(Type2Level(LogType.Information), 0, new TState(source, message, args), exception, TState.Formatter);
+			else if (logger.IsEnabled(LogLevel.Information))
+				logger.Log(LogLevel.Information, 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
 		public static void Write(this ILogger logger, string? source, Exception exception)
 		{
 			if (logger is ILogging log)
 				log.Write(source, exception);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
@@ -525,7 +565,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Write(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, args), null, TState.Formatter);
 		}
 
@@ -533,7 +573,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Write(message);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, null), null, TState.Formatter);
 		}
 
@@ -541,7 +581,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Write(message, arg1Name, arg1Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(1) { { arg1Name, arg1Value } }), null, TState.Formatter);
 		}
 
@@ -549,7 +589,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Write(message, arg1Name, arg1Value, arg2Name, arg2Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(2) { { arg1Name, arg1Value }, { arg2Name, arg2Value } }), null, TState.Formatter);
 		}
 
@@ -557,7 +597,7 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Write(message, arg1Name, arg1Value, arg2Name, arg2Value, arg3Name, arg3Value);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
@@ -565,8 +605,16 @@ namespace Lexxys
 		{
 			if (logger is ILogging log)
 				log.Write(message, args);
-			else
+			else if (logger.IsEnabled(LogLevel.Information))
 				logger.Log(LogLevel.Information, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
+		}
+
+		public static void Write(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
+		{
+			if (logger is ILogging log)
+				log.Write(message, args);
+			else if (logger.IsEnabled(LogLevel.Information))
+				logger.Log(LogLevel.Information, 0, new TState(null, message(), args?.Invoke()), null, TState.Formatter);
 		}
 
 		public static IDisposable? Enter(this ILogger logger, string? message, IDictionary? args = null)

@@ -139,7 +139,11 @@ namespace Lexxys.Data
 						else if (value.StartsWith("EXP", StringComparison.OrdinalIgnoreCase))
 							value = "explicit unbind";
 						break;
-
+					case "TRUSTED_CONNECTION":
+					case "TRUSTEDCONNECTION":
+						integratedSecurity = XmlTools.GetBoolean(value, true);
+						value = null;
+						break;
 					case "INTEGRATEDSECURITY":
 						integratedSecurity = String.Equals(value, "SSPI", StringComparison.OrdinalIgnoreCase) || XmlTools.GetBoolean(value, true);
 						value = null;
@@ -258,7 +262,7 @@ namespace Lexxys.Data
 
 			if (Password == null)
 			{
-				connection.Append("integrated security=SSPI;");
+				connection.Append("trusted_connection=true;");
 			}
 			else
 			{

@@ -18,7 +18,7 @@ namespace Lexxys.Configuration
 	using Xml;
 
 	[DebuggerDisplay("[System.Configuration]")]
-	public sealed class SystemConfigurationProvider: IConfigurationProvider
+	public sealed class SystemConfigurationProvider: IConfigProvider
 	{
 		private static readonly Uri Uri = new Uri("system:configuration");
 
@@ -44,15 +44,15 @@ namespace Lexxys.Configuration
 			return null;
 		}
 
-		public List<T> GetList<T>(string reference)
+		public IReadOnlyList<T> GetList<T>(string reference)
 		{
 			if (reference == null)
 				throw EX.ArgumentNull(nameof(reference));
 
 			string[] values = ConfigurationManager.AppSettings.GetValues(reference);
-			var result = new List<T>();
 			if (values != null)
 			{
+				var result = new List<T>();
 				foreach (string value in values)
 				{
 					if (XmlTools.TryGetValue(value, typeof(T), out object x))
@@ -61,7 +61,7 @@ namespace Lexxys.Configuration
 					}
 				}
 				if (result.Count > 0)
-					return result;
+					return ReadOnly.Wrap(result);
 			}
 			if (reference.StartsWith("connection.", StringComparison.OrdinalIgnoreCase))
 			{
@@ -70,24 +70,39 @@ namespace Lexxys.Configuration
 				{
 					if (typeof(T) == typeof(string))
 					{
+						var result = new List<T>();
 						for (int i = 0; i < cc.Count; ++i)
 						{
 							result.Add(Tools.Cast<T>(cc[i].ConnectionString));
 						}
-						return result;
+						return ReadOnly.Wrap(result);
 					}
 					if (typeof(T) == typeof(ConnectionStringSettings))
 					{
+						var result = new List<T>();
 						for (int i = 0; i < cc.Count; ++i)
 						{
 							result.Add(Tools.Cast<T>(cc[i]));
 						}
-						return result;
+						return ReadOnly.Wrap(result);
 					}
-					return new List<T>();
+					if (typeof(T) == typeof(Data.ConnectionStringInfo))
+					{
+						var result = new List<T>();
+						for (int i = 0; i < cc.Count; ++i)
+						{
+							result.Add(Tools.Cast<T>(new Data.ConnectionStringInfo(cc[i].ConnectionString)));
+						}
+						return ReadOnly.Wrap(result);
+					}
+					return Array.Empty<T>();
 				}
 			}
-			return ConfigurationManager.GetSection(reference) as List<T> ?? new List<T>();
+			if (ConfigurationManager.GetSection(reference) is List<T> list)
+				return ReadOnly.Wrap(list);
+			if (ConfigurationManager.GetSection(reference) is IEnumerable<T> ienum)
+				return ReadOnly.WrapCopy(ienum);
+			return Array.Empty<T>();
 		}
 
 		public event EventHandler<ConfigurationEventArgs>? Changed

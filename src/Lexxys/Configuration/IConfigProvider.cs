@@ -13,12 +13,13 @@ using System.Text;
 
 namespace Lexxys.Configuration
 {
-	public interface IConfigurationProvider
+	public interface IConfigProvider
 	{
 		event EventHandler<ConfigurationEventArgs>? Changed;
+
 		string Name { get; }
 		Uri Location { get; }
 		object? GetValue(string reference, Type returnType);
-		List<T> GetList<T>(string reference);
+		IReadOnlyList<T> GetList<T>(string reference);
 	}
 }

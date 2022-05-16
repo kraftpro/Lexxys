@@ -36,17 +36,9 @@ namespace Lexxys
 			}
 		}
 
-#if NETCOREAPP
 		public static string AnonymousConfigurationFile => "application";
-#else
-		public static string AnonymousConfigurationFile => ConfigurationManager.AppSettings["AnonymousConfigurationFile"] ?? "application";
-#endif
 
-#if NETCOREAPP
 		public static string GlobalConfigurationFile => "global";
-#else
-		public static string GlobalConfigurationFile => ConfigurationManager.AppSettings["GlobalConfigurationFile"] ?? "global";
-#endif
 
 #if NETCOREAPP
 		public static string GlobalConfigurationDirectory => @"C:\Application\Config";
@@ -143,7 +135,7 @@ namespace Lexxys
 			get
 			{
 				if (_appDirectory == null)
-					Interlocked.CompareExchange(ref _appDirectory, AppDomain.CurrentDomain.RelativeSearchPath ?? AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar), null);
+					Interlocked.CompareExchange(ref _appDirectory, AppDomain.CurrentDomain.RelativeSearchPath ?? AppDomain.CurrentDomain.BaseDirectory.TrimEnd('/', '\\'), null);
 				return _appDirectory;
 			}
 			set

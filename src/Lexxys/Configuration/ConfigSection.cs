@@ -17,34 +17,32 @@ namespace Lexxys.Configuration
 	public class ConfigSection: IConfigSection
 	{
 		private readonly string _path;
-		private readonly IConfigSource _configSource;
+		private readonly IConfigSource _configService;
 
 		public ConfigSection(IConfigSource configSource)
 		{
 			_path = String.Empty;
-			_configSource = configSource;
+			_configService = configSource;
 		}
 
 		private ConfigSection(IConfigSource configSource, string path)
 		{
 			_path = path.Trim(Dots);
-			_configSource = configSource;
+			_configService = configSource;
 		}
-
-		internal static readonly IConfigSection Instance = new ConfigSection(DefaultConfig.ConfigSourceInstance);
 
 		#region IConfigSection
 
 		event EventHandler<ConfigurationEventArgs>? IConfigSection.Changed
 		{
-			add => _configSource.Changed += value;
-			remove => _configSource.Changed -= value;
+			add => _configService.Changed += value;
+			remove => _configService.Changed -= value;
 		}
 
-		IConfigSection IConfigSection.GetSection(string key)
-			=> new ConfigSection(_configSource, Key(key));
+		IConfigSection IConfigSection.GetSection(string? key)
+			=> new ConfigSection(_configService, Key(key));
 
-		int IConfigSection.Version => _configSource.Version;
+		int IConfigSection.Version => _configService.Version;
 
 		void IConfigSection.MapPath(string key, string path)
 		{
@@ -60,10 +58,10 @@ namespace Lexxys.Configuration
 		}
 		private ConcurrentDictionary<string, string> _pathMap = new();
 
-		void IConfigSection.DefineCollection<T>(string path, IReadOnlyList<T> value)
+		void IConfigSection.SetCollection<T>(string? path, IReadOnlyList<T> value)
 			=> Lists<T>.Add(Key(path), value);
 
-		void IConfigSection.DefineValue<T>(string path, T value)
+		void IConfigSection.SetValue<T>(string? path, T value)
 			=> Values<T>.Add(Key(path), value);
 
 		IValue<IReadOnlyList<T>> IConfigSection.GetCollection<T>(string? key)
@@ -72,20 +70,20 @@ namespace Lexxys.Configuration
 			return new ConfigValue<IReadOnlyList<T>>(GetConfigValue, GetConfigVersion);
 
 			IReadOnlyList<T> GetConfigValue()
-				=> Lists<T>.TryGet(fullKey, out var value) ? value: _configSource.GetList<T>(fullKey) ?? Array.Empty<T>();
+				=> Lists<T>.TryGet(fullKey, out var value) ? value: _configService.GetList<T>(fullKey);
 		}
 
-		IValue<T> IConfigSection.GetValue<T>(string key, Func<T>? defaultValue)
+		IValue<T> IConfigSection.GetValue<T>(string? key, Func<T>? defaultValue)
 		{
 			return new ConfigValue<T>(GetConfigValue(Key(key), defaultValue), GetConfigVersion);
 
 			Func<T> GetConfigValue(string key, Func<T>? defaultValue)
 				=> defaultValue == null ?
-					() => Values<T>.TryGet(key, out var value) ? value : _configSource.GetValue(key, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(key, typeof(T)) :
-					() => Values<T>.TryGet(key, out var value) ? value : _configSource.GetValue(key, typeof(T)) is T value2 ? value2 : defaultValue();
+					() => Values<T>.TryGet(key, out var value) ? value : _configService.GetValue(key, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(key, typeof(T)) :
+					() => Values<T>.TryGet(key, out var value) ? value : _configService.GetValue(key, typeof(T)) is T value2 ? value2 : defaultValue();
 		}
 
-		private int GetConfigVersion() => _configSource.Version;
+		private int GetConfigVersion() => _configService.Version;
 
 		#endregion
 
@@ -96,13 +94,15 @@ namespace Lexxys.Configuration
 			if (key.StartsWith("::", StringComparison.Ordinal))
 				return key.Trim(Dots);
 			var k = key.Trim(Dots);
+			if (k.Length == 0)
+				return _path;
 			if (_pathMap.TryGetValue(k, out var value))
 				return value;
 			return
 				_path.Length == 0 ? k:
 				k.Length == 0 ? _path: _path + "." + k;
 		}
-		private static readonly char[] Dots = new[] { '.', ':', ' ' };
+		private static readonly char[] Dots = new[] { '.', ':', ' ', '\t', '\r', '\n', '\v', '\f', '\x85', '\xA0' };
 
 		private static class Values<T>
 		{

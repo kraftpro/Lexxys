@@ -42,7 +42,7 @@ namespace Lexxys.Configuration
 		private static ConcurrentQueue<EventEntry>? __messages;
 		private volatile static int __version;
 
-		private static volatile List<IConfigurationProvider> Providers = new List<IConfigurationProvider>();
+		private static volatile List<IConfigProvider> Providers = new List<IConfigProvider>();
 		private static readonly ConcurrentDictionary<string, object?> Cache = new ConcurrentDictionary<string, object?>();
 
 		static DefaultConfig()
@@ -90,26 +90,16 @@ namespace Lexxys.Configuration
 				return value as IReadOnlyList<T> ?? EmptyArray<T>.Value;
 
 			List<T>? temp = null;
-			bool copy = false;
 			var providers = Providers;
 			for (int i = providers.Count - 1; i >= 0; --i)
 			{
-				List<T> x = providers[i].GetList<T>(key);
+				var x = providers[i].GetList<T>(key);
 				if (x != null && x.Count > 0)
 				{
 					if (temp == null)
-					{
-						temp = x;
-					}
+						temp = new List<T>(x);
 					else
-					{
-						if (!copy)
-						{
-							temp = new List<T>(temp);
-							copy = true;
-						}
 						temp.AddRange(x);
-					}
 				}
 			}
 			IReadOnlyList<T>? result = temp == null || temp.Count == 0 ? null: ReadOnly.Wrap(temp);
@@ -128,14 +118,12 @@ namespace Lexxys.Configuration
 				Initialize();
 
 			string cacheKey = key + "$" + objectType.ToString();
-			if (_cacheValues && Cache.TryGetValue(cacheKey, out object? value))
-				return value;
-
+			object? value = null;
 			if (_cacheValues && Cache.TryGetValue(cacheKey, out value))
 				return value;
-			value = null;
+
 			var providers = Providers;
-			foreach (IConfigurationProvider provider in providers)
+			foreach (IConfigProvider provider in providers)
 			{
 				value = provider.GetValue(key, objectType);
 				if (value != null)
@@ -153,7 +141,7 @@ namespace Lexxys.Configuration
 			OnChanged(null, new ConfigurationEventArgs());
 		}
 
-		public static IConfigurationProvider? AddConfiguration(string location)
+		public static IConfigProvider? AddConfiguration(string location)
 		{
 			if (location == null || location.Length <= 0)
 				throw new ArgumentNullException(nameof(location));
@@ -162,7 +150,7 @@ namespace Lexxys.Configuration
 		}
 
 		// TODO: optional
-		public static IConfigurationProvider? AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters) // = null)
+		public static IConfigProvider? AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters) // = null)
 		{
 			if (location == null)
 				throw new ArgumentNullException(nameof(location));
@@ -175,10 +163,10 @@ namespace Lexxys.Configuration
 			return provider;
 		}
 
-		private static int AddProvider(IConfigurationProvider provider, int position)
+		private static int AddProvider(IConfigProvider provider, int position)
 		{
-			List<IConfigurationProvider> providers;
-			List<IConfigurationProvider> updated;
+			List<IConfigProvider> providers;
+			List<IConfigProvider> updated;
 			int inserted;
 			do
 			{
@@ -202,7 +190,7 @@ namespace Lexxys.Configuration
 			return inserted;
 		}
 
-		private static (IConfigurationProvider?, bool) AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters, int position)
+		private static (IConfigProvider?, bool) AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters, int position)
 		{
 			try
 			{
@@ -234,12 +222,12 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private static void ScanConfigurationFile(IConfigurationProvider provider, Uri location, int position)
+		private static void ScanConfigurationFile(IConfigProvider provider, Uri location, int position)
 		{
 			if (provider.GetValue("applicationDirectory", typeof(string)) is string home)
 				Lxx.HomeDirectory = home.Trim().TrimEnd(Path.DirectorySeparatorChar).TrimToNull();
 
-			List<string> ss = provider.GetList<string>("include");
+			var ss = provider.GetList<string>("include");
 			if (ss != null)
 			{
 				foreach (string s in ss)
@@ -261,7 +249,7 @@ namespace Lexxys.Configuration
 		}
 		private static readonly char[] SpaceSeparator = new[] { ' ' };
 
-		private static bool CreateProvider(ref Uri location, IReadOnlyCollection<string>? parameters, out IConfigurationProvider? provider)
+		private static bool CreateProvider(ref Uri location, IReadOnlyCollection<string>? parameters, out IConfigProvider? provider)
 		{
 			if (!_initialized)
 				Initialize();
@@ -432,7 +420,7 @@ namespace Lexxys.Configuration
 					_initializing = true;
 					AddSystem(new Uri("system:environment"), new EnvironmentConfigurationProvider());
 #if !NETCOREAPP
-						AddSystem(new Uri("system:configuration"), new SystemConfigurationProvider());
+					AddSystem(new Uri("system:configuration"), new SystemConfigurationProvider());
 #endif
 
 					IEnumerable<Uri> cc0 = GetInitialConfigurationsLocations();
@@ -449,7 +437,7 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private static void AddSystem(Uri locator, IConfigurationProvider provider)
+		private static void AddSystem(Uri locator, IConfigProvider provider)
 		{
 			if (AddProvider(provider, -1) >= 0)
 			{

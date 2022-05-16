@@ -14,14 +14,14 @@ namespace Lexxys.Configuration
 {
 	internal static class ConfigurationFactory
 	{
-		internal static IConfigurationProvider? TryCreateProvider(Uri location, IReadOnlyCollection<string>? parameters)
+		internal static IConfigProvider? TryCreateProvider(Uri location, IReadOnlyCollection<string>? parameters)
 		{
 			if (location == null)
 				throw EX.ArgumentNull(nameof(location));
 
 			var arguments = new object?[] { location, parameters };
-			return Factory.Constructors(typeof(IConfigurationProvider), "Create", __locationType2)
-				.Select(m => m.Invoke(null, arguments) as IConfigurationProvider).FirstOrDefault(o => o != null);
+			return Factory.Constructors(typeof(IConfigProvider), "Create", __locationType2)
+				.Select(m => m.Invoke(null, arguments) as IConfigProvider).FirstOrDefault(o => o != null);
 		}
 
 		internal static IXmlConfigurationSource? TryCreateXmlConfigurationSource(Uri location, IReadOnlyCollection<string>? parameters)

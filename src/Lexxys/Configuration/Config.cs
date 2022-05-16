@@ -22,7 +22,7 @@ namespace Lexxys
 
 	public static class Config
 	{
-		public static IConfigSection Current => ConfigSection.Instance;
+		public static IConfigSection Current => StaticServices.GetConfig();
 
 		//public static T? GetValue<T>(string key)
 		//{
@@ -47,10 +47,10 @@ namespace Lexxys
 		//	return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : defaultValue();
 		//}
 
-		public static IConfigurationProvider? AddConfiguration(string location)
+		public static IConfigProvider? AddConfiguration(string location)
 			=> DefaultConfig.AddConfiguration(location);
 
-		public static IConfigurationProvider? AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null)
+		public static IConfigProvider? AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null)
 			=> DefaultConfig.AddConfiguration(location, parameters);
 
 		public static void LogConfigurationError(string logSource, Exception exception)

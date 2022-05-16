@@ -34,7 +34,7 @@ namespace Lexxys.Configuration
 		private ConcurrentQueue<EventEntry>? __messages;
 		private volatile int __version;
 
-		private volatile List<IConfigurationProvider> Providers = new List<IConfigurationProvider>();
+		private volatile List<IConfigProvider> Providers = new List<IConfigProvider>();
 		private readonly ConcurrentDictionary<string, object?> Cache = new ConcurrentDictionary<string, object?>();
 
 		ConfigProvidersCollection()
@@ -66,7 +66,7 @@ namespace Lexxys.Configuration
 			OnChanged(null, new ConfigurationEventArgs());
 		}
 
-		public IConfigurationProvider? AddConfiguration(string location)
+		public IConfigProvider? AddConfiguration(string location)
 		{
 			if (location == null || location.Length <= 0)
 				throw new ArgumentNullException(nameof(location));
@@ -74,7 +74,7 @@ namespace Lexxys.Configuration
 			return AddConfiguration(new Uri(value, UriKind.RelativeOrAbsolute), parameters);
 		}
 
-		public IConfigurationProvider? AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null)
+		public IConfigProvider? AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null)
 		{
 			if (location == null)
 				throw new ArgumentNullException(nameof(location));
@@ -84,7 +84,7 @@ namespace Lexxys.Configuration
 			return provider;
 		}
 
-		private bool AddConfiguration1(Uri location, IReadOnlyCollection<string>? parameters, int position, out IConfigurationProvider? provider)
+		private bool AddConfiguration1(Uri location, IReadOnlyCollection<string>? parameters, int position, out IConfigProvider? provider)
 		{
 			try
 			{
@@ -118,7 +118,7 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private bool CreateProvider1(Uri location, IReadOnlyCollection<string>? parameters, [NotNullWhen(true)] out IConfigurationProvider? provider)
+		private bool CreateProvider1(Uri location, IReadOnlyCollection<string>? parameters, [NotNullWhen(true)] out IConfigProvider? provider)
 		{
 			var path = location.IsAbsoluteUri ?
 				File.Exists(location.LocalPath) ? Path.GetFullPath(location.LocalPath): null:
@@ -133,7 +133,7 @@ namespace Lexxys.Configuration
 			return false;
 		}
 
-		private bool AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters, int position, out IConfigurationProvider? provider)
+		private bool AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters, int position, out IConfigProvider? provider)
 		{
 			try
 			{
@@ -165,7 +165,7 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private bool CreateProvider(ref Uri location, IReadOnlyCollection<string>? parameters, [NotNullWhen(true)] out IConfigurationProvider? provider)
+		private bool CreateProvider(ref Uri location, IReadOnlyCollection<string>? parameters, [NotNullWhen(true)] out IConfigProvider? provider)
 		{
 			if (!_initialized)
 				Initialize();
@@ -200,10 +200,10 @@ namespace Lexxys.Configuration
 			return true;
 		}
 
-		private int AddProvider(IConfigurationProvider provider, int position)
+		private int AddProvider(IConfigProvider provider, int position)
 		{
-			List<IConfigurationProvider> providers;
-			List<IConfigurationProvider> updated;
+			List<IConfigProvider> providers;
+			List<IConfigProvider> updated;
 			int inserted;
 			do
 			{
@@ -227,12 +227,12 @@ namespace Lexxys.Configuration
 			return inserted;
 		}
 
-		private void ScanConfigurationFile(IConfigurationProvider provider, Uri location, int position)
+		private void ScanConfigurationFile(IConfigProvider provider, Uri location, int position)
 		{
 			if (provider.GetValue("applicationDirectory", typeof(string)) is string home)
 				Lxx.HomeDirectory = home.Trim().TrimEnd(Path.DirectorySeparatorChar).TrimToNull();
 
-			List<string> ss = provider.GetList<string>("include");
+			var ss = provider.GetList<string>("include");
 			if (ss != null)
 			{
 				foreach (string s in ss)
@@ -408,7 +408,7 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private void AddSystem(Uri locator, IConfigurationProvider provider)
+		private void AddSystem(Uri locator, IConfigProvider provider)
 		{
 			if (AddProvider(provider, -1) >= 0)
 			{

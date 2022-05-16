@@ -15,7 +15,7 @@ namespace Lexxys.Configuration
 {
 	using Xml;
 
-	public class XmlConfigurationProvider: IConfigurationProvider
+	public class XmlConfigurationProvider: IConfigProvider
 	{
 		private const string ConfigurationRoot = "configuration";
 		readonly IXmlConfigurationSource _source;
@@ -50,7 +50,7 @@ namespace Lexxys.Configuration
 			return ParseValue(node, returnType);
 		}
 
-		public virtual List<T> GetList<T>(string reference)
+		public virtual IReadOnlyList<T> GetList<T>(string reference)
 		{
 			if (reference == null || reference.Length == 0)
 				return new List<T>();
@@ -60,10 +60,10 @@ namespace Lexxys.Configuration
 			if (root == null || root.IsEmpty)
 				return new List<T>();
 			IEnumerable<XmlLiteNode> nodes = XmlLiteNode.Select(reference, root.Elements);
-			return nodes
+			return ReadOnly.WrapCopy(nodes
 				.Select(o => ParseValue(o, typeof(T)))
 				.Where(o => o != null)
-				.Select(o => (T)o!).ToList();
+				.Select(o => (T)o!));
 		}
 
 		public static XmlConfigurationProvider? Create(Uri location, IReadOnlyCollection<string> parameters)

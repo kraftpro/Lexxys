@@ -5,7 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
 
 #nullable enable
 
@@ -15,6 +15,15 @@ namespace Lexxys
 
 	public static class IConfigSectionExtenstions
 	{
+		public static IValue<T> GetValue<T>(this IConfigSection section)
+			=> section.GetValue<T>(null, null);
+
+		public static IValue<T> GetValue<T>(this IConfigSection section, Func<T> defaultValue)
+			=> section.GetValue<T>(null, defaultValue);
+
+		public static IValue<IReadOnlyList<T>> GetCollection<T>(this IConfigSection section)
+			=> section.GetCollection<T>(null);
+
 		public static IValue<T> GetValue<T>(this IConfigSection config, string key, T defaultValue)
 		{
 			if (config == null)

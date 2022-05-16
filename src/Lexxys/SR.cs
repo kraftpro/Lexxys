@@ -263,6 +263,10 @@ namespace Lexxys
 		{
 			return () => String.Format(Culture, "Configuration changed ({0}).", source?.Name);
 		}
+		public static Func<string> ConfigurationChanged(Configuration.IConfigProvider source)
+		{
+			return () => String.Format(Culture, "Configuration changed ({0}).", source?.Name);
+		}
 		public static Func<string> ConfigurationFileIncluded(string fileName)
 		{
 			return () => String.Format(Culture, "Configuration file included ({0}).", fileName);

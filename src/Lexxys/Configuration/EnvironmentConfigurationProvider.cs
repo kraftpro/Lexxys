@@ -16,7 +16,7 @@ namespace Lexxys.Configuration
 {
 	using Xml;
 
-	class EnvironmentConfigurationProvider : IConfigurationProvider
+	class EnvironmentConfigurationProvider: IConfigProvider
 	{
 		private static readonly Uri Uri = new Uri("system:environment");
 
@@ -33,15 +33,15 @@ namespace Lexxys.Configuration
 			return XmlTools.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out var result) ? result: null;
 		}
 
-		public List<T> GetList<T>(string reference)
+		public IReadOnlyList<T> GetList<T>(string reference)
 		{
 			if (reference == null)
-				return new List<T>();
+				return Array.Empty<T>();
 			if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
 				reference = reference.Substring(5);
 			if (XmlTools.TryGetValue<T>(Environment.GetEnvironmentVariable(reference), out var value))
-				return new List<T> { value };
-			return new List<T>();
+				return ReadOnly.Wrap(new T[] { value });
+			return Array.Empty<T>();
 		}
 
 #pragma warning disable CS0067
