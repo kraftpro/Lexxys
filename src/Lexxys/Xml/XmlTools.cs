@@ -25,8 +25,8 @@ namespace Lexxys.Xml
 {
 	public static class XmlTools
 	{
-		private static Logger Log => __logger ??= new Logger("XmlTools");
-		private static Logger? __logger;
+		private static ILogging Log => __logger ??= StaticServices.Create<ILogging>("XmlTools");
+		private static ILogging? __logger;
 
 		public const string OptionIgnoreCase = "opt:ignoreCase";
 		public const string OptionForceAttributes = "opt:forceAttributes";

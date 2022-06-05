@@ -11,7 +11,7 @@ using System.Text;
 
 #nullable enable
 
-namespace Lexxys.RL
+namespace Lexxys
 {
 	public static class Vote
 	{

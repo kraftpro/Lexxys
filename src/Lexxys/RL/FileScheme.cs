@@ -98,12 +98,8 @@ namespace Lexxys.RL
 				return Vote.Yes(FileScheme.SchemeName);
 			if (value.StartsWith("//"))
 				return Vote.ProbablyYes(FileScheme.SchemeName);
-			if (value[1] == ':')
-			{
-				char drive = Char.ToUpperInvariant(value[0]);
-				if (drive >= 'A' && drive <= 'Z')
-					return Vote.ProbablyYes(FileScheme.SchemeName);
-			}
+			if (HasDriveLetter(value, 0))
+				return Vote.ProbablyYes(FileScheme.SchemeName);
 			return value.IndexOfAny(new[] { '?', '+', '[', ']', '*', ':' }) >= 0 ?
 				Vote.ProbablyNot(FileScheme.SchemeName):
 				Vote.Maybe(FileScheme.SchemeName);

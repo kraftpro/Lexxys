@@ -19,8 +19,8 @@ namespace Lexxys
 
 	public static class EX
 	{
-		private static ILogging Log => _loger ??= Logger.IsStarted ? new Logger("Lexxys.EX"): null;
-		private static ILogging _loger;
+		private static ILogging Log => __loger ??= StaticServices.TryCreate<ILogging>("Lexxys.EX");
+		private static ILogging __loger;
 #if DEBUG
 		private static int _debugLogging;
 #endif
@@ -63,30 +63,6 @@ namespace Lexxys
 		private static object Serializable(object value)
 		{
 			return value is null || value.GetType().IsSerializable ? value: value.ToString();
-		}
-
-		public static string Display(this Exception exception)
-		{
-			var text = new StringBuilder();
-			BuildDisplay(exception, text, "");
-			return text.ToString();
-		}
-
-		private static void BuildDisplay(Exception ex, StringBuilder text, string tab)
-		{
-			text.Append(tab)
-				.Append(ex.GetType())
-				.Append(' ')
-				.Append(ex.Message.Replace(Environment.NewLine, Environment.NewLine + tab));
-			foreach (var key in ex.Data.Keys)
-			{
-				text.Append(Environment.NewLine + tab)
-					.Append(key)
-					.Append(" = ")
-					.Append(ex.Data[key].ToString().Replace(Environment.NewLine, Environment.NewLine + tab));
-			}
-			if (ex.InnerException != null)
-				BuildDisplay(ex.InnerException, text, tab + "  ");
 		}
 		#endregion
 

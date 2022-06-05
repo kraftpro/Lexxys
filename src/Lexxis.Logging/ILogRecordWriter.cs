@@ -6,14 +6,10 @@
 // You may use this code under the terms of the MIT license
 //
 
+namespace Lexxys.Logging;
 
-#nullable enable
-
-namespace Lexxys.Logging
+public interface ILogRecordWriter
 {
-	public interface ILogRecordWriter
-	{
-		void Write(LogRecord? record);
-		bool IsEnabled(LogType logType);
-	}
+	void Write(LogRecord? record);
+	bool IsEnabled(LogType logType);
 }

@@ -12,8 +12,8 @@ namespace Lexxys
 {
 	public sealed class ReadWriteSyncSlim: IReadWriteSync
 	{
-		private static Logger Log => _log ??= new Logger("Lexxys.ReadWriteSyncSlim");
-		private static Logger _log;
+		private static ILogging Log => _log ??= StaticServices.Create<ILogging>("Lexxys.ReadWriteSyncSlim");
+		private static ILogging _log;
 		private ReaderWriterLockSlim _locker;
 		public const int DefaultTimingThreshold = 100;
 		public const int DefaultLockTimeout = 5 * 60 * 1000;

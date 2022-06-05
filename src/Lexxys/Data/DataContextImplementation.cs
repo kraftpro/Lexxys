@@ -236,7 +236,7 @@ namespace Lexxys.Data
 			{
 				var time = WatchTimer.Start();
 				if (_connectionsCount < 1)
-					Dc.Log.Error("Dc.SafeDisconnect", "ConnectionCount == 0");
+					Dc.Log.Error("Dc.SafeDisconnect", "ConnectionCount == 0", null, null);
 				if (_connection.State != ConnectionState.Closed)
 					_connection.Close();
 				_connectionsCount = 0;

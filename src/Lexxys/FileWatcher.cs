@@ -9,10 +9,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using Microsoft.Extensions.Logging;
 #if !NETCOREAPP
 using System.Security.Permissions;
 #endif
 using System.Threading;
+
+#nullable enable
 
 namespace Lexxys
 {
@@ -21,7 +24,8 @@ namespace Lexxys
 #endif
 	public sealed class FileWatcher: IDisposable
 	{
-		private static Logger __log;
+		private const string LogSource = "Lexxys.FileWatcher";
+		private static ILogger? __log;
 		private static readonly Dictionary<string, FileWatcher> __fileWatcher = new Dictionary<string, FileWatcher>(8);
 
 		private readonly FileSystemWatcher _watcher;
@@ -31,6 +35,8 @@ namespace Lexxys
 		{
 			_fi = fileInfo ?? throw EX.ArgumentNull(nameof(fileInfo));
 			_fi.Refresh();
+			if (_fi.DirectoryName is null)
+				throw new ArgumentOutOfRangeException(nameof(fileInfo));
 			_watcher = new FileSystemWatcher(_fi.DirectoryName, _fi.Name)
 			{
 				IncludeSubdirectories = false,
@@ -44,7 +50,7 @@ namespace Lexxys
 			//_watcher.Renamed += OnFileChanged;
 		}
 
-		public event FileSystemEventHandler FileChanged;
+		public event FileSystemEventHandler? FileChanged;
 
 		/// <summary>
 		/// Add new file watcher.
@@ -101,7 +107,7 @@ namespace Lexxys
 					return;
 				_fi = fn;
 
-				Log.Info(SR.FileChanged(_fi.FullName));
+				Log?.Info(SR.FileChanged(_fi.FullName));
 				FileChanged?.Invoke(sender, e);
 			}
 		}
@@ -117,9 +123,6 @@ namespace Lexxys
 		}
 		private bool _disposed;
 
-		private static Logger Log
-		{
-			get { return __log ??= new Logger("Lexxys.FileWatcher"); }
-		}
+		private static ILogger? Log => __log ??= StaticServices.TryCreate<ILogger>(LogSource);
 	}
 }

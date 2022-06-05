@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys
 {
-	using Logging;
 
 	public static class LoggingTools
 	{
@@ -23,7 +22,7 @@ namespace Lexxys
 				message = formatter(state, exception);
 			if (message == null && args == null)
 				message = state?.ToString();
-			log.Log(new LogRecord(logType, log.Source, message, exception, args));
+			log.Log(logType, eventId.Id, log.Source, message, exception, args);
 		}
 
 		public static bool IsEnabled(ILogging log, LogLevel logLevel)

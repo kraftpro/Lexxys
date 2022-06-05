@@ -10,12 +10,13 @@ using System.Reflection;
 using System.Threading;
 using System.Configuration;
 using System.IO;
+using Microsoft.Extensions.Logging;
 
 namespace Lexxys
 {
 	public static class Lxx
 	{
-		private static Logger _log;
+		private static ILogging _log;
 		private static FileVersionInfo _appVersion;
 		private static string _productName;
 		private static string _appDirectory;
@@ -31,7 +32,7 @@ namespace Lexxys
 			get
 			{
 				if (_log == null)
-					Interlocked.CompareExchange(ref _log, new Logger("Lexxys.Lxx"), null);
+					Interlocked.CompareExchange(ref _log, StaticServices.Create<ILogging>("Lexxys.Lxx"), null);
 				return _log;
 			}
 		}

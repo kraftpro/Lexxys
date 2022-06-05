@@ -27,10 +27,10 @@ namespace Lexxys.Data
 		public const IsolationLevel DefaultIsolationLevel = IsolationLevel.ReadCommitted;
 		public const string ConfigSection = "database.connection";
 
-		public static ILogging Log => __log ??= new Logger("Dc");
+		public static ILogging Log => __log ??= StaticServices.Create<ILogging>("Dc");
 		private static ILogging? __log;
 
-		public static ILogging Timing => __logTrace ??= new Logger("Dc-Timing");
+		public static ILogging Timing => __logTrace ??= StaticServices.Create<ILogging>("Dc-Timing");
 		private static ILogging? __logTrace;
 
 		private static IValue<ConnectionStringInfo> __connectionInfo = Config.Current.GetValue<ConnectionStringInfo>(ConfigSection);

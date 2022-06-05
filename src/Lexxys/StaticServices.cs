@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 
 using Lexxys.Configuration;
-using Lexxys.Logging;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -29,21 +28,21 @@ namespace Lexxys
 
 		private volatile static Dictionary<Type, IFactory[]> __factoryMap = new Dictionary<Type, IFactory[]>();
 
-		static StaticServices()
-		{
-			IFactory factory = new DummyConfigFactory();
-			foreach (var type in factory.SupportedTypes!)
-			{
-				var mapType = type is null ? typeof(void): type.IsGenericType ? type.GetGenericTypeDefinition(): type;
-				__factoryMap.Add(mapType, new IFactory[] { factory });
-			}
-			factory = new DummyLoggingFactory();
-			foreach (var type in factory.SupportedTypes!)
-			{
-				var mapType = type is null ? typeof(void): type.IsGenericType ? type.GetGenericTypeDefinition(): type;
-				__factoryMap.Add(mapType, new IFactory[] { factory });
-			}
-		}
+		//static StaticServices()
+		//{
+		//	IFactory factory = new DummyConfigFactory();
+		//	foreach (var type in factory.SupportedTypes!)
+		//	{
+		//		var mapType = type is null ? typeof(void): type.IsGenericType ? type.GetGenericTypeDefinition(): type;
+		//		__factoryMap.Add(mapType, new IFactory[] { factory });
+		//	}
+		//	factory = new DummyLoggingFactory();
+		//	foreach (var type in factory.SupportedTypes!)
+		//	{
+		//		var mapType = type is null ? typeof(void): type.IsGenericType ? type.GetGenericTypeDefinition(): type;
+		//		__factoryMap.Add(mapType, new IFactory[] { factory });
+		//	}
+		//}
 
 		public static void AddFactory(IFactory? factory)
 		{
@@ -113,10 +112,10 @@ namespace Lexxys
 			return false;
 		}
 
-		public static T? TryCreete<T>(params object?[]? arguments) where T: class
+		public static T? TryCreate<T>(params object?[]? arguments) where T: class
 			=> TryCreate<T>(arguments, out var result) ? result: default;
 
-		public static object? TryCreete(Type serviceType, params object?[] arguments)
+		public static object? TryCreate(Type serviceType, params object?[] arguments)
 			=> TryCreate(serviceType, arguments, out var obj) ? obj: null;
 
 		public static object Create(Type serviceType, params object?[]? arguments)
@@ -150,17 +149,17 @@ namespace Lexxys
 
 		public static void AddConfigurationFactory(IConfiguration configuration) => AddFactory(MsConfigFactory.CreateFactory(configuration));
 
-		#endregion
-
-		#region IFactory implementation for the specific services
-
 		public struct LoggingFactoryFacade
 		{
 			public ILogging Create(string name) => StaticServices.Create<ILogging>(name);
-			public ILogging? TryCreate(string name) => StaticServices.TryCreete<ILogging>(name);
+			public ILogging? TryCreate(string name) => StaticServices.TryCreate<ILogging>(name);
 			public ILogging<T> Create<T>() => StaticServices.Create<ILogging<T>>();
-			public ILogging? TryCreate<T>() => StaticServices.TryCreete<ILogging<T>>();
+			public ILogging? TryCreate<T>() => StaticServices.TryCreate<ILogging<T>>();
 		}
+
+		#endregion
+
+		#region IFactory implementation for the specific services
 
 		//class InternalLoggerFactory : IFactory
 		//{
@@ -340,105 +339,105 @@ namespace Lexxys
 
 		#region Logging and Config stub
 
-		private class DummyLoggingFactory: IFactory
-		{
-			public IReadOnlyCollection<Type> SupportedTypes => _supportedTypes;
-			private readonly Type[] _supportedTypes = new Type[] { typeof(ILogger), typeof(ILogger<>), typeof(ILogging), typeof(ILogging<>) };
+		//private class DummyLoggingFactory: IFactory
+		//{
+		//	public IReadOnlyCollection<Type> SupportedTypes => _supportedTypes;
+		//	private readonly Type[] _supportedTypes = new Type[] { typeof(ILogger), typeof(ILogger<>), typeof(ILogging), typeof(ILogging<>) };
 
-			public bool TryCreate(Type type, object?[]? arguments, [MaybeNullWhen(false)] out object result)
-			{
-				if (type.IsAssignableFrom(typeof(ILogging)))
-				{
-					result = DummyLogging.Instance;
-					return true;
-				}
-				if (!type.IsGenericType)
-				{
-					result = null;
-					return false;
-				}
-				var generic = type.GetGenericTypeDefinition();
-				if (type == typeof(ILogging<>) || type == typeof(ILogger<>))
-					result = type.GetField("Instance", System.Reflection.BindingFlags.Static)?.GetValue(null);
-				else
-					result = null;
-				return result != null;
-			}
-		}
+		//	public bool TryCreate(Type type, object?[]? arguments, [MaybeNullWhen(false)] out object result)
+		//	{
+		//		if (type.IsAssignableFrom(typeof(ILogging)))
+		//		{
+		//			result = DummyLogging.Instance;
+		//			return true;
+		//		}
+		//		if (!type.IsGenericType)
+		//		{
+		//			result = null;
+		//			return false;
+		//		}
+		//		var generic = type.GetGenericTypeDefinition();
+		//		if (type == typeof(ILogging<>) || type == typeof(ILogger<>))
+		//			result = type.GetField("Instance", System.Reflection.BindingFlags.Static)?.GetValue(null);
+		//		else
+		//			result = null;
+		//		return result != null;
+		//	}
+		//}
 
-		private class DummyConfigFactory: IFactory
-		{
-			public IReadOnlyCollection<Type> SupportedTypes => _supportedTypes;
-			private readonly Type[] _supportedTypes = new Type[] { typeof(IConfigSection) };
+		//private class DummyConfigFactory: IFactory
+		//{
+		//	public IReadOnlyCollection<Type> SupportedTypes => _supportedTypes;
+		//	private readonly Type[] _supportedTypes = new Type[] { typeof(IConfigSection) };
 
-			public bool TryCreate(Type type, object?[]? arguments, [MaybeNullWhen(false)] out object result)
-			{
-				if (type.IsAssignableFrom(typeof(IConfigSection)))
-					result = DummyConfigSection.Instance;
-				else
-					result = null;
-				return result != null;
-			}
-		}
+		//	public bool TryCreate(Type type, object?[]? arguments, [MaybeNullWhen(false)] out object result)
+		//	{
+		//		if (type.IsAssignableFrom(typeof(IConfigSection)))
+		//			result = DummyConfigSection.Instance;
+		//		else
+		//			result = null;
+		//		return result != null;
+		//	}
+		//}
 
-		private class DummyLogging<T>: DummyLogging, ILogging<T>
-		{
-			public static new readonly ILogging<T> Instance = new DummyLogging<T>();
+		//private class DummyLogging<T>: DummyLogging, ILogging<T>
+		//{
+		//	public static new readonly ILogging<T> Instance = new DummyLogging<T>();
 
-			private DummyLogging()
-			{
-			}
-		}
+		//	private DummyLogging()
+		//	{
+		//	}
+		//}
 
-		private class DummyLogging: ILogging
-		{
-			public static readonly ILogging Instance = new DummyLogging();
+		//private class DummyLogging: ILogging
+		//{
+		//	public static readonly ILogging Instance = new DummyLogging();
 
-			protected DummyLogging()
-			{
-			}
+		//	protected DummyLogging()
+		//	{
+		//	}
 
-			public string Source => "Dummy";
+		//	public string Source => "Dummy";
 
-			public IDisposable BeginScope<TState>(TState state) => default!;
+		//	public IDisposable BeginScope<TState>(TState state) => default!;
 
-			public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => default;
+		//	public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => default;
 
-			public bool IsEnabled(LogType logType) => false;
+		//	public bool IsEnabled(LogType logType) => false;
 
-			public bool IsEnabled(LogLevel logLevel) => false;
+		//	public bool IsEnabled(LogLevel logLevel) => false;
 
-			public void Log(LogRecord record) { }
+		//	public void Log(LogRecord record) { }
 
-			public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
+		//	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
 
-			public IDisposable? Timing(LogType logType, string? description, TimeSpan threshold) => default;
-		}
+		//	public IDisposable? Timing(LogType logType, string? description, TimeSpan threshold) => default;
+		//}
 
-		private class DummyConfigSection: IConfigSection
-		{
-			public static readonly IConfigSection Instance = new DummyConfigSection();
+		//private class DummyConfigSection: IConfigSection
+		//{
+		//	public static readonly IConfigSection Instance = new DummyConfigSection();
 
-			private DummyConfigSection()
-			{
-			}
+		//	private DummyConfigSection()
+		//	{
+		//	}
 
-			public int Version => 0;
+		//	public int Version => 0;
 
-			public event EventHandler<ConfigurationEventArgs>? Changed;
+		//	public event EventHandler<ConfigurationEventArgs>? Changed;
 
-			public IValue<IReadOnlyList<T>> GetCollection<T>(string? key) => (Ref<IReadOnlyList<T>>)Array.Empty<T>();
+		//	public IValue<IReadOnlyList<T>> GetCollection<T>(string? key) => (Ref<IReadOnlyList<T>>)Array.Empty<T>();
 
-			public IConfigSection GetSection(string? key) => this;
+		//	public IConfigSection GetSection(string? key) => this;
 
-			public IValue<T> GetValue<T>(string? key, Func<T>? defaultValue = null) => (Ref<T>)(defaultValue is null ? default!: defaultValue());
+		//	public IValue<T> GetValue<T>(string? key, Func<T>? defaultValue = null) => (Ref<T>)(defaultValue is null ? default!: defaultValue());
 
-			public void MapPath(string key, string value) { }
+		//	public void MapPath(string key, string value) { }
 
-			public void SetCollection<T>(string? key, IReadOnlyList<T> value) { }
+		//	public void SetCollection<T>(string? key, IReadOnlyList<T> value) { }
 
-			public void SetValue<T>(string? key, T value) { }
-		}
+		//	public void SetValue<T>(string? key, T value) { }
+		//}
 
 		#endregion
 	}

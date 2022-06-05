@@ -8,61 +8,49 @@ using System;
 using System.IO;
 using System.Text;
 
-#nullable enable
+namespace Lexxys.Logging;
 
-namespace Lexxys.Logging
+public interface ILogRecordFormatter
 {
-	public interface ILogRecordFormatter
+	void Format(TextWriter writer, LogRecord record);
+}
+
+public static class LogRecordFormatterExtensions
+{
+	public static TextWriter Write(this TextWriter writer, LogRecord record, ILogRecordFormatter format)
 	{
-		TextWriter Format(TextWriter writer, LogRecord? record);
+		if (writer == null)
+			throw new ArgumentNullException(nameof(writer));
+		if (record is null)
+			throw new ArgumentNullException(nameof(record));
+		if (format == null)
+			throw new ArgumentNullException(nameof(format));
+		format.Format(writer, record);
+		return writer;
 	}
 
-	public static class LogRecordFormatter
+	public static StringBuilder Format(this ILogRecordFormatter formatter, StringBuilder? text, LogRecord record)
 	{
-		public static readonly ILogRecordFormatter NullFormatter = new NullLogRecordFormatter();
-
-		class NullLogRecordFormatter : ILogRecordFormatter
-		{
-			public TextWriter Format(TextWriter writer, LogRecord? record) => writer;
-		}
+		if (formatter == null)
+			throw new ArgumentNullException(nameof(formatter));
+		if (record is null)
+			throw new ArgumentNullException(nameof(record));
+		if (text == null)
+			text = new StringBuilder();
+		using (var s = new StringWriter(text))
+			formatter.Format(s, record);
+		return text;
 	}
 
-	public static class LogRecordFormatterExtensions
+	public static string Format(this ILogRecordFormatter formatter, LogRecord record)
 	{
-		public static TextWriter Write(this TextWriter writer, LogRecord? record, ILogRecordFormatter format)
-		{
-			if (writer == null)
-				throw new ArgumentNullException(nameof(writer));
-			if (record == null)
-				return writer;
-			if (format == null)
-				throw new ArgumentNullException(nameof(format));
-			return format.Format(writer, record);
-		}
-
-		public static StringBuilder Format(this ILogRecordFormatter formatter, StringBuilder? text, LogRecord? record)
-		{
-			if (text == null)
-				text = new StringBuilder();
-			if (record == null)
-				return text;
-			if (formatter == null)
-				throw new ArgumentNullException(nameof(formatter));
-			using (var s = new StringWriter(text))
-				formatter.Format(s, record);
-			return text;
-		}
-
-		public static string Format(this ILogRecordFormatter formatter, LogRecord? record)
-		{
-			if (record == null)
-				return String.Empty;
-			if (formatter == null)
-				throw new ArgumentNullException(nameof(formatter));
-			var text = new StringBuilder();
-			using (var s = new StringWriter(text))
-				formatter.Format(s, record);
-			return text.ToString();
-		}
+		if (formatter == null)
+			throw new ArgumentNullException(nameof(formatter));
+		if (record is null)
+			throw new ArgumentNullException(nameof(record));
+		var text = new StringBuilder();
+		using (var s = new StringWriter(text))
+			formatter.Format(s, record);
+		return text.ToString();
 	}
 }

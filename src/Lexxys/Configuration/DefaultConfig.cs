@@ -20,8 +20,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Configuration
 {
-	using Logging;
-
 	internal class DefaultConfig
 	{
 		private const bool CachingDefault = false;
@@ -215,7 +213,7 @@ namespace Lexxys.Configuration
 				flaw = flaw.Unwrap();
 				flaw.Add("locaion", location);
 				if (__log == null)
-					Logger.WriteErrorMessage($"ERROR: Cannot load configuration {location?.ToString() ?? "(null)"}.", flaw);
+					SystemLog.WriteErrorMessage($"ERROR: Cannot load configuration {location?.ToString() ?? "(null)"}.", flaw);
 				else
 					__log.Error(nameof(AddConfiguration), flaw.Add(nameof(location), location));
 				return (null, false);
@@ -333,8 +331,8 @@ namespace Lexxys.Configuration
 
 		internal static void OnLoggerInitialized()
 		{
-			if (__log == null)
-				SetLogger(new Logger(LogSource));
+			//if (__log == null)
+			//	SetLogger(new Logger(LogSource));
 		}
 
 		public static void SetLogger(ILogger logger)

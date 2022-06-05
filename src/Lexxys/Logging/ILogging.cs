@@ -6,15 +6,24 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys
 {
-	using Logging;
+	public enum LogType
+	{
+		Output = 0,
+		Error = 1,
+		Warning = 2,
+		Information = 3,
+		Trace = 4,
+		Debug = 5,
+		MaxValue = Debug
+	}
 
 	public interface ILogging: ILogger
 	{
 		string Source { get; }
 		bool IsEnabled(LogType logType);
-		void Log(LogRecord record);
-		IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args);
-		IDisposable? Timing(LogType logType, string? description, TimeSpan threshold);
+		void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IDictionary? args);
+		IDisposable? Enter(LogType logType, string? section, IDictionary? args);
+		IDisposable? Timing(LogType logType, string? section, TimeSpan threshold);
 
 #if NET5_0_OR_GREATER
 		void ILogger.Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string?>? formatter)

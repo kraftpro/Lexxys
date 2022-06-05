@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 #nullable enable
 
-namespace Lexxys.Extensions
+namespace Lexxys
 {
 	public static class UriExtensions
 	{

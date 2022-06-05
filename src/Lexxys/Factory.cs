@@ -228,10 +228,7 @@ namespace Lexxys
 			}
 			catch (Exception flaw)
 			{
-				var logRecord = new Logging.LogRecord(Logging.LogType.Warning, "Lexxys.Factory.TryLoadAssembly", flaw);
-				logRecord.Add("assemblyName", assemblyName);
-				logRecord.Add("file", file);
-				Logging.LogWriter.WriteEventLogMessage(logRecord);
+                SystemLog.WriteErrorMessage("Lexxys.Factory.TryLoadAssembly", flaw, new OrderedBag<string, object> { { "assemblyName", assemblyName }, { "file", file } });
 				if (throwOnError)
 					throw;
 				return null;

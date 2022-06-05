@@ -6,17 +6,15 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using Lexxys.Configuration;
-using Lexxys.Extensions;
-using Lexxys.Xml;
 
 #nullable enable
 
 namespace Lexxys.Data
 {
+	using Xml;
+
 	/// <summary>
 	/// Provides information about connection to database and commands behaviours.
 	/// </summary>

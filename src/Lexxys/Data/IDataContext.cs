@@ -21,7 +21,7 @@ namespace Lexxys.Data
 	public interface IDataContext: IDisposable
 	{
 		TimeSpan ConnectTime { get; }
-		bool InTransation { get; }
+		bool InTransaction { get; }
 		DateTime Now { get; }
 		TimeSpan QueryTime { get; }
 		DateTime Time { get; }

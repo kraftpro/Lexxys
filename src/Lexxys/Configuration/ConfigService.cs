@@ -80,7 +80,7 @@ namespace Lexxys.Configuration
 			_cache.Clear();
 			Changed?.Invoke(sender, e);
 			if (sender is IConfigProvider provider)
-				StaticServices.TryCreete<ILogger>(LogSource)?.Trace(SR.ConfigurationChanged(provider));
+				StaticServices.TryCreate<ILogger>(LogSource)?.Trace(SR.ConfigurationChanged(provider));
 		}
 
 		public IReadOnlyList<T> GetList<T>(string key)

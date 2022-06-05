@@ -230,7 +230,7 @@ namespace Lexxys.RL
 		{
 			return SchemeParsers.Select(o => o.Analyze(value))
 				.Where(o => o.Score >= minimalVote)
-				.OrderByDescending(o => o.Score.Value);
+				.OrderByDescending(o => o.Score);
 		}
 
 		private static string ExtractScheme(string value, out string locatorValue)

@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{3D2BC3C9-1
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Testing", "src\Lexxys.Testing\Lexxys.Testing.csproj", "{C90D61D0-C13F-49EC-B9DA-924CBDCD694A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Logging", "src\Lexxis.Logging\Lexxys.Logging.csproj", "{10E2464E-62E4-4F7F-9CA3-1939B835C538}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,10 @@ Global
 		{C90D61D0-C13F-49EC-B9DA-924CBDCD694A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C90D61D0-C13F-49EC-B9DA-924CBDCD694A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C90D61D0-C13F-49EC-B9DA-924CBDCD694A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10E2464E-62E4-4F7F-9CA3-1939B835C538}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10E2464E-62E4-4F7F-9CA3-1939B835C538}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10E2464E-62E4-4F7F-9CA3-1939B835C538}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10E2464E-62E4-4F7F-9CA3-1939B835C538}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

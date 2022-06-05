@@ -5,8 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Lexxys.Logging;
-
 using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Tests
@@ -93,9 +91,8 @@ namespace Lexxys.Tests
 				throw new NotImplementedException();
 			}
 
-			public void Log(LogRecord record)
+			public void Log(LogType logType, int eventId, string source, string message, Exception exception, IDictionary args)
 			{
-				//_logger.Log(LoggingTools.ToLogLevel(record.LogType), record.Message;
 				throw new NotImplementedException();
 			}
 

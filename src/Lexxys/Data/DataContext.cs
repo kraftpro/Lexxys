@@ -71,7 +71,7 @@ namespace Lexxys.Data
 
 		public ICommitAction SetCommitAction(object key, Func<ICommitAction> factory) => _context.SetCommitAction(key, factory);
 
-		public bool InTransation => _context.TransactionsCount > 0;
+		public bool InTransaction => _context.TransactionsCount > 0;
 
 		public DateTime Time => _context.Time;
 

@@ -12,9 +12,9 @@ using System.Text;
 
 #nullable enable
 
-namespace Lexxys.RL
+namespace Lexxys
 {
-	public readonly struct VoteScore: IEquatable<VoteScore>
+	public readonly struct VoteScore: IEquatable<VoteScore>, IComparable<VoteScore>
 	{
 		//private const float MaxScoreValue = 1.0f;
 		//private const float ScoreValueEpsilon = 5.960465e-8f;
@@ -23,84 +23,45 @@ namespace Lexxys.RL
 		public static readonly VoteScore MinValue = new VoteScore(0);
 		public static readonly VoteScore MaxValue = new VoteScore(MaxScoreValue);
 
+		private readonly int _value;
+
 		private VoteScore(int value)
 		{
-			Value = value < 0 ? 0: value > MaxScoreValue ? MaxScoreValue: value;
+			_value = value < 0 ? 0 : value > MaxScoreValue ? MaxScoreValue : value;
 		}
 
-		public int Value { get; }
+		public double Value => (double) _value / MaxScoreValue;
 
-		[Pure]
 		public VoteScore AndMore()
-		{
-			return Value + ScoreValueEpsilon >= MaxScoreValue ? this: new VoteScore(Value + ScoreValueEpsilon);
-		}
+			=> _value + ScoreValueEpsilon >= MaxScoreValue ? this : new VoteScore(_value + ScoreValueEpsilon);
 
-		[Pure]
 		public VoteScore AndMore(int multiplier)
-		{
-			return multiplier <= 0 ? this: new VoteScore(Value + multiplier * ScoreValueEpsilon > MaxScoreValue ? MaxScoreValue - ScoreValueEpsilon: Value + multiplier * ScoreValueEpsilon);
-		}
+			=> multiplier <= 0 ? this : new VoteScore(_value + multiplier * ScoreValueEpsilon > MaxScoreValue ? MaxScoreValue - ScoreValueEpsilon : _value + multiplier * ScoreValueEpsilon);
 
-		[Pure]
 		public VoteScore AndLess()
-		{
-			return Value - ScoreValueEpsilon <= 0 ? this: new VoteScore(Value - ScoreValueEpsilon);
-		}
+			=> _value - ScoreValueEpsilon <= 0 ? this : new VoteScore(_value - ScoreValueEpsilon);
 
-		[Pure]
 		public VoteScore AndLess(int multiplier)
-		{
-			return multiplier <= 0 ? this: new VoteScore(Value - multiplier * ScoreValueEpsilon <= 0 ? ScoreValueEpsilon: Value - multiplier * ScoreValueEpsilon);
-		}
+			=> multiplier <= 0 ? this : new VoteScore(_value - multiplier * ScoreValueEpsilon <= 0 ? ScoreValueEpsilon : _value - multiplier * ScoreValueEpsilon);
 
-		public static bool operator ==(VoteScore left, VoteScore right)
-		{
-			return left.Value == right.Value;
-		}
-		public static bool operator !=(VoteScore left, VoteScore right)
-		{
-			return left.Value != right.Value;
-		}
-		public static bool operator >(VoteScore left, VoteScore right)
-		{
-			return left.Value > right.Value;
-		}
-		public static bool operator >=(VoteScore left, VoteScore right)
-		{
-			return left.Value >= right.Value;
-		}
-		public static bool operator <(VoteScore left, VoteScore right)
-		{
-			return left.Value < right.Value;
-		}
-		public static bool operator <=(VoteScore left, VoteScore right)
-		{
-			return left.Value <= right.Value;
-		}
+		public static bool operator ==(VoteScore left, VoteScore right) => left._value == right._value;
+		public static bool operator !=(VoteScore left, VoteScore right) => left._value != right._value;
+		public static bool operator >(VoteScore left, VoteScore right) => left._value > right._value;
+		public static bool operator >=(VoteScore left, VoteScore right) => left._value >= right._value;
+		public static bool operator <(VoteScore left, VoteScore right) => left._value < right._value;
+		public static bool operator <=(VoteScore left, VoteScore right) => left._value <= right._value;
 
-		public static VoteScore operator +(VoteScore left, VoteScore right)
-		{
-			return new VoteScore((left.Value + right.Value) / 2);
-		}
+		public static VoteScore operator +(VoteScore left, VoteScore right) => new VoteScore((left._value + right._value) / 2);
 
-		public static int Compare(VoteScore left, VoteScore right)
-		{
-			return left.Value < right.Value ? -1:
-				left.Value > right.Value ? 1: 0;
-		}
+		public override bool Equals(object? obj) => obj is VoteScore score && _value == score._value;
 
-		public override bool Equals(object? obj)
-		{
-			return obj is VoteScore score && Value == score.Value;
-		}
+		public bool Equals(VoteScore other) => _value == other._value;
 
-		public bool Equals(VoteScore other) => Value == other.Value;
+		public override int GetHashCode() => _value.GetHashCode();
 
-		public override int GetHashCode()
-		{
-			return Value.GetHashCode();
-		}
+		public override string ToString() => Value.ToString();
+
+		public int CompareTo(VoteScore other) => _value.CompareTo(other._value);
 
 		public static readonly VoteScore Yes = new VoteScore(MaxScoreValue);
 		public static readonly VoteScore No = new VoteScore(0);

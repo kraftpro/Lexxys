@@ -3,8 +3,6 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-using Lexxys.Logging;
-
 using Microsoft.Extensions.Logging;
 
 #nullable enable
@@ -69,13 +67,14 @@ namespace Lexxys
 		public static bool TraceEnabled(this ILogger logger) => logger.IsEnabled(LogLevel.Trace);
 
 		#region Trace
+		//.?
 
 		public static void Trace(this ILogger logger, string? source, string? message, Exception? exception, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Trace(source, message, exception, args);
 			else if (logger.IsEnabled(LogLevel.Trace))
-				logger.Log(Type2Level(LogType.Trace), 0, new TState(source, message, args), exception, TState.Formatter);
+				logger.Log(LogLevel.Trace, 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
 		public static void Trace(this ILogger logger, string? source, Exception exception)
@@ -86,7 +85,7 @@ namespace Lexxys
 				logger.Log(LogLevel.Trace, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
-		public static void Trace(this ILogger logger, string message, IDictionary args)
+		public static void Trace(this ILogger logger, string message, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Trace(message, args);
@@ -126,14 +125,6 @@ namespace Lexxys
 				logger.Log(LogLevel.Trace, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
-		public static void Trace(this ILogger logger, string message, params object[] args)
-		{
-			if (logger is ILogging log)
-				log.Trace(message, args);
-			else if (logger.IsEnabled(LogLevel.Trace))
-				logger.Log(LogLevel.Trace, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
-		}
-
 		public static void Trace(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
 		{
 			if (logger is ILogging log)
@@ -153,7 +144,7 @@ namespace Lexxys
 		{
 			return
 				logger is ILogging log ? log.TraceEnter(message, args):
-				logger.IsEnabled(LogLevel.Trace) ? logger.BeginScope(new TState(null, message, LogRecord.Args(args))): null;
+				logger.IsEnabled(LogLevel.Trace) ? logger.BeginScope(new TState(null, message, Args(args))): null;
 		}
 
 		public static IDisposable? TraceTiming(this ILogger logger, string? description, TimeSpan threshold = default)
@@ -161,16 +152,18 @@ namespace Lexxys
 			return logger is ILogging log ? log.TraceTiming(description, threshold): null;
 		}
 
+		//.?$X = above("LogLevel.Trace", "TraceTiming", "TraceEnter", "Trace");
 		#endregion
 
 		#region Debug
+		//.#back($X, "LogLevel.Debug", "DebugTiming", "DebugEnter", "Debug")
 
 		public static void Debug(this ILogger logger, string? source, string? message, Exception? exception, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Debug(source, message, exception, args);
 			else if (logger.IsEnabled(LogLevel.Debug))
-				logger.Log(Type2Level(LogType.Debug), 0, new TState(source, message, args), exception, TState.Formatter);
+				logger.Log(LogLevel.Debug, 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
 		public static void Debug(this ILogger logger, string? source, Exception exception)
@@ -181,7 +174,7 @@ namespace Lexxys
 				logger.Log(LogLevel.Debug, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
-		public static void Debug(this ILogger logger, string message, IDictionary args)
+		public static void Debug(this ILogger logger, string message, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Debug(message, args);
@@ -221,14 +214,6 @@ namespace Lexxys
 				logger.Log(LogLevel.Debug, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
-		public static void Debug(this ILogger logger, string message, params object[] args)
-		{
-			if (logger is ILogging log)
-				log.Debug(message, args);
-			else if (logger.IsEnabled(LogLevel.Debug))
-				logger.Log(LogLevel.Debug, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
-		}
-
 		public static void Debug(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
 		{
 			if (logger is ILogging log)
@@ -248,7 +233,7 @@ namespace Lexxys
 		{
 			return
 				logger is ILogging log ? log.DebugEnter(message, args):
-				logger.IsEnabled(LogLevel.Debug) ? logger.BeginScope(new TState(null, message, LogRecord.Args(args))): null;
+				logger.IsEnabled(LogLevel.Debug) ? logger.BeginScope(new TState(null, message, Args(args))): null;
 		}
 
 		public static IDisposable? DebugTiming(this ILogger logger, string? description, TimeSpan threshold = default)
@@ -256,16 +241,18 @@ namespace Lexxys
 			return logger is ILogging log ? log.DebugTiming(description, threshold): null;
 		}
 
+		//.=cut
 		#endregion
 
-		#region Information
+		#region Info
+		//.#back($X, "LogLevel.Information", "InfoTiming", "InfoEnter", "Info")
 
 		public static void Info(this ILogger logger, string? source, string? message, Exception? exception, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Info(source, message, exception, args);
 			else if (logger.IsEnabled(LogLevel.Information))
-				logger.Log(Type2Level(LogType.Information), 0, new TState(source, message, args), exception, TState.Formatter);
+				logger.Log(LogLevel.Information, 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
 		public static void Info(this ILogger logger, string? source, Exception exception)
@@ -276,7 +263,7 @@ namespace Lexxys
 				logger.Log(LogLevel.Information, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
-		public static void Info(this ILogger logger, string message, IDictionary args)
+		public static void Info(this ILogger logger, string message, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Info(message, args);
@@ -316,14 +303,6 @@ namespace Lexxys
 				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
-		public static void Info(this ILogger logger, string message, params object[] args)
-		{
-			if (logger is ILogging log)
-				log.Info(message, args);
-			else if (logger.IsEnabled(LogLevel.Information))
-				logger.Log(LogLevel.Information, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
-		}
-
 		public static void Info(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
 		{
 			if (logger is ILogging log)
@@ -343,7 +322,7 @@ namespace Lexxys
 		{
 			return
 				logger is ILogging log ? log.InfoEnter(message, args):
-				logger.IsEnabled(LogLevel.Information) ? logger.BeginScope(new TState(null, message, LogRecord.Args(args))): null;
+				logger.IsEnabled(LogLevel.Information) ? logger.BeginScope(new TState(null, message, Args(args))): null;
 		}
 
 		public static IDisposable? InfoTiming(this ILogger logger, string? description, TimeSpan threshold = default)
@@ -351,16 +330,18 @@ namespace Lexxys
 			return logger is ILogging log ? log.InfoTiming(description, threshold): null;
 		}
 
+		//.=cut
 		#endregion
 
 		#region Warning
+		//.#back($X, "LogLevel.Warning", "WarningTiming", "WarningEnter", "Warning")
 
 		public static void Warning(this ILogger logger, string? source, string? message, Exception? exception, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Warning(source, message, exception, args);
 			else if (logger.IsEnabled(LogLevel.Warning))
-				logger.Log(Type2Level(LogType.Warning), 0, new TState(source, message, args), exception, TState.Formatter);
+				logger.Log(LogLevel.Warning, 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
 		public static void Warning(this ILogger logger, string? source, Exception exception)
@@ -371,7 +352,7 @@ namespace Lexxys
 				logger.Log(LogLevel.Warning, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
-		public static void Warning(this ILogger logger, string message, IDictionary args)
+		public static void Warning(this ILogger logger, string message, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Warning(message, args);
@@ -411,14 +392,6 @@ namespace Lexxys
 				logger.Log(LogLevel.Warning, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
-		public static void Warning(this ILogger logger, string message, params object[] args)
-		{
-			if (logger is ILogging log)
-				log.Warning(message, args);
-			else if (logger.IsEnabled(LogLevel.Warning))
-				logger.Log(LogLevel.Warning, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
-		}
-
 		public static void Warning(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
 		{
 			if (logger is ILogging log)
@@ -438,7 +411,7 @@ namespace Lexxys
 		{
 			return
 				logger is ILogging log ? log.WarningEnter(message, args):
-				logger.IsEnabled(LogLevel.Warning) ? logger.BeginScope(new TState(null, message, LogRecord.Args(args))): null;
+				logger.IsEnabled(LogLevel.Warning) ? logger.BeginScope(new TState(null, message, Args(args))): null;
 		}
 
 		public static IDisposable? WarningTiming(this ILogger logger, string? description, TimeSpan threshold = default)
@@ -446,16 +419,18 @@ namespace Lexxys
 			return logger is ILogging log ? log.WarningTiming(description, threshold): null;
 		}
 
+		//.=cut
 		#endregion
 
 		#region Error
+		//.#back($X, "LogLevel.Error", "ErrorTiming", "ErrorEnter", "Error")
 
 		public static void Error(this ILogger logger, string? source, string? message, Exception? exception, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Error(source, message, exception, args);
 			else if (logger.IsEnabled(LogLevel.Error))
-				logger.Log(Type2Level(LogType.Error), 0, new TState(source, message, args), exception, TState.Formatter);
+				logger.Log(LogLevel.Error, 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
 		public static void Error(this ILogger logger, string? source, Exception exception)
@@ -466,7 +441,7 @@ namespace Lexxys
 				logger.Log(LogLevel.Error, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
-		public static void Error(this ILogger logger, string message, IDictionary args)
+		public static void Error(this ILogger logger, string message, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Error(message, args);
@@ -506,14 +481,6 @@ namespace Lexxys
 				logger.Log(LogLevel.Error, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
-		public static void Error(this ILogger logger, string message, params object[] args)
-		{
-			if (logger is ILogging log)
-				log.Error(message, args);
-			else if (logger.IsEnabled(LogLevel.Error))
-				logger.Log(LogLevel.Error, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
-		}
-
 		public static void Error(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
 		{
 			if (logger is ILogging log)
@@ -533,7 +500,7 @@ namespace Lexxys
 		{
 			return
 				logger is ILogging log ? log.ErrorEnter(message, args):
-				logger.IsEnabled(LogLevel.Error) ? logger.BeginScope(new TState(null, message, LogRecord.Args(args))): null;
+				logger.IsEnabled(LogLevel.Error) ? logger.BeginScope(new TState(null, message, Args(args))): null;
 		}
 
 		public static IDisposable? ErrorTiming(this ILogger logger, string? description, TimeSpan threshold = default)
@@ -541,9 +508,11 @@ namespace Lexxys
 			return logger is ILogging log ? log.ErrorTiming(description, threshold): null;
 		}
 
+		//.=cut
 		#endregion
 
 		#region Write
+		//.#back($X, "LogLevel.Information", "Timing", "Enter", "Write")
 
 		public static void Write(this ILogger logger, string? source, string? message, Exception? exception, IDictionary? args)
 		{
@@ -561,7 +530,7 @@ namespace Lexxys
 				logger.Log(LogLevel.Information, 0, new TState(source, null, null), null, TState.Formatter);
 		}
 
-		public static void Write(this ILogger logger, string message, IDictionary args)
+		public static void Write(this ILogger logger, string message, IDictionary? args)
 		{
 			if (logger is ILogging log)
 				log.Write(message, args);
@@ -601,14 +570,6 @@ namespace Lexxys
 				logger.Log(LogLevel.Information, 0, new TState(null, message, new OrderedBag<string, object?>(3) { { arg1Name, arg1Value }, { arg2Name, arg2Value }, { arg3Name, arg3Value } }), null, TState.Formatter);
 		}
 
-		public static void Write(this ILogger logger, string message, params object[] args)
-		{
-			if (logger is ILogging log)
-				log.Write(message, args);
-			else if (logger.IsEnabled(LogLevel.Information))
-				logger.Log(LogLevel.Information, 0, new TState(null, message, LogRecord.Args(args)), null, TState.Formatter);
-		}
-
 		public static void Write(this ILogger logger, Func<string> message, Func<IDictionary>? args = null)
 		{
 			if (logger is ILogging log)
@@ -619,19 +580,24 @@ namespace Lexxys
 
 		public static IDisposable? Enter(this ILogger logger, string? message, IDictionary? args = null)
 		{
-			return logger is ILogging log ? log.TraceEnter(message, args): logger.BeginScope(new TState(null, message, args));
+			return
+				logger is ILogging log ? log.Enter(message, args):
+				logger.IsEnabled(LogLevel.Information) ? logger.BeginScope(new TState(null, message, args)): null;
 		}
 
 		public static IDisposable? Enter(this ILogger logger, string? message, params object[] args)
 		{
-			return logger is ILogging log ? log.TraceEnter(message, args): logger.BeginScope(new TState(null, message, LogRecord.Args(args)));
+			return
+				logger is ILogging log ? log.Enter(message, args):
+				logger.IsEnabled(LogLevel.Information) ? logger.BeginScope(new TState(null, message, Args(args))): null;
 		}
 
 		public static IDisposable? Timing(this ILogger logger, string? description, TimeSpan threshold = default)
 		{
-			return logger is ILogging log ? log.Timing(description, threshold) : null;
+			return logger is ILogging log ? log.Timing(description, threshold): null;
 		}
 
+		//.=cut
 		#endregion
 
 		#region Implementation
@@ -701,5 +667,21 @@ namespace Lexxys
 			};
 
 		#endregion
+
+		public static IDictionary? Args(params object?[] args)
+		{
+			if (args == null || args.Length == 0)
+				return null;
+
+			var arg = new OrderedBag<string, object?>((args.Length + 1) / 2);
+			int count = args.Length & ~1;
+			for (int i = 0; i < count; i += 2)
+			{
+				arg.Add(args[i]?.ToString() ?? "null", args[i + 1]);
+			}
+			if (count < args.Length && args[count] != null)
+				arg.Add(args[count]!.ToString()!, null);
+			return arg;
+		}
 	}
 }

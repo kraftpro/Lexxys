@@ -16,6 +16,7 @@ using System.Runtime.InteropServices;
 
 [assembly: InternalsVisibleTo("LexxysTest")]
 [assembly: InternalsVisibleTo("TestPizza")]
+[assembly: InternalsVisibleTo("Lexxys.Logging")]
 [assembly: InternalsVisibleTo("Lexxys.Tests")]
 [assembly: InternalsVisibleTo("Lexxys.Tests.Core")]
 [assembly: InternalsVisibleTo("Lexxys.Explorables")]

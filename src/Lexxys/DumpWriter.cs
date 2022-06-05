@@ -1129,6 +1129,7 @@ namespace Lexxys
 		{
 			if (Format)
 				Text(Environment.NewLine + Repeat(Tab, Depth));
+			Console.WriteLine();
 			return this;
 		}
 
