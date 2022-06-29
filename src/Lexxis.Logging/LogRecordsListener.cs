@@ -8,8 +8,11 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
+
+using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Logging;
 
@@ -73,6 +76,49 @@ public static class LogRecordsService
 	internal static ILogRecordWriter GetLogRecordWriter(string source) => new LogRecordWriter(source, LogRecordWritersMap.Empty);
 
 	public static bool Initialize() => LoggingContext.Initialize();
+
+	public static void RegisterFactory()
+	{
+		if (!_registered)
+		{
+			_registered = true;
+			StaticServices.AddFactory(LoggerFactory.Instance);
+		}
+	}
+	private static bool _registered;
+
+	class LoggerFactory: StaticServices.IFactory
+	{
+		public static readonly StaticServices.IFactory Instance = new LoggerFactory();
+
+		public IReadOnlyCollection<Type> SupportedTypes => _supportedTypes;
+		private readonly Type[] _supportedTypes = new Type[] { typeof(ILogger), typeof(ILogger<>), typeof(ILogging), typeof(ILogging<>) };
+
+		public bool TryCreate(Type type, object?[]? arguments, [MaybeNullWhen(false)] out object result)
+		{
+			result = null!;
+			if (type.IsGenericType)
+			{
+				var generic = type.GetGenericTypeDefinition();
+				if (generic == typeof(ILogging<>) || generic == typeof(ILogger<>))
+				{
+					var loggerType = typeof(Logger<>).MakeGenericType(type.GetGenericArguments());
+					result = Activator.CreateInstance(loggerType);
+				}
+
+			}
+			else
+			{
+				if (type == typeof(ILogging) || type == typeof(ILogger))
+				{
+					var arg = arguments?.Length > 0 && arguments[0] != null ? arguments[0]!.ToString(): null;
+					result = new Logger(arg ?? "*");
+					return true;
+				}
+			}
+			return result != null;
+		}
+	}
 
 	class InstanceCollection
 	{

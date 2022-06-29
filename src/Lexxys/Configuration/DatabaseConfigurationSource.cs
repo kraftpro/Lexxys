@@ -36,6 +36,8 @@ namespace Lexxys.Configuration
 
 		public Uri Location => _location;
 
+		public int Version => 1;
+
 		public IReadOnlyList<XmlLiteNode> Content => _content;
 
 		public event EventHandler<ConfigurationEventArgs>? Changed

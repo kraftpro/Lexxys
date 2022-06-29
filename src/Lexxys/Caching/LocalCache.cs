@@ -172,7 +172,7 @@ namespace Lexxys
 			dirty.Sort((p, q) => -CompareItems(p.Value, q.Value));
 			int n1 = dirty.Count / 4;
 			if (_name != null)
-				Lxx.Log.Trace($"LocalCache '{_name}' capacity ({_capacity}) is low: {n1} valid item(s) have been cleared. (TTL={TimeSpan.FromTicks(_timeToLive)}, EXP={TimeSpan.FromTicks(_slidingExpiration)}).");
+				Lxx.Log?.Trace($"LocalCache '{_name}' capacity ({_capacity}) is low: {n1} valid item(s) have been cleared. (TTL={TimeSpan.FromTicks(_timeToLive)}, EXP={TimeSpan.FromTicks(_slidingExpiration)}).");
 			for (int i = 0; i < n1; ++i)
 			{
 				_cache.TryRemove(dirty[i].Key, out _);

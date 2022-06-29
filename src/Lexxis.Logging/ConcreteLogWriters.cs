@@ -42,21 +42,19 @@ public class FileLogWriter: LogWriter
 	///		timeout		- timeout while opening file in milliseconds. default: 2000
 	/// </param>
 	/// <param name="formatter"></param>
-	/// <param name="batchSize"></param>
-	/// <param name="flushBound"></param>
-	public FileLogWriter(string name, XmlLiteNode config, ILogRecordFormatter? formatter, int batchSize = 0, int flushBound = 0) :
+	/// 
+	/// 
+	public FileLogWriter(string name, XmlLiteNode? config, ILogRecordFormatter? formatter):
 		base(name, config, formatter)
 	{
-		if (config == null)
-			config = XmlLiteNode.Empty;
+		config ??= XmlLiteNode.Empty;
 		_file = XmlTools.GetString(config["file"], DefaultLogFileMask)!;
 		_timeout = XmlTools.GetTimeSpan(config["timeout"], DefaultTimeout, MinTimeout, MaxTimeout);
-		XmlLiteNode overwrite = config.FirstOrDefault("overwrite");
+		XmlLiteNode? overwrite = config.FirstOrDefault("overwrite");
 		_truncate = overwrite != null && overwrite.Value.AsBoolean(true);
 	}
 
-	public FileLogWriter(string name, XmlLiteNode config):
-		this(name, config, null, DefaultBatchSize, DefaultFlushBound)
+	public FileLogWriter(string name, XmlLiteNode? config): this(name, config, null)
 	{
 	}
 
@@ -214,9 +212,9 @@ public class TextFileLogWriter: FileLogWriter
 	}
 }
 
-public class JsonFileLogWriter : FileLogWriter
+public class JsonFileLogWriter: FileLogWriter
 {
-	public JsonFileLogWriter(string name, XmlLiteNode config) : base(name, config, formatter: new LogRecordJsonFormatter(config))
+	public JsonFileLogWriter(string name, XmlLiteNode config): base(name, config, formatter: new LogRecordJsonFormatter(config))
 	{
 	}
 }
@@ -227,7 +225,7 @@ public class NullLogWriter: LogWriter
 
 	public override string Target => "Null";
 
-	public NullLogWriter(string name, XmlLiteNode config): base(name, config, NullLogRecordFormatter.Instance)
+	public NullLogWriter(string name, XmlLiteNode? config): base(name, config, NullLogRecordFormatter.Instance)
 	{
 	}
 
@@ -249,7 +247,7 @@ public class ConsoleLogWriter: LogWriter
 		"  ",
 		". ");
 
-	public ConsoleLogWriter(string name, XmlLiteNode config): base(name, config, new LogRecordTextFormatter(Defaults))
+	public ConsoleLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
 	{
 	}
 
@@ -275,7 +273,7 @@ public class TraceLogWriter: LogWriter
 		"  ",
 		". ");
 
-	public TraceLogWriter(string name, XmlLiteNode config) : base(name, config, new LogRecordTextFormatter(Defaults))
+	public TraceLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
 	{
 	}
 
@@ -301,7 +299,7 @@ public class DebuggerLogWriter: LogWriter
 		"  ",
 		". ");
 
-	public DebuggerLogWriter(string name, XmlLiteNode config) : base(name, config, new LogRecordTextFormatter(Defaults))
+	public DebuggerLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
 	{
 	}
 
@@ -316,7 +314,7 @@ public class DebuggerLogWriter: LogWriter
 			if (record == null)
 				continue;
 			string message = Formatter.Format(record);
-			Debugger.Log(record.Priority, record.Source, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message : message + Environment.NewLine);
+			Debugger.Log(record.Priority, record.Source, message.EndsWith(Environment.NewLine, StringComparison.Ordinal) ? message: message + Environment.NewLine);
 		}
 	}
 }
@@ -331,7 +329,7 @@ public class EventLogLogWriter: LogWriter
 
 	private string? _eventSource;
 
-	public EventLogLogWriter(string name, XmlLiteNode config): base(name, config, new LogRecordTextFormatter(Defaults))
+	public EventLogLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
 	{
 		if (config == null)
 			config = XmlLiteNode.Empty;

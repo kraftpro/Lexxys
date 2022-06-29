@@ -4,7 +4,7 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-#if !NETCOREAPP
+#if NETFRAMEWORK
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -25,6 +25,8 @@ namespace Lexxys.Configuration
 		public string Name => "System.Configuration";
 
 		public Uri Location => Uri;
+
+		public int Version => 1;
 
 		public object? GetValue(string reference, Type returnType)
 		{

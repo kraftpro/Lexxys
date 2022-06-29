@@ -17,9 +17,12 @@ namespace Lexxys.Configuration
 
 	public interface IXmlConfigurationSource
 	{
-		event EventHandler<ConfigurationEventArgs>? Changed;
 		string Name { get; }
 		Uri Location { get; }
+		int Version { get; }
+
+		event EventHandler<ConfigurationEventArgs>? Changed;
+
 		IReadOnlyList<XmlLiteNode> Content { get; }
 	}
 }

@@ -16,6 +16,7 @@ using Lexxys;
 using Lexxys.Configuration;
 using Lexxys.Xml;
 
+
 namespace Lexxys.Tests.Configuration
 {
 
@@ -170,9 +171,9 @@ Setting
 		item	1 # comments
 		item	2 // comments
 		item	3
-	newIntArray [1, 2, 3] #<
+	newIntArray [1, 2, 3] <#
 	params (p1=1, p2:""pe = p2
-	>#
+	#>
 	params (p1=1, p2:""pe = p2""
 		p3:true,
 		p5:false)
@@ -335,7 +336,7 @@ Setting
 			}
 		}
 
-		private static IConfigProvider CreateConfig(string value, IReadOnlyCollection<string> parameters)
+		public static IConfigProvider CreateConfig(string value, IReadOnlyCollection<string> parameters = null)
 		{
 			return XmlConfigurationProvider.Create(new Uri(value), parameters) ?? throw new InvalidOperationException("Cannot create configuration");
 		}

@@ -255,29 +255,29 @@ namespace Lexxys
 		{
 			return () => String.Format(Culture, "Cannot find configuration provider ({0}).", location);
 		}
-		public static Func<string> ConfigurationLoaded(Uri location, int position)
+		public static string ConfigurationLoaded(Uri location, int position)
 		{
-			return () => String.Format(Culture, "Configuration loaded {1}. ({0})", location, position);
+			return String.Format(Culture, "Configuration loaded {1}. ({0})", location, position);
 		}
-		public static Func<string> ConfigurationChanged(Configuration.IXmlConfigurationSource source)
+		public static string ConfigurationChanged(Configuration.IXmlConfigurationSource source)
 		{
-			return () => String.Format(Culture, "Configuration changed ({0}).", source?.Name);
+			return String.Format(Culture, "Configuration changed ({0}).", source?.Name);
 		}
 		public static Func<string> ConfigurationChanged(Configuration.IConfigProvider source)
 		{
 			return () => String.Format(Culture, "Configuration changed ({0}).", source?.Name);
 		}
-		public static Func<string> ConfigurationFileIncluded(string fileName)
+		public static string ConfigurationFileIncluded(string fileName)
 		{
-			return () => String.Format(Culture, "Configuration file included ({0}).", fileName);
+			return String.Format(Culture, "Configuration file included ({0}).", fileName);
 		}
-		public static Func<string> UnknownOption(string option, string fileName)
+		public static string UnknownOption(string option, string fileName)
 		{
-			return () => String.Format(Culture, "Unknown Option: {0}, file: {1}.", option, fileName);
+			return String.Format(Culture, "Unknown Option: {0}, file: {1}.", option, fileName);
 		}
-		public static Func<string> OptionIncludeFileNotFound(string fileName, string baseDirectory)
+		public static string OptionIncludeFileNotFound(string fileName, string baseDirectory)
 		{
-			return () => String.Format(Culture, "Including file not found. file: {0}, directory: {1}.", fileName, baseDirectory);
+			return String.Format(Culture, "Including file not found. file: {0}, directory: {1}.", fileName, baseDirectory);
 		}
 		public static string ConfigValueNotFound(string key, Type type)
 		{
@@ -311,9 +311,9 @@ namespace Lexxys
 
 		#region Logging
 
-		internal static Func<string> LoggingConfidurationMissing()
+		internal static string LoggingConfidurationMissing()
 		{
-			return () => "Missing Logging Configuration.";
+			return "Missing Logging Configuration.";
 		}
 
 		internal static string LOG_BeginGroup()

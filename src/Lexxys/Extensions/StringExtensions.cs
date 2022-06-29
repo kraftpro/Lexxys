@@ -164,6 +164,7 @@ namespace Lexxys
 		}
 
 		#region String as Value
+
 		public static byte AsByte(this string? value)
 		{
 			return XmlTools.GetByte(value);
@@ -477,6 +478,7 @@ namespace Lexxys
 		{
 			return XmlTools.GetValue(value, returnType, defaultValue);
 		}
+
 		#endregion
 	}
 }

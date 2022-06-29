@@ -28,28 +28,19 @@ namespace Lexxys
 
 		private volatile static Dictionary<Type, IFactory[]> __factoryMap = new Dictionary<Type, IFactory[]>();
 
-		//static StaticServices()
-		//{
-		//	IFactory factory = new DummyConfigFactory();
-		//	foreach (var type in factory.SupportedTypes!)
-		//	{
-		//		var mapType = type is null ? typeof(void): type.IsGenericType ? type.GetGenericTypeDefinition(): type;
-		//		__factoryMap.Add(mapType, new IFactory[] { factory });
-		//	}
-		//	factory = new DummyLoggingFactory();
-		//	foreach (var type in factory.SupportedTypes!)
-		//	{
-		//		var mapType = type is null ? typeof(void): type.IsGenericType ? type.GetGenericTypeDefinition(): type;
-		//		__factoryMap.Add(mapType, new IFactory[] { factory });
-		//	}
-		//}
+		static StaticServices()
+		{
+			__factoryMap.Add(typeof(IConfigService), new [] { InternalConfigFactory.Instance });
+			__factoryMap.Add(typeof(IConfigLogger), new [] { InternalConfigFactory.Instance });
+			__factoryMap.Add(typeof(IConfigSection), new [] { InternalConfigFactory.Instance });
+		}
 
 		public static void AddFactory(IFactory? factory)
 		{
 			if (factory == null)
 				return;
 			Dictionary<Type, IFactory[]> local, next;
-			var supportedTypes = factory.SupportedTypes ?? __void;
+			var supportedTypes = factory.SupportedTypes ?? __voidType;
 			do
 			{
 				local = __factoryMap;
@@ -71,7 +62,7 @@ namespace Lexxys
 				}
 			} while (Interlocked.CompareExchange(ref __factoryMap, next, local) != local);
 		}
-		private static Type[] __void = new[] { typeof(void) };
+		private static Type[] __voidType = new[] { typeof(void) };
 
 		public static bool TryCreate(Type serviceType, object?[]? arguments, [MaybeNullWhen(false)] out object result)
 		{
@@ -121,13 +112,6 @@ namespace Lexxys
 		public static object Create(Type serviceType, params object?[]? arguments)
 			=> TryCreate(serviceType, arguments, out var result) ? result : throw new InvalidOperationException($"Cannot create service of type {serviceType.FullName}.");
 
-
-		public static IConfigService ConfigFactory => ConfigService.Default;
-
-		public static IConfigSection Config => Create<IConfigSection>();
-
-		public static IConfigService GetConfigFactory() => Create<IConfigService>();
-
 		public static T Create<T>(params object?[] arguments) where T : class => (T)Create(typeof(T), arguments);
 
 		#region Specific services
@@ -140,8 +124,9 @@ namespace Lexxys
 		public static ILogging GetLogger<T>()
 			=> Create<ILogging<T>>();
 
-		public static IConfigSection GetConfig(string? name = null)
-			=> Create<IConfigSection>(name);
+		public static IConfigSection Config() => Create<IConfigSection>();
+
+		public static IConfigService ConfigService() => Create<IConfigService>();
 
 		public static void AddFactory(ILoggerFactory? factory) => AddFactory(MsLoggerFactory.CreateFactory(factory));
 
@@ -332,6 +317,31 @@ namespace Lexxys
 						_disposed = true;
 					}
 				}
+			}
+		}
+
+		class InternalConfigFactory: IFactory
+		{
+			public static readonly IFactory Instance = new InternalConfigFactory();
+
+			private static Type[] __supportedTypes = new[] { typeof(IConfigSection), typeof(IConfigService), typeof(IConfigLogger) };
+
+			public IReadOnlyCollection<Type>? SupportedTypes => __supportedTypes;
+
+			public bool TryCreate(Type type, object?[]? arguments, [MaybeNullWhen(false)] out object result)
+			{
+				if (type == typeof(IConfigSection))
+				{
+					result = new ConfigSection(ConfigProvidersCollection.Instance);
+					return true;
+				}
+				if (!type.IsAssignableFrom(typeof(ConfigProvidersCollection)))
+				{
+					result = null;
+					return false;
+				}
+				result = ConfigProvidersCollection.Instance;
+				return true;
 			}
 		}
 

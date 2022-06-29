@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 #nullable enable
 
@@ -22,94 +23,99 @@ namespace Lexxys
 
 	public static class Config
 	{
-		public static IConfigSection Current => StaticServices.GetConfig();
+		public static IConfigSection Current => StaticServices.Create<IConfigSection>();
 
-		//public static T? GetValue<T>(string key)
-		//{
-		//	if (key == null || key.Length <= 0)
-		//		throw new ArgumentNullException(nameof(key));
-		//	return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : default;
-		//}
+		public static T? GetValue<T>(string key)
+		{
+			if (key == null || key.Length <= 0)
+				throw new ArgumentNullException(nameof(key));
+			return Current.GetValue<T?>(key).Value;
+		}
 
-		//public static T GetValue<T>(string key, T defaultValue)
-		//{
-		//	if (key == null || key.Length <= 0)
-		//		throw new ArgumentNullException(nameof(key));
-		//	return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : defaultValue;
-		//}
-		
-		//public static T GetValue<T>(string key, Func<T> defaultValue)
-		//{
-		//	if (key == null || key.Length <= 0)
-		//		throw new ArgumentNullException(nameof(key));
-		//	if (defaultValue == null)
-		//		throw new ArgumentNullException(nameof(defaultValue));
-		//	return DefaultConfig.GetObjectValue(key, typeof(T)) is T value ? value : defaultValue();
-		//}
+		public static T GetValue<T>(string key, T defaultValue)
+		{
+			if (key == null || key.Length <= 0)
+				throw new ArgumentNullException(nameof(key));
+			return Current.GetValue<T>(key, defaultValue).Value;
+		}
 
-		public static IConfigProvider? AddConfiguration(string location)
-			=> DefaultConfig.AddConfiguration(location);
+		public static T GetValue<T>(string key, Func<T> defaultValue)
+		{
+			if (key == null || key.Length <= 0)
+				throw new ArgumentNullException(nameof(key));
+			if (defaultValue == null)
+				throw new ArgumentNullException(nameof(defaultValue));
+			return Current.GetValue<T>(key, defaultValue).Value;
+		}
 
-		public static IConfigProvider? AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null)
-			=> DefaultConfig.AddConfiguration(location, parameters);
+		public static bool AddConfiguration(string location, bool tail = false)
+		{
+			var p = SplitOptions(location);
+			return StaticServices.Create<IConfigService>().AddConfiguration(new Uri(p.Location, UriKind.RelativeOrAbsolute), p.Parameters, tail);
+		}
+
+		public static bool AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null)
+			=> StaticServices.Create<IConfigService>().AddConfiguration(location, parameters);
 
 		public static void LogConfigurationError(string logSource, Exception exception)
-			=> DefaultConfig.LogConfigurationError(logSource, exception);
+			=> StaticServices.Create<IConfigLogger>().LogConfigurationError(logSource, exception);
 
-		public static void LogConfigurationEvent(string logSource, Func<string> message)
-			=> DefaultConfig.LogConfigurationEvent(logSource, message);
+		public static void LogConfigurationEvent(string logSource, string message)
+			=> StaticServices.Create<IConfigLogger>().LogConfigurationEvent(logSource, message);
 
-		internal static Uri? LocateFile(string filePath, IEnumerable<string>? directory, IReadOnlyCollection<string>? extension)
+		internal static Uri[] GetLocalFiles(string path, IEnumerable<string>? directories)
 		{
-			if (File.Exists(filePath))
-				return new Uri(Path.GetFullPath(filePath));
-
-			if (extension != null)
+			var matched = __configExtRex.IsMatch(path);
+			if (Path.IsPathRooted(path) || directories == null)
 			{
-				foreach (string ext in extension)
+				if (matched)
+					return File.Exists(path) ? new[] { new Uri(path) }: Array.Empty<Uri>();
+				return CollectFiles(path) ?? Array.Empty<Uri>();
+			}
+
+			foreach (var dir in directories)
+			{
+				if (matched)
 				{
-					int i = ext.LastIndexOf('.');
-					string e = (i > 0) ? ext.Substring(i) : ext;
-					if (filePath.EndsWith(e, StringComparison.OrdinalIgnoreCase))
-					{
-						extension = null;
-						break;
-					}
+					if (File.Exists(Path.Combine(dir, path)))
+						return new[] { new Uri(Path.Combine(dir, path)) };
+				}
+				else
+				{
+					var files = CollectFiles(Path.Combine(dir, path));
+					if (files?.Length > 0)
+						return files;
 				}
 			}
+			return Array.Empty<Uri>();
 
-			if (filePath[0] == System.IO.Path.DirectorySeparatorChar || filePath[0] == System.IO.Path.AltDirectorySeparatorChar)
-				directory = null;
-			else if (ContainsVolume(filePath))
-				directory = null;
-
-			if (directory == null)
-				return extension?
-					.Where(ext => File.Exists(filePath + ext))
-					.Select(ext => new Uri(Path.GetFullPath(filePath + ext)))
-					.FirstOrDefault();
-
-			if (extension == null)
-				return directory
-					.Select(dir => System.IO.Path.Combine(dir, filePath))
-					.Where(File.Exists)
-					.Select(file => new Uri(Path.GetFullPath(file)))
-					.FirstOrDefault();
-
-			return directory
-				.SelectMany(_ => extension, (dir, ext) => System.IO.Path.Combine(dir, filePath + ext))
-				.Where(File.Exists)
-				.Select(file => new Uri(Path.GetFullPath(file)))
-				.FirstOrDefault();
-
-			static bool ContainsVolume(string path)
+			static Uri[]? CollectFiles(string path)
 			{
-				if (System.IO.Path.DirectorySeparatorChar == System.IO.Path.VolumeSeparatorChar)
-					return false;
-				var i = path.IndexOf(System.IO.Path.VolumeSeparatorChar);
-				return i > 0 && path.Substring(0, i).All(c => Char.IsLetter(c));
+				int i = path.LastIndexOf('\\');
+				if (i < 0)
+					i = path.LastIndexOf('/');
+				if (i < 0)
+					return null;
+				if (Directory.Exists(path.Substring(0, i)))
+					return Array.ConvertAll(Directory.GetFiles(path.Substring(0, i), path.Substring(i + 1) + ".config.*"), o => new Uri(o));
+				return null;
 			}
 		}
+		private static readonly Regex __configExtRex = new Regex(@"\.config\.[^.]+\z", RegexOptions.IgnoreCase);
+
+		private static (string Location, IReadOnlyCollection<string>? Parameters) SplitOptions(string value)
+		{
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			value = value.Trim();
+			var xx = value.Split(SpaceSeparator, StringSplitOptions.RemoveEmptyEntries);
+			if (xx.Length == 1)
+				return (value, null);
+			if (xx.Length == 2)
+				return (xx[0], new[] { xx[1] });
+			return (xx[0], xx.Skip(1).ToList());
+		}
+		private static readonly char[] SpaceSeparator = new[] { ' ' };
 
 	}
 }

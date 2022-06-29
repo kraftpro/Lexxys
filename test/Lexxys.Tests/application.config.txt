@@ -10,3 +10,13 @@
 				Z0			Lexxys.Tests.Tools.FactoryTest+PrivateZeroElement
 	include test.db.config.txt
 	include test.config.txt
+
+	usage
+		listNode
+			item value 1
+			item value 2
+		timeout 2d 3h 11s
+		app-settings
+			proxy
+				item one
+				item two

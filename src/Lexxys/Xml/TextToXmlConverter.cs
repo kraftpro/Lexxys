@@ -66,7 +66,7 @@ namespace Lexxys.Xml
 	///	comment			:=	'#' TEXT_WITHOUT_EOL
 	///	comment			:=	comment
 	///						'/*' TEXT '*/'
-	///						'#&lt;' TEXT '&gt;#'
+	///						'&lt;#' TEXT '#&gt;'
 	/// 
 	/// line_value		:=	'..' eol_value
 	///						text_value

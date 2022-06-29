@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 
 namespace Lexxys.Logging;
+using Lexxys;
+
 using Xml;
 
 public abstract class LogWriter: ILogWriter
@@ -19,7 +21,7 @@ public abstract class LogWriter: ILogWriter
 
 	private readonly LoggingRule _rule;
 
-	public LogWriter(string name, XmlLiteNode config, ILogRecordFormatter? formatter = null)
+	public LogWriter(string name, XmlLiteNode? config, ILogRecordFormatter? formatter = null)
 	{
 		if (config == null)
 			config = XmlLiteNode.Empty;
@@ -38,14 +40,14 @@ public abstract class LogWriter: ILogWriter
 
 	protected internal ILogRecordFormatter Formatter { get; }
 
-	public static ILogWriter? FromXml(XmlLiteNode node)
+	public static ILogWriter? FromXml(XmlLiteNode? node)
 	{
 		if (node == null || node.IsEmpty)
 			return null;
 
 		string? name = node["name"].AsString(null);
 		string? className = node["class"].AsString(null);
-		if (className != null)
+		if (className != null && className.Length > 0)
 			return CreateLogWriter(className, name, node);
 
 		SystemLog.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className));
@@ -54,14 +56,12 @@ public abstract class LogWriter: ILogWriter
 
 	private static LogWriter? CreateLogWriter(string className, string? name, XmlLiteNode node)
 	{
-		if (String.IsNullOrEmpty(className))
-			return null;
 		LogWriter? writer = null;
 		try
 		{
 			Type? type = Factory.GetType(className) ??
 				(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
-			if (type != null && type.IsSubclassOf(typeof(LogWriter)))
+			if (type != null && typeof(LogWriter).IsAssignableFrom(type))
 				writer = Factory.TryGetConstructor(type, false, new[] { typeof(string), typeof(XmlLiteNode) })?
 					.Invoke(new object?[] { name, node }) as LogWriter;
 			if (writer == null)
@@ -74,9 +74,9 @@ public abstract class LogWriter: ILogWriter
 		return writer;
 	}
 
-	private static ILogRecordFormatter? CreateFormatter(string className, XmlLiteNode node)
+	private static ILogRecordFormatter? CreateFormatter(string? className, XmlLiteNode node)
 	{
-		if (String.IsNullOrEmpty(className))
+		if (className is null || className.Length <= 0)
 			return null;
 		ILogRecordFormatter? formatter = null;
 		try

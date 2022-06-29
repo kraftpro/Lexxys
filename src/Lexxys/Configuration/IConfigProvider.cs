@@ -6,20 +6,14 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 #nullable enable
 
 namespace Lexxys.Configuration
 {
-	public interface IConfigProvider
+	public interface IConfigProvider: IConfigSource
 	{
-		event EventHandler<ConfigurationEventArgs>? Changed;
-
 		string Name { get; }
 		Uri Location { get; }
-		object? GetValue(string reference, Type returnType);
-		IReadOnlyList<T> GetList<T>(string reference);
 	}
 }

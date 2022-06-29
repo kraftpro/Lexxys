@@ -15,7 +15,7 @@ namespace Lexxys.Configuration
 {
 	using Xml;
 
-	class LocalFileConfigurationSource : IXmlConfigurationSource
+	class LocalFileConfigurationSource: IXmlConfigurationSource
 	{
 		private const string LogSource = "Lexxys.Configuration.LocalFileConfigurationSource";
 		private readonly FileInfo _file;
@@ -23,6 +23,7 @@ namespace Lexxys.Configuration
 		private List<string>? _includes;
 		private IReadOnlyList<XmlLiteNode>? _content;
 		private readonly Uri _location;
+		private int _version;
 
 		private LocalFileConfigurationSource(Uri location, IReadOnlyCollection<string> parameters)
 		{
@@ -49,6 +50,7 @@ namespace Lexxys.Configuration
 						{
 							_content = _converter(File.ReadAllText(_file.FullName), _file.FullName);
 							FileWatcher.AddFileWatcher(_file.FullName, OnFileChanged);
+							++_version;
 						}
 					}
 				}
@@ -57,6 +59,8 @@ namespace Lexxys.Configuration
 		}
 
 		public event EventHandler<ConfigurationEventArgs>? Changed;
+
+		public int Version => _version;
 
 		#endregion
 

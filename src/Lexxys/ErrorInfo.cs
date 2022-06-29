@@ -17,7 +17,7 @@ namespace Lexxys
 		{
 			Code = code;
 			DataType = dataType;
-			Attribs = attribs as IReadOnlyList<ErrorAttrib> ?? ReadOnly.WrapCopy(attribs, true);
+			Attribs = attribs as IReadOnlyList<ErrorAttrib> ?? ReadOnly.WrapCopy(attribs) ?? ReadOnly.Empty<ErrorAttrib>();
 		}
 
 		public ErrorInfo(ErrorCode code, ErrorDataType dataType, params ErrorAttrib[] attribs)

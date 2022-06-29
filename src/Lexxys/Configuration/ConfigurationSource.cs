@@ -21,13 +21,14 @@ namespace Lexxys.Configuration
 				Config.LogConfigurationEvent(logSource, SR.OptionIncludeFileNotFound(null, directory));
 				return null;
 			}
-			var cl = Config.LocateFile(include!, String.IsNullOrEmpty(directory) ? null: new[] { directory! }, null);
-			if (cl == null)
+			var incs = Config.GetLocalFiles(include!, String.IsNullOrEmpty(directory) ? null: new[] { directory! });
+			if (incs.Length != 1)
 			{
 				Config.LogConfigurationEvent(logSource, SR.OptionIncludeFileNotFound(include, directory));
 				return null;
 			}
-			var xs = ConfigurationFactory.TryCreateXmlConfigurationSource(cl, parameters);
+			var inc = incs[0];
+			var xs = ConfigurationFactory.TryCreateXmlConfigurationSource(inc, parameters);
 			if (xs == null)
 				return null;
 
@@ -35,11 +36,11 @@ namespace Lexxys.Configuration
 
 			if (includes == null)
 				includes = new List<string>();
-			if (!includes.Contains(cl.AbsoluteUri))
+			if (!includes.Contains(inc.ToString()))
 			{
-				includes.Add(cl.AbsoluteUri);
+				includes.Add(inc.ToString());
 			}
-			Config.LogConfigurationEvent(logSource, SR.ConfigurationFileIncluded(cl.AbsoluteUri));
+			Config.LogConfigurationEvent(logSource, SR.ConfigurationFileIncluded(inc.ToString()));
 			return xs.Content;
 		}
 
@@ -51,15 +52,15 @@ namespace Lexxys.Configuration
 				return File.ReadAllText(String.IsNullOrEmpty(currentDirectory) ? path: Path.Combine(currentDirectory, path));
 			}
 
-#if !NETFRAMEWORK
-			if (location.Scheme == Uri.UriSchemeHttp || location.Scheme == Uri.UriSchemeHttps)
-				return new System.Net.Http.HttpClient().GetStringAsync(location).GetAwaiter().GetResult();
-			throw new NotSupportedException($"Specified url \"{location}\" is not supported");
-#else
+#if NETFRAMEWORK
 			using (var c = new WebClient())
 			{
 				return c.DownloadString(location);
 			}
+#else
+			if (location.Scheme == Uri.UriSchemeHttp || location.Scheme == Uri.UriSchemeHttps)
+				return new System.Net.Http.HttpClient().GetStringAsync(location).GetAwaiter().GetResult();
+			throw new NotSupportedException($"Specified url \"{location}\" is not supported");
 #endif
 		}
 	}

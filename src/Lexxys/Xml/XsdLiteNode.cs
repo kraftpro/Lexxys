@@ -6,14 +6,17 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+
+#nullable enable
 
 namespace Lexxys.Xml
 {
 	public class XsdLiteNode
 	{
-		public XsdLiteNode(string name, XsdLiteValue value, int minCount, int maxCount, IEnumerable<KeyValuePair<string, XsdLiteValue>> attribute, IEnumerable<XsdLiteNode> descendant)
+		public XsdLiteNode(string name, XsdLiteValue value, int minCount, int maxCount, IEnumerable<KeyValuePair<string, XsdLiteValue>>? attribute, IEnumerable<XsdLiteNode>? descendant)
 		{
 			if (minCount < 0)
 				throw new ArgumentOutOfRangeException(nameof(minCount), minCount, null);
@@ -22,8 +25,8 @@ namespace Lexxys.Xml
 
 			Name = name ?? throw new ArgumentNullException(nameof(name));
 			Value = value ?? throw new ArgumentNullException(nameof(value));
-			Attribute = ReadOnly.WrapCopy(attribute, true);
-			Descendant = ReadOnly.WrapCopy(descendant, true);
+			Attribute = ReadOnly.WrapCopy(attribute) ?? ReadOnly.Empty<KeyValuePair<string, XsdLiteValue>>();
+			Descendant = ReadOnly.WrapCopy(descendant) ?? ReadOnly.Empty<XsdLiteNode>();
 			MinCount = minCount;
 			MaxCount = maxCount;
 		}
@@ -103,16 +106,18 @@ namespace Lexxys.Xml
 		/// </summary>
 		/// <param name="node"></param>
 		/// <returns></returns>
-		public static XsdLiteNode FromXml(XmlLiteNode node)
+		public static XsdLiteNode? FromXml(XmlLiteNode? node)
 		{
 			if (node == null || node.IsEmpty)
 				return null;
 
 			string name = node["name"] ?? node.Name;
-			if (name == null)
+			if (String.IsNullOrEmpty(name))
+				return null;
+			var value = XsdLiteValue.FromXml(node);
+			if (value == null)
 				return null;
 
-			var value = XsdLiteValue.FromXml(node);
 			int minCount = node["min"].AsInt32(0);
 			int maxCount = node["max"].AsInt32(Int32.MaxValue);
 			var attribs = new List<KeyValuePair<string, XsdLiteValue>>();
@@ -131,7 +136,7 @@ namespace Lexxys.Xml
 				}
 				else if (item.Name == "attribute" && item["name"] != null)
 				{
-					string s = item["name"].AsString();
+					string s = item["name"].AsString(String.Empty);
 					var v = XsdLiteValue.FromXml(item);
 					if (s != null && v != null)
 						attribs.Add(new KeyValuePair<string, XsdLiteValue>(s, v));
@@ -171,7 +176,7 @@ namespace Lexxys.Xml
 			IsNullable = isNullable;
 		}
 
-		public bool IsMatch(string value)
+		public bool IsMatch(string? value)
 		{
 			if (value == null || value.Length == 0)
 				return IsNullable;
@@ -184,13 +189,13 @@ namespace Lexxys.Xml
 		/// </summary>
 		/// <param name="node"></param>
 		/// <returns></returns>
-		public static XsdLiteValue FromXml(XmlLiteNode node)
+		public static XsdLiteValue? FromXml(XmlLiteNode? node)
 		{
 			if (node == null || node.IsEmpty)
 				return null;
 
-			Type type = XmlTools.GetType(node["type"] ?? node.Value, null);
-			return type == null ? null:
+			Type type = XmlTools.GetType(node["type"] ?? node.Value, typeof(void));
+			return type == typeof(void) ? null:
 				node["nullable"] == null ? new XsdLiteValue(type): new XsdLiteValue(type, node["nullable"].AsBoolean(false));
 		}
 	}

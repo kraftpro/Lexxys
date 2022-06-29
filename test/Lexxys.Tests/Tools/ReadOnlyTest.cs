@@ -220,11 +220,6 @@ namespace Lexxys.Tests.Tools
 
 			actual = ReadOnly.Wrap((IDictionary<int, string>)null);
 			Assert.IsNull(actual);
-			actual = ReadOnly.Wrap((IDictionary<int, string>)null, false);
-			Assert.IsNull(actual);
-			actual = ReadOnly.Wrap((IDictionary<int, string>)null, true);
-			Assert.IsNotNull(actual);
-			Assert.AreEqual(0, actual.Count);
 
 			Dictionary<int, string> value = GetTestDictionary();
 			actual = ReadOnly.Wrap(value);
@@ -258,11 +253,6 @@ namespace Lexxys.Tests.Tools
 
 			actual = ReadOnly.WrapCopy((IDictionary<int, string>)null);
 			Assert.IsNull(actual);
-			actual = ReadOnly.WrapCopy((IDictionary<int, string>)null, false);
-			Assert.IsNull(actual);
-			actual = ReadOnly.WrapCopy((IDictionary<int, string>)null, true);
-			Assert.IsNotNull(actual);
-			Assert.AreEqual(0, actual.Count);
 
 			Dictionary<int, string> value = GetTestDictionary();
 			actual = ReadOnly.WrapCopy(value);
@@ -340,11 +330,6 @@ namespace Lexxys.Tests.Tools
 
 			actual = ReadOnly.Wrap((IList<int>)null);
 			Assert.IsNull(actual);
-			actual = ReadOnly.Wrap((IList<int>)null, false);
-			Assert.IsNull(actual);
-			actual = ReadOnly.Wrap((IList<int>)null, true);
-			Assert.IsNotNull(actual);
-			Assert.AreEqual(0, actual.Count);
 
 			List<int> value = GetTestList();
 			actual = ReadOnly.Wrap(value);
@@ -411,11 +396,6 @@ namespace Lexxys.Tests.Tools
 
 			actual = ReadOnly.Wrap((ICollection<int>)null);
 			Assert.IsNull(actual);
-			actual = ReadOnly.Wrap((ICollection<int>)null, false);
-			Assert.IsNull(actual);
-			actual = ReadOnly.Wrap((ICollection<int>)null, true);
-			Assert.IsNotNull(actual);
-			Assert.AreEqual(0, actual.Count);
 
 			List<int> value = GetTestList();
 			actual = ReadOnly.Wrap((ICollection<int>)value);
@@ -444,11 +424,6 @@ namespace Lexxys.Tests.Tools
 
 			actual = ReadOnly.WrapCopy((ICollection<int>)null);
 			Assert.IsNull(actual);
-			actual = ReadOnly.WrapCopy((ICollection<int>)null, false);
-			Assert.IsNull(actual);
-			actual = ReadOnly.WrapCopy((ICollection<int>)null, true);
-			Assert.IsNotNull(actual);
-			Assert.AreEqual(0, actual.Count);
 
 			List<int> value = GetTestList();
 			actual = ReadOnly.WrapCopy((ICollection<int>)value);
@@ -478,11 +453,6 @@ namespace Lexxys.Tests.Tools
 
 			actual = ReadOnly.Wrap((IEnumerable<int>)null);
 			Assert.IsNull(actual);
-			actual = ReadOnly.Wrap((IEnumerable<int>)null, false);
-			Assert.IsNull(actual);
-			actual = ReadOnly.Wrap((IEnumerable<int>)null, true);
-			Assert.IsNotNull(actual);
-			Assert.AreEqual(0, actual.Count());
 
 			List<int> value = GetTestList();
 			actual = ReadOnly.Wrap((IEnumerable<int>)value);
@@ -508,11 +478,6 @@ namespace Lexxys.Tests.Tools
 
 			actual = ReadOnly.WrapCopy((IEnumerable<int>)null);
 			Assert.IsNull(actual);
-			actual = ReadOnly.WrapCopy((IEnumerable<int>)null, false);
-			Assert.IsNull(actual);
-			actual = ReadOnly.WrapCopy((IEnumerable<int>)null, true);
-			Assert.IsNotNull(actual);
-			Assert.AreEqual(0, actual.Count());
 
 			List<int> value = GetTestList();
 			actual = ReadOnly.WrapCopy((IEnumerable<int>)value);

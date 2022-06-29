@@ -31,6 +31,8 @@ namespace Lexxys.Configuration
 
 		public Uri Location => _source.Location;
 
+		public int Version => _source.Version;
+
 		public bool IsEmpty => (GetRootNode() ?? XmlLiteNode.Empty).IsEmpty;
 
 		public event EventHandler<ConfigurationEventArgs>? Changed;
@@ -66,7 +68,7 @@ namespace Lexxys.Configuration
 				.Select(o => (T)o!));
 		}
 
-		public static XmlConfigurationProvider? Create(Uri location, IReadOnlyCollection<string> parameters)
+		public static XmlConfigurationProvider? Create(Uri location, IReadOnlyCollection<string>? parameters)
 		{
 			if (location == null)
 				throw new ArgumentNullException(nameof(location));
@@ -75,7 +77,7 @@ namespace Lexxys.Configuration
 			return source == null ? null: new XmlConfigurationProvider(source);
 		}
 
-		public static Func<string, string?, IReadOnlyList<XmlLiteNode>> GetSourceConverter(string extension, TextToXmlOptionHandler? optionHandler, IReadOnlyCollection<string> parameters)
+		public static Func<string, string?, IReadOnlyList<XmlLiteNode>> GetSourceConverter(string extension, TextToXmlOptionHandler? optionHandler, IReadOnlyCollection<string>? parameters)
 		{
 			bool ignoreCase = parameters?.FindIndex(o => String.Equals(XmlTools.OptionIgnoreCase, o, StringComparison.OrdinalIgnoreCase)) >= 0;
 			bool forceAttib = parameters?.FindIndex(o => String.Equals(XmlTools.OptionForceAttributes, o, StringComparison.OrdinalIgnoreCase)) >= 0;

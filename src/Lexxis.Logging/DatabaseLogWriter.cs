@@ -4,6 +4,8 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+
+// #define TRACE_CONSOLE
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -33,10 +35,9 @@ public class DatabaseLogWriter: ILogWriter, IDisposable
 	private readonly LoggingRule _rule;
 	private readonly string _connectionString;
 	private IDataContext? _dataContext;
-	//private IContextHolder? _connection;
 	private int _errorsCount;
 
-	public DatabaseLogWriter(string name, XmlLiteNode config)
+	public DatabaseLogWriter(string name, XmlLiteNode? config)
 	{
 		Name = name;
 		config ??= XmlLiteNode.Empty;
@@ -60,7 +61,7 @@ public class DatabaseLogWriter: ILogWriter, IDisposable
 		_table = Clean(config["table"], DefaultTable);
 		_rule = LoggingRule.Create(config);
 
-		static string Clean(string val, string def) => (val = __cleanRex.Replace(val ?? "", "")).Length > 0 ? val : def;
+		static string Clean(string? val, string def) => (val = __cleanRex.Replace(val ?? "", "")).Length > 0 ? val : def;
 	}
 	private static readonly Regex __cleanRex = new(@"[\x00- '""\]\[\x7F\*/]");
 
@@ -81,7 +82,9 @@ public class DatabaseLogWriter: ILogWriter, IDisposable
 		int row = 0;
 		int xyz = Interlocked.Increment(ref __xyz);
 		int total = 0;
+#if TRACE_CONSOLE
 		Console.Write($"beg[{xyz}] ");
+#endif
 		try
 		{
 			foreach (var record in records)
@@ -105,9 +108,13 @@ public class DatabaseLogWriter: ILogWriter, IDisposable
 		{
 			++_errorsCount;
 			SystemLog.WriteErrorMessage("DatabaseLogWriter", exception);
+#if TRACE_CONSOLE
 			Console.WriteLine($"err[{xyz}] {_errorsCount} {exception.Message}");
+#endif
 		}
+#if TRACE_CONSOLE
 		Console.WriteLine($"end[{xyz}] {total}");
+#endif
 		void AppendInsertEntryStatement(int instanceId, LogRecord record)
 		{
 			if (entry)
@@ -164,8 +171,6 @@ public class DatabaseLogWriter: ILogWriter, IDisposable
 
 	public void Open()
 	{
-		//if (_connection != null)
-		//	return;
 		if (_dataContext == null)
 		{
 			SystemLog.WriteErrorMessage("DatabaseLogWriter", SR.ConnectionStringIsEmpty(), null);
@@ -189,7 +194,6 @@ public class DatabaseLogWriter: ILogWriter, IDisposable
 
 	public void Close()
 	{
-		//Interlocked.Exchange(ref _connection, null)?.Dispose();
 		Interlocked.Exchange(ref _dataContext, null)?.Dispose();
 	}
 

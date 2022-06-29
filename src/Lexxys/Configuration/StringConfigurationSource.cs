@@ -13,7 +13,10 @@ using System.Threading;
 
 namespace Lexxys.Configuration
 {
-	using Xml;
+using System.Text;
+using Xml;
+
+	using static System.Net.Mime.MediaTypeNames;
 
 	class StringConfigurationSource : IXmlConfigurationSource
 	{
@@ -23,6 +26,7 @@ namespace Lexxys.Configuration
 		private readonly Func<string, string?, IReadOnlyList<XmlLiteNode>> _converter;
 		private readonly string _type;
 		private readonly string _text;
+		private int _version;
 
 		private StringConfigurationSource(Uri location, IReadOnlyCollection<string> parameters)
 		{
@@ -30,11 +34,20 @@ namespace Lexxys.Configuration
 			Name = location.Host;
 			int i = location.OriginalString.IndexOf('?');
 			_text = i > 0 ? location.OriginalString.Substring(i + 1): ""; // Uri.UnescapeDataString(location.Query.Substring(1) + location.Fragment);
-			if (_text.Length < 128)
+			if (_text.Length < 120)
 				Location = location;
 			else
-				Location = new Uri(location.OriginalString.Substring(0, i + 1) + Strings.ToHexString(Crypting.Crypto.Hasher("SHA128").Hash(_text)));
+				Location = new Uri(location.OriginalString.Substring(0, i + 1) + GetHash(_text));
 			_converter = XmlConfigurationProvider.GetSourceConverter(_type, OptionHandler, parameters);
+			_version = 1;
+
+			static string GetHash(string text)
+			{
+				using var hasher = System.Security.Cryptography.SHA256.Create();
+				byte[] bytes = Encoding.Unicode.GetBytes(text);
+				var hash = hasher.ComputeHash(bytes, 0, bytes.Length);
+				return Strings.ToHexString(hash);
+			}
 		}
 
 		#region IConfigurationSource
@@ -43,6 +56,8 @@ namespace Lexxys.Configuration
 
 		public Uri Location { get; }
 
+		public int Version => _version;
+
 		public IReadOnlyList<XmlLiteNode> Content
 		{
 			get
@@ -50,7 +65,8 @@ namespace Lexxys.Configuration
 				IReadOnlyList<XmlLiteNode>? content = _content;
 				if (content == null)
 				{
-					Interlocked.CompareExchange(ref _content, _converter(_text, null), null);
+					if (Interlocked.CompareExchange(ref _content, _converter(_text, null), null) == null)
+						++_version;
 					content = _content;
 				}
 				return content;

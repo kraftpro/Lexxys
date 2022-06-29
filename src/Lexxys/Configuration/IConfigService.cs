@@ -10,6 +10,7 @@ namespace Lexxys.Configuration
 {
 	public interface IConfigService: IConfigSource
 	{
-		void AddConfigurationProvider(IConfigProvider provider, bool tail = false);
+		bool AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null, bool tail = false);
+		bool AddConfiguration(IConfigProvider provider, bool tail = false);
 	}
 }

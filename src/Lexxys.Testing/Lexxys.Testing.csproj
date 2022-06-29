@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0;netstandard2.0;net471</TargetFrameworks>
     <LangVersion>latest</LangVersion>
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <!--<EnablePreviewFeatures>true</EnablePreviewFeatures>-->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- version format: major.minor.revision[-beta+MMDD.i] -->
     <VersionPrefix>1.2.18</VersionPrefix>

@@ -57,7 +57,8 @@ internal static class LoggingContext
 
 			ApplyConfiguration();
 			_initialized = true;
-			DefaultConfig.OnLoggerInitialized();
+			StaticServices.TryCreate<IConfigLogger>()?.SetLogger();
+			// DefaultConfig.OnLoggerInitialized();
 		}
 
 		bool registered = false;

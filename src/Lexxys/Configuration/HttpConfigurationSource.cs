@@ -17,6 +17,7 @@ namespace Lexxys.Configuration
 		private readonly Func<string, string?, IReadOnlyList<XmlLiteNode>> _converter;
 		private List<string>? _includes;
 		private IReadOnlyList<XmlLiteNode>? _content;
+		private int _version;
 
 		public HttpConfigurationSource(Uri location, IReadOnlyCollection<string> parameters)
 		{
@@ -35,11 +36,14 @@ namespace Lexxys.Configuration
 			_converter = XmlConfigurationProvider.GetSourceConverter(type, OptionHandler, parameters);
 			if (text != null)
 				_content = _converter(text, Name);
+			_version = 1;
 		}
 
 		public string Name { get; }
 
 		public Uri Location { get; }
+
+		public int Version => _version;
 
 		public IReadOnlyList<XmlLiteNode> Content
 		{
@@ -153,6 +157,7 @@ namespace Lexxys.Configuration
 				{
 					_content = null;
 					Changed?.Invoke(sender ?? this, e);
+					++_version;
 				}
 			}
 			catch (Exception flaw)

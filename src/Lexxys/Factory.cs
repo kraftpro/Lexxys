@@ -19,6 +19,7 @@ using System.Text;
 
 namespace Lexxys
 {
+	using Configuration;
 	using Tokenizer;
 
 	public static class Factory
@@ -73,11 +74,12 @@ namespace Lexxys
 
 		private static string[] SystemAssemblyNames()
 		{
-			var iss = __systemNamesConfig.Value;
-			if (iss.Count == 0)
+			var systemNamesConfig = StaticServices.TryCreate<IConfigSection>()?.GetCollection<string>(ConfigurationSkip);
+			var systemNames = systemNamesConfig?.Value;
+			if (systemNames == null || systemNames.Count == 0)
 				return DefaultSystemAssemblyNames;
 
-			var ss = new List<string>(iss
+			var ss = new List<string>(systemNames
 				.SelectMany(o => o?.Split(',', ';'))
 				.Select(o => o.TrimToNull())
 				.Where(o => o != null));
@@ -95,7 +97,6 @@ namespace Lexxys
 			return ss.ToArray();
 		}
 		private static readonly string[] DefaultSystemAssemblyNames = { "CppCodeProvider", "WebDev.", "SMDiagnostics", "mscor", "vshost", "System", "Microsoft", "Windows", "Presentation", "netstandard" };
-		private static readonly IValue<IReadOnlyList<string>> __systemNamesConfig = Config.Current.GetCollection<string>(ConfigurationSkip);
 
 		private static bool IsSystemAssembly(Assembly asm)
 		{
@@ -198,12 +199,16 @@ namespace Lexxys
 
 		private static void ImportRestAssemblies()
 		{
-			foreach (string assemblyName in __importConfig.Value)
+			var importConfig = StaticServices.TryCreate<IConfigSection>()?.GetCollection<string>(ConfigurationImport);
+			var assemblies = importConfig?.Value;
+			if (assemblies == null)
+				return;
+
+			foreach (string assemblyName in assemblies)
 			{
 				TryLoadAssembly(assemblyName, false);
 			}
 		}
-		private static readonly IValue<IReadOnlyList<string>> __importConfig = Config.Current.GetCollection<string>(ConfigurationImport);
 
 		private static void OnConfigChanged(object sender, ConfigurationEventArgs e)
 		{
@@ -352,17 +357,7 @@ namespace Lexxys
 
 		public static void ResetSynonyms()
 		{
-			if (__synonymsLoaded)
-			{
-				lock (SyncRoot)
-				{
-					if (__synonymsLoaded)
-					{
-						__synonymsLoading = false;
-						__synonymsLoaded = false;
-					}
-				}
-			}
+			__synonymsLoaded = false;
 		}
 
 		public static void SetSynonym(string name, Type type)
@@ -395,8 +390,9 @@ namespace Lexxys
 					if (!__synonymsLoading)
 					{
 						__synonymsLoading = true;
-						var synonyms = __synonymsConfig.Value;
-						if (synonyms.Count > 0)
+						var synonymsConfig = StaticServices.TryCreate<IConfigSection>()?.GetCollection<KeyValuePair<string, string>>(ConfigurationSynonyms);
+						var synonyms = synonymsConfig?.Value;
+						if (synonyms != null)
 						{
 							foreach (var item in synonyms)
 							{
@@ -423,7 +419,6 @@ namespace Lexxys
 			}
 			return __typesSynonyms.GetValueOrDefault(name.Replace(" ", ""));
 		}
-		private static readonly IValue<IReadOnlyList<KeyValuePair<string, string>>> __synonymsConfig = Config.Current.GetCollection<KeyValuePair<string, string>>(ConfigurationSynonyms);
 
 		#region Types synonyms table
 		private static bool __synonymsLoaded;

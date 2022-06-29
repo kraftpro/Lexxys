@@ -24,6 +24,8 @@ namespace Lexxys.Configuration
 
 		public Uri Location => Uri;
 
+		public int Version => 1;
+
 		public object? GetValue(string reference, Type returnType)
 		{
 			if (reference == null)

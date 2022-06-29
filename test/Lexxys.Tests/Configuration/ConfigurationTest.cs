@@ -20,8 +20,8 @@ namespace Lexxys.Tests.Configuration
 	[DeploymentItem("test.config.txt")]
 	public class ConfiguraitionTest
 	{
-		private IValue<object> SharedConfiguration => __config ??= Config.Current.GetValue<object>("scattergories.lists");
-		private IValue<object> __config;
+		private IValue<System.Xml.XmlNode[]> SharedConfiguration => __config ??= Config.Current.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
+		private IValue<System.Xml.XmlNode[]> __config;
 
 		[TestInitialize]
 		public void Initializw()
@@ -30,27 +30,105 @@ namespace Lexxys.Tests.Configuration
 			if (!File.Exists(configFile))
 				throw new ArgumentOutOfRangeException(nameof(configFile), configFile, null);
 			var provider = Config.AddConfiguration(configFile);
-			if (provider == null)
-				throw new ArgumentNullException(nameof(provider));
+			Assert.IsTrue(provider);
+			var node2 = Config.Current.GetValue<System.Xml.XmlNode>("scattergories.lists");
+			Assert.IsNotNull(node2?.Value);
 			var nodes = Config.Current.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
-			if (nodes == null)
-				throw new ArgumentNullException(nameof(nodes));
-			if (nodes.Value == null)
-				throw new ArgumentNullException("nodes.Value");
+			Assert.IsNotNull(nodes);
+			Assert.IsNotNull(nodes.Value);
 		}
 
 
 		[TestMethod, DoNotParallelize]
 		public void GetSestionMultiThread()
 		{
+			var nodes = SharedConfiguration.Value;
+
 			Enumerable.Range(1, 10).AsParallel().ForAll(i =>
 			{
-				((System.Xml.XmlNode[])SharedConfiguration.Value).FirstOrDefault(x => x.Attributes.Count > 0);
+				_ = ((System.Xml.XmlNode[])SharedConfiguration.Value).FirstOrDefault(x => x.Attributes.Count > 0);
 			});
+		}
+
+		[TestMethod]
+		public void GetListCollectsItemsFromAllConfigs()
+		{
+			var service = StaticServices.Create<IConfigService>();
+			service.AddConfiguration(new Uri(@"string:[txt]?
+GetListCollectsItemsFromAllConfigs
+	list
+		item	1
+		item	2
+		item	3
+"));
+			service.AddConfiguration(new Uri(@"string:[txt]?
+GetListCollectsItemsFromAllConfigs
+	list
+		item	4
+		item	5
+"));
+			var list = StaticServices.Config().GetCollection<int>("GetListCollectsItemsFromAllConfigs.list.item");
+			Assert.IsNotNull(list);
+			Assert.IsNotNull(list.Value);
+			Assert.AreEqual(5, list.Value.Count);
+		}
+
+		[TestMethod]
+		public void GetValueReflectsConfigChanges()
+		{
+			var config1 = XmlConfigurationProviderTest.CreateConfig(@"string:[txt]?
+GetValueReflectsConfigChanges
+	list
+		item	1
+		item	2
+		item	3
+");
+			var config2 = XmlConfigurationProviderTest.CreateConfig(@"string:[txt]?
+GetValueReflectsConfigChanges
+	list
+		item	4
+		item	5
+");
+			var service = StaticServices.Create<IConfigService>();
+			service.AddConfiguration(config1);
+			var list = StaticServices.Config().GetValue<List<int>>("GetValueReflectsConfigChanges.list");
+			Assert.IsNotNull(list);
+			Assert.IsNotNull(list.Value);
+			Assert.AreEqual(3, list.Value.Count);
+
+			service.AddConfiguration(config2);
+			Assert.AreEqual(2, list.Value.Count);
+		}
+
+		[TestMethod]
+		public void GetListReflectsConfigChanges()
+		{
+			var config1 = XmlConfigurationProviderTest.CreateConfig(@"string:[txt]?
+GetListReflectsConfigChanges
+	list
+		item	1
+		item	2
+		item	3
+");
+			var config2 = XmlConfigurationProviderTest.CreateConfig(@"string:[txt]?
+GetListReflectsConfigChanges
+	list
+		item	4
+		item	5
+");
+			var service = StaticServices.Create<IConfigService>();
+			service.AddConfiguration(config1);
+			var list = StaticServices.Config().GetCollection<int>("GetListReflectsConfigChanges.list.item");
+			Assert.IsNotNull(list);
+			Assert.IsNotNull(list.Value);
+			Assert.AreEqual(3, list.Value.Count);
+
+			service.AddConfiguration(config2);
+			Assert.AreEqual(5, list.Value.Count);
 		}
 	}
 
-	#if false
+#if false
 	/// <summary>
 	/// Summary description for TestConfiguration
 	/// </summary>
@@ -289,5 +367,5 @@ namespace Lexxys.Tests.Configuration
 		}
 
 	}
-	#endif
+#endif
 }
