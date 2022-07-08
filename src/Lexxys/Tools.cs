@@ -908,7 +908,7 @@ namespace Lexxys
 		public static string CutIndents(string[]? source, int tabSize = 4, string? newLine = null)
 		{
 			if (tabSize < 1 || tabSize > 32)
-				throw new ArgumentOutOfRangeException(nameof(tabSize));
+				throw new ArgumentOutOfRangeException(nameof(tabSize), tabSize, null);
 
 			if (source == null || source.Length == 0)
 				return "";

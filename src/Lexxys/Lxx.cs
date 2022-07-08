@@ -11,6 +11,8 @@ using System.Threading;
 using System.Configuration;
 using System.IO;
 using Microsoft.Extensions.Logging;
+using Lexxys.Configuration;
+
 
 #nullable enable
 
@@ -111,7 +113,8 @@ namespace Lexxys
 				{
 					if (!_initialized)
 					{
-						Config.Current.Changed += OnConfigChanged;
+						if (sender is IConfigService service)
+							service.Changed += OnConfigChanged;
 						AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 						Type type = Factory.GetType("System.Windows.Forms.Application", Factory.SystemAssemblies);
 						if (type != null)

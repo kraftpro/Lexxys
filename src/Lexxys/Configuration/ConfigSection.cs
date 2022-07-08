@@ -17,32 +17,32 @@ namespace Lexxys.Configuration
 	public class ConfigSection: IConfigSection
 	{
 		private readonly string _path;
-		private readonly IConfigSource _configService;
+		private readonly IConfigSource _configSource;
 
 		public ConfigSection(IConfigSource configSource)
 		{
 			_path = String.Empty;
-			_configService = configSource;
+			_configSource = configSource;
 		}
 
 		private ConfigSection(IConfigSource configSource, string path)
 		{
 			_path = path.Trim(Dots);
-			_configService = configSource;
+			_configSource = configSource;
 		}
 
 		#region IConfigSection
 
 		event EventHandler<ConfigurationEventArgs>? IConfigSection.Changed
 		{
-			add => _configService.Changed += value;
-			remove => _configService.Changed -= value;
+			add => _configSource.Changed += value;
+			remove => _configSource.Changed -= value;
 		}
 
 		IConfigSection IConfigSection.GetSection(string? key)
-			=> new ConfigSection(_configService, Key(key));
+			=> new ConfigSection(_configSource, Key(key));
 
-		int IConfigSection.Version => _configService.Version;
+		int IConfigSection.Version => _configSource.Version;
 
 		void IConfigSection.MapPath(string key, string path)
 		{
@@ -70,7 +70,7 @@ namespace Lexxys.Configuration
 			return new ConfigValue<IReadOnlyList<T>>(GetConfigValue, GetConfigVersion);
 
 			IReadOnlyList<T> GetConfigValue()
-				=> Lists<T>.TryGet(fullKey, out var value) ? value: _configService.GetList<T>(fullKey);
+				=> Lists<T>.TryGet(fullKey, out var value) ? value: _configSource.GetList<T>(fullKey);
 		}
 
 		IValue<T> IConfigSection.GetValue<T>(string? key, Func<T>? defaultValue)
@@ -79,11 +79,11 @@ namespace Lexxys.Configuration
 
 			Func<T> GetConfigValue(string key, Func<T>? defaultValue)
 				=> defaultValue == null ?
-					() => Values<T>.TryGet(key, out var value) ? value : _configService.GetValue(key, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(key, typeof(T)) :
-					() => Values<T>.TryGet(key, out var value) ? value : _configService.GetValue(key, typeof(T)) is T value2 ? value2 : defaultValue();
+					() => Values<T>.TryGet(key, out var value) ? value : _configSource.GetValue(key, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(key, typeof(T)) :
+					() => Values<T>.TryGet(key, out var value) ? value : _configSource.GetValue(key, typeof(T)) is T value2 ? value2 : defaultValue();
 		}
 
-		private int GetConfigVersion() => _configService.Version;
+		private int GetConfigVersion() => _configSource.Version;
 
 		#endregion
 

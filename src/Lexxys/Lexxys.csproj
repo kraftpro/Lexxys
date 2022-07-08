@@ -34,19 +34,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Logging\**" />
-    <EmbeddedResource Remove="Logging\**" />
-    <None Remove="Logging\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="Logging\ILoggerExtensions.cs" />
-    <Compile Include="Logging\ILogging.cs" />
-    <Compile Include="Logging\ILoggingExtensions.cs" />
-    <Compile Include="Logging\LoggingTools.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />

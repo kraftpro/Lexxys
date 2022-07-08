@@ -26,8 +26,8 @@ namespace Lexxys.Tokenizer
 
 		private TokenScanner()
 		{
-			_rules = new List<LexicalTokenRule>();
-			_extraRules = new List<LexicalTokenRule>();
+			_rules = new List<LexicalTokenRule>(32);
+			_extraRules = new List<LexicalTokenRule>(32);
 			_asciiRules = new List<LexicalTokenRule>[HighAscii - LowAscii + 1];
 			_getter = GetNextToken;
 		}

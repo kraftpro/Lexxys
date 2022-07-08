@@ -400,9 +400,17 @@ namespace Lexxys.Xml
 						var c = s[i];
 						if (c == '#')
 						{
-							if (i + 1 < s.Length && s[i + 1] == '<')
+							s = s.Substring(0, i);
+							break;
+						}
+						if (i + 1 >= s.Length)
+							break;
+
+						if (c == '<')
+						{
+							if (s[i + 1] == '#')
 							{
-								int k = s.IndexOf(">#", i + 2, StringComparison.Ordinal);
+								int k = s.IndexOf("#>", i + 2, StringComparison.Ordinal);
 								if (k < 0)  // Multiline comments in value
 								{
 									n -= s.Length - i;
@@ -412,17 +420,9 @@ namespace Lexxys.Xml
 								s = s.Substring(0, i) + s.Substring(k + 2);
 								--i;
 							}
-							else
-							{
-								s = s.Substring(0, i);
-								break;
-							}
-
 						}
 						else // if (c == '/')
 						{
-							if (i + 1 >= s.Length)
-								break;
 							var c2 = s[i + 1];
 							if (c2 == '/')
 							{
@@ -448,7 +448,7 @@ namespace Lexxys.Xml
 
 				return stream.Token(TokenType, n, s.Trim());
 			}
-			private static readonly char[] BeginComments = new[] { '/', '#' };
+			private static readonly char[] BeginComments = new[] { '/', '#', '<' };
 
 			private static bool IsWhiteSpace(char value)
 			{

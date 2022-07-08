@@ -24,7 +24,6 @@ public static class LogRecordsService
 	private static volatile InstanceCollection Instance = new InstanceCollection(Array.Empty<Listener>(), 1);
 	private static readonly Object SyncRoot = new Object();
 	private static volatile int _lockDepth;
-	private static readonly ConcurrentDictionary<string, ILogRecordWriter> _writers = new ConcurrentDictionary<string, ILogRecordWriter>(StringComparer.OrdinalIgnoreCase);
 
 	public static void Start(IEnumerable<ILogWriter> writers)
 	{
@@ -105,7 +104,6 @@ public static class LogRecordsService
 					var loggerType = typeof(Logger<>).MakeGenericType(type.GetGenericArguments());
 					result = Activator.CreateInstance(loggerType);
 				}
-
 			}
 			else
 			{
