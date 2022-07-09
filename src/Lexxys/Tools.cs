@@ -865,11 +865,10 @@ namespace Lexxys
 			return chars;
 		}
 
-		[return: NotNullIfNotNull("value")]
-		public static string? ToHexString(byte[]? value, string? prefix = null)
+		public static string ToHexString(byte[] value, string? prefix = null)
 		{
 			if (value == null)
-				return null;
+				throw new ArgumentNullException(nameof(value));
 			int offset = prefix?.Length ?? 0;
 			int length = value.Length;
 			char[] chars = new char[offset + length * 2];
@@ -881,11 +880,10 @@ namespace Lexxys
 			return new string(chars);
 		}
 
-		[return: NotNullIfNotNull("value")]
-		public static string? ToBitsString(byte[]? value)
+		public static string ToBitsString(byte[] value)
 		{
 			if (value == null)
-				return null;
+				throw new ArgumentNullException(nameof(value));
 			if (value.Length == 0)
 				return "";
 			var text = new StringBuilder(value.Length * 9);
@@ -984,11 +982,10 @@ namespace Lexxys
 			return result.ToString(0, result.Length - newLine.Length);
 		}
 
-		[return: NotNullIfNotNull("value")]
-		public static unsafe string? EncodeUrl(string? value)
+		public static unsafe string EncodeUrl(string value)
 		{
 			if (value == null)
-				return null;
+				throw new ArgumentNullException(nameof(value));
 
 			fixed (char* str = value)
 			{
@@ -1056,11 +1053,10 @@ namespace Lexxys
 		}
 		private static readonly char[] __hexDigits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-		[return: NotNullIfNotNull("value")]
-		public static unsafe string? DecodeUrl(string? value)
+		public static unsafe string DecodeUrl(string value)
 		{
 			if (value == null)
-				return null;
+				throw new ArgumentNullException(nameof(value));
 
 			int i = value.IndexOf('%');
 			value = value.Replace('+', ' ');

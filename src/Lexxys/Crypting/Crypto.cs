@@ -25,27 +25,23 @@ namespace Lexxys.Crypting
 		private static readonly ConcurrentDictionary<AlgKeyPair, Decryptor> _decryptorCache = new ConcurrentDictionary<AlgKeyPair, Decryptor>(AlgKeyPair.Comparer);
 		private static readonly object SyncObj = new object();
 
-		public static Hasher Hasher(string algorithm)
-		{
-			return _hasherCache.GetOrAdd(new AlgKeyPair(algorithm, null), o => new Hasher((IHasherAlgorythm)CreateInstance(CryptoProviderType.Hasher, o.Algorithm)));
-		}
+		public static Hasher Hasher(string algorithm) => _hasherCache.GetOrAdd(
+			new AlgKeyPair(algorithm, null),
+			o => new Hasher((IHasherAlgorythm)CreateInstance(CryptoProviderType.Hasher, o.Algorithm)));
 
-		public static Hasher Hasher(string algorithm, object key)
-		{
-			return _hasherCache.GetOrAdd(new AlgKeyPair(algorithm, key), o => new Hasher((IHasherAlgorythm)CreateInstance(CryptoProviderType.Hasher, o.Algorithm, o.Key)));
-		}
+		public static Hasher Hasher(string algorithm, object key) => _hasherCache.GetOrAdd(
+			new AlgKeyPair(algorithm, key),
+			o => new Hasher((IHasherAlgorythm)CreateInstance(CryptoProviderType.Hasher, o.Algorithm, o.Key)));
 
-		public static Encryptor Encryptor(string algorithm, object key)
-		{
-			return _encryptorCache.GetOrAdd(new AlgKeyPair(algorithm, key), o => new Encryptor((IEncryptorAlgorythm)CreateInstance(CryptoProviderType.Encryptor, o.Algorithm, o.Key)));
-		}
+		public static Encryptor Encryptor(string algorithm, object key) => _encryptorCache.GetOrAdd(
+			new AlgKeyPair(algorithm, key),
+			o => new Encryptor((IEncryptorAlgorythm)CreateInstance(CryptoProviderType.Encryptor, o.Algorithm, o.Key)));
 
-		public static Decryptor Decryptor(string algorithm, object key)
-		{
-			return _decryptorCache.GetOrAdd(new AlgKeyPair(algorithm, key), o => new Decryptor((IDecryptorAlgorythm)CreateInstance(CryptoProviderType.Decryptor, o.Algorithm, o.Key)));
-		}
+		public static Decryptor Decryptor(string algorithm, object key) => _decryptorCache.GetOrAdd(
+			new AlgKeyPair(algorithm, key),
+			o => new Decryptor((IDecryptorAlgorythm)CreateInstance(CryptoProviderType.Decryptor, o.Algorithm, o.Key)));
 
-		private struct AlgKeyPair: IEquatable<AlgKeyPair>
+		private readonly struct AlgKeyPair: IEquatable<AlgKeyPair>
 		{
 			public static readonly IEqualityComparer<AlgKeyPair> Comparer = new EqualityComparer();
 			public readonly string Algorithm;
@@ -58,26 +54,18 @@ namespace Lexxys.Crypting
 			}
 
 			public override bool Equals(object? obj)
-			{
-				return obj is AlgKeyPair akp && Equals(akp);
-			}
+				=> obj is AlgKeyPair akp && Equals(akp);
 
 			public bool Equals(AlgKeyPair other)
-			{
-				return Algorithm == other.Algorithm && (Key is null ? other.Key is null: other.Key is null ? false: EqualityComparer<object>.Default.Equals(Key, other.Key));
-			}
+				=> Algorithm == other.Algorithm && Object.Equals(Key, other.Key);
 
 			public override int GetHashCode()
-			{
-				return HashCode.Join(Algorithm.GetHashCode(), Key?.GetHashCode() ?? 0);
-			}
+				=> HashCode.Join(Algorithm.GetHashCode(), Key?.GetHashCode() ?? 0);
 
 			public override string ToString()
-			{
-				return Algorithm + ": " + (Key?.ToString() ?? "<null>");
-			}
+				=> Algorithm + ": " + (Key?.ToString() ?? "<null>");
 
-			private class EqualityComparer : IEqualityComparer<AlgKeyPair>
+			private class EqualityComparer: IEqualityComparer<AlgKeyPair>
 			{
 				public bool Equals(AlgKeyPair x, AlgKeyPair y) => x.Equals(y);
 				public int GetHashCode(AlgKeyPair obj) => obj.GetHashCode();

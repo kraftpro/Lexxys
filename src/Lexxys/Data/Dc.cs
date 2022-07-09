@@ -33,7 +33,7 @@ namespace Lexxys.Data
 		public static ILogging Timing => __logTrace ??= StaticServices.Create<ILogging>("Dc-Timing");
 		private static ILogging? __logTrace;
 
-		private static IValue<ConnectionStringInfo> __connectionInfo = Config.Current.GetValue<ConnectionStringInfo>(ConfigSection);
+		private static readonly IValue<ConnectionStringInfo> __connectionInfo = Config.Current.GetValue<ConnectionStringInfo>(ConfigSection);
 		private static IDataContextFactory __staticDataFactory = new SimpleDataFactory();
 		[ThreadStatic]
 		private static IDataContext? __instance;
@@ -517,7 +517,7 @@ namespace Lexxys.Data
 		}
 		public static string Value(byte[]? value)
 		{
-			return Strings.ToHexString(value, "0x") ?? NullValue;
+			return value == null ? NullValue: Strings.ToHexString(value, "0x");
 		}
 		public static string Value(IEnum? value)
 		{
@@ -902,7 +902,7 @@ namespace Lexxys.Data
 
 		internal class Connecting: IContextHolder
 		{
-			private DataContext _context;
+			private readonly DataContext _context;
 			private readonly int _count;
 			private bool _disposed;
 

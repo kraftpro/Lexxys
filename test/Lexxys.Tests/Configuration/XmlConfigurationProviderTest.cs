@@ -165,7 +165,7 @@ namespace Lexxys.Tests.Configuration
 Setting
 	:intItem		100
 	:dateTimeItem	2010-01-12 #comment
-	stringItem		Aa Bb #<inline comment >#Cc
+	stringItem		Aa Bb <#inline comment #>Cc
 	intBasedItem	200
 	intArray
 		item	1 # comments

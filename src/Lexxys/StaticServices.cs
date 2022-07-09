@@ -67,7 +67,7 @@ namespace Lexxys
 				}
 			} while (Interlocked.CompareExchange(ref __factoryMap, next, local) != local);
 		}
-		private static Type[] __voidType = new[] { typeof(void) };
+		private static readonly Type[] __voidType = new[] { typeof(void) };
 
 		public static bool TryCreate(Type serviceType, object?[]? arguments, [MaybeNullWhen(false)] out object result)
 		{
@@ -332,7 +332,7 @@ namespace Lexxys
 			public static readonly IFactory Instance = new InternalConfigFactory();
 
 			public IReadOnlyCollection<Type>? SupportedTypes => __supportedTypes;
-			private static Type[] __supportedTypes = new[] { typeof(IConfigSection), typeof(IConfigService), typeof(IConfigLogger) };
+			private static readonly Type[] __supportedTypes = new[] { typeof(IConfigSection), typeof(IConfigService), typeof(IConfigLogger) };
 			private static IConfigSection? _configSection;
 
 			public bool TryCreate(Type type, object?[]? arguments, [MaybeNullWhen(false)] out object result)
@@ -441,10 +441,10 @@ namespace Lexxys
 					result = null;
 				return result != null;
 			}
-
 			private class DummyConfigSource: IConfigSource
 			{
 				public int Version => 1;
+				#pragma warning disable CS0067
 				public event EventHandler<ConfigurationEventArgs>? Changed;
 				public IReadOnlyList<T> GetList<T>(string key) => Array.Empty<T>();
 				public object? GetValue(string key, Type objectType) => null;

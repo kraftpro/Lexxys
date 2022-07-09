@@ -16,9 +16,9 @@ namespace Lexxys.Cube
 		public const int MinPriority = -9;
 
 		/// <summary>Should the element be manipulated as an open brace</summary>
-		public virtual bool IsOpenBrace { get { return false; } }
+		public virtual bool IsOpenBrace => false;
 		/// <summary>Should the element be manipulated as an closed brace</summary>
-		public virtual bool IsClosedBrace { get { return false; } }
+		public virtual bool IsClosedBrace => false;
 		/// <summary>Priority of the Element</summary>
 		public abstract int Priority { get; }
 		/// <summary>Evaluate expression element</summary>
@@ -28,14 +28,8 @@ namespace Lexxys.Cube
 	/// <summary>Represents open brace</summary>
 	public class OpenBraceToken: PolishToken
 	{
-		public override bool IsOpenBrace
-		{
-			get { return true; }
-		}
-		public override int Priority
-		{
-			get { return MinPriority - 2; }
-		}
+		public override bool IsOpenBrace => true;
+		public override int Priority => MinPriority - 2;
 		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
 			throw EX.NotSupported("OpenBraceToken.Evaluate");
@@ -45,14 +39,8 @@ namespace Lexxys.Cube
 	/// <summary>Represents closed brace</summary>
 	public class ClosedBraceToken: PolishToken
 	{
-		public override bool IsClosedBrace
-		{
-			get { return true; }
-		}
-		public override int Priority
-		{
-			get { return MinPriority - 1; }
-		}
+		public override bool IsClosedBrace => true;
+		public override int Priority => MinPriority - 1;
 		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
 			throw EX.NotSupported("ClosedBraceToken.Evaluate");
@@ -62,10 +50,7 @@ namespace Lexxys.Cube
 	/// <summary>Represents literal (constant, variable or function)</summary>
 	public class LiteralToken: PolishToken
 	{
-		public override int Priority
-		{
-			get { return 0; }
-		}
+		public override int Priority => 0;
 		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
 			stack.Push(this);
