@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Lexxys
 {
 	[AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-	sealed class NotNullWhenAttribute: Attribute
+	public sealed class NotNullWhenAttribute: Attribute
 	{
 		public bool ReturnValue { get; }
 
@@ -19,7 +19,7 @@ namespace Lexxys
 	}
 
 	[AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-	sealed class MaybeNullWhenAttribute: Attribute
+	public sealed class MaybeNullWhenAttribute: Attribute
 	{
 		public bool ReturnValue { get; }
 
@@ -30,7 +30,7 @@ namespace Lexxys
 	}
 
 	[AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple = true, Inherited = false)]
-	sealed class NotNullIfNotNullAttribute: Attribute
+	public sealed class NotNullIfNotNullAttribute: Attribute
 	{
 		public string ParameterName { get; }
 
