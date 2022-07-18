@@ -18,7 +18,7 @@ namespace Lexxys.Logging;
 
 public class FileLogWriter: LogWriter
 {
-	private TimeSpan _timeout = DefaultTimeout;
+	private readonly TimeSpan _timeout = DefaultTimeout;
 	private readonly string _file;
 	private bool _truncate;
 	private bool _errorLogged;
@@ -100,7 +100,11 @@ public class FileLogWriter: LogWriter
 				int k = name.LastIndexOf('.');
 				name = k < 0 ?
 					name + "." + SixBitsCoder.Thirty((ulong)(WatchTimer.Query(0) % WatchTimer.TicksPerMinute)).PadLeft(6, '0') + ".":
+#if NET6_0_OR_GREATER
+					String.Concat(name.AsSpan(0, k), ".", SixBitsCoder.Thirty((ulong)(WatchTimer.Query(0) % WatchTimer.TicksPerMinute)).PadLeft(6, '0'), name.AsSpan(k));
+#else
 					name.Substring(0, k) + "." + SixBitsCoder.Thirty((ulong)(WatchTimer.Query(0) % WatchTimer.TicksPerMinute)).PadLeft(6, '0') + name.Substring(k);
+#endif
 				o = OpenLogStream(name, TimeSpan.Zero, _truncate);
 			}
 			_truncate = false;
@@ -192,9 +196,7 @@ public class FileLogWriter: LogWriter
 					return null;
 				if (delay >= timeout)
 					return null;
-				if (r == null)
-					r = new Random();
-				int sleep = r.Next(bound);
+				int sleep = (r ??= new Random()).Next(bound);
 				delay += TimeSpan.FromMilliseconds(sleep);
 				bound += bound;
 				System.Threading.Thread.Sleep(sleep);
@@ -327,12 +329,11 @@ public class EventLogLogWriter: LogWriter
 		"  ",
 		". ");
 
-	private string? _eventSource;
+	private readonly string? _eventSource;
 
 	public EventLogLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
 	{
-		if (config == null)
-			config = XmlLiteNode.Empty;
+		config ??= XmlLiteNode.Empty;
 		var eventSource = XmlTools.GetString(config["eventSource"], SystemLog.EventSource)!;
 		if (eventSource.Length > 254)
 			eventSource = eventSource.Substring(0, 254);

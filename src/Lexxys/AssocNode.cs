@@ -92,8 +92,7 @@ namespace Lexxys
 			{
 				foreach (AssocNode x in ComposeForwards())
 					AddForward(x);
-				if (_forwards == null)
-					_forwards = _emptyList;
+				_forwards ??= _emptyList;
 				_forwardsBuilt = true;
 			}
 		}
@@ -104,8 +103,7 @@ namespace Lexxys
 			{
 				foreach (AssocNode x in ComposeBackwards())
 					AddBackward(x);
-				if (_backwards == null)
-					_backwards = _emptyList;
+				_backwards ??= _emptyList;
 				_backwardsBuilt = true;
 			}
 		}
