@@ -34,16 +34,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="RL\Curl.cs" />
-    <Compile Remove="RL\CurlBuilder.cs" />
-    <Compile Remove="RL\FileScheme.cs" />
-    <Compile Remove="RL\HttpScheme.cs" />
-    <Compile Remove="RL\PartialScheme.cs" />
-    <Compile Remove="RL\ResourceDescription.cs" />
-    <Compile Remove="RL\ResourceTransportFactory.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
