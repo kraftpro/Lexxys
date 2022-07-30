@@ -1025,6 +1025,8 @@ namespace Lexxys
 		/// <returns></returns>
 		public XmlBuilder Value(IEnumerable<IDumpXml> items, string itemName = null)
 		{
+			if (items is null)
+				return this;
 			foreach (var item in items)
 			{
 				Element(itemName ?? item.XmlElementName).Value(item).End();
@@ -1344,6 +1346,8 @@ namespace Lexxys
 		/// <returns></returns>
 		public static explicit operator StringBuilder(XmlStringBuilder xml)
 		{
+			if (xml is null)
+				throw new ArgumentNullException(nameof(xml));
 			return xml._buffer;
 		}
 		/// <summary>

@@ -114,9 +114,9 @@ namespace Lexxys
 		/// <exception cref="ArgumentNullException"></exception>
 		public IBlobStorageProvider? GetProvider(string uri)
 		{
-			if (uri is not { Length: > 0 })
+			if (uri is null || uri.Length <= 0)
 				throw new ArgumentNullException(nameof(uri));
-		
+
 			var (scheme, _) = SplitSchemeAndPath(uri);
 			if (!_schemes.TryGetValue(scheme, out var providers))
 				providers = _providers;

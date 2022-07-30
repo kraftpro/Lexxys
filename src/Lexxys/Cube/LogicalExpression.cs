@@ -8,7 +8,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
 using Lexxys.Tokenizer;
 using System.Text.RegularExpressions;
@@ -46,6 +45,8 @@ namespace Lexxys.Cube
 		/// <param name="tokenizer">Text of expression</param>
 		public LogicalExpression(TokenScanner tokenizer)
 		{
+			if (tokenizer is null)
+				throw new ArgumentNullException(nameof(tokenizer));
 			_dictionary = new Dictionary<string, int>();
 			Parse(tokenizer);
 		}
@@ -55,6 +56,8 @@ namespace Lexxys.Cube
 		/// <param name="dictionary">Known parameters</param>
 		public LogicalExpression(TokenScanner tokenizer, Dictionary<string, int> dictionary)
 		{
+			if (tokenizer is null)
+				throw new ArgumentNullException(nameof(tokenizer));
 			_dictionary = dictionary;
 			Parse(tokenizer);
 		}
@@ -197,6 +200,8 @@ namespace Lexxys.Cube
 			if (mustResult.Length <= 2)
 				return mustResult.Length == 0 ? "FALSE":
 					mustResult[0] ? "TRUE": "FALSE";
+			if (names == null || names.Length == 0)
+				return "FALSE";
 
 			var dnf = new StringBuilder();
 			var result = new BitArray(mustResult);
@@ -327,6 +332,8 @@ namespace Lexxys.Cube
 		/// <summary>Evaluate expression for all posible combination of argument value.</summary>
 		public BitArray EvaluateForAllVariants(string[] args)
 		{
+			if (args is null)
+				throw new ArgumentNullException(nameof(args));
 			int width = Math.Max(_dictionary.Count, args.Length);
 			if (width < 0 || width > 16)
 				throw EX.ArgumentOutOfRange("Math.Min(_dictionary.Count, args.Count)", width);
@@ -356,6 +363,8 @@ namespace Lexxys.Cube
 		/// <returns>Expression in DNF form.</returns>
 		public static string ConvertToDnf(string expression)
 		{
+			if (expression is null)
+				throw new ArgumentNullException(nameof(expression));
 			if (__singleNameRex.IsMatch(expression))
 			{
 				expression = expression.Trim().ToUpperInvariant();
@@ -380,6 +389,9 @@ namespace Lexxys.Cube
 		{
 			if (result == null)
 				throw EX.ArgumentNull(nameof(result));
+			if (names is null)
+				throw new ArgumentNullException(nameof(names));
+
 			var dnf = new StringBuilder();
 			if (result.Length < 2)
 				return result.Length == 0 ? "FALSE":

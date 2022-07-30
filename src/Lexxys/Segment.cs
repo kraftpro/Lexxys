@@ -56,6 +56,8 @@ namespace Lexxys
 
 		public static (IList<T>, IList<T>) Split<T>(IList<T> list, int boundary)
 		{
+			if (list is null)
+				throw new ArgumentNullException(nameof(list));
 			if (boundary < 0 || boundary > list.Count)
 				throw new ArgumentOutOfRangeException(nameof(boundary), boundary, null);
 			if (boundary == 0)
@@ -67,6 +69,8 @@ namespace Lexxys
 
 		public static (IReadOnlyList<T>, IReadOnlyList<T>) Split<T>(IReadOnlyList<T> list, int boundary)
 		{
+			if (list is null)
+				throw new ArgumentNullException(nameof(list));
 			if (boundary < 0 || boundary > list.Count)
 				throw new ArgumentOutOfRangeException(nameof(boundary), boundary, null);
 			if (boundary == 0)

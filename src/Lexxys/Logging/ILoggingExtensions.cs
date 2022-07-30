@@ -8,6 +8,8 @@ namespace Lexxys
 {
 	public static class ILoggingExtensions
 	{
+		#pragma warning disable CA1062 // Validate arguments of public methods
+
 		public static void Log(this ILogging logger, LogType logType, string? source, string? message, Exception? exception, IDictionary? args)
 		{
 			if (logger.IsEnabled(logType))

@@ -28,6 +28,8 @@ namespace Lexxys.Tokenizer
 
 		public LexicalToken GetNextToken(CharStream stream, Func<LexicalToken> source)
 		{
+			if (source is null)
+				throw new ArgumentNullException(nameof(source));
 			return _stack.Count > 0 ? _stack.Pop() : source();
 		}
 	}
@@ -46,6 +48,8 @@ namespace Lexxys.Tokenizer
 
 		public LexicalToken GetNextToken(CharStream stream, Func<LexicalToken> source)
 		{
+			if (source is null)
+				throw new ArgumentNullException(nameof(source));
 			if (_back)
 			{
 				_back = false;
@@ -69,6 +73,11 @@ namespace Lexxys.Tokenizer
 
 		public LexicalToken GetNextToken(CharStream stream, Func<LexicalToken> source)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+			if (source is null)
+				throw new ArgumentNullException(nameof(source));
+
 			if (_current != null)
 			{
 				if (_indent.Count > 0)
@@ -143,6 +152,9 @@ namespace Lexxys.Tokenizer
 
 		public LexicalToken GetNextToken(CharStream stream, Func<LexicalToken> source)
 		{
+			if (source is null)
+				throw new ArgumentNullException(nameof(source));
+
 			LexicalToken token;
 			if (_back > 0)
 			{

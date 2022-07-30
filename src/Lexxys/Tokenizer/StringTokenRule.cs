@@ -31,6 +31,8 @@ namespace Lexxys.Tokenizer
 
 		public override LexicalToken? TryParse(CharStream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
 			if (stream[0] != '"' && stream[0] != '\'')
 				return null;
 			return ParseString(TokenType, stream, EscapeChar);
@@ -38,6 +40,8 @@ namespace Lexxys.Tokenizer
 
 		public static LexicalToken ParseString(LexicalTokenType tokenType, CharStream stream, char escapeChar)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
 			char c0 = stream[0];
 			StringBuilder sb = new StringBuilder();
 			int i = 1;
@@ -75,6 +79,8 @@ namespace Lexxys.Tokenizer
 
 		public static char ParseEscape(CharStream stream, int position, out int next)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
 			int k;
 			int i = position;
 			int j;

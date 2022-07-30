@@ -506,6 +506,7 @@ namespace Lexxys.Xml
 		[DebuggerDisplay("Number = {_left},{_right}; Scale={_scale}; Point={_point}")]
 		private struct NumberScale
 		{
+			#pragma warning disable CA2207 // Initialize value type static fields inline
 			private int _width;
 			private long _left;
 			private long _right;
@@ -1015,7 +1016,7 @@ namespace Lexxys.Xml
 
 		public static bool TryGetEnum(string? value, Type enumType, [MaybeNullWhen(false)] out object result)
 		{
-			if (!IsEnum(enumType))
+			if (enumType is null || !IsEnum(enumType))
 			{
 				result = null;
 				return false;

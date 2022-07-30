@@ -66,6 +66,9 @@ namespace Lexxys
 
 		public override StringBuilder ToString(StringBuilder text, IFormatProvider provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			var format = (DateTimeFormatInfo)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
 			text.Append("every ")
 				.Append(
@@ -79,13 +82,13 @@ namespace Lexxys
 			return text;
 		}
 
-		public bool Equals(WeeklySchedule that)
+		public bool Equals(WeeklySchedule other)
 		{
-			if (that is null)
+			if (other is null)
 				return false;
-			if (ReferenceEquals(this, that))
+			if (ReferenceEquals(this, other))
 				return true;
-			return WeekPeriod == that.WeekPeriod && Comparer.Equals(DayList, that.DayList);
+			return WeekPeriod == other.WeekPeriod && Comparer.Equals(DayList, other.DayList);
 		}
 
 		public override bool Equals(Schedule that)
@@ -112,6 +115,9 @@ namespace Lexxys
 
 		public override XmlBuilder ToXmlContent(XmlBuilder xml)
 		{
+			if (xml is null)
+				throw new ArgumentNullException(nameof(xml));
+
 			xml.Item("type", ScheduleType);
 			if (WeekPeriod != 1)
 				xml.Item("week", WeekPeriod);
@@ -124,6 +130,9 @@ namespace Lexxys
 
 		public override JsonBuilder ToJsonContent(JsonBuilder json)
 		{
+			if (json is null)
+				throw new ArgumentNullException(nameof(json));
+
 			json.Item("type").Val(ScheduleType);
 			if (WeekPeriod != 1)
 				json.Item("week").Val(WeekPeriod);

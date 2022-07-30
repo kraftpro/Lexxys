@@ -133,7 +133,7 @@ namespace Lexxys
 
 		public static void AddFactory(ILoggerFactory? factory) => AddFactory(MsLoggerFactory.CreateFactory(factory));
 
-		public static void AddLoggerFactory(IServiceProvider serviceProvider) => AddFactory((ILoggerFactory?)serviceProvider.GetService(typeof(ILoggerFactory)));
+		public static void AddLoggerFactory(IServiceProvider serviceProvider) => AddFactory((ILoggerFactory?)(serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider))).GetService(typeof(ILoggerFactory)));
 
 		public static void AddLoggingStab() => AddFactory(DummyLoggingFactory.Instance);
 

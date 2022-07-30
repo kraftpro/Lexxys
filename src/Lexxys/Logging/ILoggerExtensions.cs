@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys
 {
+	#pragma warning disable CA1062 // Validate arguments of public methods
+
 	public static class ILoggerExtensions
 	{
 		public static bool IsEnabled(this ILogger logger, LogType logType)

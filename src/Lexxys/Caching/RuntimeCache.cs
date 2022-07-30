@@ -62,6 +62,8 @@ namespace Lexxys
 		{
 			if (Default[key] is TValue value)
 				return value;
+			if (producer is null)
+				throw new ArgumentNullException(nameof(producer));
 
 			if (timeToLive == default)
 				timeToLive = DefaultTimeToLive;
@@ -86,6 +88,8 @@ namespace Lexxys
 		{
 			if (Default[key] is TValue value)
 				return value;
+			if (producer is null)
+				throw new ArgumentNullException(nameof(producer));
 
 			if (slidingExpiration == default)
 				slidingExpiration = DefaultSlidingExpiration;

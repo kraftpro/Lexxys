@@ -16,6 +16,8 @@ namespace Lexxys
 	{
 		public static StringBuilder Append(this StringBuilder text, params string[] values)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
 			if (values == null)
 				return text;
 			for (int i = 0; i < values.Length; ++i)
@@ -27,6 +29,8 @@ namespace Lexxys
 
 		public static StringBuilder Append<T>(this StringBuilder text, IEnumerable<T> source, Func<T, string> producer, string separator = null)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
 			if (source == null)
 				return text;
 			if (producer == null)

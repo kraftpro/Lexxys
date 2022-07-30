@@ -587,12 +587,12 @@ namespace Lexxys
 
 		public static bool operator true(ValidationResults value)
 		{
-			return value.Success;
+			return value == null || value.Success;
 		}
 
 		public static bool operator false(ValidationResults value)
 		{
-			return !value.Success;
+			return value != null && !value.Success;
 		}
 
 		private static string CleanName(string value)

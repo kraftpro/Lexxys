@@ -17,11 +17,17 @@ namespace Lexxys
 	{
 		public static void Write(this Stream stream, byte value)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
 			stream.WriteByte(value);
 		}
 
 		public static void Write(this Stream stream, byte[] value)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+			if (value == null)
+				return;
 			stream.Write(value, 0, value.Length);
 		}
 	}

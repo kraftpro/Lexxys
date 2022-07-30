@@ -37,31 +37,31 @@ namespace Lexxys.Configuration
 
 		public event EventHandler<ConfigurationEventArgs>? Changed;
 
-		public virtual object? GetValue(string reference, Type returnType)
+		public virtual object? GetValue(string key, Type objectType)
 		{
-			if (reference == null || reference.Length == 0)
+			if (key == null || key.Length == 0)
 				return null;
 			if (_source == null)
 				return null;
 			XmlLiteNode root = GetRootNode();
 			if (root == null || root.IsEmpty)
 				return null;
-			var node = XmlLiteNode.SelectFirst(reference, root.Elements);
+			var node = XmlLiteNode.SelectFirst(key, root.Elements);
 			if (node == null)
 				return null;
-			return ParseValue(node, returnType);
+			return ParseValue(node, objectType);
 		}
 
-		public virtual IReadOnlyList<T> GetList<T>(string reference)
+		public virtual IReadOnlyList<T> GetList<T>(string key)
 		{
-			if (reference == null || reference.Length == 0)
+			if (key == null || key.Length == 0)
 				return new List<T>();
 			if (_source == null)
 				return new List<T>();
 			XmlLiteNode root = GetRootNode();
 			if (root == null || root.IsEmpty)
 				return new List<T>();
-			IEnumerable<XmlLiteNode> nodes = XmlLiteNode.Select(reference, root.Elements);
+			IEnumerable<XmlLiteNode> nodes = XmlLiteNode.Select(key, root.Elements);
 			return ReadOnly.WrapCopy(nodes
 				.Select(o => ParseValue(o, typeof(T)))
 				.Where(o => o != null)
@@ -82,7 +82,7 @@ namespace Lexxys.Configuration
 			bool ignoreCase = parameters?.FindIndex(o => String.Equals(XmlTools.OptionIgnoreCase, o, StringComparison.OrdinalIgnoreCase)) >= 0;
 			bool forceAttib = parameters?.FindIndex(o => String.Equals(XmlTools.OptionForceAttributes, o, StringComparison.OrdinalIgnoreCase)) >= 0;
 
-			var sourceType = extension.TrimStart('.');
+			var sourceType = extension?.TrimStart('.');
 			if (String.Equals(sourceType, "INI", StringComparison.OrdinalIgnoreCase))
 				return (content, file) => IniToXmlConverter.ConvertLite(content, ignoreCase);
 			if (String.Equals(sourceType, "TXT", StringComparison.OrdinalIgnoreCase) || String.Equals(sourceType, "TEXT", StringComparison.OrdinalIgnoreCase))

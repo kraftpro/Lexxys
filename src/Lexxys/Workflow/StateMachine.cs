@@ -341,6 +341,8 @@ namespace Lexxys.Workflow
 
 		public static StateMachine FromXml(XmlReader reader)
 		{
+			if (reader is null)
+				throw new ArgumentNullException(nameof(reader));
 			if (reader.MoveToContent() != XmlNodeType.Element)
 				reader.Read();
 			string name = reader["name"] ?? reader.Name;
@@ -466,6 +468,11 @@ namespace Lexxys.Workflow
 
 		public StateMachineTransition(string name, string guard, string procedure, StateMachineState sourceState, StateMachineState targetState, Dictionary<string, string> attributes)
 		{
+			if (sourceState is null)
+				throw new ArgumentNullException(nameof(sourceState));
+			if (targetState is null)
+				throw new ArgumentNullException(nameof(targetState));
+
 			_name = name;
 			_guard = guard;
 			_procedure = procedure;

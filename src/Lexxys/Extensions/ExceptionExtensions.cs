@@ -16,6 +16,8 @@ namespace Lexxys
 		public static T Add<T>(this T exception, string name, object value)
 			where T: Exception
 		{
+			if (exception == null)
+				return null;
 			if (value != null && !value.GetType().IsSerializable)
 				value = value.ToString();
 			if (exception.Data.Contains(name))

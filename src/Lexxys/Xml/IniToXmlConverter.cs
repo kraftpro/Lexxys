@@ -25,6 +25,8 @@ namespace Lexxys.Xml
 
 		public static string Convert(string source)
 		{
+			if (source is null)
+				throw new ArgumentNullException(nameof(source));
 			XmlStringBuilder builder = new XmlStringBuilder();
 			Convert(builder, source);
 			return builder.ToString();
@@ -32,6 +34,8 @@ namespace Lexxys.Xml
 
 		public static List<XmlLiteNode> ConvertLite(string source, bool ignoreCase = false)
 		{
+			if (source is null)
+				throw new ArgumentNullException(nameof(source));
 			var builder = new XmlLiteBuilder(ignoreCase);
 			Convert(builder, source);
 			return builder.Nodes;

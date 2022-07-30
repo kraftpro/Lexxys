@@ -81,6 +81,9 @@ namespace Lexxys.Cube
 
 		public string BuildDnf(string[] arguments)
 		{
+			if (arguments is null)
+				throw new ArgumentNullException(nameof(arguments));
+
 			var sb = new StringBuilder();
 			if (arguments.Length != Dimension)
 				throw EX.ArgumentOutOfRange("arguments.Length", arguments.Length, Dimension);
@@ -106,6 +109,8 @@ namespace Lexxys.Cube
 
 		public string BuildMinimalDnf(string[] arguments)
 		{
+			if (arguments is null)
+				throw new ArgumentNullException(nameof(arguments));
 			if (arguments.Length != Dimension)
 				throw EX.ArgumentOutOfRange("arguments.Length", arguments.Length, Dimension);
 			if (Count == (1 << Dimension))

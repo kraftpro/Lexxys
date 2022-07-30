@@ -46,6 +46,8 @@ namespace Lexxys
 
 		public static int FindIndex<T>(this IList<T> list, Predicate<T> match)
 		{
+			if (list is null)
+				throw new ArgumentNullException(nameof(list));
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -59,6 +61,8 @@ namespace Lexxys
 
 		public static int FindIndex<T>(this ISafeList<T> list, Predicate<T> match)
 		{
+			if (list is null)
+				throw new ArgumentNullException(nameof(list));
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -72,6 +76,8 @@ namespace Lexxys
 
 		public static int FindIndex<T>(this IList<T> list, int startIndex, Predicate<T> match)
 		{
+			if (list is null)
+				throw new ArgumentNullException(nameof(list));
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -85,6 +91,8 @@ namespace Lexxys
 
 		public static int FindIndex<T>(this ISafeList<T> list, int startIndex, Predicate<T> match)
 		{
+			if (list is null)
+				throw new ArgumentNullException(nameof(list));
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -98,6 +106,8 @@ namespace Lexxys
 
 		public static int FindLastIndex<T>(this IList<T> list, Predicate<T> match)
 		{
+			if (list is null)
+				throw new ArgumentNullException(nameof(list));
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -111,6 +121,8 @@ namespace Lexxys
 
 		public static int FindLastIndex<T>(this ISafeList<T> list, Predicate<T> match)
 		{
+			if (list is null)
+				throw new ArgumentNullException(nameof(list));
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -160,6 +172,9 @@ namespace Lexxys
 		/// <returns></returns>
 		public static T[] ToArray<T>(this IReadOnlyCollection<T> collection)
 		{
+			if (collection is null)
+				throw new ArgumentNullException(nameof(collection));
+
 			var result = new T[collection.Count];
 			int i = 0;
 			foreach (T item in collection)
@@ -199,6 +214,11 @@ namespace Lexxys
 
 		public static IReadOnlyList<TOut> ConvertAll<TIn, TOut>(this IReadOnlyList<TIn> value, Func<TIn, TOut> convert)
 		{
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			if (convert is null)
+				throw new ArgumentNullException(nameof(convert));
+
 			var result = new TOut[value.Count];
 			for (int i = 0; i < result.Length; i++)
 			{

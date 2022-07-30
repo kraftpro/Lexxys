@@ -56,7 +56,7 @@ namespace Lexxys.Tokenizer
 				NameEndCharacter = nameEnd;
 			if (cleanup != null)
 				CleanupResult = cleanup;
-			if (beginning != "")
+			if (!String.IsNullOrEmpty(beginning))
 				_beginning = beginning;
 			if (extra != null)
 				_extra = extra.GetValueOrDefault();
@@ -91,6 +91,8 @@ namespace Lexxys.Tokenizer
 
 		public override LexicalToken? TryParse(CharStream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
 			char ch = stream[0];
 			if (!_isNameStartCharacter(ch))
 				return null;
@@ -118,11 +120,11 @@ namespace Lexxys.Tokenizer
 			return stream.Token(TokenType, text.Length, text);
 		}
 
-		public static bool IsNameStartCharacter(char value) => (Char.IsLetter(value) || value == '_');
+		private static bool IsNameStartCharacter(char value) => (Char.IsLetter(value) || value == '_');
 
-		public static bool IsNamePartCharacter(char value) => (Char.IsLetterOrDigit(value) || value == '_');
+		private static bool IsNamePartCharacter(char value) => (Char.IsLetterOrDigit(value) || value == '_');
 
-		public static string ToUppercase(string name) => name.ToUpperInvariant();
+		private static string ToUppercase(string name) => name.ToUpperInvariant();
 	}
 }
 

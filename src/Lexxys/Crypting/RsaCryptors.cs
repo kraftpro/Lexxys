@@ -44,6 +44,8 @@ namespace Lexxys.Crypting.Cryptors
 
 		public virtual byte[] Encrypt(byte[] text, int offset, int length)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
 			if (offset == 0 && length == text.Length)
 				return _h.Encrypt(text, false);
 			byte[] txt = new byte[length];
@@ -52,6 +54,8 @@ namespace Lexxys.Crypting.Cryptors
 		}
 		public virtual byte[] Decrypt(byte[] bits, int offset, int length)
 		{
+			if (bits is null)
+				throw new ArgumentNullException(nameof(bits));
 			if (offset == 0 && length == bits.Length)
 				return _h.Decrypt(bits, false);
 			byte[] bts = new byte[length];

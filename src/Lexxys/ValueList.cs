@@ -155,6 +155,9 @@ namespace Lexxys
 
 		public bool TryFind(Predicate<TValue> predicate, out TValue result)
 		{
+			if (predicate is null)
+				throw new ArgumentNullException(nameof(predicate));
+
 			int ii = -1;
 			int ij = 0;
 			int len = 0;
@@ -226,6 +229,9 @@ namespace Lexxys
 
 		public int FindIndex(Predicate<TValue> predicate, int start)
 		{
+			if (predicate is null)
+				throw new ArgumentNullException(nameof(predicate));
+
 			if (FindIndexPosition(start, out int ii, out int ij))
 			{
 				int len = _items[ii].Length;

@@ -63,6 +63,8 @@ namespace Lexxys.Cube
 
 		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
 		{
+			if (stack is null)
+				throw new ArgumentNullException(nameof(stack));
 			if (stack.Count < 1)
 				throw EX.Argument(SR.EXP_MissingParameters("NOT"), nameof(stack));
 			PolishToken token = stack.Pop();
@@ -80,6 +82,8 @@ namespace Lexxys.Cube
 
 		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
 		{
+			if (stack is null)
+				throw new ArgumentNullException(nameof(stack));
 			if (stack.Count < 2)
 				throw EX.Argument(SR.EXP_MissingParameters("AND"), nameof(stack));
 			PolishToken token = stack.Pop();
@@ -100,6 +104,8 @@ namespace Lexxys.Cube
 
 		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
 		{
+			if (stack is null)
+				throw new ArgumentNullException(nameof(stack));
 			if (stack.Count < 2)
 				throw EX.Argument(SR.EXP_MissingParameters("OR"), nameof(stack));
 			PolishToken token = stack.Pop();
@@ -120,6 +126,8 @@ namespace Lexxys.Cube
 
 		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
 		{
+			if (stack is null)
+				throw new ArgumentNullException(nameof(stack));
 			if (stack.Count < 2)
 				throw EX.Argument(SR.EXP_MissingParameters("XOR"), nameof(stack));
 			PolishToken token = stack.Pop();

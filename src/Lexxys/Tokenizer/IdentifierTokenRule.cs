@@ -18,6 +18,9 @@ namespace Lexxys.Tokenizer
 
 		public IdentifierTokenRule(LexicalTokenType identifierType, LexicalTokenType keywordType, bool ignoreCase, params string[] keywords)
 		{
+			if (keywords is null)
+				throw new ArgumentNullException(nameof(keywords));
+
 			KeywordTokenType = keywordType;
 			_keywords = new Dictionary<string, LexicalTokenType>();
 			_ignoreCase = ignoreCase;
@@ -46,6 +49,8 @@ namespace Lexxys.Tokenizer
 
 		public IdentifierTokenRule Add(LexicalTokenType type, string keyword)
 		{
+			if (keyword is null)
+				throw new ArgumentNullException(nameof(keyword));
 			if (_ignoreCase)
 				keyword = keyword.ToUpperInvariant();
 			if (!_keywords.TryGetValue(keyword, out LexicalTokenType tp))
@@ -69,6 +74,8 @@ namespace Lexxys.Tokenizer
 
 		public override LexicalToken TryParse(CharStream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
 			char ch = stream[0];
 			if (!(Char.IsLetter(ch) || ch == '_'))
 				return null;

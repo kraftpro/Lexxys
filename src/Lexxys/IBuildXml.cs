@@ -25,6 +25,9 @@ namespace Lexxys
 	{
 		public static XmlLiteBuilder ToXml(this IBuildXml obj, XmlLiteBuilder xml)
 		{
+			if (xml is null)
+				throw new ArgumentNullException(nameof(xml));
+
 			obj?.ToXmlContent(xml.Element(obj.XmlElementName)).End();
 			return xml;
 		}

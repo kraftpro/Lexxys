@@ -38,6 +38,9 @@ namespace Lexxys.Tokenizer
 
 		public override LexicalToken TryParse(CharStream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+
 			int nl = 0;
 			bool Space(char c)
 			{

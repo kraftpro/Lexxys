@@ -4,6 +4,7 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+using System;
 using System.Collections.Generic;
 
 namespace Lexxys
@@ -12,10 +13,14 @@ namespace Lexxys
 	{
 		public static TValue GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> that, TKey key)
 		{
+			if (that is null)
+				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out var value) ? value : default;
 		}
 		public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> that, TKey key)
 		{
+			if (that is null)
+				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out var value) ? value : default;
 		}
 #if NETFRAMEWORK || !NET5_0_OR_GREATER
@@ -26,10 +31,14 @@ namespace Lexxys
 #endif
 		public static TValue GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> that, TKey key, TValue @default)
 		{
+			if (that is null)
+				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out TValue value) ? value : @default;
 		}
 		public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> that, TKey key, TValue @default)
 		{
+			if (that is null)
+				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out TValue value) ? value : @default;
 		}
 #if NETFRAMEWORK || !NET5_0_OR_GREATER
@@ -41,6 +50,11 @@ namespace Lexxys
 
 		public static IEnumerable<TValue> CollectValues<TKey, TValue>(this Dictionary<TKey, TValue> that, IEnumerable<TKey> keys)
 		{
+			if (that is null)
+				throw new ArgumentNullException(nameof(that));
+			if (keys is null)
+				throw new ArgumentNullException(nameof(keys));
+
 			foreach (var key in keys)
 			{
 				if (that.TryGetValue(key, out TValue value))
@@ -49,6 +63,11 @@ namespace Lexxys
 		}
 		public static IEnumerable<TValue> CollectValues<TKey, TValue>(this IDictionary<TKey, TValue> that, IEnumerable<TKey> keys)
 		{
+			if (that is null)
+				throw new ArgumentNullException(nameof(that));
+			if (keys is null)
+				throw new ArgumentNullException(nameof(keys));
+
 			foreach (var key in keys)
 			{
 				if (that.TryGetValue(key, out TValue value))
@@ -57,6 +76,11 @@ namespace Lexxys
 		}
 		public static IEnumerable<TValue> CollectValues<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> that, IEnumerable<TKey> keys)
 		{
+			if (that is null)
+				throw new ArgumentNullException(nameof(that));
+			if (keys is null)
+				throw new ArgumentNullException(nameof(keys));
+
 			foreach (var key in keys)
 			{
 				if (that.TryGetValue(key, out TValue value))

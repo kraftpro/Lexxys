@@ -60,6 +60,9 @@ namespace Lexxys.Crypting.Cryptors
 
 		public virtual void EncryptStream(Stream bits, Stream text)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			var s = new CryptoStream(bits, _h.CreateEncryptor(), CryptoStreamMode.Write);
 			byte[] buffer = new byte[8 * 1024];
 			int n;
@@ -76,6 +79,9 @@ namespace Lexxys.Crypting.Cryptors
 
 		public virtual void DecryptStream(Stream text, Stream bits)
 		{
+			if (bits is null)
+				throw new ArgumentNullException(nameof(bits));
+
 			var s = new CryptoStream(text, _h.CreateDecryptor(), CryptoStreamMode.Write);
 			byte[] buffer = new byte[8 * 1024];
 			int n;

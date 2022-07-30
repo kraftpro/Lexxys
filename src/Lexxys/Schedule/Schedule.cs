@@ -110,6 +110,8 @@ namespace Lexxys
 
 		public virtual DumpWriter DumpContent(DumpWriter writer)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
 			return writer
 				.Text("TypeScheduleType=").Dump(ScheduleType)
 				.Text(",Reminder=").Dump(Reminder);
@@ -119,6 +121,8 @@ namespace Lexxys
 
 		public virtual XmlBuilder ToXmlContent(XmlBuilder xml)
 		{
+			if (xml is null)
+				throw new ArgumentNullException(nameof(xml));
 			xml.Item("type", ScheduleType);
 			if (!Reminder.IsEmpty)
 				xml.Element("reminder").Value(Reminder).End();
@@ -127,6 +131,8 @@ namespace Lexxys
 
 		public virtual JsonBuilder ToJsonContent(JsonBuilder json)
 		{
+			if (json is null)
+				throw new ArgumentNullException(nameof(json));
 			json.Item("type").Val(ScheduleType);
 			if (!Reminder.IsEmpty)
 				json.Item("reminder").Val(Reminder);

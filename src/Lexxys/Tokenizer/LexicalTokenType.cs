@@ -18,6 +18,7 @@ namespace Lexxys.Tokenizer
 	/// </summary>
 	public readonly struct LexicalTokenType: IEquatable<LexicalTokenType>
 	{
+		#pragma warning disable CA1720 // Identifier contains type name
 		public static readonly LexicalTokenType EOF			= new LexicalTokenType(0, 0, "eof");
 		public static readonly LexicalTokenType NUMERIC		= new LexicalTokenType(1, 0, "number");
 		public static readonly LexicalTokenType IDENTIFIER	= new LexicalTokenType(2, 0, "identifier");
@@ -151,6 +152,8 @@ namespace Lexxys.Tokenizer
 		{
 			if (Group == other.Group)
 			{
+				if (items == null)
+					return false;
 				for (int i = 0; i < items.Length; i++)
 				{
 					if (Item == items[i])

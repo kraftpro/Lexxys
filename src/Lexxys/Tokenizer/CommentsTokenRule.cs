@@ -68,6 +68,9 @@ namespace Lexxys.Tokenizer
 
 		public override LexicalToken TryParse(CharStream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+
 			string commentStart = null;
 			string commentEnd = null;
 			string s = stream.Substring(0, _startLength);
@@ -120,6 +123,9 @@ namespace Lexxys.Tokenizer
 
 		public override LexicalToken TryParse(CharStream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+
 			if (stream[0] == '/')
 			{
 				if (stream[1] == '/')
@@ -165,6 +171,9 @@ namespace Lexxys.Tokenizer
 
 		public override LexicalToken TryParse(CharStream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+
 			if (stream[0] == '#')
 			{
 				int i = stream.IndexOf('\n', 2);

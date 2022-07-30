@@ -8,6 +8,7 @@ using System;
 using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -47,6 +48,9 @@ namespace Lexxys
 
 		public virtual StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			if (Attributes.Count == 0)
 				return text;
 			string separator = indent == null ? "," : ", ";
@@ -146,7 +150,7 @@ namespace Lexxys
 		}
 	}
 
-	public readonly struct JsonPair
+	public readonly struct JsonPair: IEquatable<JsonPair>
 	{
 		public static readonly JsonPair Empty = new JsonPair(null, JsonItem.Empty);
 
@@ -182,6 +186,9 @@ namespace Lexxys
 
 		public void Write(Stream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+
 			if (IsEmpty)
 				return;
 			stream.Write(Encoding.UTF8.GetBytes(Strings.EscapeCsString(Name)));
@@ -221,6 +228,16 @@ namespace Lexxys
 		{
 			return ToString(false);
 		}
+
+		public bool Equals(JsonPair other) => Name == other.Name && Item == other.Item;
+
+		public override bool Equals([NotNullWhen(true)] object obj) => obj is JsonPair pair && Equals(pair);
+
+		public override int GetHashCode() => HashCode.Join(Name?.GetHashCode() ?? 0, Item.GetHashCode());
+
+		public static bool operator == (JsonPair left, JsonPair right) => left.Equals(right);
+
+		public static bool operator != (JsonPair left, JsonPair right) => !left.Equals(right);
 	}
 
 
@@ -312,6 +329,9 @@ namespace Lexxys
 
 		public override StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			base.ToString(text, indent, stringLimit, arrayLimit);
 			if (Value == null)
 			{
@@ -360,6 +380,9 @@ namespace Lexxys
 
 		public override void Write(Stream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+
 			base.Write(stream);
 			if (Value == null)
 			{
@@ -420,7 +443,7 @@ namespace Lexxys
 		private static readonly byte[] Null = new[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
 		private static readonly byte[] True = new[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
 		private static readonly byte[] False = new[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
-		private static readonly byte Quot = (byte)'"';
+		private const byte Quot = (byte)'"';
 	}
 
 	public class JsonMap: JsonItem, IEnumerable<JsonPair>
@@ -456,7 +479,7 @@ namespace Lexxys
 					{
 						bool attrib = attributes;
 						var nm = prop.Name;
-						if (nm.StartsWith("@"))
+						if (nm.StartsWith("@", StringComparison.Ordinal))
 						{
 							attrib = true;
 							if (nm.Length > 1)
@@ -476,6 +499,9 @@ namespace Lexxys
 
 		public override StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			base.ToString(text, indent, stringLimit, arrayLimit);
 			text.Append('{');
 			if (Properties != null)
@@ -551,6 +577,9 @@ namespace Lexxys
 
 		public override StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			base.ToString(text, indent, stringLimit, arrayLimit);
 			text.Append('[');
 			if (Items != null)

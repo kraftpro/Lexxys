@@ -88,6 +88,7 @@ namespace Lexxys
 
 		public StringBuilder ToString(StringBuilder text, IFormatProvider provider)
 		{
+			text ??= new StringBuilder();
 			if (ShiftToBusinessDay != BusinessDayShiftType.None)
 			{
 				text.Append(" or the nearest business day ")
@@ -136,6 +137,8 @@ namespace Lexxys
 
 		public DumpWriter DumpContent(DumpWriter writer)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
 			return writer
 				.Text("Value=").Dump(Value)
 				.Text(",RemindInBusinessDays=").Dump(RemindInBusinessDays)
@@ -146,6 +149,8 @@ namespace Lexxys
 
 		public XmlBuilder ToXmlContent(XmlBuilder xml)
 		{
+			if (xml is null)
+				throw new ArgumentNullException(nameof(xml));
 			if (Value != TimeSpan.Zero)
 			{
 				xml.Item("value", Value);
@@ -159,6 +164,8 @@ namespace Lexxys
 
 		public JsonBuilder ToJsonContent(JsonBuilder json)
 		{
+			if (json is null)
+				throw new ArgumentNullException(nameof(json));
 			if (Value != TimeSpan.Zero)
 			{
 				json.Item("value").Val(Value);

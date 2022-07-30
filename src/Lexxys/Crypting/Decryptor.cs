@@ -101,6 +101,8 @@ namespace Lexxys.Crypting
 		{
 			if (bits == null)
 				throw EX.ArgumentNull(nameof(bits));
+			if (encoding is null)
+				throw new ArgumentNullException(nameof(encoding));
 			return encoding.GetString(Decrypt(bits));
 		}
 		public byte[] Decrypt(byte[] bits, int offset, int length)

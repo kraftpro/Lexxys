@@ -53,6 +53,11 @@ namespace Lexxys.Xml
 
 		public static void Convert(XmlReader reader, TextWriter writer, bool closeReaderAtExit)
 		{
+			if (reader is null)
+				throw new ArgumentNullException(nameof(reader));
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
+
 			var converter = new XmlToTextConverter(reader, writer);
 			converter.ConvertFragment("");
 			if (closeReaderAtExit)
@@ -266,11 +271,13 @@ namespace Lexxys.Xml
 			{
 				if (text[text.Length - 1] <= ' ')
 				{
+#pragma warning disable CA1307 // Specify StringComparison for clarity
 					if (text.IndexOf('\'') < 0)
 						return "'" + text + "'";
 					if (text.IndexOf('"') < 0)
 						return "\"" + text + "\"";
 					return "'" + text.Replace("'", "''") + "'";
+#pragma warning restore CA1307 // Specify StringComparison for clarity
 				}
 				if (text[0] <= ' ')
 				{

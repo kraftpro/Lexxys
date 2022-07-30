@@ -81,6 +81,8 @@ namespace Lexxys.Tokenizer
 
 		public override LexicalToken? TryParse(CharStream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
 			var c = stream[0];
 			var beginning = BeginningChars;
 #if NET6_0_OR_GREATER

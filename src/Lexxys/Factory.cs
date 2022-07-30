@@ -38,8 +38,8 @@ namespace Lexxys
 		private static readonly ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>> __foundTypesP = new ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>>();
 		private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesC = new ConcurrentDictionary<Type, IEnumerable<Type>>();
 		private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesA = new ConcurrentDictionary<Type, IEnumerable<Type>>();
-		private static ConcurrentBag<Assembly> __assemblies;
-		private static ConcurrentBag<Assembly> __systemAssemblies;
+		private static volatile ConcurrentBag<Assembly> __assemblies;
+		private static volatile ConcurrentBag<Assembly> __systemAssemblies;
 		private static string[] __systemAssemblyNames;
 		private static readonly object SyncRoot = new object();
 
@@ -764,6 +764,9 @@ namespace Lexxys
 
 				public StringBuilder BaseName(StringBuilder text, bool alter = false)
 				{
+					if (text is null)
+						throw new ArgumentNullException(nameof(text));
+
 					if (IsNullable && !alter)
 						text.Append("System.Nullable`1[[");
 					text.Append(Name);
@@ -1342,6 +1345,11 @@ namespace Lexxys
 
 		public static MethodInfo GetGenericMethod(Type classType, string methodName, Type[] arguments)
 		{
+			if (classType is null)
+				throw new ArgumentNullException(nameof(classType));
+			if (arguments is null)
+				throw new ArgumentNullException(nameof(arguments));
+
 			foreach (var item in classType.GetMember(methodName, BindingFlags.InvokeMethod | BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public))
 			{
 				var mi = item as MethodInfo;

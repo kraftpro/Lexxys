@@ -17,6 +17,9 @@ namespace Lexxys
 	{
 		public static unsafe long GetRowVersion(this IDataRecord record, int position)
 		{
+			if (record is null)
+				throw new ArgumentNullException(nameof(record));
+
 			var buffer = new byte[8];
 			record.GetBytes(position, 0, buffer, 0, 8);
 			fixed (byte* p = buffer)
@@ -27,6 +30,9 @@ namespace Lexxys
 
 		public static byte[] GetBytes(this IDataRecord record, int position)
 		{
+			if (record is null)
+				throw new ArgumentNullException(nameof(record));
+
 			var buffer = new byte[record.GetBytes(position, 0, null, 0, 0)];
 			record.GetBytes(position, 0, buffer, 0, buffer.Length);
 			return buffer;

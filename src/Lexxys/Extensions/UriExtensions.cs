@@ -12,6 +12,8 @@ namespace Lexxys
 	{
 		public static KeyValuePair<string, string?>[] SplitQuery(this Uri uri)
 		{
+			if (uri is null)
+				throw new ArgumentNullException(nameof(uri));
 			var query = uri.Query;
 			if (query.Length <= 1)
 				return Array.Empty<KeyValuePair<string, string?>>();

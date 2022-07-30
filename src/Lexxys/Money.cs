@@ -290,17 +290,14 @@ namespace Lexxys
 
 		public override string ToString()
 		{
-			return Amount.ToString("N" + Currency.Precision) + " " + Currency.Code;
+			return Amount.ToString("N" + Currency.Precision, CultureInfo.InvariantCulture) + " " + Currency.Code;
 		}
 
-		public string ToString(string format)
+		public string ToString(string? format, IFormatProvider? formatProvider = null)
 		{
-			return Amount.ToString(format).Replace("s", Currency.Symbol).Replace("S", Currency.Code);
-		}
-
-		public string ToString(string? format, IFormatProvider? formatProvider)
-		{
-			return Amount.ToString(format, formatProvider).Replace("s", Currency.Symbol).Replace("S", Currency.Code);
+			return Amount.ToString(format, formatProvider)
+				.Replace("s", Currency.Symbol, StringComparison.Ordinal)
+				.Replace("S", Currency.Code, StringComparison.Ordinal);
 		}
 
 		public int CompareTo(Money other)
@@ -319,6 +316,8 @@ namespace Lexxys
 
 		public DumpWriter DumpContent(DumpWriter writer)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
 			return writer.Dump(Amount).Text('[').Text(Currency.Code).Text(']');
 		}
 
@@ -405,19 +404,21 @@ namespace Lexxys
 			return x._value > y._value ? y : x;
 		}
 
-		public static Money Parse(string s, NumberStyles style, IFormatProvider? provider)
+		public static Money Parse(string value, NumberStyles style, IFormatProvider? provider)
 		{
-			if (!TryParse(s, provider, out var value))
-				throw new FormatException(SR.CannotParseValue(s.ToString()));
-			return value;
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			if (!TryParse(value, provider, out var result))
+				throw new FormatException(SR.CannotParseValue(value.ToString()));
+			return result;
 		}
 
 #if NET6_0_OR_GREATER
-		public static Money Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+		public static Money Parse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider)
 		{
-			if (!TryParse(s, provider, out var value))
-				throw new FormatException(SR.CannotParseValue(s.ToString()));
-			return value;
+			if (!TryParse(value, provider, out var result))
+				throw new FormatException(SR.CannotParseValue(value.ToString()));
+			return result;
 		}
 
 #if CSHARP_PREVIEW
@@ -620,14 +621,18 @@ namespace Lexxys
 
 		public XmlBuilder ToXmlContent(XmlBuilder builder)
 		{
+			if (builder is null)
+				throw new ArgumentNullException(nameof(builder));
 			return builder.InAttribute ? builder.Value(XmlTools.Convert(Amount) + " " + Currency.Code) :
 				builder.Item("amount", Amount).Item("currency", Currency.Code);
 		}
 
-		public JsonBuilder ToJsonContent(JsonBuilder builder)
+		public JsonBuilder ToJsonContent(JsonBuilder json)
 		{
-			return builder.InArray ? builder.Val(XmlTools.Convert(Amount) + " " + Currency.Code) :
-				builder.Item("amount").Val(Amount).Item("currency").Val(Currency.Code);
+			if (json is null)
+				throw new ArgumentNullException(nameof(json));
+			return json.InArray ? json.Val(XmlTools.Convert(Amount) + " " + Currency.Code) :
+				json.Item("amount").Val(Amount).Item("currency").Val(Currency.Code);
 		}
 
 		#endregion
@@ -723,45 +728,21 @@ namespace Lexxys
 
 		#region Convertion operators
 
-		public static explicit operator Money(int value)
-		{
-			return new Money(value);
-		}
+		public static explicit operator Money(int value) => new Money(value);
 
-		public static explicit operator Money(long value)
-		{
-			return new Money(value);
-		}
+		public static explicit operator Money(long value) => new Money(value);
 
-		public static explicit operator Money(decimal value)
-		{
-			return new Money(value);
-		}
+		public static explicit operator Money(decimal value) => new Money(value);
 
-		public static explicit operator Money(double value)
-		{
-			return new Money(value);
-		}
+		public static explicit operator Money(double value) => new Money(value);
 
-		public static implicit operator decimal(Money value)
-		{
-			return value.Amount;
-		}
+		public static implicit operator decimal(Money value) => value.Amount;
 
-		public static explicit operator int(Money value)
-		{
-			return checked((int)(value._value / value.Currency.Multiplier));
-		}
+		public static explicit operator int(Money value) => checked((int)(value._value / value.Currency.Multiplier));
 
-		public static explicit operator long(Money value)
-		{
-			return value._value / value.Currency.Multiplier;
-		}
+		public static explicit operator long(Money value) => value._value / value.Currency.Multiplier;
 
-		public static explicit operator double(Money value)
-		{
-			return (double)value._value / value.Currency.Multiplier;
-		}
+		public static explicit operator double(Money value) => (double)value._value / value.Currency.Multiplier;
 
 		#endregion
 

@@ -9,14 +9,13 @@ using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
 using System.Globalization;
-using Lexxys;
 
 #nullable enable
 
 namespace Lexxys.Cube
 {
 	[DebuggerDisplay("{Hex}")]
-	public struct BooleanCubeNode
+	public struct BooleanCubeNode: IEquatable<BooleanCubeNode>
 	{
 		internal uint Bits;
 		internal uint Holes;
@@ -82,8 +81,10 @@ namespace Lexxys.Cube
 
 		public void AppendDisjunctant(StringBuilder sb, string delimiter, string[] arguments)
 		{
-			if (sb == null)
+			if (sb is null)
 				throw EX.ArgumentNull(nameof(sb));
+			if (arguments is null)
+				throw new ArgumentNullException(nameof(arguments));
 			if (arguments.Length >= 32)
 				throw EX.ArgumentOutOfRange("arguments.Length", arguments.Length);
 			uint m = 1;
@@ -124,7 +125,12 @@ namespace Lexxys.Cube
 
 		public override bool Equals(object? obj)
 		{
-			return obj is BooleanCubeNode node && Bits == node.Bits && Holes == node.Holes;
+			return obj is BooleanCubeNode node && Equals(node);
+		}
+
+		public bool Equals(BooleanCubeNode other)
+		{
+			return Bits == other.Bits && Holes == other.Holes;
 		}
 
 		public override int GetHashCode()

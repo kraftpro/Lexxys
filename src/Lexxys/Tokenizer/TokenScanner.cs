@@ -59,7 +59,12 @@ namespace Lexxys.Tokenizer
 		/// <param name="copyFilters">Indicates to copy existing filters from the original <paramref name="scanner"/>.</param>
 		public TokenScanner(CharStream stream, TokenScanner scanner, bool copyFilters)
 		{
-			Stream = stream ?? throw new ArgumentNullException(nameof(stream));
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+			if (scanner is null)
+				throw new ArgumentNullException(nameof(scanner));
+
+			Stream = stream;
 			_rules = scanner._rules;
 			_asciiRules = scanner._asciiRules;
 			_extraRules = scanner._extraRules;

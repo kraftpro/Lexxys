@@ -129,6 +129,9 @@ namespace Lexxys
 
 		public void Add(TKey key, Func<TValue> factory)
 		{
+			if (factory is null)
+				throw new ArgumentNullException(nameof(factory));
+
 			var item = new CacheItem(factory);
 			bool created = true;
 			_cache.AddOrUpdate(key, item, (_, _) =>

@@ -915,8 +915,10 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="json"></param>
 		/// <returns></returns>
-		public static explicit operator StringBuilder(JsonStringBuilder json)
+		public static StringBuilder ToStringBuilder(JsonStringBuilder json)
 		{
+			if (json is null)
+				throw new ArgumentNullException(nameof(json));
 			return json._buffer;
 		}
 
@@ -925,10 +927,24 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="text"></param>
 		/// <returns></returns>
-		public static implicit operator JsonStringBuilder(StringBuilder text)
+		public static JsonStringBuilder FromStringBuilder(StringBuilder text)
 		{
 			return new JsonStringBuilder(text);
 		}
+
+		/// <summary>
+		/// Returns internal <see cref="StringBuilder"/> buffer of the <see cref="JsonStringBuilder"/>.
+		/// </summary>
+		/// <param name="json"></param>
+		/// <returns></returns>
+		public static explicit operator StringBuilder(JsonStringBuilder json) => ToStringBuilder(json);
+
+		/// <summary>
+		/// Creates a new <see cref="JsonStringBuilder"/> from <see cref="StringBuilder"/>.
+		/// </summary>
+		/// <param name="text"></param>
+		/// <returns></returns>
+		public static implicit operator JsonStringBuilder(StringBuilder text) => FromStringBuilder(text);
 	}
 
 

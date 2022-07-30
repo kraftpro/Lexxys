@@ -26,6 +26,8 @@ namespace Lexxys
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static JsonBuilder ToJson(this IDumpJson? obj, JsonBuilder json)
 		{
+			if (json is null)
+				throw new ArgumentNullException(nameof(json));
 			return obj?.ToJsonContent(json.Obj()).End() ?? json;
 		}
 

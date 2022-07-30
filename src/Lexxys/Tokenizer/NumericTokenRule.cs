@@ -94,6 +94,8 @@ namespace Lexxys.Tokenizer
 
 		public override LexicalToken? TryParse(CharStream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
 			var text = new StringBuilder();
 			int i = 0;
 			char ch = stream[0];

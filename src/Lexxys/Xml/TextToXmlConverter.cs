@@ -205,6 +205,8 @@ namespace Lexxys.Xml
 
 		public static void Convert(string text, XmlWriter writer, TextToXmlOptionHandler optionHandler, string sourceName = null)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
 			var cs = new CharStream(text);
 			var converter = new TextToXmlConverter(cs, sourceName, optionHandler);
 			converter.Convert(o=> ConvertToXml(writer, o));
@@ -988,6 +990,8 @@ namespace Lexxys.Xml
 
 			public static Node FromXml(XmlLiteNode xml)
 			{
+				if (xml is null)
+					throw new ArgumentNullException(nameof(xml));
 				var x = new Node(xml.Name, xml.Comparer.Equals("x", "X"));
 				x.Value.Append(xml.Value);
 				foreach (var item in xml.Attributes)

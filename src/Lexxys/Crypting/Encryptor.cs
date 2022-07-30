@@ -99,6 +99,9 @@ namespace Lexxys.Crypting
 		{
 			if (text == null)
 				throw EX.ArgumentNull(nameof(text));
+			if (encoding is null)
+				throw new ArgumentNullException(nameof(encoding));
+
 			return Encrypt(encoding.GetBytes(text));
 		}
 		public byte[] Encrypt(byte[] text, int offset, int length)

@@ -57,7 +57,7 @@ namespace Lexxys.Data
 		}
 
 		public ConnectionStringInfo(Uri location)
-			: this(null, location.SplitQuery())
+			: this(null, (location ?? throw new ArgumentNullException(nameof(location))).SplitQuery())
 		{
 			if (!location.IsAbsoluteUri || location.Scheme != "database")
 				throw new ArgumentOutOfRangeException(nameof(location), location, null);

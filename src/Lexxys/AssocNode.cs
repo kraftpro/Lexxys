@@ -263,6 +263,9 @@ namespace Lexxys
 
 		public void Dump(XmlWriter writer, int backwardsDepth, int forwardsDepth)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
+
 			var ctx = new DumpContext(64);
 			DumpNode(writer, backwardsDepth, forwardsDepth, ctx);
 		}

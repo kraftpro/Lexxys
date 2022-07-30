@@ -61,162 +61,226 @@ namespace Lexxys.Data
 
 		public static DataParameter Parameter(string name, DbType type, ParameterDirection direction)
 		{
-			return new DataParameter(name.StartsWith("@") ? name : "@" + name, null, type) { Direction = direction };
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name : "@" + name, null, type) { Direction = direction };
 		}
 
 		public static DataParameter Parameter(string name, object value, DbType type, int size)
 		{
-			return new DataParameter(name.StartsWith("@") ? name : "@" + name, value ?? DBNull.Value, type, size);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name : "@" + name, value ?? DBNull.Value, type, size);
 		}
 
 		public static DataParameter Parameter(string name, object value, DbType type)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? DBNull.Value, type);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? DBNull.Value, type);
 		}
 
 		public static DataParameter Parameter(string name, object value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? DBNull.Value);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? DBNull.Value);
 		}
 
 		public static DataParameter Parameter(string name, bool value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Boolean);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Boolean);
 		}
 
 		public static DataParameter Parameter(string name, bool? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Boolean);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Boolean);
 		}
 
 		public static DataParameter Parameter(string name, byte value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Byte);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Byte);
 		}
 
 		public static DataParameter Parameter(string name, byte? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Byte);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Byte);
 		}
 
 		public static DataParameter Parameter(string name, short value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Int16);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Int16);
 		}
 
 		public static DataParameter Parameter(string name, short? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int16);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int16);
 		}
 
 		public static DataParameter Parameter(string name, int value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Int32);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Int32);
 		}
 
 		public static DataParameter Parameter(string name, int? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int32);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int32);
 		}
 
 		public static DataParameter Parameter(string name, long value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Int64);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Int64);
 		}
 
 		public static DataParameter Parameter(string name, long? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int64);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int64);
 		}
 
 		public static DataParameter Parameter(string name, decimal value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Decimal);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Decimal);
 		}
 
 		public static DataParameter Parameter(string name, decimal? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Decimal);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Decimal);
 		}
 
 		public static DataParameter Parameter(string name, Money value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name : "@" + name, value.Amount, DbType.Currency);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name : "@" + name, value.Amount, DbType.Currency);
 		}
 
 		public static DataParameter Parameter(string name, Money? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name : "@" + name, value?.Amount ?? (object)DBNull.Value, DbType.Currency);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name : "@" + name, value?.Amount ?? (object)DBNull.Value, DbType.Currency);
 		}
 
 		public static DataParameter Parameter(string name, float value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Single);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Single);
 		}
 
 		public static DataParameter Parameter(string name, float? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Single);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Single);
 		}
 
 		public static DataParameter Parameter(string name, double value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Double);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Double);
 		}
 
 		public static DataParameter Parameter(string name, double? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Double);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Double);
 		}
 
 		public static DataParameter Parameter(string name, DateTime value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.DateTime2);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.DateTime2);
 		}
 
 		public static DataParameter Parameter(string name, DateTime? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.DateTime2);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.DateTime2);
 		}
 
 		public static DataParameter Parameter(string name, TimeSpan value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Time);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Time);
 		}
 
 		public static DataParameter Parameter(string name, TimeSpan? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Time);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Time);
 		}
 
 		public static DataParameter Parameter(string name, Guid value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value, DbType.Guid);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Guid);
 		}
 
 		public static DataParameter Parameter(string name, Guid? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Guid);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Guid);
 		}
 
 		public static DataParameter Parameter(string name, RowVersion value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value.GetBits(), DbType.Binary);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value.GetBits(), DbType.Binary);
 		}
 
 		public static DataParameter Parameter(string name, RowVersion? value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value == null ? (object)DBNull.Value: value.Value.GetBits(), DbType.Binary);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value == null ? (object)DBNull.Value: value.Value.GetBits(), DbType.Binary);
 		}
 
 		public static DataParameter Parameter(string name, string value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.String);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.String);
 		}
 
 		public static DataParameter Parameter(string name, byte[] value)
 		{
-			return new DataParameter(name.StartsWith("@") ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Binary);
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Binary);
 		}
 
 		#endregion

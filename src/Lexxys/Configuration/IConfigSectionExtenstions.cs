@@ -16,13 +16,13 @@ namespace Lexxys
 	public static class IConfigSectionExtenstions
 	{
 		public static IValue<T> GetValue<T>(this IConfigSection section)
-			=> section.GetValue<T>(null, null);
+			=> (section ?? throw new ArgumentNullException(nameof(section))).GetValue<T>(null, null);
 
 		public static IValue<T> GetValue<T>(this IConfigSection section, Func<T> defaultValue)
-			=> section.GetValue<T>(null, defaultValue);
+			=> (section ?? throw new ArgumentNullException(nameof(section))).GetValue<T>(null, defaultValue);
 
 		public static IValue<IReadOnlyList<T>> GetCollection<T>(this IConfigSection section)
-			=> section.GetCollection<T>(null);
+			=> (section ?? throw new ArgumentNullException(nameof(section))).GetCollection<T>(null);
 
 		public static IValue<T> GetValue<T>(this IConfigSection config, string key, T defaultValue)
 		{

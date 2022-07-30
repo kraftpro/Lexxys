@@ -27,6 +27,11 @@ namespace Lexxys
 	{
 		public static DumpWriter Dump(this IDump obj, DumpWriter writer)
 		{
+			if (obj is null)
+				throw new ArgumentNullException(nameof(obj));
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
+
 			return obj is IDumpValue ? obj.DumpContent(writer): obj.DumpContent(writer.Text('{')).Text('}');
 		}
 
@@ -56,6 +61,8 @@ namespace Lexxys
 
 		public static DumpWriter Dump(this IDump obj, DumpWriter writer, string name)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
 			return obj.Dump(writer.Text(name).Text('='));
 		}
 

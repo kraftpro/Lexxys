@@ -11,14 +11,16 @@ namespace Lexxys
 {
 	public class Arguments
 	{
+		private readonly List<string> _args;
+
 		public Arguments(IEnumerable<string> args)
 		{
-			Args = new List<string>(args ?? Array.Empty<string>());
+			_args = new List<string>(args ?? Array.Empty<string>());
 		}
 
-		public List<string> Args { get; }
+		public IReadOnlyList<string> Args => _args;
 
-		public void Append(params string[] args) => Args.AddRange(args);
+		public void Append(params string[] args) => _args.AddRange(args);
 
 		public bool Exists(string argument, bool missingValue = false) => Value(argument, (p, d) => p.Length == 0 || p.AsBoolean(d), true, missingValue);
 
@@ -30,9 +32,9 @@ namespace Lexxys
 		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue) => Value(argument, parser, defaultValue, defaultValue);
 		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue, T missingValue)
 		{
-			for (int i = 0; i < Args.Count; ++i)
+			for (int i = 0; i < _args.Count; ++i)
 			{
-				string arg = Args[i];
+				string arg = _args[i];
 				if (arg == null || (arg = arg.Trim()).Length <= 1 || arg[0] != '/' && arg[0] != '-')
 					continue;
 				arg = arg.Substring(1).TrimStart();
@@ -42,11 +44,16 @@ namespace Lexxys
 				{
 					v = arg.Substring(k + 1);
 					arg = arg.Substring(0, k);
-					if (v.Length == 0 && i < Args.Count - 1)
-						v = Args[++i];
+					if (v.Length == 0 && i < _args.Count - 1)
+						v = _args[++i];
 				}
 				if (Match(arg, argument))
-					return v == null ? defaultValue: parser(v, defaultValue);
+					return
+						v == null ?
+							defaultValue:
+						parser == null ?
+							throw new ArgumentNullException(nameof(parser)):
+							parser.Invoke(v, defaultValue);
 			}
 			return missingValue;
 		}
@@ -60,7 +67,7 @@ namespace Lexxys
 
 			public PositionalArguments(Arguments args)
 			{
-				_args = args.Args;
+				_args = args._args;
 			}
 
 			public IEnumerator<string> GetEnumerator()
@@ -90,16 +97,16 @@ namespace Lexxys
 
 		public string First(string defaultValue = null)
 		{
-			for (int i = 0; i < Args.Count; ++i)
+			for (int i = 0; i < _args.Count; ++i)
 			{
-				string item = Args[i];
+				string item = _args[i];
 				if (item == null)
 					continue;
 				string arg = item.Trim();
 				if (arg.Length > 1 && (arg[0] == '-' || arg[0] == '/'))
 				{
 					int k = arg.IndexOfAny(Separators);
-					if (k == arg.Length - 1 && i < Args.Count - 1)
+					if (k == arg.Length - 1 && i < _args.Count - 1)
 						++i;
 					continue;
 				}
@@ -112,6 +119,8 @@ namespace Lexxys
 		{
 			if (value == null || (value = value.Trim()).Length == 0)
 				return null;
+			if (variants is null)
+				throw new ArgumentNullException(nameof(variants));
 
 			string match = null;
 			foreach (var arg in variants)
@@ -128,7 +137,12 @@ namespace Lexxys
 
 		public static string[] Split(string arg, char separator)
 		{
+			if (arg is null)
+				throw new ArgumentNullException(nameof(arg));
+
+#pragma warning disable CA1307 // Specify StringComparison for clarity
 			int i = arg.IndexOf(separator);
+#pragma warning restore CA1307 // Specify StringComparison for clarity
 			return i < 0 ?
 				new[] { NullIfEmpty(arg), null }:
 				new[] { NullIfEmpty(arg.Substring(0, i)), NullIfEmpty(arg.Substring(i + 1)) };
@@ -136,7 +150,15 @@ namespace Lexxys
 
 		private static string NullIfEmpty(string value) => String.IsNullOrWhiteSpace(value) ? null: value;
 
-		public static bool Match(string value, string mask) => MatchRest(value, 0, mask.Split((char[])null, StringSplitOptions.RemoveEmptyEntries), 0);
+		public static bool Match(string value, string mask)
+		{
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			if (mask is null)
+				throw new ArgumentNullException(nameof(mask));
+
+			return MatchRest(value, 0, mask.Split((char[])null, StringSplitOptions.RemoveEmptyEntries), 0);
+		}
 
 		private static bool MatchRest(string value, int valueIndex, string[] parts, int maskIndex)
 		{

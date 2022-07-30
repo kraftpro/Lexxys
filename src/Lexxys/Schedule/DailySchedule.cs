@@ -52,6 +52,9 @@ namespace Lexxys
 
 		public override StringBuilder ToString(StringBuilder text, IFormatProvider provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			if (DayPeriod > 1)
 				text.Append("every ").Append(Lingua.Ord(Lingua.NumWord(DayPeriod))).Append(" day");
 			else
@@ -60,13 +63,13 @@ namespace Lexxys
 			return text;
 		}
 
-		public bool Equals(DailySchedule that)
+		public bool Equals(DailySchedule other)
 		{
-			if (that is null)
+			if (other is null)
 				return false;
-			if (ReferenceEquals(this, that))
+			if (ReferenceEquals(this, other))
 				return true;
-			return base.Equals(that) && DayPeriod == that.DayPeriod;
+			return base.Equals(other) && DayPeriod == other.DayPeriod;
 		}
 
 		public override bool Equals(Schedule that)
@@ -92,6 +95,9 @@ namespace Lexxys
 
 		public override XmlBuilder ToXmlContent(XmlBuilder xml)
 		{
+			if (xml is null)
+				throw new ArgumentNullException(nameof(xml));
+
 			xml.Item("type", ScheduleType);
 			if (DayPeriod != 1)
 				xml.Item("day", DayPeriod);
@@ -102,6 +108,9 @@ namespace Lexxys
 
 		public override JsonBuilder ToJsonContent(JsonBuilder json)
 		{
+			if (json is null)
+				throw new ArgumentNullException(nameof(json));
+
 			json.Item("type").Val(ScheduleType);
 			if (DayPeriod != 1)
 				json.Item("day").Val(DayPeriod);
