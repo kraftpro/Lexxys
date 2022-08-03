@@ -61,9 +61,9 @@ namespace Lexxys
 			if (boundary < 0 || boundary > list.Count)
 				throw new ArgumentOutOfRangeException(nameof(boundary), boundary, null);
 			if (boundary == 0)
-				return (EmptyArray<T>.Value, list);
+				return (Array.Empty<T>(), list);
 			if (boundary == list.Count)
-				return (list, EmptyArray<T>.Value);
+				return (list, Array.Empty<T>());
 			return (Create(list, 0, boundary), Create(list, boundary));
 		}
 
@@ -74,9 +74,9 @@ namespace Lexxys
 			if (boundary < 0 || boundary > list.Count)
 				throw new ArgumentOutOfRangeException(nameof(boundary), boundary, null);
 			if (boundary == 0)
-				return (EmptyArray<T>.Value, list);
+				return (Array.Empty<T>(), list);
 			if (boundary == list.Count)
-				return (list, EmptyArray<T>.Value);
+				return (list, Array.Empty<T>());
 			return (Create(list, 0, boundary), Create(list, boundary));
 		}
 

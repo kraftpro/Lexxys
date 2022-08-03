@@ -174,7 +174,7 @@ namespace Lexxys.Configuration
 
 			string cacheKey = key.ToUpperInvariant() + "$(" + typeof(T).ToString();
 			if (_cache.TryGetValue(cacheKey, out var value))
-				return value as IReadOnlyList<T> ?? EmptyArray<T>.Value;
+				return value as IReadOnlyList<T> ?? Array.Empty<T>();
 
 			IReadOnlyList<T>? temp = null;
 			List<T>? list = null;

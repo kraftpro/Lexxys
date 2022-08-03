@@ -89,7 +89,7 @@ namespace Lexxys
 		public DirectoryStorageConfig(int directoryCount = default, int fileCount = default, string? directoryFormat = default, string? fileFormat = default, char pathSeparator = default, string? temporaryFolder = default, DirectoryGenerationMode mode = default)
 		{
 			DirectoryCount = directoryCount == 0 ? 100: directoryCount;
-			DirectoryFormat = directoryFormat ?? new String('0', (directoryCount - 1).ToString().Length);
+			DirectoryFormat = directoryFormat ?? new String('0', (directoryCount - 1).ToString(CultureInfo.InvariantCulture).Length);
 			FileCount = fileCount == 0 ? 1000: fileCount;
 			FileFormat = fileFormat ?? "{index:0000000}-{salt}{ext}";
 			PathSeparator = pathSeparator  == default ? Path.DirectorySeparatorChar: pathSeparator;
@@ -107,21 +107,21 @@ namespace Lexxys
 		private readonly List<IBlobStorageProvider> _providers = new List<IBlobStorageProvider>();
 
 		/// <summary>
-		/// Get <see cref="IBlobStorageProvider"/> for the specified <paramref name="uri"/>.
+		/// Get <see cref="IBlobStorageProvider"/> for the specified <paramref name="location"/>.
 		/// </summary>
-		/// <param name="uri">Blob location</param>
+		/// <param name="location">Blob location</param>
 		/// <returns></returns>
 		/// <exception cref="ArgumentNullException"></exception>
-		public IBlobStorageProvider? GetProvider(string uri)
+		public IBlobStorageProvider? GetProvider(string location)
 		{
-			if (uri is null || uri.Length <= 0)
-				throw new ArgumentNullException(nameof(uri));
+			if (location is null || location.Length <= 0)
+				throw new ArgumentNullException(nameof(location));
 
-			var (scheme, _) = SplitSchemeAndPath(uri);
+			var (scheme, _) = SplitSchemeAndPath(location);
 			if (!_schemes.TryGetValue(scheme, out var providers))
 				providers = _providers;
 
-			return providers.FirstOrDefault(o => o.CanOpen(uri));
+			return providers.FirstOrDefault(o => o.CanOpen(location));
 		}
 
 		/// <summary>
@@ -187,7 +187,7 @@ namespace Lexxys
 				return $"{config.TemporaryFolder}{config.PathSeparator}{Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)}{extension}";
 			string dir = GetDirectory(index.GetValueOrDefault(), config.DirectoryCount, config.DirectoryFormat, config.FileCount, config.PathSeparator, config.Mode); // /01/02/
 			string format = config.FileFormat.Replace("{index", "{0").Replace("{salt", "{1").Replace("{ext", "{2");
-			return dir + String.Format(format, index, Salt(salt), extension); // /01/02/3120201-salt.doc
+			return dir + String.Format(CultureInfo.InvariantCulture, format, index, Salt(salt), extension); // /01/02/3120201-salt.doc
 		}
 
 		/// <summary>
@@ -199,7 +199,7 @@ namespace Lexxys
 		public static bool IsTemporaryPath(string path, DirectoryStorageConfig? config = default)
 		{
 			config ??= DirectoryStorageConfig.Default;
-			return path != null && path.StartsWith($"{config.TemporaryFolder}{config.PathSeparator}");
+			return path != null && path.StartsWith($"{config.TemporaryFolder}{config.PathSeparator}", StringComparison.Ordinal);
 		}
 
 		internal static (string Scheme, string Path) SplitSchemeAndPath(string uri)
@@ -209,7 +209,7 @@ namespace Lexxys
 				return ("", uri);
 			var s = uri.Substring(0, i).Trim();
 			var p = uri.Substring(i + 1);
-			if (String.Equals(s, Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase) && p.StartsWith("///"))
+			if (String.Equals(s, Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase) && p.StartsWith("///", StringComparison.Ordinal))
 				p = p.Substring(3);
 			else if (p.StartsWith("//", StringComparison.Ordinal))
 				p = p.Substring(2);
@@ -227,7 +227,7 @@ namespace Lexxys
 				int i = index / fileCount;
 				while (i > 0)
 				{
-					dir.Insert(0, pathSeparator.ToString() + (i % directoryCount).ToString(directoryFormat));
+					dir.Insert(0, pathSeparator.ToString() + (i % directoryCount).ToString(directoryFormat, CultureInfo.InvariantCulture));
 					i /= directoryCount;
 				}
 			}
@@ -237,7 +237,7 @@ namespace Lexxys
 				int i = index;
 				while (i > fileCount)
 				{
-					dir.Append(pathSeparator).Append((i % directoryCount).ToString(directoryFormat));
+					dir.Append(pathSeparator).Append((i % directoryCount).ToString(directoryFormat, CultureInfo.InvariantCulture));
 					i /= directoryCount;
 				}
 			}
@@ -247,7 +247,7 @@ namespace Lexxys
 				int i = index / fileCount;
 				while (i > 0)
 				{
-					dir.Append(pathSeparator).Append((i % directoryCount).ToString(directoryFormat));
+					dir.Append(pathSeparator).Append((i % directoryCount).ToString(directoryFormat, CultureInfo.InvariantCulture));
 					i /= directoryCount;
 				}
 			}

@@ -1108,7 +1108,7 @@ namespace Lexxys.Xml
 				if (node == null || (node = node.Trim(TrimedChars)).Length == 0)
 					return null;
 				if (attribs == null)
-					attribs = EmptyArray<string>.Value;
+					attribs = Array.Empty<string>();
 				if (path == null)
 					path = "";
 

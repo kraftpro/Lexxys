@@ -14,6 +14,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+#nullable enable
+
 namespace Lexxys
 {
 	using Xml;
@@ -76,7 +78,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="String"/> value to write.</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		protected virtual void Value(string value)
+		protected virtual void Value(string? value)
 		{
 			Text(value == null ? NullValue : Strings.EscapeCsString(value));
 		}
@@ -156,7 +158,7 @@ namespace Lexxys
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name)
 		{
-			if (String.IsNullOrEmpty(name))
+			if (name is null || name.Length <= 0)
 				throw new ArgumentNullException(nameof(name));
 			if (_state == State.Item || _state == State.Array)
 				throw new InvalidOperationException();
@@ -173,11 +175,8 @@ namespace Lexxys
 			return this;
 		}
 
-		private string Escape(object value)
+		private string? Escape(object value)
 		{
-			if (value == null)
-				return NullValue;
-
 			if (value is IConvertible cn)
 			{
 				switch (cn.GetTypeCode())
@@ -189,7 +188,7 @@ namespace Lexxys
 						return NullValue;
 					case TypeCode.Char:
 					case TypeCode.String:
-						return Strings.EscapeCsString(value.ToString());
+						return Strings.EscapeCsString(value.ToString()!);
 					case TypeCode.Byte:
 					case TypeCode.SByte:
 					case TypeCode.Decimal:
@@ -225,7 +224,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="IDictionary"/> value to write</param>
 		/// <returns></returns>
-		public JsonBuilder Val(IDictionary value)
+		public JsonBuilder Val(IDictionary? value)
 		{
 			if (value == null)
 			{
@@ -235,7 +234,7 @@ namespace Lexxys
 			Obj();
 			foreach (DictionaryEntry item in value)
 			{
-				Item(Strings.ToNamingRule(item.Key.ToString(), NamingRule)).Val(item.Value);
+				Item(Strings.ToNamingRule(item.Key.ToString() ?? "", NamingRule)).Val(item.Value);
 			}
 			return End();
 		}
@@ -251,7 +250,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="String"/> value to write</param>
 		/// <returns></returns>
-		public JsonBuilder Val(string value)
+		public JsonBuilder Val(string? value)
 		{
 			Comma();
 			Value(value);
@@ -493,7 +492,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="Guid"/> value to write</param>
 		/// <returns></returns>
-		public JsonBuilder Val(byte[] value)
+		public JsonBuilder Val(byte[]? value)
 		{
 			Comma();
 			if (value == null)
@@ -515,7 +514,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="IEnumerable"/> value to write.</param>
 		/// <returns></returns>
-		public JsonBuilder Val(IEnumerable value)
+		public JsonBuilder Val(IEnumerable? value)
 		{
 			if (value == null)
 			{
@@ -537,7 +536,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="Object"/> value to write.</param>
 		/// <returns></returns>
-		public JsonBuilder Val(IDumpJson value)
+		public JsonBuilder Val(IDumpJson? value)
 		{
 			Comma();
 			if (value == null)
@@ -553,7 +552,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="Object"/> value to write.</param>
 		/// <returns></returns>
-		public JsonBuilder Val(object value)
+		public JsonBuilder Val(object? value)
 		{
 			if (value is not IDumpJson i)
 				return ValObj(value);
@@ -571,7 +570,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="Object"/> value to write.</param>
 		/// <returns></returns>
-		public JsonBuilder ValObj(object value)
+		public JsonBuilder ValObj(object? value)
 		{
 			if (value == null)
 			{
@@ -605,15 +604,17 @@ namespace Lexxys
 					item.GetIndexParameters().Length == 0 &&
 					!item.PropertyType.IsGenericParameter)
 				{
+					#pragma warning disable CA1031 // Do not catch general exception types
 					try
 					{
-						object v = item.GetValue(value);
+						object? v = item.GetValue(value);
 						Item(Strings.ToNamingRule(item.Name, NamingRule)).Val(v);
 					}
 					catch
 					{
 						// ignore all internal exceptions
 					}
+					#pragma warning restore CA1031 // Do not catch general exception types
 				}
 			}
 			return End();
@@ -625,7 +626,7 @@ namespace Lexxys
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public JsonBuilder Item(string name, IDictionary value) => value == null ? this: Item(name).Val(value);
+		public JsonBuilder Item(string name, IDictionary? value) => value == null ? this: Item(name).Val(value);
 
 		/// <summary>
 		/// Writes item and value pair.
@@ -633,7 +634,7 @@ namespace Lexxys
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public JsonBuilder Item(string name, string value) => value == null ? this: Item(name).Val(value);
+		public JsonBuilder Item(string name, string? value) => value == null ? this: Item(name).Val(value);
 
 		/// <summary>
 		/// Writes item and value pair.
@@ -777,7 +778,7 @@ namespace Lexxys
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public JsonBuilder Item(string name, byte[] value) => value == null ? this: Item(name).Val(value);
+		public JsonBuilder Item(string name, byte[]? value) => value == null ? this: Item(name).Val(value);
 
 		/// <summary>
 		/// Writes item and value pair.
@@ -785,7 +786,7 @@ namespace Lexxys
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public JsonBuilder Item(string name, IEnumerable value) => value == null ? this: Item(name).Val(value);
+		public JsonBuilder Item(string name, IEnumerable? value) => value == null ? this: Item(name).Val(value);
 
 		/// <summary>
 		/// Writes item and value pair.
@@ -793,7 +794,7 @@ namespace Lexxys
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public JsonBuilder Item(string name, IDumpJson value) => value == null ? this: Item(name).Val(value);
+		public JsonBuilder Item(string name, IDumpJson? value) => value == null ? this: Item(name).Val(value);
 
 		/// <summary>
 		/// Writes item and value pair using <see cref="IDumpJson"/> implementation if it is present.
@@ -801,7 +802,7 @@ namespace Lexxys
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public JsonBuilder Item(string name, object value) => value == null ? this: Item(name).Val(value);
+		public JsonBuilder Item(string name, object? value) => value == null ? this: Item(name).Val(value);
 
 		/// <summary>
 		/// Writes item and value pair ignoring <see cref="IDumpJson"/> implementation.
@@ -809,10 +810,10 @@ namespace Lexxys
 		/// <param name="name">name of the attribute</param>
 		/// <param name="value">value of the attribute</param>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public JsonBuilder ItemObj(string name, object value) => value == null ? this: Item(name).ValObj(value);
+		public JsonBuilder ItemObj(string name, object? value) => value == null ? this: Item(name).ValObj(value);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public JsonBuilder Content(IDumpJson value)
+		public JsonBuilder Content(IDumpJson? value)
 		{
 			value?.ToJsonContent(this);
 			return this;
@@ -837,6 +838,8 @@ namespace Lexxys
 		/// <returns></returns>
 		public static JsonBuilder Create(TextWriter writer)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
 			return new JsonStreamBuilder(writer);
 		}
 
@@ -845,14 +848,14 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="buffer">The <see cref="StringBuilder"/> to save a json.</param>
 		/// <returns></returns>
-		public static JsonBuilder Create(StringBuilder buffer)
+		public static JsonBuilder Create(StringBuilder? buffer)
 		{
 			return new JsonStringBuilder(buffer);
 		}
 
 		public static string ToJson(object value)
 		{
-			return new JsonStringBuilder(new StringBuilder()).Val(value).ToString();
+			return new JsonStringBuilder(new StringBuilder()).Val(value).ToString()!;
 		}
 	}
 
@@ -874,7 +877,7 @@ namespace Lexxys
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JsonStringBuilder"/> class.
 		/// </summary>
-		public JsonStringBuilder(StringBuilder buffer)
+		public JsonStringBuilder(StringBuilder? buffer)
 		{
 			_buffer = buffer ?? new StringBuilder();
 		}
@@ -892,7 +895,7 @@ namespace Lexxys
 		}
 
 		/// <inheritdoc />
-		protected override void Value(string value)
+		protected override void Value(string? value)
 		{
 			if (value == null)
 				_buffer.Append(NullValue);
@@ -977,7 +980,7 @@ namespace Lexxys
 		}
 
 		/// <inheritdoc />
-		protected override void Value(string value)
+		protected override void Value(string? value)
 		{
 			_writer.Write(value == null ? NullValue : Strings.EscapeCsString(value));
 		}
@@ -1008,7 +1011,7 @@ namespace Lexxys
 		/// <summary>
 		/// Initializes a new instance of the <see cref="JsonUtf8Builder"/> class.
 		/// </summary>
-		public JsonUtf8Builder(MemoryStream buffer)
+		public JsonUtf8Builder(MemoryStream? buffer)
 		{
 			_buffer = buffer ?? new MemoryStream();
 		}
@@ -1037,7 +1040,7 @@ namespace Lexxys
 		}
 
 		/// <inheritdoc />
-		protected override void Value(string value)
+		protected override void Value(string? value)
 		{
 			if (value == null)
 				_buffer.Write(NullValue);
@@ -1048,10 +1051,26 @@ namespace Lexxys
 		/// <summary>
 		/// Returns internal <see cref="MemoryStream"/> buffer of the <see cref="JsonUtf8Builder"/>.
 		/// </summary>
+		/// <returns></returns>
+		public MemoryStream ToMemoryStream() => _buffer;
+
+		/// <summary>
+		/// Creates a new <see cref="JsonUtf8Builder"/> from <see cref="MemoryStream"/>.
+		/// </summary>
+		/// <param name="text"></param>
+		/// <returns></returns>
+		public static JsonUtf8Builder FromMemoryStream(MemoryStream text) => new JsonUtf8Builder(text);
+
+
+		/// <summary>
+		/// Returns internal <see cref="MemoryStream"/> buffer of the <see cref="JsonUtf8Builder"/>.
+		/// </summary>
 		/// <param name="json"></param>
 		/// <returns></returns>
 		public static explicit operator MemoryStream(JsonUtf8Builder json)
 		{
+			if (json is null)
+				throw new ArgumentNullException(nameof(json));
 			return json._buffer;
 		}
 

@@ -1050,6 +1050,17 @@ namespace Lexxys
 				}
 				return new String(buffer);
 			}
+
+			static bool IsSafeUrlChar(char value)
+			{
+				if ((value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z') || (value >= '0' && value <= '9'))
+					return true;
+				return value switch
+				{
+					'(' or ')' or '*' or '-' or '.' or ':' or '_' or '!' or '~' => true,
+					_ => false,
+				};
+			}
 		}
 		private static readonly char[] __hexDigits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
@@ -1139,17 +1150,6 @@ namespace Lexxys
 				return -1;
 			return x;
 		}
-
-		private static bool IsSafeUrlChar(char value)
-		{
-			if ((value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z') || (value >= '0' && value <= '9'))
-				return true;
-			return value switch
-			{
-				'(' or ')' or '*' or '-' or '.' or ':' or '_' or '!' or '~' => true,
-				_ => false,
-			};
-		}
 	}
 
 	public static class Files
@@ -1168,11 +1168,10 @@ namespace Lexxys
 				directory = Path.GetTempPath();
 
 			const int LogThreshold = 20;
-			const int TotalLimit = 50;
+			const int TotalLimit = 30;
 			int index = 0;
 			for (;;)
 			{
-				++index;
 				try
 				{
 					var temp = new FileInfo(Path.Combine(directory, OrderedName() + suffix));
@@ -1183,7 +1182,7 @@ namespace Lexxys
 				}
 				catch (IOException flaw)
 				{
-					if (index == TotalLimit)
+					if (++index == TotalLimit)
 						throw;
 					if (index >= LogThreshold)
 						flaw.LogError();
@@ -1227,7 +1226,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public static Task<FileInfo> GetTempFileAsync(string? directory, string? suffix = null)
 		{
-			return Task.Factory.StartNew(() => GetTempFile(directory, suffix));
+			return Task.Run(() => GetTempFile(directory, suffix));
 		}
 
 		/// <summary>
@@ -1237,12 +1236,12 @@ namespace Lexxys
 		/// <param name="suffix"></param>
 		/// <param name="action"></param>
 		/// <returns></returns>
-		public static Task ActTempFileAsync(string directory, string suffix, Action<FileInfo> action)
+		public static Task ActTempFileAsync(string? directory, string? suffix, Action<FileInfo> action)
 		{
 			if (action == null)
 				throw new ArgumentNullException(nameof(action));
 
-			return Task.Factory.StartNew(() => ActTempFile(directory, suffix, action));
+			return Task.Run(() => ActTempFile(directory, suffix, action));
 		}
 
 		/// <summary>
@@ -1251,12 +1250,12 @@ namespace Lexxys
 		/// <param name="directory"></param>
 		/// <param name="action"></param>
 		/// <returns></returns>
-		public static Task ActTempFileAsync(string directory, Action<FileInfo> action)
+		public static Task ActTempFileAsync(string? directory, Action<FileInfo> action)
 		{
 			if (action == null)
 				throw new ArgumentNullException(nameof(action));
 
-			return Task.Factory.StartNew(() => ActTempFile(directory, action));
+			return Task.Run(() => ActTempFile(directory, action));
 		}
 
 		private static string OrderedName()
@@ -1521,10 +1520,5 @@ namespace Lexxys
 			[DllImport("kernel32.dll")]
 			public static extern int GetCurrentThreadId();
 		}
-	}
-
-	public static class EmptyArray<T>
-	{
-		public static readonly T[] Value = Array.Empty<T>();
 	}
 }

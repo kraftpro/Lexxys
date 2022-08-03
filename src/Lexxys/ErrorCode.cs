@@ -2,11 +2,14 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+
+#nullable enable
 
 namespace Lexxys
 {
-	public readonly struct ErrorCode
+	public readonly struct ErrorCode: IEquatable<ErrorCode>
 	{
 		public const int ErrorCodesCapacity = GroupsCount * GroupSize * BasketSize;
 		public const int TemporaryIndexStart = (GroupsCount - 16) * GroupSize * BasketSize;
@@ -68,6 +71,18 @@ namespace Lexxys
 
 		public override string ToString() => Name;
 
+		public override bool Equals([NotNullWhen(true)] object? obj) => obj is ErrorCode error && Equals(error);
+
+		public override int GetHashCode() => Code.GetHashCode();
+
+		public bool Equals(ErrorCode other) => Code == other.Code;
+
+		public static bool operator == (ErrorCode left, ErrorCode right) => left.Code == right.Code;
+		public static bool operator != (ErrorCode left, ErrorCode right) => left.Code != right.Code;
+
+		public static ErrorCode FromInt32(int value) => new ErrorCode(value);
+		public int ToInt32() => Code;
+
 		public static explicit operator ErrorCode(int value) => new ErrorCode(value);
 		public static implicit operator int(ErrorCode value) => value.Code;
 
@@ -81,7 +96,7 @@ namespace Lexxys
 		/// <param name="name"><see cref="ErrorCode"/> name to find or create a new one</param>
 		public static ErrorCode GetOrCreate(string name)
 		{
-			if ((name = name.TrimToNull()) == null)
+			if (name is null || (name = name.Trim()).Length == 0)
 				throw new ArgumentNullException(nameof(name));
 
 			int i = FindIndex(name);
@@ -124,7 +139,7 @@ namespace Lexxys
 		/// <param name="name">Name of the created <see cref="ErrorCode"/></param>
 		/// <param name="result">Created <see cref="ErrorCode"/> or default value</param>
 		/// <returns>True if the <see cref="ErrorCode"/> has been created.</returns>
-		public static bool TryCreate(int value, string name, out ErrorCode result)
+		public static bool TryCreate(int value, string? name, out ErrorCode result)
 		{
 			if (value < 0 || value > ErrorCodesCapacity || (name = name.TrimToNull()) == null)
 			{
@@ -208,7 +223,7 @@ namespace Lexxys
 			return true;
 		}
 
-		private static int FindIndex(string value)
+		private static int FindIndex(string? value)
 		{
 			if ((value = value.TrimToNull()) == null)
 				return -1;

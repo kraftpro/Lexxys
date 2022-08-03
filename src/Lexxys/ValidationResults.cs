@@ -20,7 +20,7 @@ namespace Lexxys
 	{
 		public const char ErrorSeparator = ';';
 		public const char FieldSeparator = ':';
-		public static readonly ValidationResults Empty = new ValidationResults(EmptyArray<ValidationResultsItem>.Value);
+		public static readonly ValidationResults Empty = new ValidationResults(Array.Empty<ValidationResultsItem>());
 
 		private readonly IList<ValidationResultsItem> _items;
 

@@ -35,7 +35,7 @@ internal class LoggingRule
 
 	private LoggingRule(Rule[]? rules)
 	{
-		_rules = rules ?? EmptyArray<Rule>.Value;
+		_rules = rules ?? Array.Empty<Rule>();
 	}
 
 	public static string? GlobalExclude { get; set; }

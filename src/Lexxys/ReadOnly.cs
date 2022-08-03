@@ -102,7 +102,7 @@ namespace Lexxys
 
 		private static class EmptyCollectionInstance<T>
 		{
-			public static readonly IWrappedList<T> ListValue = new ReadOnlyArrayWrap<T>(EmptyArray<T>.Value);
+			public static readonly IWrappedList<T> ListValue = new ReadOnlyArrayWrap<T>(Array.Empty<T>());
 			public static readonly IWrappedSafeList<T> SafeListValue = new ReadOnlySafeListWrap<T>(new EmptySafeListInstance<T>());
 			public static readonly IWrappedSet<T> SetValue = new ReadOnlySetWrap<T>(new SortedSet<T>());
 		}

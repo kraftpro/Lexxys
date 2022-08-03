@@ -28,24 +28,7 @@ namespace Lexxys.Tests.Configuration
 	[TestClass]
 	public class XmlConfigurationProviderTest
 	{
-
-		//private TestContext testContextInstance;
-
-		/// <summary>
-		///Gets or sets the test context which provides
-		///information about and functionality for the current test run.
-		///</summary>
-		//public TestContext TestContext
-		//{
-		//	get
-		//	{
-		//		return testContextInstance;
-		//	}
-		//	set
-		//	{
-		//		testContextInstance = value;
-		//	}
-		//}
+		public TestContext TestContext { get; set; }
 
 		#region Additional test attributes
 		// 
@@ -153,7 +136,7 @@ namespace Lexxys.Tests.Configuration
 				object obj = provider.GetValue("Setting", typeof(Setting2));
 			}
 			y = WatchTimer.Stop(y);
-			Debug.WriteLine("Reflection: {0}, XmlLiteNode: {1}", WatchTimer.ToString(x, false), WatchTimer.ToString(y, false));
+			TestContext.WriteLine("Reflection: {0}, XmlLiteNode: {1}", WatchTimer.ToString(x, false), WatchTimer.ToString(y, false));
 		}
 
 

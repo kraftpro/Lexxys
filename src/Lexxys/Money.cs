@@ -15,6 +15,9 @@ using System.Threading;
 
 #nullable enable
 
+#pragma warning disable CA2225 // Operator overloads have named alternates
+#pragma warning disable CA1051 // Do not declare visible instance fields
+
 namespace Lexxys
 {
 	using Xml;
@@ -252,7 +255,7 @@ namespace Lexxys
 			if (count < 0)
 				throw new ArgumentOutOfRangeException(nameof(count), count, null);
 			if (count == 0)
-				return EmptyArray<Money>.Value;
+				return Array.Empty<Money>();
 			if (count == 1)
 				return new[] { this };
 
@@ -296,8 +299,13 @@ namespace Lexxys
 		public string ToString(string? format, IFormatProvider? formatProvider = null)
 		{
 			return Amount.ToString(format, formatProvider)
+#if NET6_0_OR_GREATER
 				.Replace("s", Currency.Symbol, StringComparison.Ordinal)
 				.Replace("S", Currency.Code, StringComparison.Ordinal);
+#else
+				.Replace("s", Currency.Symbol)
+				.Replace("S", Currency.Code);
+#endif
 		}
 
 		public int CompareTo(Money other)
@@ -408,7 +416,7 @@ namespace Lexxys
 		{
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
-			if (!TryParse(value, provider, out var result))
+			if (!TryParse(value, style, provider, out var result))
 				throw new FormatException(SR.CannotParseValue(value.ToString()));
 			return result;
 		}
@@ -728,6 +736,15 @@ namespace Lexxys
 
 		#region Convertion operators
 
+		public static Money FromInt32(int value) => new Money(value);
+		public static Money FromInt64(long value) => new Money(value);
+		public static Money FromDecimal(decimal value) => new Money(value);
+		public static Money FromDouble(double value) => new Money(value);
+		public int ToInt32() => checked((int)(_value / Currency.Multiplier));
+		public long ToInt64() => _value / Currency.Multiplier;
+		public decimal ToDecimal() => Amount;
+		public double ToDouble() => (double)_value / Currency.Multiplier;
+
 		public static explicit operator Money(int value) => new Money(value);
 
 		public static explicit operator Money(long value) => new Money(value);
@@ -736,11 +753,11 @@ namespace Lexxys
 
 		public static explicit operator Money(double value) => new Money(value);
 
-		public static implicit operator decimal(Money value) => value.Amount;
-
 		public static explicit operator int(Money value) => checked((int)(value._value / value.Currency.Multiplier));
 
 		public static explicit operator long(Money value) => value._value / value.Currency.Multiplier;
+
+		public static implicit operator decimal(Money value) => value.Amount;
 
 		public static explicit operator double(Money value) => (double)value._value / value.Currency.Multiplier;
 
@@ -1108,8 +1125,7 @@ namespace Lexxys
 				var obj = __mapByCode[code];
 				if (obj != null)
 					return (Currency)obj;
-				if (result == null)
-					result = new Currency(code, precision, symbol);
+				result ??= new Currency(code, precision, symbol);
 				temp = (Hashtable)hash.Clone();
 				temp[code] = result;
 			} while (Interlocked.CompareExchange(ref __mapByCode, temp, hash) != hash);

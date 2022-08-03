@@ -18,10 +18,6 @@ namespace Lexxys.Crypting
 
 	public class CryptoProviderSettingItem
 	{
-		public CryptoProviderType ProviderType;
-		public string Name;
-		public string Class;
-		public string Assembly;
 		private Type _type;
 
 		public CryptoProviderSettingItem(CryptoProviderType type, string name, string @class, string assembly = null)
@@ -31,6 +27,11 @@ namespace Lexxys.Crypting
 			Class = @class;
 			Assembly = assembly;
 		}
+
+		public CryptoProviderType ProviderType { get; }
+		public string Name { get; }
+		public string Class { get; }
+		public string Assembly { get; }
 
 		public Type Type
 		{
