@@ -482,7 +482,8 @@ namespace Lexxys
 
 		#region Type name parser
 
-		public class TypeNameParser
+		#pragma warning disable CA1034 // Nested types should not be visible
+		public sealed class TypeNameParser
 		{
 			/*
 
