@@ -59,7 +59,10 @@ namespace Lexxys.Configuration
 			}
 #else
 			if (location.Scheme == Uri.UriSchemeHttp || location.Scheme == Uri.UriSchemeHttps)
-				return new System.Net.Http.HttpClient().GetStringAsync(location).GetAwaiter().GetResult();
+			{
+				using var http = new System.Net.Http.HttpClient();
+				return http.GetStringAsync(location).GetAwaiter().GetResult();
+			}
 			throw new NotSupportedException($"Specified url \"{location}\" is not supported");
 #endif
 		}

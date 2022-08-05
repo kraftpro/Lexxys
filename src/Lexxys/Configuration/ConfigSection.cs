@@ -14,7 +14,7 @@ using System.Threading;
 
 namespace Lexxys.Configuration
 {
-	public class ConfigSection: IConfigSection
+	public sealed class ConfigSection: IConfigSection
 	{
 		private readonly string _path;
 		private readonly IConfigSource _configSource;

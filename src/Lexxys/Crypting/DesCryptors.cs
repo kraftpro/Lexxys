@@ -26,7 +26,7 @@ namespace Lexxys.Crypting.Cryptors
 			if (key is not byte[] bk)
 			{
 				if (key is not string sk || sk.Length == 0)
-					throw EX.ArgumentWrongType(nameof(key), key.GetType(), typeof(string));
+					throw new ArgumentTypeException(nameof(key), key.GetType(), typeof(string));
 				using var h = new Sha1Hasher();
 				byte[] bytes = Encoding.Unicode.GetBytes(sk);
 				bytes = h.Hash(bytes, 0, bytes.Length);

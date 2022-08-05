@@ -1,16 +1,15 @@
-﻿using Lexxys;
-using System;
-using System.CodeDom;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
-using System.Threading.Tasks;
+
+#nullable enable
 
 namespace Lexxys
 {
-	public readonly struct ErrorDataType
+	public readonly struct ErrorDataType: IEquatable<ErrorDataType>
 	{
+		#pragma warning disable CA1720 // Identifier contains type name
 		public const int ErrorDataTypesCapacity = 256;
 
 		private readonly static string[] __items = new string[ErrorDataTypesCapacity];
@@ -47,11 +46,18 @@ namespace Lexxys
 
 		public string Name => __items[TypeCode];
 
-		//public bool IsSystemType => TypeCode < LastSystem;
-		//public bool IsSpecialType => TypeCode > LastSystem;
-		//public bool IsUserType => TypeCode > LastSpecial;
+		public override bool Equals([NotNullWhen(true)] object? obj) => obj is ErrorDataType error && Equals(error);
 
-		//public static implicit operator ErrorDataType(System.TypeCode code) => new ErrorDataType((int)code);
+		public override int GetHashCode() => TypeCode.GetHashCode();
+
+		public bool Equals(ErrorDataType other) => TypeCode == other.TypeCode;
+
+		public static bool operator ==(ErrorDataType left, ErrorDataType right) => left.TypeCode == right.TypeCode;
+		public static bool operator !=(ErrorDataType left, ErrorDataType right) => left.TypeCode != right.TypeCode;
+
+		public static ErrorDataType FromInt32(int value) => new ErrorDataType(value);
+		public int ToInt32() => TypeCode;
+
 		public static explicit operator ErrorDataType(int code) => new ErrorDataType(code);
 		public static implicit operator int(ErrorDataType code) => code.TypeCode;
 
@@ -126,7 +132,7 @@ namespace Lexxys
 		/// <param name="value">A string containing an error-data-type to convert</param>
 		/// <param name="code">Result of the conversion or default value of <see cref="ErrorDataType"/></param>
 		/// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-		public static bool TryParse(string value, out ErrorDataType code)
+		public static bool TryParse(string? value, out ErrorDataType code)
 		{
 			if (string.IsNullOrEmpty(value))
 			{
@@ -154,6 +160,5 @@ namespace Lexxys
 			code = new ErrorDataType(i);
 			return true;
 		}
-
 	}
 }

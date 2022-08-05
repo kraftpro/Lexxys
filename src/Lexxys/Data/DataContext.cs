@@ -149,7 +149,7 @@ namespace Lexxys.Data
 			int connect = 0;
 			try
 			{
-				connect = await _context.ConnectAsync();
+				connect = await _context.ConnectAsync().ConfigureAwait(false);
 				using DbCommand cmd = _context.Command(query).WithParameters(parameters);
 				t = _context.Audit.Start();
 				var result = await mapper(cmd).ConfigureAwait(false);
@@ -219,7 +219,7 @@ namespace Lexxys.Data
 			int connect = 0;
 			try
 			{
-				connect = await _context.ConnectAsync();
+				connect = await _context.ConnectAsync().ConfigureAwait(false);
 				command.Connection = _context.Connection;
 				command.Transaction = _context.Transaction;
 				t = _context.Audit.Start();
@@ -289,7 +289,7 @@ namespace Lexxys.Data
 			int connect = 0;
 			try
 			{
-				connect = await _context.ConnectAsync();
+				connect = await _context.ConnectAsync().ConfigureAwait(false);
 				using DbCommand cmd = _context.Command(statement).WithParameters(parameters);
 				t = _context.Audit.Start();
 				int result = await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);

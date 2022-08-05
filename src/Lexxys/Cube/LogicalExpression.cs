@@ -147,7 +147,7 @@ namespace Lexxys.Cube
 				}
 				else
 				{
-					throw EX.WrongFormat(SR.EXP_UnknownSymbol(t.Text));
+					throw new FormatException(SR.EXP_UnknownSymbol(t.Text));
 				}
 				_polish.Add(lt);
 			}
@@ -159,13 +159,13 @@ namespace Lexxys.Cube
 		public bool Evaluate(Predicate<int> mapper)
 		{
 			if (_polish == null)
-				throw EX.InvalidOperation(SR.ParserFirst());
+				throw new InvalidOperationException(SR.ParserFirst());
 			PolishToken token = _polish.Evaluate(mapper);
 			if (token == null)
 				return true;
 			if (token is LogicalValue result)
 				return result.Evaluate(mapper);
-			throw EX.ArgumentWrongType("token", token.GetType(), typeof(LogicalValue));
+			throw ParameterTypeException("token", token);
 		}
 
 		/// <summary>Convert logical <paramref name="expression"/> to minimal DNF form.</summary>
@@ -240,7 +240,7 @@ namespace Lexxys.Cube
 										goto foundSI;
 									}
 								}
-								throw EX.InvalidOperation();
+								throw new InvalidOperationException();
 							foundSI:
 
 								for (int j = 0; j < width; ++j)
@@ -252,7 +252,7 @@ namespace Lexxys.Cube
 										goto foundSI2;
 									}
 								}
-								throw EX.InvalidOperation();
+								throw new InvalidOperationException();
 							foundSI2:
 
 								useful[i] = true;
@@ -678,5 +678,7 @@ namespace Lexxys.Cube
 		}
 
 		private static readonly Regex __removeSpaceRex = new Regex(@"\s+");
+
+		protected static Exception ParameterTypeException(string name, PolishToken token) => new ArgumentTypeException(name, token?.GetType(), typeof(LogicalValue));
 	}
 }

@@ -122,9 +122,11 @@ namespace Lexxys
 		private static class NativeMethods
 		{
 			[DllImport("kernel32.dll")]
+			[DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 			public static extern bool QueryPerformanceCounter(out long lpPerformanceCount);
 
 			[DllImport("kernel32.dll")]
+			[DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 			public static extern bool QueryPerformanceFrequency(out long lpFrequency);
 		}
 	}

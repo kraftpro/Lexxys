@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Runtime.Serialization;
 using System.Threading;
 
 #nullable enable
@@ -25,11 +26,15 @@ namespace Lexxys
 	/// <summary>
 	/// Represents a money value.
 	/// </summary>
-	public readonly struct Money :
+	[Serializable]
+	public readonly struct Money:
 #if NET6_0_OR_GREATER && CSHARP_PREVIEW
 		ISignedNumber<Money>, IConvertible, IDumpValue, IDumpXml, IDumpJson
 #else
-		IFormattable, IComparable, IConvertible, IComparable<Money>, IEquatable<Money>, IDumpValue, IDumpXml, IDumpJson
+#if NET6_0_OR_GREATER
+		ISpanFormattable,
+#endif
+		IComparable, IComparable<Money>, IConvertible, IEquatable<Money>, IFormattable, ISerializable, IDumpValue, IDumpXml, IDumpJson
 #endif
 	{
 		private readonly long _value;
@@ -91,6 +96,24 @@ namespace Lexxys
 		{
 			_value = (long)value;
 			_currency = currency;
+		}
+
+		private Money(SerializationInfo info, StreamingContext context)
+		{
+			if (info is null)
+				throw new ArgumentNullException(nameof(info));
+
+			_value = info.GetInt64("value");
+			string? code = info.GetString("cur");
+			if (code == null)
+			{
+				_currency = Currency.ApplicationDefault;
+			}
+			else
+			{
+				int i = __internalCurrencies.FindIndex(o => o.Code == code);
+				_currency = i >= 0 ? __internalCurrencies[i]: Currency.Create(code, info.GetByte("prec"), info.GetString("sym"));
+			}
 		}
 
 		/// <summary>
@@ -424,7 +447,7 @@ namespace Lexxys
 #if NET6_0_OR_GREATER
 		public static Money Parse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider)
 		{
-			if (!TryParse(value, provider, out var result))
+			if (!TryParse(value, style, provider, out var result))
 				throw new FormatException(SR.CannotParseValue(value.ToString()));
 			return result;
 		}
@@ -744,6 +767,21 @@ namespace Lexxys
 		public long ToInt64() => _value / Currency.Multiplier;
 		public decimal ToDecimal() => Amount;
 		public double ToDouble() => (double)_value / Currency.Multiplier;
+
+		void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+		{
+			if (info is null)
+				throw new ArgumentNullException(nameof(info));
+			info.AddValue("value", _value);
+			info.AddValue("cur", _currency.Code);
+			if (__internalCurrencies.FindIndex(_currency) > 0)
+			{
+				info.AddValue("prec", (byte)_currency.Precision);
+				info.AddValue("sym", _currency.Symbol);
+			}
+		}
+		private static readonly Currency[] __internalCurrencies = new[] { Currency.Empty, Currency.Usd, Currency.Eur, Currency.Rub, Currency.Uzs };
+
 
 		public static explicit operator Money(int value) => new Money(value);
 

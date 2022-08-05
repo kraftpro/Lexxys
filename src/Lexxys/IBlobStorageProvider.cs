@@ -18,16 +18,16 @@ namespace Lexxys
 		/// </summary>
 		IReadOnlyCollection<string> SupportedSchemes { get; }
 		/// <summary>
-		/// Determines if this provider can open a blob at the specified <paramref name="uri"/>. 
+		/// Determines if this provider can open a blob at the specified <paramref name="location"/>. 
 		/// </summary>
-		/// <param name="uri">Blob location</param>
+		/// <param name="location">Blob location</param>
 		/// <returns></returns>
-		bool CanOpen(string uri);
-		IBlobInfo GetFileInfo(string uri);
-		void SaveFile(string uri, Stream stream, bool overwrite);
-		Task SaveFileAsync(string uri, Stream stream, bool overwrite);
+		bool CanOpen(string location);
+		IBlobInfo GetFileInfo(string location);
+		void SaveFile(string location, Stream stream, bool overwrite);
+		Task SaveFileAsync(string location, Stream stream, bool overwrite);
 		void MoveFile(string source, string destination);
-		void DeleteFile(string uri);
+		void DeleteFile(string location);
 	}
 }
 

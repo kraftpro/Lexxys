@@ -144,7 +144,7 @@ namespace Lexxys.Data
 			_fields = new FieldsCollection(fields);
 		}
 
-		private object[] Row => !Eof ? _data[_currentIndex]: throw EX.InvalidOperation();
+		private object[] Row => !Eof ? _data[_currentIndex]: throw new InvalidOperationException();
 
 		public bool Eof => _currentIndex >= _data.Count;
 
@@ -308,7 +308,7 @@ namespace Lexxys.Data
 					Guid g => g,
 					string s => new Guid(s),
 					byte[] b => new Guid(b),
-					_ => throw EX.InvalidOperation(),
+					_ => throw new InvalidOperationException(),
 				};
 			}
 
@@ -319,7 +319,7 @@ namespace Lexxys.Data
 					null => null,
 					byte[] b => new RowVersion(b),
 					long l => new RowVersion(l),
-					_ => throw EX.InvalidOperation()
+					_ => throw new InvalidOperationException()
 				};
 			}
 			#endregion

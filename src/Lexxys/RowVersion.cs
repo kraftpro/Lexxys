@@ -5,13 +5,14 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
+using System.Globalization;
+
+#nullable enable
 
 namespace Lexxys
 {
-	public struct RowVersion: IEquatable<RowVersion>, IComparable<RowVersion>, IComparable
+	public readonly struct RowVersion: IEquatable<RowVersion>, IComparable<RowVersion>, IComparable
 	{
-		public readonly long Value;
-
 		public RowVersion(long value)
 		{
 			Value = value;
@@ -19,39 +20,35 @@ namespace Lexxys
 
 		public RowVersion(byte[] bits)
 		{
+			if (bits is null)
+				throw new ArgumentNullException(nameof(bits));
 			Value = PackRowVersion(bits);
 		}
 
-		public byte[] GetBits()
-		{
-			return UnPackRowVersion(Value);
-		}
+		public long Value { get; }
 
-		public static explicit operator byte[](RowVersion value)
-		{
-			return UnPackRowVersion(value.Value);
-		}
+		public byte[] ToByteArray() => UnPackRowVersion(Value);
 
-		public static explicit operator RowVersion(byte[] value)
-		{
-			return new RowVersion(value);
-		}
+		public static RowVersion FromByteArray(byte[] value) => new RowVersion(value ?? throw new ArgumentNullException(nameof(value)));
 
-		public static explicit operator long(RowVersion value)
-		{
-			return value.Value;
-		}
+		public static explicit operator byte[](RowVersion value) => value.ToByteArray();
 
-		public static explicit operator RowVersion(long value)
-		{
-			return new RowVersion(value);
-		}
+		public static explicit operator RowVersion(byte[] value) => FromByteArray(value);
+
+		public long ToInt64() => Value;
+
+		public static RowVersion FromInt64(long value) => new RowVersion(value);
+
+		public static explicit operator long(RowVersion value) => value.Value;
+
+		public static explicit operator RowVersion(long value) => new RowVersion(value);
 
 		private static unsafe long PackRowVersion(byte[] value)
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
 			if (value.Length != sizeof(long))
+				#pragma warning disable CA2208 // Instantiate argument exceptions correctly
 				throw new ArgumentOutOfRangeException(nameof(value) + ".Length", value.Length, null);
 
 			fixed (byte* p = value)
@@ -88,65 +85,29 @@ namespace Lexxys
 			return bytes;
 		}
 
-		public bool Equals(RowVersion other)
-		{
-			return Value == other.Value;
-		}
+		public bool Equals(RowVersion other) => Value == other.Value;
 
-		public override bool Equals(object obj)
-		{
-			return obj is RowVersion version && Equals(version);
-		}
+		public override bool Equals(object? obj) => obj is RowVersion version && Equals(version);
 
-		public int CompareTo(RowVersion other)
-		{
-			return Value.CompareTo(other.Value);
-		}
+		public int CompareTo(RowVersion other) => Value.CompareTo(other.Value);
 
-		public int CompareTo(object obj)
-		{
-			return obj is RowVersion version ? CompareTo(version): 2;
-		}
+		public int CompareTo(object? obj) => obj is RowVersion version ? CompareTo(version) : 2;
 
-		public override int GetHashCode()
-		{
-			return Value.GetHashCode();
-		}
+		public override int GetHashCode() => Value.GetHashCode();
 
-		public override string ToString()
-		{
-			return Value.ToString("x");
-		}
+		public override string ToString() => Value.ToString("x", CultureInfo.InvariantCulture);
 
-		public static bool operator ==(RowVersion left, RowVersion right)
-		{
-			return left.Value == right.Value;
-		}
+		public static bool operator ==(RowVersion left, RowVersion right) => left.Value == right.Value;
 
-		public static bool operator !=(RowVersion left, RowVersion right)
-		{
-			return left.Value != right.Value;
-		}
+		public static bool operator !=(RowVersion left, RowVersion right) => left.Value != right.Value;
 
-		public static bool operator < (RowVersion left, RowVersion right)
-		{
-			return left.Value < right.Value;
-		}
+		public static bool operator <(RowVersion left, RowVersion right) => left.Value < right.Value;
 
-		public static bool operator >(RowVersion left, RowVersion right)
-		{
-			return left.Value > right.Value;
-		}
+		public static bool operator >(RowVersion left, RowVersion right) => left.Value > right.Value;
 
-		public static bool operator <=(RowVersion left, RowVersion right)
-		{
-			return left.Value <= right.Value;
-		}
+		public static bool operator <=(RowVersion left, RowVersion right) => left.Value <= right.Value;
 
-		public static bool operator >=(RowVersion left, RowVersion right)
-		{
-			return left.Value >= right.Value;
-		}
+		public static bool operator >=(RowVersion left, RowVersion right) => left.Value >= right.Value;
 	}
 }
 

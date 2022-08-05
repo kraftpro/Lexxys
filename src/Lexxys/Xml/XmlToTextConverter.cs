@@ -113,7 +113,7 @@ namespace Lexxys.Xml
 						break;
 
 					default:
-						throw EX.InvalidOperation(SR.UndefinedNodeType(_reader.NodeType));
+						throw new InvalidOperationException(SR.UndefinedNodeType(_reader.NodeType));
 				}
 			}
 			FlushElement();

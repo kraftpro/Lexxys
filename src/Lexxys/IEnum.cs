@@ -7,6 +7,8 @@
 using System;
 using System.Collections.Generic;
 
+#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
+
 namespace Lexxys
 {
 	public interface IEnum

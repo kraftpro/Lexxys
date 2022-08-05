@@ -29,10 +29,12 @@ namespace Lexxys.Configuration
 					if (obj is IConfigProvider source)
 						return source;
 				}
+				#pragma warning disable CA1031 // Ignore all the errors.
 				catch (Exception flaw)
 				{
 					Config.LogConfigurationError($"{nameof(TryCreateProvider)} from {location}", flaw);
 				}
+				#pragma warning restore CA1031 // Do not catch general exception types
 			}
 			return null;
 		}
@@ -51,10 +53,12 @@ namespace Lexxys.Configuration
 					if (obj is IXmlConfigurationSource source)
 						return source;
 				}
+				#pragma warning disable CA1031 // Ignore all the errors.
 				catch (Exception flaw)
 				{
 					Config.LogConfigurationError($"{nameof(TryCreateXmlConfigurationSource)} from {location}", flaw);
 				}
+				#pragma warning restore CA1031 // Do not catch general exception types
 			}
 			return null;
 		}

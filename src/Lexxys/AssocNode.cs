@@ -236,9 +236,9 @@ namespace Lexxys
 		private void CheckMisReference(AssocNode node)
 		{
 			if (HasForward(node) ^ node.HasBackward(this))
-				throw EX.InvalidOperation(SR.AssocNodeMissReference());
+				throw new InvalidOperationException(SR.AssocNodeMissReference());
 			if (HasBackward(node) ^ node.HasForward(this))
-				throw EX.InvalidOperation(SR.AssocNodeMissReference());
+				throw new InvalidOperationException(SR.AssocNodeMissReference());
 		}
 
 		private class DumpContext

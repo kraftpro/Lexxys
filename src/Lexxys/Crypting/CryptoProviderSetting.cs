@@ -43,7 +43,7 @@ namespace Lexxys.Crypting
 					if (_type == null && Assembly != null && Factory.TryLoadAssembly(Assembly, false) != null)
 						_type = Factory.GetType(Class);
 					if (_type == null)
-						throw EX.InvalidOperation(SR.CR_CannotCreateAgorithm(Class));
+						throw new InvalidOperationException(SR.CR_CannotCreateAgorithm(Class));
 				}
 				return _type; 
 			}

@@ -9,15 +9,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-using Lexxys.Configuration;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 #nullable enable
+#pragma warning disable CA1034 // Nested types should not be visible
 
 namespace Lexxys
 {
+	using Configuration;
+
 	public static class StaticServices
 	{
 		public interface IFactory
@@ -141,8 +142,10 @@ namespace Lexxys
 
 		public static void AddConfigurationFactory(IConfiguration configuration) => AddFactory(MsConfigFactory.CreateFactory(configuration));
 
+		#pragma warning disable CA1815 // It isn't going to be instanced.
 		public struct LoggingFactoryFacade
 		{
+			#pragma warning disable CA1822 // Mark members as static
 			public ILogging Create(string name) => StaticServices.Create<ILogging>(name);
 			public ILogging? TryCreate(string name) => StaticServices.TryCreate<ILogging>(name);
 			public ILogging<T> Create<T>() => StaticServices.Create<ILogging<T>>();

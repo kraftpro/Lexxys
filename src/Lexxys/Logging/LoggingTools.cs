@@ -14,7 +14,7 @@ namespace Lexxys
 		public static void Log<TState>(ILogging log, LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string?>? formatter)
 		{
 			var logType = ToLogType(logLevel);
-			if (!log.IsEnabled(logType))
+			if (log == null || !log.IsEnabled(logType))
 				return;
 			IDictionary? args = state as IDictionary;
 			string? message = null;
@@ -26,12 +26,12 @@ namespace Lexxys
 		}
 
 		public static bool IsEnabled(ILogging log, LogLevel logLevel)
-			=> log.IsEnabled(ToLogType(logLevel));
+			=> log != null && log.IsEnabled(ToLogType(logLevel));
 
 		public static IDisposable BeginScope<TState>(ILogging log, TState state)
 		{
 			var section = state?.ToString() ?? typeof(TState).Name;
-			return log.Enter(LogType.Output, section, null) ?? NullDisposable.Value;
+			return log?.Enter(LogType.Output, section, null) ?? NullDisposable.Value;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

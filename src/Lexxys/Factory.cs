@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -114,6 +115,7 @@ namespace Lexxys
 			{
 				lock (SyncRoot)
 				{
+					#pragma warning disable CA1508 // Avoid dead conditional code
 					if (__assemblies == null)
 					{
 						CollectAssembliesInternal();
@@ -130,6 +132,7 @@ namespace Lexxys
 			{
 				lock (SyncRoot)
 				{
+					#pragma warning disable CA1508 // Avoid dead conditional code
 					if (__assemblies == null)
 					{
 						CollectAssembliesInternal();
@@ -350,9 +353,7 @@ namespace Lexxys
 
 		public static Type GetType(string typeName)
 		{
-			if (typeName == null || (typeName = typeName.Trim()).Length == 0)
-				return null;
-			return GetSynonym(typeName) ?? GetTypeInternal(typeName);
+			return typeName == null || (typeName = typeName.Trim()).Length == 0 ? null: GetSynonym(typeName) ?? GetTypeInternal(typeName);
 		}
 
 		public static void ResetSynonyms()
@@ -604,7 +605,7 @@ namespace Lexxys
 						if (terminal == BEGIN_GENERICS + 1)
 							generics = count;
 						else
-							(rank ??= new List<int>()).Add(count);
+							(rank = new List<int>()).Add(count);
 					}
 					else
 					{
@@ -631,7 +632,6 @@ namespace Lexxys
 				}
 				while (t.Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC))
 				{
-					rank ??= new List<int>();
 					int count = 0;
 					do
 					{
@@ -640,7 +640,7 @@ namespace Lexxys
 						if (!t.Is(LexicalTokenType.SEQUENCE, COMMA, CLOSE_SQRBRC))
 							return null;
 					} while (t.Is(LexicalTokenType.SEQUENCE, COMMA));
-					rank.Add(count);
+					(rank ??= new List<int>()).Add(count);
 					t = scanner.Next();
 				}
 
@@ -846,7 +846,7 @@ namespace Lexxys
 
 				private Type FindType()
 				{
-					var name = IsGeneric ? Name + "`" + GenericParametersCount.ToString(): Name;
+					var name = IsGeneric ? Name + "`" + GenericParametersCount.ToString(CultureInfo.InvariantCulture): Name;
 					var type = GetSynonym(name) ?? (Assembly == null ?
 						Factory.FindType(name, DomainAssemblies) ?? Factory.FindType(name, SystemAssemblies):
 						DomainAssemblies.FirstOrDefault(o => String.Equals(o.GetName().Name, Assembly, StringComparison.OrdinalIgnoreCase))
@@ -868,6 +868,7 @@ namespace Lexxys
 					{
 						return type.MakeGenericType(parameters);
 					}
+					#pragma warning disable CA1031 // Ignore errors.
 					catch
 					{
 						return null;

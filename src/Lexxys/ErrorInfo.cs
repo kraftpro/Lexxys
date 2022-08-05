@@ -238,7 +238,7 @@ namespace Lexxys
 				var mm = __paramRex.Matches(item).Cast<Match>().Where(o => o.Value != "{{").ToList();
 				if (mm.Any(o => parameters.All(p =>
 						!String.Equals(o.Groups[1].Value, p.Name, StringComparison.OrdinalIgnoreCase) &&
-						!(field != null && String.Equals(o.Groups[1].Value, "field"))
+						!(field != null && String.Equals(o.Groups[1].Value, "field", StringComparison.OrdinalIgnoreCase))
 					)))
 					continue;
 				if (mm.Count > weight)

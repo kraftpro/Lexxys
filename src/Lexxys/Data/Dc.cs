@@ -259,14 +259,14 @@ namespace Lexxys.Data
 		{
 			if (name is null)
 				throw new ArgumentNullException(nameof(name));
-			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value.GetBits(), DbType.Binary);
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value.ToByteArray(), DbType.Binary);
 		}
 
 		public static DataParameter Parameter(string name, RowVersion? value)
 		{
 			if (name is null)
 				throw new ArgumentNullException(nameof(name));
-			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value == null ? (object)DBNull.Value: value.Value.GetBits(), DbType.Binary);
+			return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value == null ? (object)DBNull.Value: value.Value.ToByteArray(), DbType.Binary);
 		}
 
 		public static DataParameter Parameter(string name, string value)
@@ -689,7 +689,7 @@ namespace Lexxys.Data
 		{
 			if (AnonymousType<T>.IsBuiltinType)
 			{
-				var value = await cmd.ExecuteScalarAsync();
+				var value = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
 				if (value == null || value == DBNull.Value)
 					return default;
 				return AnonymousType<T>.Construct(new[] { value });
@@ -697,7 +697,7 @@ namespace Lexxys.Data
 			else
 			{
 				using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
-				return await reader.ReadAsync() ? AnonymousType<T>.Construct(reader) : default;
+				return await reader.ReadAsync().ConfigureAwait(false) ? AnonymousType<T>.Construct(reader) : default;
 			}
 		}
 
@@ -849,6 +849,7 @@ namespace Lexxys.Data
 			private static readonly SortedList<int, Func<object?[], object?>> Constructors;
 			public static bool IsBuiltinType { get; }
 
+			#pragma warning disable CA1810 // Initialize reference type static fields inline
 			static AnonymousType()
 			{
 				Type type = typeof(T);
@@ -886,7 +887,7 @@ namespace Lexxys.Data
 			public static T Construct(object?[] values)
 			{
 				if (!Constructors.TryGetValue(values.Length, out var constructor))
-					throw EX.InvalidOperation(SR.Factory_CannotFindConstructor(typeof(T), values.Length));
+					throw new InvalidOperationException(SR.Factory_CannotFindConstructor(typeof(T), values.Length));
 				for (int i = 0; i < values.Length; ++i)
 				{
 					if (values[i] == DBNull.Value)

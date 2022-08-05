@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace Lexxys
 {
+	#pragma warning disable CA1027 // Mark enums with FlagsAttribute
 	public enum NamingCaseRule
 	{
 		None = 0,

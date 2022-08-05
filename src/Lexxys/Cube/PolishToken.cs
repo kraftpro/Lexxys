@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+using Lexxys;
+
 namespace Lexxys.Cube
 {
 	/// <summary>Abstract element of expression</summary>
@@ -23,6 +25,8 @@ namespace Lexxys.Cube
 		public abstract int Priority { get; }
 		/// <summary>Evaluate expression element</summary>
 		public abstract void Evaluate(Stack<PolishToken> stack, Delegate context);
+
+		protected static Exception ParameterTypeException(string name, PolishToken token) => new ArgumentTypeException(name, token?.GetType(), typeof(LogicalValue));
 	}
 
 	/// <summary>Represents open brace</summary>
@@ -53,6 +57,8 @@ namespace Lexxys.Cube
 		public override int Priority => 0;
 		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
+			if (stack is null)
+				throw new ArgumentNullException(nameof(stack));
 			stack.Push(this);
 		}
 	}

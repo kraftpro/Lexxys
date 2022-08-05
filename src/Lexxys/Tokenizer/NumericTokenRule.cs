@@ -13,6 +13,9 @@ using System.Text;
 
 namespace Lexxys.Tokenizer
 {
+	#pragma warning disable CA1720 // Identifier contains type name
+	#pragma warning disable CA1008 // Enums should have zero value
+
 	[Flags]
 	public enum NumericTokenStyles
 	{

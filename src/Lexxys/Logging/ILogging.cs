@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys
 {
+	#pragma warning disable CA1027 // Mark enums with FlagsAttribute
 	public enum LogType
 	{
 		Output = 0,

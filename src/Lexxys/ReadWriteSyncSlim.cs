@@ -135,9 +135,10 @@ namespace Lexxys
 
 			public NewReader(ReaderWriterLockSlim locker, int timeout)
 			{
+				
 				_locker = locker;
 				if (!_locker.TryEnterReadLock(timeout))
-					throw EX.Unexpected(SR.LockTimeout(timeout));
+					throw new TimeoutException(SR.LockTimeout(timeout));
 			}
 
 			public void Dispose()
@@ -160,7 +161,7 @@ namespace Lexxys
 				if (_upgrade)
 					_locker.ExitReadLock();
 				if (!_locker.TryEnterWriteLock(timeout))
-					throw EX.Unexpected(SR.LockTimeout(timeout));
+					throw new TimeoutException(SR.LockTimeout(timeout));
 			}
 
 			public void Dispose()

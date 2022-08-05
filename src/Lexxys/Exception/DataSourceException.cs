@@ -6,6 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Runtime.Serialization;
 
 namespace Lexxys
@@ -47,6 +48,24 @@ namespace Lexxys
 
 			base.Data["statement"] = statement;
 		}
+
+		public DataSourceException(string message, string connectionInfo, string statement, IEnumerable<DbParameter> dbParameters, Exception exception)
+			: base(message, exception)
+		{
+			if (connectionInfo != null && connectionInfo.Length > 0)
+				base.Data["connection"] = connectionInfo;
+
+			base.Data["statement"] = statement;
+			if (dbParameters != null)
+			{
+				foreach (var item in dbParameters)
+				{
+					if (item != null)
+						this.Add(item.ParameterName, item.Value);
+				}
+			}
+		}
+
 		protected DataSourceException(SerializationInfo info, StreamingContext context)
 			: base(info, context)
 		{

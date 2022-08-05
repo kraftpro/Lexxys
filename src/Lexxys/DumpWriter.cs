@@ -402,7 +402,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public DumpWriter Dump(DateTime value)
 		{
-			string v = value.ToString("yyyy-MM-dd HH:mm:ss.fffffff");
+			string v = value.ToString("yyyy-MM-dd HH:mm:ss.fffffff", CultureInfo.InvariantCulture);
 			return Text(v.EndsWith(" 00:00:00.0000000", StringComparison.Ordinal) ? v.Substring(0, 10): v);
 		}
 
@@ -1056,7 +1056,7 @@ namespace Lexxys
 					if (!ignoreToString)
 					{
 						var svalue = value.ToString();
-						if (shortName.StartsWith("KeyValuePair<"))
+						if (shortName.StartsWith("KeyValuePair<", StringComparison.Ordinal))
 							typeName = "<>";
 						else if (svalue != typeName)
 							return Text(shortName).Text(':').Text(svalue);
@@ -1103,10 +1103,12 @@ namespace Lexxys
 							DumpIt(v, skipIDump, false, ignoreToString);
 							pad = ',';
 						}
+						#pragma warning disable CA1031 // Do not catch general exception types
 						catch
 						{
 							// ignore all internal exceptions
 						}
+						#pragma warning restore CA1031 // Do not catch general exception types
 					}
 				}
 

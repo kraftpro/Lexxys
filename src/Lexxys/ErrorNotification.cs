@@ -13,6 +13,8 @@ using Lexxys;
 
 namespace Lexxys
 {
+	#pragma warning disable CA1710 // Identifiers should have correct suffix
+
 	public sealed class ErrorNotification: ICollection<FieldError>, ICollection
 	{
 		public static readonly ErrorNotification NoErrors = new ErrorNotification(new List<FieldError>(0), true);

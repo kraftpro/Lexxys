@@ -741,9 +741,9 @@ namespace Lexxys
 			}
 		}
 
-		public Exception ValidationException()
+		public ValidationException ValidationException()
 		{
-			return EX.Validation(SR.ValidationFailed(this));
+			return new ValidationException(SR.ValidationFailed(this));
 		}
 	}
 }

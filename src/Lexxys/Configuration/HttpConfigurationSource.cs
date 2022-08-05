@@ -51,7 +51,7 @@ namespace Lexxys.Configuration
 			{
 				if (_content == null)
 				{
-					lock (this)
+					lock (Location)
 					{
 						if (_content == null)
 						{
@@ -66,7 +66,8 @@ namespace Lexxys.Configuration
 		private static string GetText(Uri location)
 		{
 #if NETCOREAPP
-			return new System.Net.Http.HttpClient().GetStringAsync(location).GetAwaiter().GetResult();
+			using var client = new System.Net.Http.HttpClient();
+			return client.GetStringAsync(location).GetAwaiter().GetResult();
 #else
 			using (var c = new System.Net.WebClient())
 			{
@@ -82,15 +83,15 @@ namespace Lexxys.Configuration
 			if (type != null)
 				return (type, null);
 
-			var client = new System.Net.Http.HttpClient();
-			var message = await client.GetAsync(location, System.Net.Http.HttpCompletionOption.ResponseContentRead);
+			using var client = new System.Net.Http.HttpClient();
+			var message = await client.GetAsync(location, System.Net.Http.HttpCompletionOption.ResponseContentRead).ConfigureAwait(false);
 			if (!message.IsSuccessStatusCode)
 				throw new InvalidOperationException($"GET {location} returns status code {((int)message.StatusCode)}.");
 			if (!message.Headers.TryGetValues("Content-Type", out var contentType)) // || (contentType = contentTypes.FirstOrDefault(o => o.IndexOf('/') > 0)) == null)
 				throw new InvalidOperationException($"GET {location} doesn't have content type specified.");
 
 			type = TypeByContentType(contentType, location);
-			var content = await message.Content.ReadAsStringAsync();
+			var content = await message.Content.ReadAsStringAsync().ConfigureAwait(false);
 			return (type, content);
 		}
 #else
@@ -120,14 +121,14 @@ namespace Lexxys.Configuration
 		private static string? TypeByUrl(string value)
 		{
 			return
-				value.IndexOf("type=txt") > 0 ? "txt":
-				value.IndexOf("type=xml") > 0 ? "xml":
-				value.IndexOf("type=ini") > 0 ? "ini":
-				value.IndexOf("type=json") > 0 ? "json":
-				value.IndexOf(".txt") > 0 ? "txt":
-				value.IndexOf(".xml") > 0 ? "xml":
-				value.IndexOf(".ini") > 0 ? "ini":
-				value.IndexOf(".json") > 0 ? "json": null;
+				value.IndexOf("type=txt", StringComparison.Ordinal) > 0 ? "txt":
+				value.IndexOf("type=xml", StringComparison.Ordinal) > 0 ? "xml":
+				value.IndexOf("type=ini", StringComparison.Ordinal) > 0 ? "ini":
+				value.IndexOf("type=json", StringComparison.Ordinal) > 0 ? "json":
+				value.IndexOf(".txt", StringComparison.Ordinal) > 0 ? "txt":
+				value.IndexOf(".xml", StringComparison.Ordinal) > 0 ? "xml":
+				value.IndexOf(".ini", StringComparison.Ordinal) > 0 ? "ini":
+				value.IndexOf(".json", StringComparison.Ordinal) > 0 ? "json": null;
 		}
 
 		private static string TypeByContentType(IEnumerable<string>? contentType, Uri location)
@@ -136,11 +137,11 @@ namespace Lexxys.Configuration
 				throw new InvalidOperationException($"GET {location} doesn't have content type specified.");
 
 			var type  = contentType.FirstOrDefault(o => o.IndexOf('/') > 0)?.Trim() ?? "";
-			if (type.EndsWith("/json"))
+			if (type.EndsWith("/json", StringComparison.Ordinal))
 				return "json";
-			if (type.EndsWith("/xml"))
+			if (type.EndsWith("/xml", StringComparison.Ordinal))
 				return "xml";
-			if (type.EndsWith("/ini"))
+			if (type.EndsWith("/ini", StringComparison.Ordinal))
 				return "xml";
 			if (type == "text/plain")
 				return "txt";
@@ -153,13 +154,14 @@ namespace Lexxys.Configuration
 		{
 			try
 			{
-				lock (this)
+				lock (Location)
 				{
 					_content = null;
 					Changed?.Invoke(sender ?? this, e);
 					++_version;
 				}
 			}
+			#pragma warning disable CA1031 // Ignore all the errors
 			catch (Exception flaw)
 			{
 				Config.LogConfigurationError(LogSource, flaw.Add(nameof(Location), Location));
@@ -179,7 +181,7 @@ namespace Lexxys.Configuration
 		private static string GetDirectory(Uri location)
 		{
 			var dir = location.GetComponents(UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.Unescaped);
-			if (!dir.EndsWith("/"))
+			if (!dir.EndsWith("/", StringComparison.Ordinal))
 			{
 				var i = dir.LastIndexOf('/');
 				if (i >= 0)

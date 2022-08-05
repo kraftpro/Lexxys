@@ -7,6 +7,8 @@
 using System;
 using System.Collections.Generic;
 
+using Lexxys;
+
 namespace Lexxys
 {
 	public static class DictionaryExtensions
@@ -23,9 +25,11 @@ namespace Lexxys
 				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out var value) ? value : default;
 		}
-#if NETFRAMEWORK || !NET5_0_OR_GREATER
+#if !NETCORE
 		public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> that, TKey key)
 		{
+			if (that is null)
+				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out var value) ? value : default;
 		}
 #endif
@@ -41,9 +45,11 @@ namespace Lexxys
 				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out TValue value) ? value : @default;
 		}
-#if NETFRAMEWORK || !NET5_0_OR_GREATER
+#if !NETCORE
 		public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> that, TKey key, TValue @default)
 		{
+			if (that is null)
+				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out TValue value) ? value : @default;
 		}
 #endif

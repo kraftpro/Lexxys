@@ -1182,6 +1182,7 @@ namespace Lexxys
 				}
 				catch (IOException flaw)
 				{
+					#pragma warning disable CA1508 // Avoid dead conditional code
 					if (++index == TotalLimit)
 						throw;
 					if (index >= LogThreshold)
@@ -1515,9 +1516,11 @@ namespace Lexxys
 			}
 
 			[DllImport("kernel32.dll")]
+			[DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 			public static extern int GetCurrentProcessId();
 
 			[DllImport("kernel32.dll")]
+			[DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 			public static extern int GetCurrentThreadId();
 		}
 	}

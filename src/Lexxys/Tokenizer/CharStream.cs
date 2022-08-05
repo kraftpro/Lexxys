@@ -12,6 +12,8 @@ using System.Text;
 
 namespace Lexxys.Tokenizer
 {
+	#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
+
 	/// <summary>
 	/// Represents a characters stream, optimized for parsing purposes.
 	/// </summary>

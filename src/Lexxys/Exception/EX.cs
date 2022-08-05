@@ -75,28 +75,6 @@ namespace Lexxys
 		public const string DicOperation = "Operation";
 		public const string DicResource = "Resource";
 
-		public static DataSourceException DataSourceException(string message, ConnectionStringInfo connectionInfo, Exception exception)
-		{
-			return new DataSourceException(message, connectionInfo?.ToString(), exception).DebugLog();
-		}
-		public static DataSourceException DataSourceException(string message, ConnectionStringInfo connectionInfo, string statement, Exception exception)
-		{
-			return new DataSourceException(message, connectionInfo?.ToString(), statement, exception).DebugLog();
-		}
-		public static DataSourceException DataSourceException(string message, ConnectionStringInfo connectionInfo, string statement, IEnumerable<DbParameter> dbParameters, Exception exception)
-		{
-			DataSourceException e = DataSourceException(message, connectionInfo, statement, exception);
-			if (dbParameters != null)
-			{
-				foreach (var item in dbParameters)
-				{
-					if (item != null)
-						e.Add(item.ParameterName, item.Value);
-				}
-			}
-			return e.DebugLog();
-		}
-
 		public static UnauthorizedAccessException UnauthorizedAccess()
 		{
 			return new UnauthorizedAccessException(SR.UnauthorizedAccess()).DebugLog();
@@ -293,11 +271,6 @@ namespace Lexxys
 			return new FormatException(message, exception).DebugLog();
 		}
 
-		public static Exception NullValue()
-		{
-			return EX.ArgumentNull("value").DebugLog();
-		}
-
 		public static NotImplementedException NotImplemented()
 		{
 			return new NotImplementedException(SR.OperationNotImplemented()).DebugLog();
@@ -318,19 +291,6 @@ namespace Lexxys
 			var e = new NotSupportedException(SR.OperationNotSupported(operation));
 			e.Data[DicOperation] = operation;
 			return e.DebugLog();
-		}
-
-		public static Exception Unexpected()
-		{
-			return new Exception().DebugLog();
-		}
-		public static Exception Unexpected(string message)
-		{
-			return new Exception(message).DebugLog();
-		}
-		public static Exception Unexpected(string message, Exception exception)
-		{
-			return new Exception(message, exception).DebugLog();
 		}
 
 		public static ReadOnlyException CollectionIsReadOnly()

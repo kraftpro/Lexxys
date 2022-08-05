@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Collections.ObjectModel;
+using Lexxys;
 
 namespace Lexxys.Cube
 {
@@ -31,6 +32,9 @@ namespace Lexxys.Cube
 		/// <param name="token"><see cref="PolishToken"/> to add</param>
 		public void Add(PolishToken token)
 		{
+			if (token is null)
+				throw new ArgumentNullException(nameof(token));
+
 			if (token.Priority == 0)
 			{
 				_reverse.Add(token);
@@ -46,7 +50,7 @@ namespace Lexxys.Cube
 				if (token.IsClosedBrace)
 				{
 					if (!_stack.Peek().IsOpenBrace)
-						throw EX.InvalidOperation(SR.EXP_UnbalancedBraces());
+						throw new InvalidOperationException(SR.EXP_UnbalancedBraces());
 					_stack.Pop();
 				}
 				else
@@ -69,7 +73,7 @@ namespace Lexxys.Cube
 				tok.Evaluate(_stack, context);
 			}
 			if (_stack.Count != 1)
-				throw EX.InvalidOperation(SR.EXP_MissingOperation());
+				throw new InvalidOperationException(SR.EXP_MissingOperation());
 			return _stack.Pop();
 		}
 
@@ -81,7 +85,7 @@ namespace Lexxys.Cube
 			{
 				t = _stack.Pop();
 				if (t.IsOpenBrace)
-					throw EX.InvalidOperation(SR.EXP_UnbalancedBraces());
+					throw new InvalidOperationException(SR.EXP_UnbalancedBraces());
 				_reverse.Add(t);
 			}
 		}

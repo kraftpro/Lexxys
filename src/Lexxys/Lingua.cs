@@ -859,12 +859,12 @@ namespace Lexxys
 		{
 			public static string Ord(long value)
 			{
-				return value.ToString() + GetOrdinalPostfix(value);
+				return value.ToString(CultureInfo.InvariantCulture) + GetOrdinalPostfix(value);
 			}
 
 			public static string Ord(decimal value)
 			{
-				return value.ToString($"0'{GetOrdinalPostfix((long)(value % 100))}'.###############");
+				return value.ToString($"0'{GetOrdinalPostfix((long)(value % 100))}'.###############", CultureInfo.InvariantCulture);
 			}
 
 			public static string Ord(string value)

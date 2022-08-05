@@ -24,12 +24,11 @@ namespace Lexxys.Configuration
 	{
 		public readonly static IConfigService Instance = new ConfigProvidersCollection();
 
-		private const int UserConfigPosition = 1;
-
 		private const string LogSource = "Lexxys.Configuration";
-		private const string ConfigCachingOption = "lexxys.config:cacheValues";
+#if NETFRAMEWORK
 		private const string InitialLocationKey = "configuration";
 		private const string ConfigurationDerectoryKey = "configurationDirectory";
+#endif
 
 		private bool _initializing;
 		private bool _initialized;
@@ -251,6 +250,7 @@ namespace Lexxys.Configuration
 				}
 				return found;
 			}
+			#pragma warning disable CA1031 // Ignore any errors
 			catch (Exception flaw)
 			{
 				flaw = flaw.Unwrap()
@@ -263,6 +263,7 @@ namespace Lexxys.Configuration
 					_log.Error(nameof(AddConfiguration), flaw);
 				return Found.None;
 			}
+			#pragma warning restore CA1031 // Do not catch general exception types
 		}
 
 		private List<IConfigProvider?> CreateProviders(Uri location, IReadOnlyCollection<string>? parameters)
@@ -290,6 +291,7 @@ namespace Lexxys.Configuration
 					i = _providers.FindIndex(o => o.Location == provider.Location);
 					result.Add(i < 0 ? provider: null);
 				}
+				#pragma warning disable CA1031 // Ignore any errors
 				catch (Exception flaw)
 				{
 					flaw = flaw.Unwrap()
@@ -302,6 +304,7 @@ namespace Lexxys.Configuration
 					else
 						_log.Error(nameof(CreateProviders), flaw);
 				}
+				#pragma warning restore CA1031 // Do not catch general exception types
 			}
 			return result;
 		}
@@ -402,7 +405,7 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private void LogEventEntry(ILogger logger, EventEntry item)
+		private static void LogEventEntry(ILogger logger, EventEntry item)
 		{
 			if (item.Exception != null)
 			{
@@ -465,7 +468,7 @@ namespace Lexxys.Configuration
 		private static IReadOnlyList<string> GetConfigurationDerectories()
 		{
 			var configurationDirectory = new List<string> { Lxx.HomeDirectory };
-#if !NETCOREAPP
+#if NETFRAMEWORK
 			string[] directories = System.Configuration.ConfigurationManager.AppSettings.GetValues(ConfigurationDerectoryKey);
 			if (directories != null)
 			{
@@ -484,7 +487,9 @@ namespace Lexxys.Configuration
 				configurationDirectory.Add(Lxx.GlobalConfigurationDirectory);
 			return ReadOnly.Wrap(configurationDirectory);
 		}
+#if NETFRAMEWORK
 		private static readonly char[] __separators = { ',', ';', ' ', '\t', '\n', '\r' };
+#endif
 
 		private static Uri? GetConfigurationLocation(Assembly? asm)
 		{
@@ -497,7 +502,7 @@ namespace Lexxys.Configuration
 		private static IEnumerable<Uri> GetInitialConfigurationsLocations()
 		{
 			var cc = new OrderedSet<Uri>();
-#if !NETCOREAPP
+#if NETFRAMEWORK
 			string[] ss = System.Configuration.ConfigurationManager.AppSettings.GetValues(InitialLocationKey);
 			if (ss != null)
 			{

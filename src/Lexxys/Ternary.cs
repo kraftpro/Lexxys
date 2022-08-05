@@ -12,7 +12,7 @@ namespace Lexxys
 	{
 		public static readonly Ternary True = new Ternary(true);
 		public static readonly Ternary False = new Ternary(false);
-		public static readonly Ternary Unknown = new Ternary();
+		public static readonly Ternary Unknown;
 		public static readonly string TrueString = "True";
 		public static readonly string FalseString = "False";
 		public static readonly string UnknownString = "Unknown";

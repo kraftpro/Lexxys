@@ -18,7 +18,7 @@ namespace Lexxys.Tokenizer
 	/// </summary>
 	public struct CharPosition: IEquatable<CharPosition>
 	{
-		public static readonly CharPosition Start = new CharPosition();
+		public static readonly CharPosition Start;
 
 		/// <summary>
 		/// Creates a new <see cref="CharPosition"/> value.

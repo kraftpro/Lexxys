@@ -6,11 +6,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace Lexxys
 {
 	/// <summary>
 	/// Provides helper to create an instance of the <see cref="SynchronizedCollection{T}"/>.
 	/// </summary>
+	#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 	public static class SynchronizedCollection
 	{
 		/// <summary>
@@ -20,7 +23,7 @@ namespace Lexxys
 		/// <param name="areNew">Indicates the all the items are new in the collection</param>
 		/// <param name="comparer">Optional equality comparer for the collection items</param>
 		/// <param name="readOnly">Indicated the the collection is read only</param>
-		public static SynchronizedCollection<T> Create<T>(IEnumerable<T> items, bool areNew = false, IEqualityComparer<T> comparer = null, bool readOnly = false)
+		public static SynchronizedCollection<T> Create<T>(IEnumerable<T>? items, bool areNew = false, IEqualityComparer<T>? comparer = null, bool readOnly = false)
 		{
 			return new SynchronizedCollection<T>(items, areNew, comparer, readOnly);
 		}
@@ -61,7 +64,7 @@ namespace Lexxys
 		/// Initializes a new instance of the <see cref="SynchronizedCollection{T}"/> that is empty.
 		/// </summary>
 		/// <param name="comparer">Optional equality comparer for the collection items</param>
-		public SynchronizedCollection(IEqualityComparer<T> comparer = null)
+		public SynchronizedCollection(IEqualityComparer<T>? comparer = null)
 		{
 			_comparer = comparer ?? EqualityComparer<T>.Default;
 			_items = new List<MarkedItem>();
@@ -75,7 +78,7 @@ namespace Lexxys
 		/// <param name="areNew">Indicates the all the items are new in the collection</param>
 		/// <param name="comparer">Optional equality comparer for the collection items</param>
 		/// <param name="readOnly">Indicated the the collection is read only</param>
-		public SynchronizedCollection(IEnumerable<T> items, bool areNew = false, IEqualityComparer<T> comparer = null, bool readOnly = false)
+		public SynchronizedCollection(IEnumerable<T>? items, bool areNew = false, IEqualityComparer<T>? comparer = null, bool readOnly = false)
 		{
 			_comparer = comparer ?? EqualityComparer<T>.Default;
 			_items = items == null ? new List<MarkedItem>() : new List<MarkedItem>(items.AsEnumerable().Select(o => new MarkedItem(o, areNew)));
@@ -119,7 +122,7 @@ namespace Lexxys
 		/// <param name="create">Action to insert the item to the collection.</param>
 		/// <param name="delete">Action to delete the item from the collection.</param>
 		/// <param name="update">Action to update the item of the collection.</param>
-		public void Synchronize(Action<T> create, Action<T> delete, Action<T> update = null)
+		public void Synchronize(Action<T> create, Action<T> delete, Action<T>? update = null)
 		{
 			if (IsReadOnly)
 				return;
@@ -150,7 +153,7 @@ namespace Lexxys
 		/// <param name="create">Action to insert the item to the collection.</param>
 		/// <param name="delete">Action to delete the item from the collection.</param>
 		/// <param name="update">Action to update the item of the collection.</param>
-		public async Task SynchronizeAsync(Func<T, Task> create, Func<T, Task> delete, Func<T, Task> update = null)
+		public async Task SynchronizeAsync(Func<T, Task> create, Func<T, Task> delete, Func<T, Task>? update = null)
 		{
 			if (IsReadOnly)
 				return;
@@ -162,15 +165,15 @@ namespace Lexxys
 			//Debug.Assert(original.Count == _items.Count + _deletedItems.Count - _newItems.Count);
 			foreach (var item in _deletedItems)
 			{
-				await delete(item.Value);
+				await delete(item.Value).ConfigureAwait(false);
 			}
 
 			foreach (var item in _items)
 			{
 				if (item.IsNew)
-					await create(item.Value);
+					await create(item.Value).ConfigureAwait(false);
 				else if (update != null)
-					await update.Invoke(item.Value);
+					await update.Invoke(item.Value).ConfigureAwait(false);
 			}
 			MarkSynced();
 		}
@@ -194,7 +197,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="values">Desired content of the collection</param>
 		/// <param name="replace">Optional operator used to replace element in the resulted collection items with correspondent item from <paramref name = "values" />.</param>
-		public void SynchronizeWith(IEnumerable<T> values, Action<T, T> replace = null)
+		public void SynchronizeWith(IEnumerable<T> values, Action<T, T>? replace = null)
 		{
 			SynchronizeWith(values, (p, q) => _comparer.Equals(p, q), o => o, replace);
 		}
@@ -207,10 +210,14 @@ namespace Lexxys
 		/// <param name="equals">A predicate to indicate that two elements from the source and target collections are equal.</param>
 		/// <param name="create">An operator used to conver value from <typeparamref name="T"/> to <typeparamref name="T2"/>.</param>
 		/// <param name="replace">Optional operator used to replace element in the resulted collection items with correspondent item from <paramref name = "values" />.</param>
-		public void SynchronizeWith<T2>(IEnumerable<T2> values, Func<T, T2, bool> equals, Func<T2, T> create, Action<T, T2> replace = null)
+		public void SynchronizeWith<T2>(IEnumerable<T2> values, Func<T, T2, bool> equals, Func<T2, T> create, Action<T, T2>? replace = null)
 		{
 			if (IsReadOnly)
 				throw CollectionReadOnlyException();
+			if (equals is null)
+				throw new ArgumentNullException(nameof(equals));
+			if (create is null)
+				throw new ArgumentNullException(nameof(create));
 
 			_items.AddRange(_deletedItems);
 			_deletedItems.Clear();
@@ -324,16 +331,10 @@ namespace Lexxys
 			}
 		}
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 		#endregion
 
-		private static Exception CollectionReadOnlyException()
-		{
-			return new NotSupportedException("The collection is readonly.");
-		}
+		private static Exception CollectionReadOnlyException() => new NotSupportedException("The collection is readonly.");
 	}
 }
