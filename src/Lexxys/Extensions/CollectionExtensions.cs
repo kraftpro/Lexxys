@@ -6,6 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Lexxys
@@ -134,6 +135,7 @@ namespace Lexxys
 			return -1;
 		}
 
+		[return: MaybeNull]
 		public static T LastOrDefault<T>(this IList<T> list, Predicate<T> match)
 		{
 			if (list == null)
@@ -149,6 +151,7 @@ namespace Lexxys
 			return default;
 		}
 
+		[return: MaybeNull]
 		public static T LastOrDefault<T>(this ISafeList<T> list, Predicate<T> match)
 		{
 			if (list == null)

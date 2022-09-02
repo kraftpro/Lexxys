@@ -479,7 +479,7 @@ namespace Lexxys
 			{
 				for (int i = 1; i < data.Length; i += 2)
 				{
-					flaw.Add((data[i - 1] ?? "<null>").ToString(), data[i]);
+					flaw.Add(data[i - 1]?.ToString() ?? "<null>", data[i]);
 				}
 				if ((data.Length & 1) != 0)
 					flaw.Add("<last>", data[data.Length - 1]);
