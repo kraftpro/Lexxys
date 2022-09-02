@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using Lexxys;
 
 namespace Lexxys
 {
@@ -109,6 +108,9 @@ namespace Lexxys
 
 		public override StringBuilder ToString(StringBuilder text, IFormatProvider provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			var format = (DateTimeFormatInfo)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
 			text.Append("the ");
 			if (Week == ScheduleWeekType.None)
@@ -136,18 +138,18 @@ namespace Lexxys
 			return text;
 		}
 
-		public bool Equals(MonthlySchedule that)
+		public bool Equals(MonthlySchedule other)
 		{
-			if (that is null)
+			if (other is null)
 				return false;
-			if (ReferenceEquals(this, that))
+			if (ReferenceEquals(this, other))
 				return true;
-			return Day == that.Day && Week == that.Week && WeekDay == that.WeekDay && Comparer.Equals(MonthList, that.MonthList);
+			return Day == other.Day && Week == other.Week && WeekDay == other.WeekDay && Comparer.Equals(MonthList, other.MonthList);
 		}
 
-		public override bool Equals(Schedule that)
+		public override bool Equals(Schedule other)
 		{
-			return that is MonthlySchedule ms && Equals(ms);
+			return other is MonthlySchedule ms && Equals(ms);
 		}
 
 		public override bool Equals(object obj)
@@ -162,35 +164,44 @@ namespace Lexxys
 
 		public override DumpWriter DumpContent(DumpWriter writer)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
+
 			return base.DumpContent(writer)
-				.Text(",Day=").Dump(Day)
-				.Text(",Week=").Dump(Week)
-				.Text(",WeekDay=").Dump(WeekDay)
-				.Text(",Months=").Dump(MonthList);
+				.Then("Day", Day)
+				.Then("Week", Week)
+				.Then("WeekDay", WeekDay)
+				.Then("Months", MonthList);
 		}
 
-		public override XmlBuilder ToXmlContent(XmlBuilder xml)
+		public override XmlBuilder ToXmlContent(XmlBuilder builder)
 		{
-			xml.Item("type", ScheduleType);
+			if (builder is null)
+				throw new ArgumentNullException(nameof(builder));
+
+			builder.Item("type", ScheduleType);
 			if (Week == ScheduleWeekType.None)
 			{
 				if (Day != 1)
-					xml.Item("day", Day);
+					builder.Item("day", Day);
 			}
 			else
 			{
-				xml.Item("week", Week)
+				builder.Item("week", Week)
 					.Item("weekDay", WeekDay);
 			}
 			if (!Object.ReferenceEquals(MonthList, AllMonths))
-				xml.Item("months", String.Join(",", MonthList.Select(o => o.ToString(CultureInfo.InvariantCulture))));
+				builder.Item("months", String.Join(",", MonthList.Select(o => o.ToString(CultureInfo.InvariantCulture))));
 			if (!Reminder.IsEmpty)
-				xml.Element("reminder").Value(Reminder).End();
-			return xml;
+				builder.Element("reminder").Value(Reminder).End();
+			return builder;
 		}
 
 		public override JsonBuilder ToJsonContent(JsonBuilder json)
 		{
+			if (json is null)
+				throw new ArgumentNullException(nameof(json));
+
 			json.Item("type").Val(ScheduleType);
 			if (Week == ScheduleWeekType.None)
 			{
@@ -211,10 +222,12 @@ namespace Lexxys
 
 		public new static MonthlySchedule FromXml(Xml.XmlLiteNode xml)
 		{
-			if (xml == null || xml.IsEmpty)
-				return null;
+			if (xml is null)
+				throw new ArgumentNullException(nameof(xml));
+			if (xml.IsEmpty)
+				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
 			if (xml["type"] != Type)
-				throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null);
+				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
 			IEnumerable<int> months = xml["months"] != null ?
 				xml["months"]?.Split(',').Select(o => o.AsInt32(0)):
 				xml.Element("months").Elements.Select(o => o.Value.AsInt32());
@@ -226,6 +239,9 @@ namespace Lexxys
 
 		public new static MonthlySchedule FromJson(string json)
 		{
+			if (json is null || json.Length <= 0)
+				throw new ArgumentNullException(nameof(json));
+
 			return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
 		}
 	}

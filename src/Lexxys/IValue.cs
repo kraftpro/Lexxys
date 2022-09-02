@@ -5,7 +5,6 @@
 // You may use this code under the terms of the MIT license
 //
 
-#nullable enable
 
 namespace Lexxys
 {
@@ -16,7 +15,7 @@ namespace Lexxys
 
 	public interface IValue
 	{
-		object? Value { get; }
+		object Value { get; }
 	}
 }
 

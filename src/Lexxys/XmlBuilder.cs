@@ -14,6 +14,12 @@ using System.Reflection;
 using System.Text;
 using System.Xml;
 
+#nullable enable
+
+#pragma warning disable CA1720 // Identifier contains type name
+#pragma warning disable CA1031 // Do not catch general exception types
+#pragma warning disable CA2225 // Operator overloads have named alternates
+
 namespace Lexxys
 {
 	using Xml;
@@ -49,7 +55,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="String"/> value to write.</param>
 		/// <returns></returns>
-		protected abstract XmlBuilder Text(string value);
+		protected abstract XmlBuilder Text(string? value);
 		/// <summary>
 		/// Writes a <see cref="Char"/> value to a stream.
 		/// </summary>
@@ -61,13 +67,13 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The <see cref="String"/> value to write.</param>
 		/// <returns></returns>
-		protected abstract XmlBuilder EncodeAttribute(string value);
+		protected abstract XmlBuilder EncodeAttribute(string? value);
 		/// <summary>
 		/// Encodes a <see cref="String"/> value as XML value and writes the encoded value to a stream.
 		/// </summary>
 		/// <param name="value">The <see cref="String"/> value to write.</param>
 		/// <returns></returns>
-		protected abstract XmlBuilder EncodeValue(string value);
+		protected abstract XmlBuilder EncodeValue(string? value);
 
 		/// <summary>
 		/// Naming rules of the XML elements and attributes (default <see cref="NamingCaseRule.None"/>).
@@ -111,7 +117,6 @@ namespace Lexxys
 
 		private static string ReferenceValue(object value)
 		{
-			Contract.Requires(value != null);
 			return "^[" + value.ToString() + "]";
 		}
 
@@ -172,7 +177,7 @@ namespace Lexxys
 
 		#region Item
 
-		private XmlBuilder AppendItem(string name, string value)
+		private XmlBuilder AppendItem(string name, string? value)
 		{
 			if (name == null || name.Length == 0)
 				throw new ArgumentNullException(nameof(name));
@@ -591,13 +596,13 @@ namespace Lexxys
 		/// <param name="name">The name of the attribute.</param>
 		/// <param name="value">The value of the attribute.</param>
 		/// <returns></returns>
-		public XmlBuilder Item(string name, object value)
+		public XmlBuilder Item(string name, object? value)
 		{
 			if (value == null)
 				return AppendItem(name, null);
 			if (value is IDumpXml id)
 				return Element(name).Value(id).End();
-			string s = XmlTools.Convert(value);
+			string? s = XmlTools.Convert(value);
 			if (s != null)
 				return AppendItem(name, s);
 			return Element(name).Object(value).End();
@@ -612,7 +617,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">Encoded element value to append to the buffer</param>
 		/// <returns><see cref="XmlBuilder"/></returns>
-		private XmlBuilder AppendValue(string value)
+		private XmlBuilder AppendValue(string? value)
 		{
 			if (_state == State.Attribute)
 			{
@@ -641,7 +646,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The value to write.</param>
 		/// <returns></returns>
-		public XmlBuilder Value(string value)
+		public XmlBuilder Value(string? value)
 		{
 			if (_state == State.Attribute)
 			{
@@ -1012,7 +1017,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The value to write</param>
 		/// <returns></returns>
-		public XmlBuilder Value(IDumpXml value)
+		public XmlBuilder Value(IDumpXml? value)
 		{
 			return value == null ? this: value.ToXmlContent(this);
 		}
@@ -1023,7 +1028,7 @@ namespace Lexxys
 		/// <param name="items">The collection to write</param>
 		/// <param name="itemName">Optional name of the element item.</param>
 		/// <returns></returns>
-		public XmlBuilder Value(IEnumerable<IDumpXml> items, string itemName = null)
+		public XmlBuilder Value(IEnumerable<IDumpXml>? items, string? itemName = null)
 		{
 			if (items is null)
 				return this;
@@ -1039,7 +1044,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">Value to write</param>
 		/// <returns><see cref="XmlBuilder"/></returns>
-		public XmlBuilder Value(object value)
+		public XmlBuilder Value(object? value)
 		{
 			return value == null ? this : Value(value, PreferElements);
 		}
@@ -1050,7 +1055,7 @@ namespace Lexxys
 		/// <param name="value">Value to write</param>
 		/// <param name="elements">Use XML elments instead of attributies for properties of <paramref name="value"/></param>
 		/// <returns><see cref="XmlBuilder"/></returns>
-		public XmlBuilder Value(object value, bool elements)
+		public XmlBuilder Value(object? value, bool elements)
 		{
 			return value is IDumpXml dump ? dump.ToXmlContent(this) : Object(value, elements);
 		}
@@ -1061,12 +1066,12 @@ namespace Lexxys
 		/// <param name="value">Value to write</param>
 		/// <param name="elements">Use XML elments instead of attributies for properties of <paramref name="value"/></param>
 		/// <returns><see cref="XmlBuilder"/></returns>
-		public XmlBuilder Object(object value, bool elements = false)
+		public XmlBuilder Object(object? value, bool elements = false)
 		{
 			if (value == null)
 				return this;
 
-			string xmlValue = XmlTools.Convert(value);
+			string? xmlValue = XmlTools.Convert(value);
 			if (xmlValue != null)
 				return AppendValue(xmlValue);
 
@@ -1098,7 +1103,7 @@ namespace Lexxys
 		/// <param name="name">Name of the XML element</param>
 		/// <param name="value">Value of the XML element</param>
 		/// <returns></returns>
-		public XmlBuilder Element(string name, object value)
+		public XmlBuilder Element(string name, object? value)
 		{
 			return Element(name).Value(value, PreferElements).End();
 		}
@@ -1110,7 +1115,7 @@ namespace Lexxys
 		/// <param name="value">Value of the XML element</param>
 		/// <param name="elements">Use XML elments instead of attributies for properties of <paramref name="value"/></param>
 		/// <returns></returns>
-		public XmlBuilder Element(string name, object value, bool elements)
+		public XmlBuilder Element(string name, object? value, bool elements)
 		{
 			return Element(name).Value(value, elements).End();
 		}
@@ -1121,7 +1126,7 @@ namespace Lexxys
 		/// <param name="name">Name of the XML element</param>
 		/// <param name="value">Value of the XML element</param>
 		/// <returns></returns>
-		public XmlBuilder Element(string name, IDumpXml value)
+		public XmlBuilder Element(string name, IDumpXml? value)
 		{
 			return Element(name).Value(value).End();
 		}
@@ -1133,17 +1138,17 @@ namespace Lexxys
 		/// <param name="value">Value of the XML element</param>
 		/// <param name="itemName">Optional name of the collection item</param>
 		/// <returns></returns>
-		public XmlBuilder Element(string name, IEnumerable<IDumpXml> value, string itemName = null)
+		public XmlBuilder Element(string name, IEnumerable<IDumpXml>? value, string? itemName = null)
 		{
 			return Element(name).Value(value, itemName).End();
 		}
 
-		private void AppendElement(string name, object value, bool elements)
+		private void AppendElement(string name, object? value, bool elements)
 		{
 			if (value == null)
 				return;
 
-			string xmlValue = XmlTools.Convert(value);
+			string? xmlValue = XmlTools.Convert(value);
 			if (xmlValue != null)
 			{
 				if (elements || _state == State.Value)
@@ -1176,18 +1181,18 @@ namespace Lexxys
 			}
 		}
 
-		private void AppendProperties(object value, bool elements)
+		private void AppendProperties(object? value, bool elements)
 		{
 			if (value == null)
 				return;
 
 			Type type = value.GetType();
-			var items = new List<KeyValuePair<string, object>>();
+			var items = new List<KeyValuePair<string, object?>>();
 			foreach (var item in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetField))
 			{
 				try
 				{
-					object v = item.GetValue(value);
+					object? v = item.GetValue(value);
 					items.Add(KeyValue.Create(item.Name, v));
 				}
 				catch
@@ -1205,7 +1210,7 @@ namespace Lexxys
 				{
 					try
 					{
-						object v = item.GetValue(value);
+						object? v = item.GetValue(value);
 						items.Add(KeyValue.Create(item.Name, v));
 					}
 					catch
@@ -1226,11 +1231,11 @@ namespace Lexxys
 			}
 			else
 			{
-				var rest = new List<KeyValuePair<string, object>>();
+				var rest = new List<KeyValuePair<string, object?>>();
 				for (int i = 0; i < items.Count; ++i)
 				{
 					var item = items[i];
-					string xmlValue = XmlTools.Convert(item.Value);
+					string? xmlValue = XmlTools.Convert(item.Value);
 					if (xmlValue == null)
 					{
 						rest.Add(item);
@@ -1238,7 +1243,7 @@ namespace Lexxys
 					else
 					{
 						AppendItem(PreferName(item.Key), xmlValue);
-						items[i] = new KeyValuePair<string, object>();
+						items[i] = new KeyValuePair<string, object?>();
 					}
 				}
 				foreach (var item in rest)
@@ -1270,14 +1275,7 @@ namespace Lexxys
 		/// <summary>
 		/// Initializes a new instance of the <see cref="XmlStringBuilder"/> class.
 		/// </summary>
-		public XmlStringBuilder(): this(null)
-		{
-		}
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="XmlStringBuilder"/> class.
-		/// </summary>
-		public XmlStringBuilder(StringBuilder buffer)
+		public XmlStringBuilder(StringBuilder? buffer = null)
 		{
 			_buffer = buffer ?? new StringBuilder();
 		}
@@ -1292,7 +1290,7 @@ namespace Lexxys
 		/// <summary>
 		/// Initializes a new instance of the <see cref="XmlStringBuilder"/> class.
 		/// </summary>
-		public XmlStringBuilder(StringBuilder buffer, NamingCaseRule namingRule, bool preferElements = false) : this(null)
+		public XmlStringBuilder(StringBuilder? buffer, NamingCaseRule namingRule, bool preferElements = false)
 		{
 			_buffer = buffer ?? new StringBuilder();
 			NamingRule = namingRule;
@@ -1309,21 +1307,21 @@ namespace Lexxys
 		}
 
 		/// <inheritdoc />
-		protected override XmlBuilder Text(string value)
+		protected override XmlBuilder Text(string? value)
 		{
 			_buffer.Append(value);
 			return this;
 		}
 
 		/// <inheritdoc />
-		protected override XmlBuilder EncodeAttribute(string value)
+		protected override XmlBuilder EncodeAttribute(string? value)
 		{
 			XmlTools.EncodeAttribute(_buffer, value);
 			return this;
 		}
 
 		/// <inheritdoc />
-		protected override XmlBuilder EncodeValue(string value)
+		protected override XmlBuilder EncodeValue(string? value)
 		{
 			XmlTools.Encode(_buffer, value);
 			return this;
@@ -1348,7 +1346,7 @@ namespace Lexxys
 		{
 			if (xml is null)
 				throw new ArgumentNullException(nameof(xml));
-			return xml._buffer;
+			return xml.Buffer;
 		}
 		/// <summary>
 		/// Creates a new <see cref="XmlStringBuilder"/> from <see cref="StringBuilder"/>.
@@ -1379,7 +1377,7 @@ namespace Lexxys
 		/// <summary>
 		/// Initializes a new instance of the <see cref="XmlStreamBuilder"/> class.
 		/// </summary>
-		public XmlStreamBuilder(TextWriter writer, NamingCaseRule namingRule, bool preferElements = false) : this(null)
+		public XmlStreamBuilder(TextWriter writer, NamingCaseRule namingRule, bool preferElements = false)
 		{
 			_writer = writer ?? throw new ArgumentNullException(nameof(writer));
 			NamingRule = namingRule;
@@ -1389,7 +1387,7 @@ namespace Lexxys
 		public TextWriter Writer => _writer;
 
 		/// <inheritdoc />
-		protected override XmlBuilder Text(string value)
+		protected override XmlBuilder Text(string? value)
 		{
 			_writer.Write(value);
 			return this;
@@ -1403,14 +1401,14 @@ namespace Lexxys
 		}
 
 		/// <inheritdoc />
-		protected override XmlBuilder EncodeAttribute(string value)
+		protected override XmlBuilder EncodeAttribute(string? value)
 		{
 			_writer.Write(XmlTools.EncodeAttribute(value));
 			return this;
 		}
 
 		/// <inheritdoc />
-		protected override XmlBuilder EncodeValue(string value)
+		protected override XmlBuilder EncodeValue(string? value)
 		{
 			_writer.Write(XmlTools.Encode(value));
 			return this;

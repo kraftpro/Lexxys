@@ -238,7 +238,7 @@ namespace Lexxys.Data
 				value == null ?
 					nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
 				length > 0 && value.Length > length ?
-					ValidationResults.Create(field, ErrorInfo.SizeOverflow(value, ErrorDataType.Object, length)):
+					ValidationResults.Create(field, ErrorInfo.SizeOutOfRange(value, ErrorDataType.String, length)):
 					ValidationResults.Empty;
 		}
 
@@ -251,7 +251,7 @@ namespace Lexxys.Data
 				value == null ?
 					nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
 				length > 0 && value.Length > length ?
-					ValidationResults.Create(field, ErrorInfo.SizeOverflow(value, ErrorDataType.Object, length)):
+					ValidationResults.Create(field, ErrorInfo.SizeOutOfRange(value, ErrorDataType.Binary, length)):
 					ValidationResults.Empty;
 		}
 
@@ -266,7 +266,7 @@ namespace Lexxys.Data
 				value == null ?
 					nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue(dataType)):
 				length > 0 && value.Length > length ?
-					ValidationResults.Create(field, ErrorInfo.SizeOverflow(value, dataType)):
+					ValidationResults.Create(field, ErrorInfo.SizeOutOfRange(value, dataType)):
 				test(value) ?
 					ValidationResults.Empty:
 					ValidationResults.Create(field, ErrorInfo.BadFormat(value, dataType));

@@ -9,10 +9,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
-using Lexxys.Xml;
 
 namespace Lexxys
 {
+	using Xml;
+
 	[Serializable]
 	public class ConfigurationException: InvalidOperationException
 	{

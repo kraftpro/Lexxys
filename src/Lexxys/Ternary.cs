@@ -6,6 +6,8 @@
 //
 using System;
 
+#pragma warning disable CA2225 // Operator overloads have named alternates
+
 namespace Lexxys
 {
 	public struct Ternary: IEquatable<Ternary>

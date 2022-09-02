@@ -25,6 +25,9 @@ namespace Lexxys.Xml
 {
 	public static partial class XmlTools
 	{
+#pragma warning disable CA1031 // Do not catch general exception types
+#pragma warning disable CA1307 // Specify StringComparison for clarity
+
 		private static ILogging Log => __logger ??= StaticServices.Create<ILogging>("XmlTools");
 		private static ILogging? __logger;
 
@@ -288,7 +291,7 @@ namespace Lexxys.Xml
 		private static (IReadOnlyCollection<string> Missings, object? Value) TryConstruct(Type type, Dictionary<string, object> arguments)
 		{
 			if (arguments == null || arguments.Count == 0)
-				return (Array.Empty<string>(), Factory.TryConstruct(type, false));
+				return (Array.Empty<string>(), Factory.TryConstruct(type));
 
 			var key = new ConstructorKey(type, arguments);
 			if (!__attributedConstructors.TryGetValue(key, out var constructor))
@@ -331,11 +334,11 @@ namespace Lexxys.Xml
 
 		private class AttributedConstructor
 		{
-			private readonly Func<object[], object> _constructor;
+			private readonly Func<object?[], object?> _constructor;
 			private readonly (string Name, Type Type)[] _parameters;
 			private readonly Type _type;
 
-			private AttributedConstructor(Type type, Func<object[], object> constructor, (string Name, Type Info)[] parameters, IReadOnlyList<string> missings)
+			private AttributedConstructor(Type type, Func<object?[], object?> constructor, (string Name, Type Info)[] parameters, IReadOnlyList<string> missings)
 			{
 				_type = type ?? throw new ArgumentNullException(nameof(type));
 				_constructor = constructor ?? throw new ArgumentNullException(nameof(constructor));
@@ -352,10 +355,10 @@ namespace Lexxys.Xml
 					if (arguments == null)
 						throw new ArgumentNullException(nameof(arguments));
 					if (arguments.Count < _parameters.Length)
-						throw new ArgumentOutOfRangeException(nameof(arguments) + ".Count", arguments.Count, null).Add("expected value", _parameters.Length);
+						throw new ArgumentOutOfRangeException(nameof(arguments), arguments.Count, null).Add("expected value", _parameters.Length);
 				}
 
-				var values = new object[_parameters.Length];
+				var values = new object?[_parameters.Length];
 				for (int i = 0; i < _parameters.Length; ++i)
 				{
 					if (!arguments.TryGetValue(_parameters[i].Name, out var value))
@@ -488,7 +491,7 @@ namespace Lexxys.Xml
 						ctor = Expression.New(constructor, args);
 				}
 				var missings = new List<string>(arguments.Keys.Except(parameters.Select(o => o.Name!), StringComparer.OrdinalIgnoreCase));
-				return new AttributedConstructor(type, Expression.Lambda<Func<object[], object>>(ctor, arg).Compile(), parms.ToArray(), missings);
+				return new AttributedConstructor(type, Expression.Lambda<Func<object?[], object?>>(ctor, arg).Compile(), parms.ToArray(), missings);
 			}
 		}
 
@@ -614,8 +617,9 @@ namespace Lexxys.Xml
 			PropertyInfo? readOnly = collectionType.GetProperty("IsReadOnly", typeof(bool));
 			if (readOnly != null && !readOnly.CanRead)
 				readOnly = null;
+			var readOnlyMethod = readOnly?.GetGetMethod();
 			if (result == null || !returnType.IsInstanceOfType(result) ||
-				(readOnly != null && Object.Equals(Factory.Invoke(result, readOnly.GetGetMethod()), true)))
+				(readOnlyMethod != null && Object.Equals(Factory.Invoke(result, readOnlyMethod), true)))
 			{
 				var args = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 				foreach (var item in node.Attributes)
@@ -623,7 +627,7 @@ namespace Lexxys.Xml
 					args[item.Key] = item.Value;
 				}
 				result = TryConstruct(returnType, args).Value;
-				if (result == null || (readOnly != null && Object.Equals(Factory.Invoke(result, readOnly.GetGetMethod()), true)))
+				if (result == null || (readOnlyMethod != null && Object.Equals(Factory.Invoke(result, readOnlyMethod), true)))
 					return false;
 			}
 

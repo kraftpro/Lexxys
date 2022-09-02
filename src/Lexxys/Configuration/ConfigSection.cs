@@ -18,17 +18,26 @@ namespace Lexxys.Configuration
 	{
 		private readonly string _path;
 		private readonly IConfigSource _configSource;
+		private bool _disposable;
 
 		public ConfigSection(IConfigSource configSource)
 		{
+			if (configSource is null)
+				throw new ArgumentNullException(nameof(configSource));
+
 			_path = String.Empty;
 			_configSource = configSource;
+			_disposable = configSource is IDisposable;
 		}
 
 		private ConfigSection(IConfigSource configSource, string path)
 		{
-			_path = path.Trim(Dots);
+			if (configSource is null)
+				throw new ArgumentNullException(nameof(configSource));
+
+			_path = path?.Trim(Dots) ?? String.Empty;
 			_configSource = configSource;
+			_disposable = configSource is IDisposable;
 		}
 
 		#region IConfigSection
@@ -182,5 +191,35 @@ namespace Lexxys.Configuration
 				}
 			}
 		}
+	}
+
+	public sealed class DisposibleConfigSection: IConfigSection, IDisposable
+	{
+		private readonly IConfigSection _configSection;
+		private readonly IDisposable _disposable;
+
+		public DisposibleConfigSection(IDisposableConfigSource configSource)
+		{
+			_configSection = new ConfigSection(configSource);
+			_disposable = configSource;
+		}
+
+		public int Version => _configSection.Version;
+
+		public event EventHandler<ConfigurationEventArgs>? Changed { add => _configSection.Changed += value; remove => _configSection.Changed -= value; }
+
+		public void Dispose() => _disposable.Dispose();
+
+		public IValue<IReadOnlyList<T>> GetCollection<T>(string? key) => _configSection.GetCollection<T>(key);
+
+		public IConfigSection GetSection(string? key) => _configSection.GetSection(key);
+
+		public IValue<T> GetValue<T>(string? key, Func<T>? defaultValue = null) => _configSection.GetValue(key, defaultValue);
+
+		public void MapPath(string key, string value) => _configSection.MapPath(key, value);
+
+		public void SetCollection<T>(string? key, IReadOnlyList<T> value) => _configSection.SetCollection(key, value);
+
+		public void SetValue<T>(string? key, T value) => _configSection.SetValue(key, value);
 	}
 }

@@ -28,30 +28,30 @@ namespace Lexxys.Configuration
 
 		public int Version => 1;
 
-		public object? GetValue(string reference, Type returnType)
+		public object? GetValue(string key, Type objectType)
 		{
-			if (returnType == null)
-				throw EX.ArgumentNull(nameof(returnType));
-			if (reference == null)
-				throw EX.ArgumentNull(nameof(reference));
+			if (objectType == null)
+				throw EX.ArgumentNull(nameof(objectType));
+			if (key == null)
+				throw EX.ArgumentNull(nameof(key));
 
-			string value = ConfigurationManager.AppSettings[reference];
-			if (value != null && XmlTools.TryGetValue(value, returnType, out object result))
+			string value = ConfigurationManager.AppSettings[key];
+			if (value != null && XmlTools.TryGetValue(value, objectType, out object result))
 				return result;
-			if (reference.StartsWith("connection.", StringComparison.OrdinalIgnoreCase) && returnType == typeof(string))
-				return ConfigurationManager.ConnectionStrings[reference.Substring(11)];
-			result = ConfigurationManager.GetSection(reference);
-			if (returnType.IsInstanceOfType(result))
+			if (key.StartsWith("connection.", StringComparison.OrdinalIgnoreCase) && objectType == typeof(string))
+				return ConfigurationManager.ConnectionStrings[key.Substring(11)];
+			result = ConfigurationManager.GetSection(key);
+			if (objectType.IsInstanceOfType(result))
 				return result;
 			return null;
 		}
 
-		public IReadOnlyList<T> GetList<T>(string reference)
+		public IReadOnlyList<T> GetList<T>(string key)
 		{
-			if (reference == null)
-				throw EX.ArgumentNull(nameof(reference));
+			if (key == null)
+				throw EX.ArgumentNull(nameof(key));
 
-			string[] values = ConfigurationManager.AppSettings.GetValues(reference);
+			string[] values = ConfigurationManager.AppSettings.GetValues(key);
 			if (values != null)
 			{
 				var result = new List<T>();
@@ -65,7 +65,7 @@ namespace Lexxys.Configuration
 				if (result.Count > 0)
 					return ReadOnly.Wrap(result);
 			}
-			if (reference.StartsWith("connection.", StringComparison.OrdinalIgnoreCase))
+			if (key.StartsWith("connection.", StringComparison.OrdinalIgnoreCase))
 			{
 				var cc = ConfigurationManager.ConnectionStrings;
 				if (cc.Count > 0)
@@ -100,9 +100,9 @@ namespace Lexxys.Configuration
 					return Array.Empty<T>();
 				}
 			}
-			if (ConfigurationManager.GetSection(reference) is List<T> list)
+			if (ConfigurationManager.GetSection(key) is List<T> list)
 				return ReadOnly.Wrap(list);
-			if (ConfigurationManager.GetSection(reference) is IEnumerable<T> ienum)
+			if (ConfigurationManager.GetSection(key) is IEnumerable<T> ienum)
 				return ReadOnly.WrapCopy(ienum);
 			return Array.Empty<T>();
 		}

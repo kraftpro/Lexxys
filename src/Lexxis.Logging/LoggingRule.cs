@@ -4,14 +4,13 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using Lexxys;
-using Lexxys.Xml;
 using System;
 using System.Collections.Generic;
 ﻿using System.Linq;
 ﻿using System.Text.RegularExpressions;
 
 namespace Lexxys.Logging;
+using Xml;
 
 [Flags]
 enum LogTypeMask
@@ -176,10 +175,10 @@ internal class LoggingRule
 						y = LogTypeMask.Output | LogTypeMask.Error | LogTypeMask.Warning | LogTypeMask.Information;
 						break;
 					case "TRACE":
-					case "VERBOSE":
 						x = LogTypeMask.Trace;
 						y = LogTypeMask.Output | LogTypeMask.Error | LogTypeMask.Warning | LogTypeMask.Information | LogTypeMask.Trace;
 						break;
+					case "VERBOSE":
 					case "DEBUG":
 					case "ALL":
 					case "*":
@@ -207,7 +206,7 @@ internal class LoggingRule
 		{
 			if (rule == null)
 				return null;
-			string pattern = Regex.Escape(__separators.Replace(rule, ",")).Replace("\\*", ".*").Replace(',', '|').Trim('|');
+			string pattern = Regex.Escape(__separators.Replace(rule, ",")).Replace("*", ".*").Replace(',', '|').Trim('|');
 			if (pattern.Length == 0)
 				return null;
 			if (pattern == ".*" || pattern.Equals("all", StringComparison.OrdinalIgnoreCase))

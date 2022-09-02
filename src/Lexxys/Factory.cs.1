@@ -8,7 +8,6 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Globalization;
@@ -18,16 +17,11 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-#nullable enable
 
 namespace Lexxys
 {
-
 	using Configuration;
 	using Tokenizer;
-
-#pragma warning disable CA1307 // Specify StringComparison for clarity N/A in Replace, IndexOf, etc.
-#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'
 
 	public static class Factory
 	{
@@ -45,20 +39,19 @@ namespace Lexxys
 		private static readonly ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>> __foundTypesP = new ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>>();
 		private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesC = new ConcurrentDictionary<Type, IEnumerable<Type>>();
 		private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesA = new ConcurrentDictionary<Type, IEnumerable<Type>>();
-		private static volatile ConcurrentBag<Assembly>? __assemblies;
-		private static volatile ConcurrentBag<Assembly>? __systemAssemblies;
-		private static volatile bool __assembliesImported;
-		private static string[]? __systemAssemblyNames;
+		private static volatile ConcurrentBag<Assembly> __assemblies;
+		private static volatile ConcurrentBag<Assembly> __systemAssemblies;
+		private static string[] __systemAssemblyNames;
 		private static readonly object SyncRoot = new object();
 
-		private static readonly ConcurrentDictionary<MemberInfo, Func<object?, object?[], object?>?> __compiledMethods = new ConcurrentDictionary<MemberInfo, Func<object?, object?[], object?>?>();
+		private static readonly ConcurrentDictionary<MemberInfo, Func<object, object[], object>> __compiledMethods = new ConcurrentDictionary<MemberInfo, Func<object, object[], object>>();
 
 		public static IEnumerable<Assembly> DomainAssemblies
 		{
 			get
 			{
 				CollectOrImportAssemblies();
-				return __assemblies!;
+				return __assemblies;
 			}
 		}
 
@@ -67,7 +60,7 @@ namespace Lexxys
 			get
 			{
 				CollectAssemblies();
-				return __systemAssemblies!;
+				return __systemAssemblies;
 			}
 		}
 
@@ -76,7 +69,7 @@ namespace Lexxys
 			AssemblyLoad?.Invoke(null, new AssemblyLoadEventArgs(asm));
 		}
 
-		public static event EventHandler<AssemblyLoadEventArgs>? AssemblyLoad;
+		public static event EventHandler<AssemblyLoadEventArgs> AssemblyLoad;
 
 		#region Assemblies
 
@@ -88,9 +81,9 @@ namespace Lexxys
 				return DefaultSystemAssemblyNames;
 
 			var ss = new List<string>(systemNames
-				.SelectMany(o => o.Split(',', ';'))
+				.SelectMany(o => o?.Split(',', ';'))
 				.Select(o => o.TrimToNull())
-				.Where(o => o != null)!);
+				.Where(o => o != null));
 			if (ss.Count == 0)
 				return DefaultSystemAssemblyNames;
 
@@ -112,7 +105,7 @@ namespace Lexxys
 			if (asm.GlobalAssemblyCache)
 				return true;
 #endif
-			string? name = asm.FullName;
+			string name = asm.FullName;
 			return name == null || name.IndexOf("Version=0.0.0.0", StringComparison.OrdinalIgnoreCase) >= 0 || Array.FindIndex(__systemAssemblyNames!, s => name.StartsWith(s, StringComparison.Ordinal)) >= 0;
 		}
 
@@ -139,6 +132,7 @@ namespace Lexxys
 			{
 				lock (SyncRoot)
 				{
+					#pragma warning disable CA1508 // Avoid dead conditional code
 					if (__assemblies == null)
 					{
 						CollectAssembliesInternal();
@@ -150,8 +144,7 @@ namespace Lexxys
 			{
 				lock (SyncRoot)
 				{
-					if (!__assembliesImported)
-						ImportAssembliesInternal();
+					ImportAssembliesInternal();
 				}
 			}
 		}
@@ -175,18 +168,19 @@ namespace Lexxys
 				__assembliesImported = true;
 			}
 		}
+		private static bool __assembliesImported;
 
-		private static void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs args)
+		private static void CurrentDomain_AssemblyLoad(object sender, AssemblyLoadEventArgs args)
 		{
 			Assembly asm = args.LoadedAssembly;
 			CollectAssemblies();
 			if (IsSystemAssembly(asm))
 			{
-				__systemAssemblies!.Add(asm);
+				__systemAssemblies.Add(asm);
 			}
 			else
 			{
-				__assemblies!.Add(asm);
+				__assemblies.Add(asm);
 				__foundTypesP.Clear();
 				__foundTypesC.Clear();
 				__foundTypesA.Clear();
@@ -194,7 +188,7 @@ namespace Lexxys
 			}
 		}
 
-		private static Assembly? CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
+		private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
 		{
 			if (sender is not AppDomain domain)
 				return null;
@@ -219,30 +213,30 @@ namespace Lexxys
 			}
 		}
 
-		private static void OnConfigChanged(object? sender, ConfigurationEventArgs e)
+		private static void OnConfigChanged(object sender, ConfigurationEventArgs e)
 		{
 			ImportRestAssemblies();
 			ResetSynonyms();
 		}
 
 
-		public static Assembly? TryLoadAssembly(string? assemblyName, bool throwOnError)
+		public static Assembly TryLoadAssembly(string assemblyName, bool throwOnError)
 		{
 			if (assemblyName == null || assemblyName.Length == 0)
 				if (throwOnError)
-					throw new ArgumentNullException(nameof(assemblyName));
+					throw EX.ArgumentNull(nameof(assemblyName));
 				else
 					return null;
 
-			string? file = null;
+			string file = null;
 			try
 			{
-				file = Path.Combine(Lxx.HomeDirectory, assemblyName);
+				file = Lxx.HomeDirectory == null ? assemblyName: Path.Combine(Lxx.HomeDirectory, assemblyName);
 				return File.Exists(file) ? Assembly.LoadFrom(file): Assembly.Load(assemblyName);
 			}
 			catch (Exception flaw)
 			{
-                SystemLog.WriteErrorMessage("Lexxys.Factory.TryLoadAssembly", flaw, new OrderedBag<string, object?> { { "assemblyName", assemblyName }, { "file", file } });
+                SystemLog.WriteErrorMessage("Lexxys.Factory.TryLoadAssembly", flaw, new OrderedBag<string, object> { { "assemblyName", assemblyName }, { "file", file } });
 				if (throwOnError)
 					throw;
 				return null;
@@ -251,7 +245,7 @@ namespace Lexxys
 
 		public static Assembly LoadAssembly(string assemblyName)
 		{
-			return TryLoadAssembly(assemblyName, true)!;
+			return TryLoadAssembly(assemblyName, true);
 		}
 
 		#endregion
@@ -264,7 +258,7 @@ namespace Lexxys
 		public static IEnumerable<Type> Types(Type type, bool cacheResults = false)
 		{
 			if (type == null)
-				throw new ArgumentNullException(nameof(type));
+				throw EX.ArgumentNull(nameof(type));
 
 			return cacheResults ?
 				type.IsInterface ?
@@ -280,16 +274,16 @@ namespace Lexxys
 					DomainAssemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && type.IsAssignableFrom(t)));
 		}
 
-		private static IEnumerable<Type> SelectTypes(this Assembly assembly, Func<Type, bool>? predicate)
+		private static IEnumerable<Type> SelectTypes(this Assembly assembly, Func<Type, bool> predicate)
 		{
 			IEnumerable<Type> list;
 			try
 			{
 				list = assembly.GetTypes();
 			}
-			catch (ReflectionTypeLoadException flaw)
+			catch (ReflectionTypeLoadException e)
 			{
-				list = flaw.Types.Where(t => t != null)!;
+				list = e.Types.Where(t => t != null);
 			}
 			return predicate == null ? list: list.Where(predicate);
 		}
@@ -297,7 +291,7 @@ namespace Lexxys
 		public static IEnumerable<Type> Classes(Type type, bool cacheResults = false)
 		{
 			if (type == null)
-				throw new ArgumentNullException(nameof(type));
+				throw EX.ArgumentNull(nameof(type));
 
 			return cacheResults ?
 				__foundTypesC.GetOrAdd(type, key => ReadOnly.WrapCopy(Classes(key, DomainAssemblies))):
@@ -312,52 +306,52 @@ namespace Lexxys
 		public static IEnumerable<Type> Classes(Type type, IEnumerable<Assembly> assemblies)
 		{
 			if (type == null)
-				throw new ArgumentNullException(nameof(type));
+				throw EX.ArgumentNull(nameof(type));
 			if (assemblies == null)
-				throw new ArgumentNullException(nameof(assemblies));
+				throw EX.ArgumentNull(nameof(assemblies));
 
 			return type.IsInterface ?
 				assemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && !t.IsAbstract && Array.IndexOf(t.GetInterfaces(), type) >= 0)):
 				assemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && !t.IsAbstract && type.IsAssignableFrom(t)));
 		}
 
-		public static List<MethodInfo> Constructors(Type type, string? methodName, params Type[]? types)
+		private static bool ConstructorPredicate(MethodInfo method, Type returnType, Type[] parameterType)
+		{
+			if (!returnType.IsAssignableFrom(method.ReturnType))
+				return false;
+			ParameterInfo[] pp = method.GetParameters();
+			if (parameterType == null)
+				return pp.Length == 0;
+			if (pp.Length != parameterType.Length)
+				return false;
+			for (int i = 0; i < pp.Length; ++i)
+			{
+				if (!pp[i].ParameterType.IsAssignableFrom(parameterType[i]))
+					return false;
+			}
+			return true;
+		}
+
+		public static List<MethodInfo> Constructors(Type type, string methodName, params Type[] types)
 		{
 			if (type == null)
-				throw new ArgumentNullException(nameof(type));
+				throw EX.ArgumentNull(nameof(type));
 
 			if (types == null)
 				types = Type.EmptyTypes;
 
 			return String.IsNullOrEmpty(methodName) ?
 				Factory.Types(type)
-					.SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => ConstructorPredicate(m, type, types)))
+					.Select(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).FirstOrDefault(m => ConstructorPredicate(m, type, types)))
 					.Where(m => m != null)
 					.ToList():
 				Factory.Types(type)
 					.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null))
 					.Where(m => m != null && type.IsAssignableFrom(m.ReturnType))
-					.ToList()!;
-
-			static bool ConstructorPredicate(MethodInfo method, Type returnType, Type[]? parameterType)
-			{
-				if (!returnType.IsAssignableFrom(method.ReturnType))
-					return false;
-				ParameterInfo[] pp = method.GetParameters();
-				if (parameterType == null)
-					return pp.Length == 0;
-				if (pp.Length != parameterType.Length)
-					return false;
-				for (int i = 0; i < pp.Length; ++i)
-				{
-					if (!pp[i].ParameterType.IsAssignableFrom(parameterType[i]))
-						return false;
-				}
-				return true;
-			}
+					.ToList();
 		}
 
-		public static Type? GetType(string? typeName)
+		public static Type GetType(string typeName)
 		{
 			return typeName == null || (typeName = typeName.Trim()).Length == 0 ? null: GetSynonym(typeName) ?? GetTypeInternal(typeName);
 		}
@@ -367,13 +361,13 @@ namespace Lexxys
 			__synonymsLoaded = false;
 		}
 
-		public static void SetSynonym(string? name, Type? type)
+		public static void SetSynonym(string name, Type type)
 		{
-			string? key = name?.Replace(" ", "");
-			if (String.IsNullOrEmpty(key))
+			if (String.IsNullOrEmpty(name))
 				return;
 			lock (SyncRoot)
 			{
+				string key = name.Replace(" ", "");
 				if (type == null)
 				{
 					__typesSynonyms.Remove(key);
@@ -388,7 +382,7 @@ namespace Lexxys
 			}
 		}
 
-		private static Type? GetSynonym(string name)
+		private static Type GetSynonym(string name)
 		{
 			if (!__synonymsLoaded)
 			{
@@ -397,18 +391,16 @@ namespace Lexxys
 					if (!__synonymsLoading)
 					{
 						__synonymsLoading = true;
-						var synonymsConfig = StaticServices.TryCreate<IConfigSection>()?.GetCollection<KeyValuePair<string?, string?>>(ConfigurationSynonyms);
+						var synonymsConfig = StaticServices.TryCreate<IConfigSection>()?.GetCollection<KeyValuePair<string, string>>(ConfigurationSynonyms);
 						var synonyms = synonymsConfig?.Value;
 						if (synonyms != null)
 						{
 							foreach (var item in synonyms)
 							{
-								if (item.Key == null || item.Value == null)
-									continue;
-								var key = item.Key.Replace(" ", "");
+								var key = (item.Key ?? "").Replace(" ", "");
 								if (key.Length == 0)
 									continue;
-								var value = item.Value.Replace(" ", "");
+								var value = (item.Value ?? "").Replace(" ", "");
 								if (value.Length == 0)
 									continue;
 								if (!__typesSynonyms.TryGetValue(value, out var type))
@@ -535,7 +527,7 @@ namespace Lexxys
 					beginning: "@$" + NameTokenRule.DefaultBeginning,
 					extra: true
 					),
-				new NumericTokenRule(NumericTokenStyles.Ordinal),
+				new NumericTokenRule(Tokenizer.NumericTokenStyles.Ordinal),
 				new SequenceTokenRule()
 					.Add(COMMA, ",")
 					.Add(ASTERISK, "*")
@@ -565,22 +557,18 @@ namespace Lexxys
 				}
 			}
 
-			public static Type? Parse(string? value)
+			public static Type Parse(string value)
 			{
-				if (value == null)
-					return null;
 				var tree = Parse(new TokenScanner2(new CharStream(value), __rules), true);
 				return tree?.MakeType();
 			}
 
-			public static TypeTree? ParseType(string? value)
+			public static TypeTree ParseType(string value)
 			{
-				if (value == null)
-					return null;
 				return Parse(new TokenScanner2(new CharStream(value), __rules), true);
 			}
 
-			private static TypeTree? Parse(TokenScanner2 scanner, bool fullName)
+			private static TypeTree Parse(TokenScanner2 scanner, bool fullName)
 			{
 				var t = scanner.Next();
 				if (!t.Is(LexicalTokenType.IDENTIFIER))
@@ -590,8 +578,8 @@ namespace Lexxys
 				int generics = 0;
 				bool nullable = false;
 				int pointer = 0;
-				List<int>? rank = null;
-				List<TypeTree>? parameters = null;
+				List<int> rank = null;
+				List<TypeTree> parameters = null;
 
 				t = scanner.Next();
 				if (t.Is(LexicalTokenType.SEQUENCE, GENERIC_SUFFIX))
@@ -657,8 +645,8 @@ namespace Lexxys
 					t = scanner.Next();
 				}
 
-				string? assembly = null;
-				OrderedBag<string, string>? options = null;
+				string assembly = null;
+				OrderedBag<string, string> options = null;
 
 				if (fullName && t.Is(LexicalTokenType.SEQUENCE, COMMA))
 				{
@@ -693,10 +681,11 @@ namespace Lexxys
 					if (!t.Is(LexicalTokenType.IDENTIFIER))
 						return null;
 					assembly = t.Text;
-					scanner.Next();
+					t = scanner.Next();
 				}
-				var tree = new TypeTree(name)
+				var tree = new TypeTree
 				{
+					Name = name,
 					PointerCount = pointer,
 					Assembly = assembly,
 					IsNullable = nullable,
@@ -712,12 +701,12 @@ namespace Lexxys
 				return tree;
 			}
 
-			private static List<TypeTree>? ParseParameters(TokenScanner2 scanner, int terminal)
+			private static List<TypeTree> ParseParameters(TokenScanner2 scanner, int terminal)
 			{
 				bool fullName = scanner.Next().Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC);
 				if (!fullName)
 					scanner.Back();
-				TypeTree? item = Parse(scanner, fullName);
+				TypeTree item = Parse(scanner, fullName);
 				if (item == null)
 					return null;
 				if (fullName)
@@ -761,21 +750,13 @@ namespace Lexxys
 			public class TypeTree
 			{
 				public string Name { get; set; }
-				public string? Assembly { get; set; }
+				public string Assembly { get; set; }
 				public int PointerCount { get; set; }
 				public bool IsNullable { get; set; }
-				public IReadOnlyList<int> ArrayRank { get; set; }
+				public IReadOnlyList<int> ArrayRank { get; set; } = Array.Empty<int>();
 				public int Generics { get; set; }
-				public IReadOnlyList<TypeTree> Parameters { get; set; }
-				public IReadOnlyDictionary<string, string> Options { get; set; }
-
-				public TypeTree(string name)
-				{
-					Name = name;
-					ArrayRank = Array.Empty<int>();
-					Parameters = Array.Empty<TypeTree>();
-					Options = ReadOnly.Empty<string, string>();
-				}
+				public IReadOnlyList<TypeTree> Parameters { get; set; } = Array.Empty<TypeTree>();
+				public IReadOnlyDictionary<string, string> Options { get; set; } = ReadOnly.Empty<string, string>();
 
 				public bool IsArray => ArrayRank.Count > 0;
 				public bool IsGeneric => Parameters.Count > 0 || Generics > 0;
@@ -843,9 +824,9 @@ namespace Lexxys
 					return BaseName(true);
 				}
 
-				public Type? MakeType()
+				public Type MakeType()
 				{
-					Type? type = Type.GetType(BaseName(false));
+					Type type = Type.GetType(BaseName(false));
 					if (type != null)
 						return type;
 					type = FindType();
@@ -864,7 +845,7 @@ namespace Lexxys
 					return type;
 				}
 
-				private Type? FindType()
+				private Type FindType()
 				{
 					var name = IsGeneric ? Name + "`" + GenericParametersCount.ToString(CultureInfo.InvariantCulture): Name;
 					var type = GetSynonym(name) ?? (Assembly == null ?
@@ -877,13 +858,12 @@ namespace Lexxys
 
 					if (Parameters.Count == 0)
 						return type;
-					Type[] parameters = new Type[Parameters.Count];
+					var parameters = new Type[Parameters.Count];
 					for (int i = 0; i < parameters.Length; ++i)
 					{
-						var p = Parameters[i].MakeType();
-						if (p == null || p == typeof(void))
+						parameters[i] = Parameters[i].MakeType();
+						if (parameters[i] == null || parameters[i] == typeof(void))
 							return null;
-						parameters[i] = p;
 					}
 					try
 					{
@@ -900,31 +880,31 @@ namespace Lexxys
 
 		#endregion
 
-		private static Type? GetTypeInternal(string typeName)
+		private static Type GetTypeInternal(string typeName)
 		{
 			Contract.Requires(!String.IsNullOrEmpty(typeName));
 			return Type.GetType(typeName, false, true) ?? TypeNameParser.Parse(typeName);
 		}
 
-		public static Type? GetType(string? typeName, IEnumerable<Assembly>? assemblies)
+		public static Type GetType(string typeName, IEnumerable<Assembly> assemblies)
 		{
-			if (String.IsNullOrEmpty(typeName))
+			if (typeName == null)
 				return null;
 
 			var type = Type.GetType(typeName, false, true);
 			return type != null || assemblies == null ? type: FindType(typeName, assemblies);
 		}
 
-		private static Type? FindType(string typeName, IEnumerable<Assembly> assemblies)
+		private static Type FindType(string typeName, IEnumerable<Assembly> assemblies)
 		{
-			Debug.Assert(assemblies != null);
+			Contract.Requires(assemblies != null);
 			return typeName.IndexOf('.') >= 0 ?
 				assemblies.Select(o => o.GetType(typeName, false, true)).FirstOrDefault(o => o != null):
 				assemblies.SelectMany(a => a.SelectTypes(o => String.Equals(o.Name, typeName, StringComparison.OrdinalIgnoreCase)))
 				.FirstOrDefault();
 		}
 
-		public static bool IsPublicType(Type? type)
+		public static bool IsPublicType(Type type)
 		{
 			while (type != null && type.IsNestedPublic)
 			{
@@ -935,31 +915,25 @@ namespace Lexxys
 
 		public static bool IsNullableType(Type type)
 		{
-			if (type == null)
-				throw new ArgumentNullException(nameof(type));
-
-			return type.IsClass || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
+			return type == null || type.IsClass || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
 		}
 
 		public static Type NullableTypeBase(Type type)
 		{
 			if (type == null)
-				throw new ArgumentNullException(nameof(type));
+				throw EX.ArgumentNull(nameof(type));
 
 			return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) ? type.GetGenericArguments()[0]: type;
 		}
 
-		public static object? DefaultValue(Type type)
+		public static object DefaultValue(Type type)
 		{
-			if (type == null)
-				throw new ArgumentNullException(nameof(type));
-
-			if (!type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)))
+			if (type == null || !type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)))
 				return null;
-			object? value = __defaults[type];
+			object value = __defaults[type];
 			if (value != null)
 				return value;
-			Func<object>? constructor = TryGetConstructor(type);
+			Func<object> constructor = TryGetConstructor(type, false);
 			return constructor?.Invoke();
 		}
 		private static readonly Hashtable __defaults = new Hashtable
@@ -987,122 +961,103 @@ namespace Lexxys
 			return (T)Construct(typeof(T));
 		}
 
-		public static T Construct<T>(params object?[] arguments)
+		public static T Construct<T>(params object[] arguments)
 		{
 			return (T)Construct(typeof(T), arguments);
 		}
 
-		public static T? TryConstruct<T>()
+		public static T TryConstruct<T>(bool throwOnError)
 		{
-			return TryConstruct(typeof(T)) is T result ? result: default;
+			return TryConstruct(typeof(T), throwOnError) is T result ? result: default;
 		}
 
-		public static T? TryConstruct<T>(params object?[] arguments)
+		public static T TryConstruct<T>(bool throwOnError, params object[] arguments)
 		{
-			return TryConstruct(typeof(T), arguments) is T result ? result: default;
+			return TryConstruct(typeof(T), throwOnError, arguments) is T result ? result: default;
 		}
 
 		public static object Construct(string typeName)
 		{
 			if (typeName == null || typeName.Length == 0)
-				throw new ArgumentNullException(nameof(typeName));
-			Type? type = GetType(typeName);
+				throw EX.ArgumentNull(nameof(typeName));
+			Type type = GetType(typeName);
 			if (type == null)
 				throw EX.ArgumentOutOfRange(nameof(typeName), typeName);
 
 			return Construct(type);
 		}
 
-		public static object Construct(string typeName, params object?[] parameters)
+		public static object Construct(string typeName, params object[] parameters)
 		{
-			if (typeName is null || typeName.Length <= 0)
-				throw new ArgumentNullException(nameof(typeName));
-			Type? type = GetType(typeName);
+			if (typeName == null || typeName.Length == 0)
+				throw EX.ArgumentNull(nameof(typeName));
+			Type type = GetType(typeName);
 			if (type == null)
 				throw EX.ArgumentOutOfRange(nameof(typeName), typeName);
 
 			return Construct(type, parameters);
 		}
 
-		public static object? TryConstruct(string typeName)
+		public static object TryConstruct(string typeName, bool throwOnError)
 		{
-			if (typeName is null || typeName.Length <= 0)
-				throw new ArgumentNullException(nameof(typeName));
-			Type? type = GetType(typeName);
-			if (type == null)
-				return null;
-
-			return TryConstruct(type);
+			return TryConstruct(GetType(typeName), throwOnError);
 		}
 
-		public static object? TryConstruct(string typeName, params object?[] parameters)
+		public static object TryConstruct(string typeName, bool throwOnError, params object[] parameters)
 		{
-			if (typeName is null || typeName.Length <= 0)
-				throw new ArgumentNullException(nameof(typeName));
-			Type? type = GetType(typeName);
-			if (type == null)
-				return null;
-
-			return TryConstruct(type, parameters);
+			return TryConstruct(GetType(typeName), throwOnError, parameters);
 		}
 		#endregion
 
 		public static object Construct(Type type)
 		{
-			if (type is null)
-				throw new ArgumentNullException(nameof(type));
-
-			return TryConstruct(type) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, 0));
+			return TryConstruct(type, true);
 		}
 
 		public static Func<object> GetConstructor(Type type)
 		{
-			if (type is null)
-				throw new ArgumentNullException(nameof(type));
-
-			return TryGetConstructor(type) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, 0));
+			return TryGetConstructor(type, true);
 		}
 
-		public static object Construct(Type type, params object?[] args)
+		public static object Construct(Type type, params object[] args)
 		{
-			if (type is null)
-				throw new ArgumentNullException(nameof(type));
-
-			return TryConstruct(type, args) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
+			return TryConstruct(type, true, args);
 		}
 
-		public static Func<object?[], object> GetConstructor(Type type, params Type?[] args)
+		public static Func<object[], object> GetConstructor(Type type, params Type[] args)
 		{
-			if (type is null)
-				throw new ArgumentNullException(nameof(type));
-
-			return TryGetConstructor(type, args) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
+			return TryGetConstructor(type, true, args);
 		}
 
-		public static object? TryConstruct(Type type)
+		public static object TryConstruct(Type type, bool throwOnError)
 		{
 			if (type == null)
-				throw new ArgumentNullException(nameof(type));
+				if (throwOnError)
+					throw EX.ArgumentNull(nameof(type));
+				else
+					return null;
 
-			Func<object>? f = TryGetConstructor(type);
+			Func<object> f = TryGetConstructor(type, throwOnError);
 			return f?.Invoke();
 		}
 
-		public static object? TryConstruct(Type type, params object?[]? args)
+		public static object TryConstruct(Type type, bool throwOnError, params object[] args)
 		{
-			if (type is null)
-				throw new ArgumentNullException(nameof(type));
-
+			if (type == null)
+				if (throwOnError)
+					throw EX.ArgumentNull(nameof(type));
+				else
+					return null;
 			if (args == null || args.Length == 0)
-				return TryConstruct(type);
+				return TryConstruct(type, throwOnError);
 
-			Type?[] argType = new Type[args.Length];
+			var argType = new Type[args.Length];
 			for (int i = 0; i < args.Length; ++i)
 			{
 				argType[i] = args[i]?.GetType();
 			}
 
-			Func<object?[], object>? f = TryGetConstructor(type, argType);
+			Func<object[], object> f = TryGetConstructor(type, throwOnError, argType);
 			if (f == null)
 				return null;
 
@@ -1112,25 +1067,33 @@ namespace Lexxys
 			}
 			catch (TypeInitializationException)
 			{
-				return null;
+				if (!throwOnError)
+					return null;
+				throw;
 			}
 		}
 
-		public static Func<object>? TryGetConstructor(Type type)
+		public static Func<object> TryGetConstructor(Type type, bool throwOnError)
 		{
-			if (type is null)
-				throw new ArgumentNullException(nameof(type));
-
-			return __constructors0.GetOrAdd(type, o => TryCreateConstructor(o));
+			return __constructors0.GetOrAdd(type, o => TryCreateConstructor(o, throwOnError));
 		}
-		private static readonly ConcurrentDictionary<Type, Func<object>?> __constructors0 = new ConcurrentDictionary<Type, Func<object>?>();
+		private static readonly ConcurrentDictionary<Type, Func<object>> __constructors0 = new ConcurrentDictionary<Type, Func<object>>();
 
-		private static Func<object>? TryCreateConstructor(Type type)
+		private static Func<object> TryCreateConstructor(Type type, bool throwOnError)
 		{
+			if (type == null)
+				if (throwOnError)
+					throw EX.ArgumentNull(nameof(type));
+				else
+					return null;
+
 			if (type.IsValueType)
 			{
 				if (type == typeof(void))
-					return null;
+					if (throwOnError)
+						throw EX.ArgumentNull(nameof(type));
+					else
+						return null;
 				return Expression.Lambda<Func<object>>(Expression.TypeAs(Expression.Default(type), typeof(object)))
 #if NETFRAMEWORK && DEBUG
 					.Compile(DebugInfo);
@@ -1139,9 +1102,12 @@ namespace Lexxys
 #endif
 			}
 
-			ConstructorInfo? ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+			ConstructorInfo ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
 			if (ci == null)
-				return null;
+				if (throwOnError)
+					throw EX.Argument(SR.Factory_CannotFindConstructor(type));
+				else
+					return null;
 			return Expression.Lambda<Func<object>>(Expression.New(ci))
 #if NETFRAMEWORK && DEBUG
 				.Compile(DebugInfo);
@@ -1150,12 +1116,14 @@ namespace Lexxys
 #endif
 		}
 
-		public static Func<object?, object>? TryGetConstructor(Type type, Type argType)
+		public static Func<object, object> TryGetConstructor(Type type, bool throwOnError, Type argType)
 		{
 			if (type == null)
-				throw new ArgumentNullException(nameof(type));
-
-			Func<object?[], object>? c = TryGetConstructor(type, new[] { argType });
+				if (throwOnError)
+					throw EX.ArgumentNull(nameof(type));
+				else
+					return null;
+			Func<object[], object> c = TryGetConstructor(type, throwOnError, new[] { argType });
 			return c == null ? null: o => c(new[] {o});
 		}
 
@@ -1188,36 +1156,27 @@ namespace Lexxys
 		//	return CompileParameterizedConstructor(constructor);
 		//}
 
-		public static Func<object?[], object>? TryGetConstructor(Type? type, Type?[]? argType)
+		public static Func<object[], object> TryGetConstructor(Type type, bool throwOnError, Type[] argType)
 		{
 			if (type == null)
-				return null;
-			Type?[] args;
-			if (argType == null || argType.Length == 0)
-			{
-				args = Type.EmptyTypes;
-			}
-			else
-			{
-				if (argType.Any(o => o == null))
+				if (throwOnError)
+					throw EX.ArgumentNull(nameof(type));
+				else
 					return null;
-				args = new Type[argType.Length];
-				Array.Copy(argType, 0, args, 0, argType.Length);
-			}
-			return __constructors3.GetOrAdd((type, args), o => TryCreateConstructor(o.Ret, o.Args));
+			return __constructors3.GetOrAdd((type, argType), o => TryCreateConstructor(o.Ret, throwOnError, o.Args));
 		}
-		private static readonly ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?> __constructors3 = 
-			new ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?>(new ConstructorTypesComparer());
+		private static readonly ConcurrentDictionary<(Type Ret, Type[] Args), Func<object[], object>> __constructors3 = 
+			new ConcurrentDictionary<(Type Ret, Type[] Args), Func<object[], object>>(new ConstructorTypesComparer());
 
-		private class ConstructorTypesComparer: IEqualityComparer<(Type Ret, Type?[] Args)>
+		private class ConstructorTypesComparer: IEqualityComparer<(Type Ret, Type[] Args)>
 		{
-			public bool Equals((Type Ret, Type?[] Args) x, (Type Ret, Type?[] Args) y)
+			public bool Equals((Type Ret, Type[] Args) x, (Type Ret, Type[] Args) y)
 			{
 				if (x.Ret != y.Ret)
 					return false;
 
-				Type?[] xa = x.Args;
-				Type?[] ya = y.Args;
+				Type[] xa = x.Args;
+				Type[] ya = y.Args;
 
 				if (Object.ReferenceEquals(xa, ya))
 					return true;
@@ -1234,58 +1193,64 @@ namespace Lexxys
 				return true;
 			}
 
-			public int GetHashCode((Type Ret, Type?[] Args) obj)
+			public int GetHashCode((Type Ret, Type[] Args) obj)
 			{
-				return HashCode.Join(obj.Ret.GetHashCode(), obj.Args.Length.GetHashCode());
+				return HashCode.Join(obj.Ret.GetHashCode(), obj.Args);
 			}
 		}
 
-		private static Func<object?[], object>? TryCreateConstructor(Type type, Type?[] argType)
+		private static Func<object[], object> TryCreateConstructor(Type type, bool throwOnError, Type[] argType)
 		{
-			ConstructorInfo? constructor = argType.All(o => o != null) ? type.GetConstructor(argType!): null;
+			if (type == null)
+				if (throwOnError)
+					throw EX.ArgumentNull(nameof(type));
+				else
+					return null;
+			argType ??= Type.EmptyTypes;
+
+			ConstructorInfo constructor = Array.IndexOf(argType, null) < 0 ? type.GetConstructor(argType): null;
 			if (constructor != null)
-				return CompileParameterizedConstructor(constructor, argType.Length);
+				return CompileParameterizedConstructor(constructor);
 
 			foreach (var cc in type.GetConstructors())
 			{
-				ParameterInfo[] pp = cc.GetParameters();
-				if (pp.Length < argType.Length)
-					continue;
-				if (pp.Length > argType.Length && !pp.Skip(argType.Length).All(o => o.HasDefaultValue))
-					continue;
-				for (int i = 0; i < argType.Length; ++i)
+				ParameterInfo[] pi = cc.GetParameters();
+				if (pi.Length == argType.Length)
 				{
-					var p = pp[i];
-					if (argType[i] == null)
+					for (int i = 0; i < pi.Length; ++i)
 					{
-						if (!p.HasDefaultValue && !p.ParameterType.IsClass && !(p.ParameterType.IsGenericType && p.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>)))
-							goto next;
+						if (argType[i] == null)
+						{
+							if (!pi[i].ParameterType.IsClass && !(pi[i].ParameterType.IsGenericType && pi[i].ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>)))
+								goto next;
+						}
+						else
+						{
+							if (!pi[i].ParameterType.IsAssignableFrom(argType[i]))
+								goto next;
+						}
 					}
-					else
-					{
-						if (!p.ParameterType.IsAssignableFrom(argType[i]))
-							goto next;
-					}
+					constructor = cc;
+					break;
 				}
-				constructor = cc;
-				break;
-
 				next:
 				;
 			}
 			if (constructor != null)
-				return CompileParameterizedConstructor(constructor, argType.Length);
+				return CompileParameterizedConstructor(constructor);
 
 			if (argType.Length == 1 && argType[0] == type)
 				return CompileCopyConstructor(type);
 
+			if (throwOnError)
+				throw EX.Argument(SR.Factory_CannotFindConstructor(type, argType.Length));
 			return null;
 		}
 
-		private static Func<object?[], object> CompileCopyConstructor(Type parameterType)
+		private static Func<object[], object> CompileCopyConstructor(Type parameterType)
 		{
 			ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
-			return Expression.Lambda<Func<object?[], object>>(
+			return Expression.Lambda<Func<object[], object>>(
 				ConvertParameter(Expression.ArrayAccess(args, Expression.Constant(0)), parameterType),
 				args)
 #if NETFRAMEWORK && DEBUG
@@ -1296,19 +1261,16 @@ namespace Lexxys
 			
 		}
 
-		private static Func<object?[], object> CompileParameterizedConstructor(ConstructorInfo constructor, int parametersCount)
+		private static Func<object[], object> CompileParameterizedConstructor(ConstructorInfo constructor)
 		{
 			ParameterInfo[] parameters = constructor.GetParameters();
 			ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
 
-			var pp = parameters.Take(parametersCount).Select((p, i) => ConvertParameter(Expression.ArrayAccess(args, Expression.Constant(i)), p.ParameterType));
-			if (parameters.Length < parametersCount)
-				pp = pp.Union(parameters.Skip(parametersCount).Select(o => Expression.Constant(o.DefaultValue, o.ParameterType)));
-			Expression call = Expression.New(constructor, pp);
+			Expression call = Expression.New(constructor, parameters.Select((p, i) => ConvertParameter(Expression.ArrayAccess(args, Expression.Constant(i)), p.ParameterType)));
 			if (constructor.DeclaringType is { IsValueType: true })
 				call = Expression.TypeAs(call, typeof(object));
 
-			return Expression.Lambda<Func<object?[], object>>(call, args)
+			return Expression.Lambda<Func<object[], object>>(call, args)
 #if NETFRAMEWORK && DEBUG
 				.Compile(DebugInfo);
 #else
@@ -1322,7 +1284,7 @@ namespace Lexxys
 			Type parameterType = NullableTypeBase(type);
 			if (parameterType == typeof(object))
 				return parameter;
-			MethodInfo? method;
+			MethodInfo method;
 			Expression cvt;
 			if (parameterType.IsEnum)
 			{
@@ -1371,7 +1333,7 @@ namespace Lexxys
 				{ TypeCode.Int64, ((Func<object, Int64>)Convert.ToInt64).Method },
 				{ TypeCode.SByte, ((Func<object, SByte>)Convert.ToSByte).Method },
 				{ TypeCode.Single, ((Func<object, Single>)Convert.ToSingle).Method },
-				{ TypeCode.String, ((Func<object, String?>)Convert.ToString).Method },
+				{ TypeCode.String, ((Func<object, String>)Convert.ToString).Method },
 				{ TypeCode.UInt16, ((Func<object, UInt16>)Convert.ToUInt16).Method },
 				{ TypeCode.UInt32, ((Func<object, UInt32>)Convert.ToUInt32).Method },
 				{ TypeCode.UInt64, ((Func<object, UInt64>)Convert.ToUInt64).Method },
@@ -1382,35 +1344,31 @@ namespace Lexxys
 
 		#endregion
 
-		public static MethodInfo? GetGenericMethod(Type classType, string methodName, Type[] arguments)
+		public static MethodInfo GetGenericMethod(Type classType, string methodName, Type[] arguments)
 		{
 			if (classType is null)
 				throw new ArgumentNullException(nameof(classType));
-			if (methodName is null)
-				throw new ArgumentNullException(nameof(methodName));
 			if (arguments is null)
 				throw new ArgumentNullException(nameof(arguments));
 
 			foreach (var item in classType.GetMember(methodName, BindingFlags.InvokeMethod | BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public))
 			{
 				var mi = item as MethodInfo;
-				if (mi == null)
-					continue;
-				ParameterInfo[] pp = mi.GetParameters();
-				if (pp.Length != arguments.Length)
-					continue;
-				bool found = true;
-				for (int i = 0; i < pp.Length; ++i)
+				if (mi != null)
 				{
-					Type t = pp[i].ParameterType.IsGenericType ? pp[i].ParameterType.GetGenericTypeDefinition() : pp[i].ParameterType;
-					if (t.UnderlyingSystemType != arguments[i].UnderlyingSystemType)
+					ParameterInfo[] pp = mi.GetParameters();
+					if (pp.Length == arguments.Length)
 					{
-						found = false;
-						break;
+						for (int i = 0; i < pp.Length; ++i)
+						{
+							Type t = pp[i].ParameterType.IsGenericType ? pp[i].ParameterType.GetGenericTypeDefinition(): pp[i].ParameterType;
+							if (t.UnderlyingSystemType != arguments[i].UnderlyingSystemType)
+								goto NextMember;
+						}
+						return mi;
 					}
 				}
-				if (found)
-					return mi;
+				NextMember: ;
 			}
 			return null;
 		}
@@ -1420,9 +1378,9 @@ namespace Lexxys
 		//public static IEnumerable<MethodInfo> StaticMethods(Type type, string methodName, params Type[] types)
 		//{
 		//    if (methodName == null || methodName.Length == 0)
-		//        throw new ArgumentNullException("methodName");
+		//        throw EX.ArgumentNull("methodName");
 		//    if (types == null)
-		//        throw new ArgumentNullException("types");
+		//        throw EX.ArgumentNull("types");
 
 		//    return Factory.Types(type)
 		//        .Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null))
@@ -1691,7 +1649,7 @@ namespace Lexxys
 		public static Type GetType(string typeName, string assemblyName)
 		{
 			if (typeName == null || typeName.Length == 0)
-				throw new ArgumentNullException("typeName");
+				throw EX.ArgumentNull("typeName");
 
 			Type type = TryGetType(typeName, assemblyName);
 			if (type == null)
@@ -1717,7 +1675,7 @@ namespace Lexxys
 		public static Type GetType(string typeName)
 		{
 			if (typeName == null || typeName.Length == 0)
-				throw new ArgumentNullException("typeName");
+				throw EX.ArgumentNull("typeName");
 
 			Type type = TryGetType(typeName);
 			if (type == null)
@@ -1738,14 +1696,12 @@ namespace Lexxys
 		}
 #endif
 
-		public static object? GetUnderlyingValue(object? value)
+		public static object GetUnderlyingValue(object value)
 		{
 			if (value == null)
 				return null;
 			if (value is IValue iv)
 				value = iv.Value;
-			if (value == null)
-				return null;
 			if (DBNull.Value.Equals(value))
 				return null;
 			if (!value.GetType().IsEnum)
@@ -1767,41 +1723,41 @@ namespace Lexxys
 		}
 
 
-		public static object? Invoke(object? instance, MethodInfo method, params object?[] parameters)
+		public static object Invoke(object instance, MethodInfo method, params object[] parameters)
 		{
 			if (method == null)
-				throw new ArgumentNullException(nameof(method));
+				throw EX.ArgumentNull(nameof(method));
 			if (instance == null && !method.IsStatic)
-				throw new ArgumentNullException(nameof(instance));
+				throw EX.ArgumentNull(nameof(instance));
 
-			Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
+			Func<object, object[], object> f = __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
 			return f?.Invoke(instance, parameters);
 		}
 
-		public static object? Invoke(MethodInfo method, params object?[] parameters)
+		public static object Invoke(MethodInfo method, params object[] parameters)
 		{
 			if (method == null)
-				throw new ArgumentNullException(nameof(method));
+				throw EX.ArgumentNull(nameof(method));
 			if (!method.IsStatic)
 				throw EX.ArgumentOutOfRange(nameof(method), method);
 
-			Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
+			Func<object, object[], object> f = __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
 			return f?.Invoke(null, parameters);
 		}
 
-		public static object? Invoke(ConstructorInfo constructor, params object?[] parameters)
+		public static object Invoke(ConstructorInfo constructor, params object[] parameters)
 		{
 			if (constructor == null)
-				throw new ArgumentNullException(nameof(constructor));
+				throw EX.ArgumentNull(nameof(constructor));
 
-			Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(constructor, o => Compile((ConstructorInfo)o));
+			Func<object, object[], object> f = __compiledMethods.GetOrAdd(constructor, o => Compile((ConstructorInfo)o));
 			return f?.Invoke(null, parameters);
 		}
 
 		//public static Func<object, object[], object> TryCompile(MemberInfo member)
 		//{
 		//	if (member == null)
-		//		throw new ArgumentNullException("member");
+		//		throw EX.ArgumentNull("member");
 
 		//	MethodInfo method = member as MethodInfo;
 		//	if (method != null)
@@ -1812,15 +1768,15 @@ namespace Lexxys
 		//	throw EX.ArgumentWrongType("member", member.GetType());
 		//}
 
-		private static Func<object?, object?[], object?>? Compile(MethodInfo method)
+		private static Func<object, object[], object> Compile(MethodInfo method)
 		{
 			if (method == null)
-				throw new ArgumentNullException(nameof(method));
+				return null;
 
 			ParameterExpression arg1 = Expression.Parameter(typeof(object));
 			ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
 			Expression[] pp = CompileParameters(method, args);
-			Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg1, method.DeclaringType);
+			Expression instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg1, method.DeclaringType);
 			Expression call = method.IsStatic ? Expression.Call(method, pp): Expression.Call(instance, method, pp);
 			if (method.ReturnType != typeof(void) && method.ReturnType.IsValueType)
 				call = Expression.TypeAs(call, typeof(object));
@@ -1828,7 +1784,7 @@ namespace Lexxys
 			if (method.ReturnType == typeof(void))
 				call = Expression.Block(call, Expression.Constant(null));
 
-			return Expression.Lambda<Func<object?, object?[], object?>>(call, arg1, args)
+			return Expression.Lambda<Func<object, object[], object>>(call, arg1, args)
 #if NETFRAMEWORK && DEBUG
 				.Compile(DebugInfo);
 #else
@@ -1837,10 +1793,10 @@ namespace Lexxys
 
 		}
 
-		private static Func<object?, object?[], object?>? Compile(ConstructorInfo constructor)
+		private static Func<object, object[], object> Compile(ConstructorInfo constructor)
 		{
 			if (constructor == null)
-				throw new ArgumentNullException(nameof(constructor));
+				return null;
 
 			ParameterExpression instance = Expression.Parameter(typeof(object));
 			ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
@@ -1849,7 +1805,7 @@ namespace Lexxys
 			if (constructor.ReflectedType is { IsValueType: true })
 				call = Expression.TypeAs(call, typeof(object));
 
-			return Expression.Lambda<Func<object?, object?[], object?>>(call, instance, args)
+			return Expression.Lambda<Func<object, object[], object>>(call, instance, args)
 #if NETFRAMEWORK && DEBUG
 				.Compile(DebugInfo);
 #else
@@ -1868,5 +1824,22 @@ namespace Lexxys
 			}
 			return pp;
 		}
+
+		public static object TryInherit(object obj, Type requiredType)
+		{
+			if (obj == null)
+				throw EX.ArgumentNull(nameof(obj));
+			if (requiredType == null)
+				throw EX.ArgumentNull(nameof(requiredType));
+
+
+			Type objType = obj.GetType();
+			if (requiredType.IsAssignableFrom(objType))
+				return obj;
+
+			return __stubs.GetOrAdd(Tuple.Create(objType, requiredType), _ => null);
+
+		}
+		private static readonly ConcurrentDictionary<Tuple<Type, Type>, Func<object, object>> __stubs = new ConcurrentDictionary<Tuple<Type, Type>, Func<object, object>>();
 	}
 }

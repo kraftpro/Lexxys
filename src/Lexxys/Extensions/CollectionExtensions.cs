@@ -48,6 +48,7 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
+
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -63,6 +64,7 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
+
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -78,6 +80,7 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
+
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -93,6 +96,7 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
+
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -108,6 +112,7 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
+
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -123,6 +128,7 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
+
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 

@@ -7,45 +7,45 @@
 using System;
 using System.Collections.Generic;
 
-using Lexxys;
+#nullable enable
 
 namespace Lexxys
 {
 	public static class DictionaryExtensions
 	{
-		public static TValue GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> that, TKey key)
+		public static TValue? GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> that, TKey key) where TKey: notnull
 		{
 			if (that is null)
 				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out var value) ? value : default;
 		}
-		public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> that, TKey key)
+		public static TValue? GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> that, TKey key)
 		{
 			if (that is null)
 				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out var value) ? value : default;
 		}
-#if !NETCORE
-		public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> that, TKey key)
+#if !NETCOREAPP
+		public static TValue? GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> that, TKey key)
 		{
 			if (that is null)
 				throw new ArgumentNullException(nameof(that));
 			return that.TryGetValue(key, out var value) ? value : default;
 		}
 #endif
-		public static TValue GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> that, TKey key, TValue @default)
+		public static TValue GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> that, TKey key, TValue @default) where TKey: notnull
 		{
 			if (that is null)
 				throw new ArgumentNullException(nameof(that));
-			return that.TryGetValue(key, out TValue value) ? value : @default;
+			return that.TryGetValue(key, out var value) ? value : @default;
 		}
 		public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> that, TKey key, TValue @default)
 		{
 			if (that is null)
 				throw new ArgumentNullException(nameof(that));
-			return that.TryGetValue(key, out TValue value) ? value : @default;
+			return that.TryGetValue(key, out var value) ? value : @default;
 		}
-#if !NETCORE
+#if !NETCOREAPP
 		public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> that, TKey key, TValue @default)
 		{
 			if (that is null)
@@ -54,7 +54,7 @@ namespace Lexxys
 		}
 #endif
 
-		public static IEnumerable<TValue> CollectValues<TKey, TValue>(this Dictionary<TKey, TValue> that, IEnumerable<TKey> keys)
+		public static IEnumerable<TValue> CollectValues<TKey, TValue>(this Dictionary<TKey, TValue> that, IEnumerable<TKey> keys) where TKey: notnull
 		{
 			if (that is null)
 				throw new ArgumentNullException(nameof(that));
@@ -63,7 +63,7 @@ namespace Lexxys
 
 			foreach (var key in keys)
 			{
-				if (that.TryGetValue(key, out TValue value))
+				if (that.TryGetValue(key, out var value))
 					yield return value;
 			}
 		}
@@ -76,7 +76,7 @@ namespace Lexxys
 
 			foreach (var key in keys)
 			{
-				if (that.TryGetValue(key, out TValue value))
+				if (that.TryGetValue(key, out var value))
 					yield return value;
 			}
 		}
@@ -89,7 +89,7 @@ namespace Lexxys
 
 			foreach (var key in keys)
 			{
-				if (that.TryGetValue(key, out TValue value))
+				if (that.TryGetValue(key, out var value))
 					yield return value;
 			}
 		}

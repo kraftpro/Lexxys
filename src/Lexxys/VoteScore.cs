@@ -12,6 +12,8 @@ using System.Text;
 
 #nullable enable
 
+#pragma warning disable CA2225 // Operator overloads have named alternates
+
 namespace Lexxys
 {
 	public readonly struct VoteScore: IEquatable<VoteScore>, IComparable<VoteScore>

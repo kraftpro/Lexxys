@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 
+#nullable enable
+
 namespace Lexxys.Xml
 {
 	public static class IniToXmlConverter
@@ -110,7 +112,7 @@ namespace Lexxys.Xml
 
 		private class XmlLiteBuilder: Builder
 		{
-			private string _name;
+			private string? _name;
 			private readonly List<XmlLiteNode> _nodes;
 			private readonly Dictionary<string, string> _attr;
 			private readonly bool _ignoreCase;
@@ -185,41 +187,36 @@ namespace Lexxys.Xml
 				if (index == source.Length)
 					break;
 
-				if (source[index] == ';')
+				if (source[index] == ';') // ;Comments
 				{
-					index = source.IndexOfAny(__eol, index);
-					if (index < 0)
-						break;
+					index = source.IndexOfAny(__eol, index + 1);
 				}
-				else if (source[index] == '[')
+				else if (source[index] == '[') // [Group]
 				{
 					int i = index + 1;
 					index = source.IndexOfAny(__eob, i);
-					if (index < 0)
-						break;
-
-					string name = source.Substring(i, index - i).Trim();
+					string name = (index < 0 ? source.Substring(i): source.Substring(i, index - i)).Trim();
 					builder.Element(name);
-					index = source.IndexOfAny(__eol);
+					if (index >= 0)
+						index = source.IndexOfAny(__eol, index + 1);
 				}
-				else
+				else // Name = Value
 				{
 					int i = index;
 					index = source.IndexOfAny(__eoe, i);
 					string name = (index < 0 ? source.Substring(i): source.Substring(i, index - i)).Trim();
 					if (name.Length == 0)
-						name = null;
+						throw new InvalidOperationException("Syntax Error. Missing name of the attribute.");
 					string value;
-					if (index > 0 && source[index] == '=')
+					if (index >= 0 && source[index] == '=')
 					{
 						i = index + 1;
-						index = source.IndexOfAny(new[] { '\n', '\r' }, i);
+						index = source.IndexOfAny(__eol, i);
 						value = source.Substring(i, index - i).Trim();
 					}
 					else
 					{
-						value = name;
-						name = null;
+						value = "";
 					}
 					builder.Attribute(name, value);
 				}

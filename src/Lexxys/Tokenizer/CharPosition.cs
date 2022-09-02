@@ -11,12 +11,14 @@ using System.Text;
 using System.Globalization;
 using System.Diagnostics.Contracts;
 
+#nullable enable
+
 namespace Lexxys.Tokenizer
 {
 	/// <summary>
 	/// Replresents a position in a text.
 	/// </summary>
-	public struct CharPosition: IEquatable<CharPosition>
+	public readonly struct CharPosition: IEquatable<CharPosition>
 	{
 		public static readonly CharPosition Start;
 
@@ -65,7 +67,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="culture">An object that supplies culture-specific formatting information.</param>
 		/// <returns></returns>
 		[Pure]
-		public string ToString(CultureInfo culture)
+		public string ToString(CultureInfo? culture)
 		{
 			return SR.CHR_AtPosition(culture, Line + 1, Column + 1, Position);
 		}
@@ -77,7 +79,7 @@ namespace Lexxys.Tokenizer
 		}
 
 		/// <inheritdoc />
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is CharPosition position && this == position;
 		}

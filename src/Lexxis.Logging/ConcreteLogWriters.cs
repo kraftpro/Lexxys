@@ -12,9 +12,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Lexxys.Xml;
 
 namespace Lexxys.Logging;
+using Xml;
 
 public class FileLogWriter: LogWriter
 {
@@ -245,7 +245,7 @@ public class NullLogWriter: LogWriter
 public class ConsoleLogWriter: LogWriter
 {
 	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+		"{Type} {IndentMark}{Source}: {Message}",
 		"  ",
 		". ");
 
@@ -261,8 +261,21 @@ public class ConsoleLogWriter: LogWriter
 			return;
 		foreach (var record in records)
 		{
-			if (record != null)
-				Console.Error.Write(record, Formatter).WriteLine();
+			if (record == null)
+				continue;
+			TextWriter writer;
+			//bool redirected;
+			if (record.LogType == LogType.Error)
+			{
+				writer = Console.Error;
+			//	redirected = Console.IsErrorRedirected;
+			}
+			else
+			{
+				writer = Console.Out;
+			//	redirected = Console.IsOutputRedirected;
+			}
+			Formatter.Format(writer, record);
 		}
 	}
 }
@@ -271,7 +284,7 @@ public class ConsoleLogWriter: LogWriter
 public class TraceLogWriter: LogWriter
 {
 	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}: {Message}",
 		"  ",
 		". ");
 
@@ -297,7 +310,7 @@ public class TraceLogWriter: LogWriter
 public class DebuggerLogWriter: LogWriter
 {
 	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}: {Message}",
 		"  ",
 		". ");
 
@@ -325,7 +338,7 @@ public class DebuggerLogWriter: LogWriter
 public class EventLogLogWriter: LogWriter
 {
 	public static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}: {Message}",
 		"  ",
 		". ");
 

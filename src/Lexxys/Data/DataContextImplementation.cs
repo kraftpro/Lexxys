@@ -522,6 +522,7 @@ namespace Lexxys.Data
 				--_lockTiming;
 		}
 
+#pragma warning disable CA1822 // Mark members as static.  We want to keep it non static for future use.
 		public long Start()
 		{
 			return WatchTimer.Start();

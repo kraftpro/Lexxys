@@ -5,21 +5,16 @@
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Lexxys;
-using Lexxys.Xml;
 using System.Text.RegularExpressions;
-﻿using Lexxys.Testing;
-//using Microsoft.Pex.Framework;
+﻿//using Microsoft.Pex.Framework;
 ﻿//using Microsoft.Pex.Framework.Generated;
 //using Microsoft.Pex.Framework.Validation;
 
 namespace Lexxys.Tests.Xml
 {
-	
-	
+	using Lexxys.Xml;
+
 	/// <summary>
 	///This is a test class for XmlToolsTest and is intended
 	///to contain all XmlToolsTest Unit Tests

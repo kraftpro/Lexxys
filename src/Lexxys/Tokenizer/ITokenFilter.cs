@@ -105,7 +105,7 @@ namespace Lexxys.Tokenizer
 				_indent.Pop();
 				return new LexicalToken(LexicalTokenType.UNDENT, "", _last.Position);
 			}
-			CharPosition at = stream.GetPosition(token.Position, _last);
+			CharPosition at = stream.GetCharPosition(token.Position, _last);
 			if (_indent.Count == 0)
 				_indent.Push(at.Position);
 			var line = _last.Line;

@@ -8,14 +8,14 @@ using System;
 using System.Collections.Generic;
 
 namespace Lexxys.Logging;
-using Lexxys;
+using Microsoft.Extensions.DependencyInjection;
 
 using Xml;
 
 public abstract class LogWriter: ILogWriter
 {
 	public static readonly TextFormatSetting TextFormatDefaults = new TextFormatSetting(
-		"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff} {IndentMark}{Source}: {Message}",
+		"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}: {Message}",
 		"  ",
 		". ");
 
@@ -31,14 +31,32 @@ public abstract class LogWriter: ILogWriter
 		_rule = LoggingRule.Create(config);
 	}
 
+	public void Initialize(LogWriterConfig? config)
+	{
+		if (config is null)
+			return;
+		if (config.Formatter != null)
+			Formatter = config.Formatter;
+	}
+
+	public void Configure(LoggingParameters? parameters)
+	{
+		if (parameters is null)
+			return;
+		if (parameters.Name is not null)
+			Name = parameters.Name;
+		//if (parameters.LogoffTimeout is not null)
+			
+	}
+
 	/// <summary>
 	/// Get name of the <see cref="LogWriter"/>
 	/// </summary>
-	public string Name { get; }
+	public string Name { get; private set; }
 
 	public abstract string Target { get; }
 
-	protected internal ILogRecordFormatter Formatter { get; }
+	protected internal ILogRecordFormatter Formatter { get; private set; }
 
 	public static ILogWriter? FromXml(XmlLiteNode? node)
 	{
@@ -62,7 +80,7 @@ public abstract class LogWriter: ILogWriter
 			Type? type = Factory.GetType(className) ??
 				(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
 			if (type != null && typeof(LogWriter).IsAssignableFrom(type))
-				writer = Factory.TryGetConstructor(type, false, new[] { typeof(string), typeof(XmlLiteNode) })?
+				writer = Factory.TryGetConstructor(type, new[] { typeof(string), typeof(XmlLiteNode) })?
 					.Invoke(new object?[] { name, node }) as LogWriter;
 			if (writer == null)
 				SystemLog.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className));
@@ -84,7 +102,7 @@ public abstract class LogWriter: ILogWriter
 			Type? type = Factory.GetType(className) ??
 				(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
 			if (type != null)
-				formatter = Factory.TryGetConstructor(type, false, new[] { typeof(XmlLiteNode) })?
+				formatter = Factory.TryGetConstructor(type, new[] { typeof(XmlLiteNode) })?
 					.Invoke(new object[] { node }) as ILogRecordFormatter;
 			if (formatter == null)
 				SystemLog.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogFormatter(className));

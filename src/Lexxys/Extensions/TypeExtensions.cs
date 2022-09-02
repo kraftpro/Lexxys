@@ -56,32 +56,34 @@ namespace Lexxys
 				text.Append('.');
 			}
 
-			var name = type.Name;
-			int i = name.IndexOf('`');
-			if (i < 0)
-			{
-				text.Append(SimpleName(type));
-				return;
-			}
+			text.Append(SimpleName(type));
+			return;
+			//var name = type.Name;
+			//int i = name.IndexOf('`');
+			//if (i < 0)
+			//{
+			//	text.Append(SimpleName(type));
+			//	return;
+			//}
 
-			char c;
-			bool valueType = name.StartsWith("ValueTuple`");
-			if (valueType)
-			{
-				c = '(';
-			}
-			else
-			{
-				c = '<';
-				text.Append(name.Substring(0, i));
-			}
-			foreach (var item in type.GetGenericArguments())
-			{
-				text.Append(c);
-				BuildTypeName(text, item);
-				c = ',';
-			}
-			text.Append(valueType ? ')' : '>');
+			//char c;
+			//bool valueType = name.StartsWith("ValueTuple`", StringComparison.Ordinal);
+			//if (valueType)
+			//{
+			//	c = '(';
+			//}
+			//else
+			//{
+			//	c = '<';
+			//	text.Append(name, 0, i);
+			//}
+			//foreach (var item in type.GetGenericArguments())
+			//{
+			//	text.Append(c);
+			//	BuildTypeName(text, item);
+			//	c = ',';
+			//}
+			//text.Append(valueType ? ')' : '>');
 		}
 
 		private static void BuildArrayTypeName(StringBuilder text, Type type)
@@ -120,7 +122,7 @@ namespace Lexxys
 				return;
 			}
 			char c;
-			bool valueType = name.StartsWith("ValueTuple`");
+			bool valueType = name.StartsWith("ValueTuple`", StringComparison.Ordinal);
 			if (valueType)
 			{
 				c = '(';

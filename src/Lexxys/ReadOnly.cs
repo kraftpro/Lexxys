@@ -14,6 +14,10 @@ using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 
+#pragma warning disable CA1716 // Identifiers should not match keywords
+#pragma warning disable CA1034 // Nested types should not be visible
+#pragma warning disable CA1710 // Identifiers should have correct suffix
+
 namespace Lexxys
 {
 	public interface ISafeList<T>: IList<T>
@@ -197,7 +201,7 @@ namespace Lexxys
 
 		[return: NotNullIfNotNull("value")]
 		public static IReadOnlyList<T>? ReWrap<T>(IReadOnlyList<T>? value, int offset, int count = -1)
-			=> value == null ? null: count == 0 ? (IReadOnlyList<T>)Empty<T>(): new ReadOnlyListFragmentReWrap<T>(value, offset, count);
+			=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyListFragmentReWrap<T>(value, offset, count);
 
 		[return: NotNullIfNotNull("value")]
 		public static IReadOnlyCollection<T>? ReWrap<T>(IReadOnlyCollection<T>? value)
@@ -349,7 +353,7 @@ namespace Lexxys
 
 		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
 		[DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
-		public readonly struct DictionaryValueWrap<TKey, TValue>: IReadOnlyDictionary<TKey, TValue> where TKey: notnull
+		public readonly struct DictionaryValueWrap<TKey, TValue>: IReadOnlyDictionary<TKey, TValue>, IEquatable<DictionaryValueWrap<TKey, TValue>> where TKey: notnull
 		{
 			public static readonly DictionaryValueWrap<TKey, TValue> Empty = new DictionaryValueWrap<TKey, TValue>(Empty<TKey, TValue>());
 
@@ -469,7 +473,7 @@ namespace Lexxys
 
 		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
 		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		public readonly struct ListValueWrap<T>: IReadOnlyList<T>
+		public readonly struct ListValueWrap<T>: IReadOnlyList<T>, IEquatable<ListValueWrap<T>>
 		{
 			public static readonly ListValueWrap<T> Empty = new ListValueWrap<T>(Array.Empty<T>());
 			private readonly IReadOnlyList<T> _list;
@@ -486,6 +490,26 @@ namespace Lexxys
 			{
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
 				get { return _list.Count; }
+			}
+
+			public void CopyTo(T[] array, int index)
+			{
+				if (array is null)
+					throw new ArgumentNullException(nameof(array));
+				if (index < 0 || index + Count > array.Length)
+					throw new ArgumentOutOfRangeException(nameof(index), index, null);
+
+				if (_list is ICollection<T> collection)
+				{
+					collection.CopyTo(array, index);
+				}
+				else
+				{
+					for (int i = 0; i < Count; ++i)
+					{
+						array[index + i] = _list[i];
+					}
+				}
 			}
 
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -618,9 +642,7 @@ namespace Lexxys
 				get
 				{
 					int i = index + _start;
-					if (i < 0 || i >= (_end < 0 ? _list.Count: _end))
-						throw new ArgumentOutOfRangeException(nameof(index), index, null);
-					return _list[i];
+					return i >= 0 && i < (_end < 0 ? _list.Count: _end) ? _list[i]: throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				}
 				set => throw new ReadOnlyException();
 			}
@@ -633,7 +655,7 @@ namespace Lexxys
 
 			public void CopyTo(T[] array, int arrayIndex)
 			{
-				int end = (_end < 0 ? _list.Count: _end);
+				int end = _end < 0 ? _list.Count: _end;
 				if (arrayIndex < 0 || array.Length - arrayIndex < end - _start)
 					throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, null);
 
@@ -798,7 +820,7 @@ namespace Lexxys
 
 		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
 		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		public readonly struct CollectionValueWrap<T>: IReadOnlyCollection<T>
+		public readonly struct CollectionValueWrap<T>: IReadOnlyCollection<T>, IEquatable<CollectionValueWrap<T>>
 		{
 			public static readonly CollectionValueWrap<T> Empty = new CollectionValueWrap<T>(Array.Empty<T>());
 
@@ -1162,7 +1184,7 @@ namespace Lexxys
 
 		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
 		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		public readonly struct ListFragmentValueWrap<T>: IReadOnlyList<T>
+		public readonly struct ListFragmentValueWrap<T>: IReadOnlyList<T>, IEquatable<ListFragmentValueWrap<T>>
 		{
 			public static readonly ListFragmentValueWrap<T> Empty = new ListFragmentValueWrap<T>(Array.Empty<T>(), 0, 0);
 
@@ -1314,6 +1336,7 @@ namespace Lexxys
 		#endregion
 	}
 
+	[Serializable]
 	public class ReadOnlyException: NotSupportedException
 	{
 		public ReadOnlyException(): base(SR.ReadOnlyException())
@@ -1325,6 +1348,18 @@ namespace Lexxys
 		}
 
 		public ReadOnlyException(object value, object item): base(SR.ReadOnlyException(value, item))
+		{
+		}
+
+		public ReadOnlyException(string message) : base(message)
+		{
+		}
+
+		public ReadOnlyException(string message, Exception innerException) : base(message, innerException)
+		{
+		}
+
+		protected ReadOnlyException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext): base(serializationInfo, streamingContext)
 		{
 		}
 	}

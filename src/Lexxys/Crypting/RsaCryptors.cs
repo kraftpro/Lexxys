@@ -22,13 +22,12 @@ namespace Lexxys.Crypting.Cryptors
 			if (key == null)
 				throw EX.ArgumentNull(nameof(key));
 			_h = new RSACryptoServiceProvider();
-#if !NETCOREAPP
 			if (key is string s)
 				_h.FromXmlString(s);
-			else
-#endif
-			if (key is RSAParameters parameters)
+			else if (key is RSAParameters parameters)
 				_h.ImportParameters(parameters);
+			else if (key is byte[] blob)
+				_h.ImportCspBlob(blob);
 			else
 				throw EX.ArgumentOutOfRange(nameof(key), key);
 			_bsize = encryptor ? _h.KeySize / 8 - 11 : _h.KeySize / 8;

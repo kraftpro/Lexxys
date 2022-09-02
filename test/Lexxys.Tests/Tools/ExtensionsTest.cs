@@ -49,6 +49,7 @@ namespace Lexxys.Tests.Tools
 		[DataRow(typeof(ValueTuple), false, "ValueTuple")]
 		[DataRow(typeof((int, int)), false, "(int,int)")]
 		[DataRow(typeof((int One, DateTime Two)), false, "(int,DateTime)")]
+		[DataRow(typeof((int One, (DateTime, string) Two)), false, "(int,(DateTime,string))")]
 		public void GetTypeNameTest(Type type, bool fullName, string expected)
 		{
 			var actual = type.GetTypeName(fullName);

@@ -8,6 +8,10 @@ using System;
 using System.Threading;
 using Microsoft.Extensions.Options;
 
+#pragma warning disable CA2225 // Operator overloads have named alternates
+#pragma warning disable CA1062 // Validate arguments of public methods
+#pragma warning disable CA1051 // Do not declare visible instance fields
+
 namespace Lexxys
 {
 	public class Out<T>: IValue<T>

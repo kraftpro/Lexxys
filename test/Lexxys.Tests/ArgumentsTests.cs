@@ -1,10 +1,7 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Lexxys;
-
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
 using System.Linq;
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests
 {

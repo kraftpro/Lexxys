@@ -4,19 +4,16 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-using Lexxys;
-using Lexxys.Xml;
-using System.Text.RegularExpressions;
 using System.Diagnostics;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Xml;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Xml
 {
+	using Lexxys.Xml;
+
 	/// <summary>
 	///This is a test class for Lexxys.ReadableXml and is intended
 	///to contain all Lexxys.ReadableXml Unit Tests

@@ -6,26 +6,19 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Collections;
-using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
-using Lexxys;
-using System.Reflection;
-
 
 #nullable enable
+
+#pragma warning disable CA1710 // Identifiers should have correct suffix
 
 namespace Lexxys
 {
 	[Serializable]
 	public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary, IList<(TKey Key, TValue Value)>, IReadOnlyList<(TKey Key, TValue Value)>
 	{
-		protected List<(TKey Key, TValue Value)> List;
-		protected IEqualityComparer<TKey> Comparer;
-
 		public OrderedBag(IEqualityComparer<TKey> comparer)
 			: this(0, comparer)
 		{
@@ -47,6 +40,10 @@ namespace Lexxys
 			List = new List<(TKey, TValue)>(collection);
 		}
 
+
+		protected List<(TKey Key, TValue Value)> List { get; }
+
+		protected IEqualityComparer<TKey> Comparer { get; }
 
 		public ICollection<TKey> Keys => new KeyCollection(this);
 
@@ -197,9 +194,9 @@ namespace Lexxys
 
 		protected class KeyCollection: ICollection<TKey>, ICollection
 		{
-			protected OrderedBag<TKey, TValue> Bag;
-
 			public KeyCollection(OrderedBag<TKey, TValue> dictionary) => Bag = dictionary;
+
+			protected OrderedBag<TKey, TValue> Bag { get; }
 
 			public void Add(TKey item) => throw new NotImplementedException();
 
@@ -266,9 +263,9 @@ namespace Lexxys
 
 		protected class ValueCollection: ICollection<TValue>, ICollection
 		{
-			protected OrderedBag<TKey, TValue> Bag;
-
 			public ValueCollection(OrderedBag<TKey, TValue> dictionary) => Bag = dictionary;
+
+			protected OrderedBag<TKey, TValue> Bag { get; }
 
 			public void Add(TValue item) => throw new NotImplementedException();
 

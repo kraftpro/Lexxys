@@ -14,6 +14,7 @@ namespace Lexxys
 	{
 		private static ILogging Log => _log ??= StaticServices.Create<ILogging>("Lexxys.ReadWriteSyncSlim");
 		private static ILogging _log;
+		#pragma warning disable CA2213 // Disposable fields should be disposed
 		private ReaderWriterLockSlim _locker;
 		public const int DefaultTimingThreshold = 100;
 		public const int DefaultLockTimeout = 5 * 60 * 1000;
@@ -119,14 +120,12 @@ namespace Lexxys
 		#endregion
 
 		#region IDisposable Members
+
 		public void Dispose()
 		{
-			ReaderWriterLockSlim temp = Interlocked.Exchange(ref _locker, null);
-			if (temp != null)
-			{
-				temp.Dispose();
-			}
+			Interlocked.Exchange(ref _locker, null)?.Dispose();
 		}
+
 		#endregion
 
 		private class NewReader: IDisposable
@@ -135,7 +134,6 @@ namespace Lexxys
 
 			public NewReader(ReaderWriterLockSlim locker, int timeout)
 			{
-				
 				_locker = locker;
 				if (!_locker.TryEnterReadLock(timeout))
 					throw new TimeoutException(SR.LockTimeout(timeout));
@@ -143,9 +141,7 @@ namespace Lexxys
 
 			public void Dispose()
 			{
-				ReaderWriterLockSlim tmp = Interlocked.Exchange(ref _locker, null);
-				if (tmp != null)
-					tmp.ExitReadLock();
+				Interlocked.Exchange(ref _locker, null)?.ExitReadLock();
 			}
 		}
 

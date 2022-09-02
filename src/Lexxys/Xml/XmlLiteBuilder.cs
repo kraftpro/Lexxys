@@ -91,6 +91,9 @@ namespace Lexxys.Xml
 
 		public XmlLiteBuilder Descendant(params XmlLiteNode[] nodes)
 		{
+			if (nodes is null)
+				throw new ArgumentNullException(nameof(nodes));
+
 			foreach (var node in nodes)
 			{
 				_next.Descendant(node);
@@ -100,6 +103,9 @@ namespace Lexxys.Xml
 
 		public XmlLiteBuilder Descendant(IEnumerable<XmlLiteNode> nodes)
 		{
+			if (nodes is null)
+				throw new ArgumentNullException(nameof(nodes));
+
 			foreach (var node in nodes)
 			{
 				_next.Descendant(node);
@@ -109,8 +115,13 @@ namespace Lexxys.Xml
 
 		public XmlLiteBuilder Elements<T>(IEnumerable<T> items, string name, Action<XmlLiteBuilder, T> action)
 		{
+			if (items is null)
+				throw new ArgumentNullException(nameof(items));
 			if (name == null)
 				throw new ArgumentNullException(nameof(name));
+			if (action is null)
+				throw new ArgumentNullException(nameof(action));
+
 			if (_next == null)
 			{
 				if (_nodes == null)
@@ -995,10 +1006,9 @@ namespace Lexxys.Xml
 					object v = item.GetValue(value);
 					Item(item.Name, v, elements, false);
 				}
-				catch
-				{
-					// ignore all internal exceptions
-				}
+#pragma warning disable CA1031 // Do not catch general exception types
+				catch { } // ignore all internal exceptions
+#pragma warning restore CA1031 // Do not catch general exception types
 			}
 			foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
 			{
@@ -1013,10 +1023,9 @@ namespace Lexxys.Xml
 						object v = item.GetValue(value);
 						Item(item.Name, v, elements, false);
 					}
-					catch
-					{
-						// ignore all internal exceptions
-					}
+#pragma warning disable CA1031 // Do not catch general exception types
+					catch { } // ignore all internal exceptions
+#pragma warning restore CA1031 // Do not catch general exception types
 				}
 			}
 		}

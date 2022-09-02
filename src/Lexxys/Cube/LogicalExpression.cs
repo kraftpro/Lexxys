@@ -9,12 +9,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-using Lexxys.Tokenizer;
 using System.Text.RegularExpressions;
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
 namespace Lexxys.Cube
 {
+	using Tokenizer;
+
 	/// <summary>Represents logical expression.</summary>
 	public class LogicalExpression
 	{

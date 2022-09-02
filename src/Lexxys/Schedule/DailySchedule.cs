@@ -5,7 +5,6 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Globalization;
 using System.Text;
 
 namespace Lexxys
@@ -72,9 +71,9 @@ namespace Lexxys
 			return base.Equals(other) && DayPeriod == other.DayPeriod;
 		}
 
-		public override bool Equals(Schedule that)
+		public override bool Equals(Schedule other)
 		{
-			return that is DailySchedule ds && Equals(ds);
+			return other is DailySchedule ds && Equals(ds);
 		}
 
 		public override bool Equals(object obj)
@@ -89,21 +88,24 @@ namespace Lexxys
 
 		public override DumpWriter DumpContent(DumpWriter writer)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
+
 			return base.DumpContent(writer)
-				.Text(",DayPeriod=").Dump(DayPeriod);
+				.Then("DayPeriod", DayPeriod);
 		}
 
-		public override XmlBuilder ToXmlContent(XmlBuilder xml)
+		public override XmlBuilder ToXmlContent(XmlBuilder builder)
 		{
-			if (xml is null)
-				throw new ArgumentNullException(nameof(xml));
+			if (builder is null)
+				throw new ArgumentNullException(nameof(builder));
 
-			xml.Item("type", ScheduleType);
+			builder.Item("type", ScheduleType);
 			if (DayPeriod != 1)
-				xml.Item("day", DayPeriod);
+				builder.Item("day", DayPeriod);
 			if (!Reminder.IsEmpty)
-				xml.Element("reminder").Value(Reminder).End();
-			return xml;
+				builder.Element("reminder").Value(Reminder).End();
+			return builder;
 		}
 
 		public override JsonBuilder ToJsonContent(JsonBuilder json)
@@ -121,15 +123,21 @@ namespace Lexxys
 
 		public new static DailySchedule FromXml(Xml.XmlLiteNode xml)
 		{
-			if (xml == null || xml.IsEmpty)
-				return null;
+			if (xml is null)
+				throw new ArgumentNullException(nameof(xml));
+			if (xml.IsEmpty)
+				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
 			if (xml["type"] != Type)
-				throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null);
+				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
+
 			return new DailySchedule(xml["day"].AsInt32(1), ScheduleReminder.FromXml(xml.Element("reminder")));
 		}
 
 		public new static DailySchedule FromJson(string json)
 		{
+			if (json is null || json.Length <= 0)
+				throw new ArgumentNullException(nameof(json));
+
 			return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
 		}
 	}

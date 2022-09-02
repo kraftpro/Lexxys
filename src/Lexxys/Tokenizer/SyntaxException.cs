@@ -13,7 +13,9 @@ using System.Runtime.Serialization;
 using System.Security.Permissions;
 #endif
 
-namespace Lexxys.Tokenizer
+#nullable enable
+
+namespace Lexxys
 {
 	[Serializable]
 	public class SyntaxException: Exception
@@ -52,12 +54,12 @@ namespace Lexxys.Tokenizer
 		protected SyntaxException(SerializationInfo info, StreamingContext context)
 			: base(info, context)
 		{
-			File = (string)info.GetValue("file", typeof(string));
-			Line = (int)info.GetValue("line", typeof(int));
-			Column = (int)info.GetValue("column", typeof(int));
+			File = (string?)info.GetValue("file", typeof(string));
+			Line = (int?)info.GetValue("line", typeof(int)) ?? 0;
+			Column = (int?)info.GetValue("column", typeof(int)) ?? 0;
 		}
 
-		public string File { get; }
+		public string? File { get; }
 		public int Line { get; }
 		public int Column { get; }
 

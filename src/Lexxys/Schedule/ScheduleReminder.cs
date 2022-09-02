@@ -116,13 +116,13 @@ namespace Lexxys
 			return text;
 		}
 
-		public bool Equals(ScheduleReminder that)
+		public bool Equals(ScheduleReminder other)
 		{
-			if (that is null)
+			if (other is null)
 				return false;
-			if (ReferenceEquals(this, that))
+			if (ReferenceEquals(this, other))
 				return true;
-			return Value == that.Value && RemindInBusinessDays == that.RemindInBusinessDays && ShiftToBusinessDay == that.ShiftToBusinessDay;
+			return Value == other.Value && RemindInBusinessDays == other.RemindInBusinessDays && ShiftToBusinessDay == other.ShiftToBusinessDay;
 		}
 
 		public override bool Equals(object obj)
@@ -147,19 +147,20 @@ namespace Lexxys
 
 		string IDumpXml.XmlElementName => "reminder";
 
-		public XmlBuilder ToXmlContent(XmlBuilder xml)
+		public XmlBuilder ToXmlContent(XmlBuilder builder)
 		{
-			if (xml is null)
-				throw new ArgumentNullException(nameof(xml));
+			if (builder is null)
+				throw new ArgumentNullException(nameof(builder));
+
 			if (Value != TimeSpan.Zero)
 			{
-				xml.Item("value", Value);
+				builder.Item("value", Value);
 				if (RemindInBusinessDays)
-					xml.Item("businessDays", RemindInBusinessDays);
+					builder.Item("businessDays", RemindInBusinessDays);
 			}
 			if (ShiftToBusinessDay != BusinessDayShiftType.None)
-				xml.Item("shift", ShiftToBusinessDay);
-			return xml;
+				builder.Item("shift", ShiftToBusinessDay);
+			return builder;
 		}
 
 		public JsonBuilder ToJsonContent(JsonBuilder json)

@@ -8,14 +8,12 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
-using System.Xml.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Lexxys;
-using Lexxys.Configuration;
 
 namespace Lexxys.Tests.Configuration
 {
+	using Lexxys.Configuration;
+
 	[TestClass]
 	[DeploymentItem("test.config.txt")]
 	public class ConfiguraitionTest

@@ -454,9 +454,8 @@ namespace Lexxys
 					new PluralRule(true, "a", "ae",
 						"amoeba", "antenna", "formula", "hyperbola",
 						"medusa", "nebula", "parabola", "abscissa",
-						"hydra", "nova", "lacuna", "aurora", ".*umbra",
-                        "flora", "fauna"
-						),
+						"hydra", "nova", "lacuna", "aurora", "flora", "fauna",
+						".*umbra"),
 
 					new PluralRule(true, "men", "mina",
 						"stamen", "foramen", "lumen"),

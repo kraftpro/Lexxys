@@ -4,15 +4,13 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using Lexxys;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-// ReSharper disable ConditionIsAlwaysTrueOrFalse
+// Re Sharper disable ConditionIsAlwaysTrueOrFalse
 
 #nullable enable
 
@@ -133,10 +131,6 @@ namespace Lexxys
 		{
 			if (provider == null)
 				throw new ArgumentNullException(nameof(provider));
-			//_providers.Add(provider);
-
-			if (provider.SupportedSchemes == null)
-				return;
 
 			foreach (var scheme in provider.SupportedSchemes)
 			{
@@ -198,8 +192,10 @@ namespace Lexxys
 		/// <returns></returns>
 		public static bool IsTemporaryPath(string path, DirectoryStorageConfig? config = default)
 		{
+			if (path is null)
+				throw new ArgumentNullException(nameof(path));
 			config ??= DirectoryStorageConfig.Default;
-			return path != null && path.StartsWith($"{config.TemporaryFolder}{config.PathSeparator}", StringComparison.Ordinal);
+			return path.StartsWith($"{config.TemporaryFolder}{config.PathSeparator}", StringComparison.Ordinal);
 		}
 
 		internal static (string Scheme, string Path) SplitSchemeAndPath(string uri)

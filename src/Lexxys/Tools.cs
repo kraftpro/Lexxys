@@ -1354,13 +1354,13 @@ namespace Lexxys
 				x = a;
 				long h2 = x * h1 + h0; h0 = h1; h1 = h2;
 				long k2 = x * k1 + k0; k0 = k1; k1 = k2;
-				int w2 = ValueWidth(Math.Max(k1, h1));
+				int w2 = ValueWidth(Math.Min(k1, h1));
 				if (w2 > maxWidth)
 					break;
 				if (delta <= precision)
 				{
 					if (w == 0)
-						w = ValueWidth(Math.Max(den, num));
+						w = ValueWidth(Math.Min(den, num));
 					if (w2 > w)
 						break;
 				}
@@ -1411,9 +1411,11 @@ namespace Lexxys
 				return null;
 			if (value is IValue iv)
 				value = iv.Value;
+			if (value == null)
+				return null;
 			if (DBNull.Value.Equals(value))
 				return null;
-			if (!value!.GetType().IsEnum)
+			if (!value.GetType().IsEnum)
 				return value;
 
 			return (Type.GetTypeCode(Enum.GetUnderlyingType(value.GetType()))) switch

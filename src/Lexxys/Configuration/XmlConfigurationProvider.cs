@@ -123,12 +123,14 @@ namespace Lexxys.Configuration
 				XmlTools.TryGetValue(node, type, out object? result);
 				return result;
 			}
+			#pragma warning disable CA1031 // Do not catch general exception types
 			catch
 			{
 				//e.Add("Source", _source.Name);
 				//throw;
 				return null;
 			}
+			#pragma warning restore CA1031 // Do not catch general exception types
 		}
 	}
 }

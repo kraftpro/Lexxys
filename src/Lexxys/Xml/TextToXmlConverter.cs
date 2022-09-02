@@ -6,17 +6,21 @@
 //
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Linq;
-using Lexxys.Tokenizer;
-using System.Globalization;
+
+#nullable enable
+
+#pragma warning disable CA1845 // Use span-based 'string.Concat'
+#pragma warning disable CA1307 // Specify StringComparison for clarity
 
 namespace Lexxys.Xml
 {
-	public delegate IEnumerable<XmlLiteNode> TextToXmlOptionHandler(string option, IReadOnlyCollection<string> parameters);
+	using Tokenizer;
+
+	public delegate IEnumerable<XmlLiteNode>? TextToXmlOptionHandler(string option, IReadOnlyCollection<string> parameters);
 	public delegate string MacroSubstitution(string value);
 
 
@@ -98,12 +102,12 @@ namespace Lexxys.Xml
 		private readonly TokenScanner _parametersScanner;
 		private readonly TokenScanner _arrayScanner;
 
-		private readonly string _sourceName;
+		private readonly string? _sourceName;
 		private readonly StringBuilder _currentNodePath;
 		private readonly SyntaxRuleCollection _syntaxRules;
-		private readonly TextToXmlOptionHandler _optionHandler;
+		private readonly TextToXmlOptionHandler? _optionHandler;
 
-		private TextToXmlConverter(CharStream stream, string sourceName, TextToXmlOptionHandler optionHandler, MacroSubstitution macro = null)
+		private TextToXmlConverter(CharStream stream, string? sourceName, TextToXmlOptionHandler? optionHandler, MacroSubstitution? macro = null)
 		{
 			_stream = stream ?? throw new ArgumentNullException(nameof(stream));
 			_nodeScanner = new TokenScanner5(_stream,
@@ -118,7 +122,7 @@ namespace Lexxys.Xml
 					.Add(ATTRIB, "=")			// attributte mark
 					.Add(ATTRIB, "@")			// attributte mark
 					.Add(ARRAY, "[")			// array mark
-					.Add(ENDNODE, "/")          // endnode mark
+					.Add(ENDNODE, "/")			// endnode mark
 					.Add(CONFIG, "%%")			// configuration mark
 					.Add(OPTION, "%"),			// option mark (not affected to indentation)
 				new UniversalTokenRule(LexicalTokenType.IDENTIFIER, ""));
@@ -187,13 +191,14 @@ namespace Lexxys.Xml
 		}
 
 
-		public static string Convert(string text, string sourceName = null)
-		{
-			return Convert(text, null, sourceName);
-		}
+		public static string Convert(string text, string? sourceName = null)
+			=> Convert(text, null, sourceName);
 
-		public static string Convert(string text, TextToXmlOptionHandler optionHandler, string sourceName = null)
+		public static string Convert(string text, TextToXmlOptionHandler? optionHandler, string? sourceName = null)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			var sb = new StringBuilder(1024);
 			var ws = new XmlWriterSettings { ConformanceLevel = ConformanceLevel.Fragment, OmitXmlDeclaration = true };
 			using (var writer = XmlWriter.Create(sb, ws))
@@ -203,10 +208,13 @@ namespace Lexxys.Xml
 			return sb.ToString();
 		}
 
-		public static void Convert(string text, XmlWriter writer, TextToXmlOptionHandler optionHandler, string sourceName = null)
+		public static void Convert(string text, XmlWriter writer, TextToXmlOptionHandler? optionHandler, string? sourceName = null)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
 			if (writer is null)
 				throw new ArgumentNullException(nameof(writer));
+
 			var cs = new CharStream(text);
 			var converter = new TextToXmlConverter(cs, sourceName, optionHandler);
 			converter.Convert(o=> ConvertToXml(writer, o));
@@ -228,13 +236,14 @@ namespace Lexxys.Xml
 		//    Convert(reader.ReadToEnd(), writer, optionHandler, fileName);
 		//}
 
-		public static List<XmlLiteNode> ConvertLite(string text, string sourceName = null, bool ignoreCase = false)
-		{
-			return ConvertLite(text, null, sourceName, ignoreCase);
-		}
+		public static List<XmlLiteNode> ConvertLite(string text, string? sourceName = null, bool ignoreCase = false)
+			=> ConvertLite(text, null, sourceName, ignoreCase);
 
-		public static List<XmlLiteNode> ConvertLite(string text, TextToXmlOptionHandler optionHandler, string sourceName = null, bool ignoreCase = false)
+		public static List<XmlLiteNode> ConvertLite(string text, TextToXmlOptionHandler? optionHandler, string? sourceName = null, bool ignoreCase = false)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			var converter = new TextToXmlConverter(new CharStream(text), sourceName, optionHandler);
 			var result = new List<XmlLiteNode>();
 			converter.Convert(o=> result.Add(ConvertToXmlLite(o, ignoreCase)));
@@ -246,7 +255,7 @@ namespace Lexxys.Xml
 			if (_stream[0] == ':')
 				return;
 
-			Node node = ScanNode();
+			Node? node = ScanNode();
 			while (node != null)
 			{
 				action(node);
@@ -266,14 +275,14 @@ namespace Lexxys.Xml
 				if (j < 0)
 					break;
 				string macro = value.Substring(i + 3, j - i - 3);
-				string defaultValue = null; 
+				string? defaultValue = null;
 				int k = macro.IndexOf('|');
 				if (k >= 0)
 				{
 					defaultValue = macro.Substring(k + 1).Trim();
 					macro = macro.Substring(0, k);
 				}
-				string subst = string.IsNullOrWhiteSpace(macro) ? defaultValue: Config.Current.GetValue<string>(macro, defaultValue).Value;
+				string? subst = string.IsNullOrWhiteSpace(macro) ? defaultValue: Config.Current.GetValue<string?>(macro, defaultValue).Value;
 				if (subst != null)
 					value = value.Substring(0, i) + subst + value.Substring(j + 2);
 				i = j + 2;
@@ -283,7 +292,7 @@ namespace Lexxys.Xml
 
 		private static XmlLiteNode ConvertToXmlLite(Node node, bool ignoreCase)
 		{
-			XmlLiteNode[] child = null;
+			XmlLiteNode[]? child = null;
 			if (node.Child.Count > 0)
 			{
 				child = new XmlLiteNode[node.Child.Count];
@@ -353,7 +362,7 @@ namespace Lexxys.Xml
 				return Array.IndexOf(_asep, ch) < 0;
 			}
 
-			public override LexicalToken TryParse(CharStream stream)
+			public override LexicalToken? TryParse(CharStream stream)
 			{
 				if (stream[0] == '"' || stream[0] == '\'')
 					return StringTokenRule.ParseString(TokenType, stream, '`');
@@ -382,7 +391,7 @@ namespace Lexxys.Xml
 				return ch != '\n';
 			}
 
-			public override LexicalToken TryParse(CharStream stream)
+			public override LexicalToken? TryParse(CharStream stream)
 			{
 				int n = stream.IndexOf('\n', 0);
 				if (n < 0)
@@ -485,7 +494,7 @@ namespace Lexxys.Xml
 				return ch == '<';
 			}
 
-			public override LexicalToken TryParse(CharStream stream)
+			public override LexicalToken? TryParse(CharStream stream)
 			{
 				if (stream[0] != '<' || stream[1] != '<')
 					return null;
@@ -553,7 +562,7 @@ namespace Lexxys.Xml
 		}
 		#endregion
 
-		private Exception SyntaxException(TokenScanner scanner, string message)
+		private Exception SyntaxException(TokenScanner scanner, string? message)
 		{
 			return scanner.SyntaxException(message, _sourceName);
 		}
@@ -595,7 +604,7 @@ namespace Lexxys.Xml
 
 		private Options _options;
 
-		private Node ScanNode()
+		private Node? ScanNode()
 		{
 			Options opt = _options;
 
@@ -650,7 +659,7 @@ namespace Lexxys.Xml
 				else if (token.TokenType == LexicalTokenType.IDENTIFIER)
 				{
 					_nodeScanner.Back();
-					Node child = ScanNode();
+					Node? child = ScanNode();
 					if (child != null)
 						node.Child.Add(child);
 				}
@@ -686,12 +695,12 @@ namespace Lexxys.Xml
 		{
 			LexicalToken token = _nodeScanner.Current;
 			Node node;
-			SyntaxRuleCollection rules = _syntaxRules.GetApplicatbleRules(CurrentNodePath);
+			SyntaxRuleCollection? rules = _syntaxRules.GetApplicatbleRules(CurrentNodePath);
 
 			if (token.TokenType.Is(LexicalTokenType.IDENTIFIER))
 			{
 				node = new Node(token.Text, _options.IgnoreCase);
-				SyntaxRule rule = rules?.Find(CurrentNodePath, node.Name);
+				SyntaxRule? rule = rules?.Find(CurrentNodePath, node.Name);
 				if (rule == null)
 					ScanNodeValue(node);
 				else
@@ -699,8 +708,8 @@ namespace Lexxys.Xml
 			}
 			else if (token.TokenType.Is(TOKEN, ANONYMOUS))
 			{
-				SyntaxRule rule = rules?.Find(CurrentNodePath);
-				if (rule == null)
+				SyntaxRule? rule = rules?.Find(CurrentNodePath);
+				if (rule == null || rule.NodeName == null)
 					throw SyntaxException(_nodeScanner, SR.RuleNotFound());
 				node = new Node(rule.NodeName, _options.IgnoreCase);
 				if (rule.Attrib.Length == 0)
@@ -739,7 +748,7 @@ namespace Lexxys.Xml
 
 				case ANONYMOUS:
 					_nodeScanner.Back();
-					Node child = ScanNode();
+					Node? child = ScanNode();
 					if (child != null)
 						node.Child.Add(child);
 					break;
@@ -974,7 +983,7 @@ namespace Lexxys.Xml
 			}
 		}
 
-		public class Node
+		class Node
 		{
 			public readonly string Name;
 			public readonly Dictionary<string, string> Attrib = new Dictionary<string, string>();
@@ -1027,7 +1036,7 @@ namespace Lexxys.Xml
 					List<SyntaxRule> temp = _rule.FindAll(o=> String.Equals(o.RuleName, pattern, ignoreCase ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal));
 					if (temp.Count > 0)
 					{
-						_rule.AddRange(temp.Select(o=> o.CreateFromTemplate(path, ignoreCase)).Where(o=> o != null));
+						_rule.AddRange(temp.Select(o=> o.CreateFromTemplate(path, ignoreCase)).Where(o=> o != null)!);
 						return;
 					}
 				}
@@ -1037,9 +1046,9 @@ namespace Lexxys.Xml
 					_rule.Add(rule);
 			}
 
-			public SyntaxRuleCollection GetApplicatbleRules(string root)
+			public SyntaxRuleCollection? GetApplicatbleRules(string root)
 			{
-				SyntaxRuleCollection colletion = null;
+				SyntaxRuleCollection? colletion = null;
 				foreach (var rule in _rule)
 				{
 					if (rule.IsApplicatble(root))
@@ -1057,7 +1066,7 @@ namespace Lexxys.Xml
 			/// </summary>
 			/// <param name="root">The root path to find rule.</param>
 			/// <returns>First found <see cref="SyntaxRule"/>.</returns>
-			public SyntaxRule Find(string root)
+			public SyntaxRule? Find(string root)
 			{
 				for (int i = _rule.Count - 1; i >= 0; --i)
 				{
@@ -1073,7 +1082,7 @@ namespace Lexxys.Xml
 			/// <param name="root">Root path to find rule</param>
 			/// <param name="name">Node name</param>
 			/// <returns>The first applicable rule</returns>
-			public SyntaxRule Find(string root, string name)
+			public SyntaxRule? Find(string root, string name)
 			{
 				for (int i = _rule.Count - 1; i >= 0; --i)
 				{
@@ -1086,33 +1095,38 @@ namespace Lexxys.Xml
 
 		private class SyntaxRule
 		{
-			Regex _pattern;
-			string _start;
-			string _ruleName;
-			string _nodeName;
+			Regex? _pattern;
+			string? _start;
+			string? _ruleName;
+			string? _nodeName;
 			string[] _attrib;
 			bool _permanent;
 			bool _ignoreCase;
 
-			private SyntaxRule()
+			public SyntaxRule(string? nodeName = null, string? ruleName = null, string? start = null, Regex? pattern = null, string[]? attrib = null, bool permanent = false, bool ignoreCase = false)
 			{
+				_pattern = pattern;
+				_start = start;
+				_ruleName = ruleName;
+				_nodeName = nodeName.TrimToNull();
+				_attrib = attrib ?? Array.Empty<string>();
+				_permanent = permanent;
+				_ignoreCase = ignoreCase;
 			}
 
-			public static SyntaxRule Create(string path, string node, string[] attribs, bool ignoreCase)
+			public static SyntaxRule? Create(string path, string node, string[] attribs, bool ignoreCase)
 			{
 				return Create(path, node, attribs, ignoreCase, true);
 			}
 
-			private static SyntaxRule Create(string path, string node, string[] attribs, bool ignoreCase, bool extractName)
+			private static SyntaxRule? Create(string path, string? node, string[]? attribs, bool ignoreCase, bool extractName)
 			{
+				if (path is null)
+					throw new ArgumentNullException(nameof(path));
 				if (node == null || (node = node.Trim(TrimedChars)).Length == 0)
 					return null;
-				if (attribs == null)
-					attribs = Array.Empty<string>();
-				if (path == null)
-					path = "";
 
-				string name = null;
+				string name;
 				if (extractName && (name = NameRex.Match(node).Value).Length > 1)
 				{
 					node = node.Substring(name.Length).Trim();
@@ -1120,12 +1134,12 @@ namespace Lexxys.Xml
 						node = ".";
 
 					return new SyntaxRule
-					{
-						_ignoreCase = ignoreCase,
-						_ruleName = name.Substring(0, name.Length - 1),
-						_nodeName = node,
-						_attrib = attribs
-					};
+					(
+						ignoreCase: ignoreCase,
+						ruleName: name.Substring(0, name.Length - 1),
+						nodeName: node,
+						attrib: attribs
+					);
 				}
 
 				if ((path = path.Trim(TrimedChars)).Length == 0)
@@ -1144,9 +1158,13 @@ namespace Lexxys.Xml
 					name = path.Substring(i + 1).TrimStart(TrimedChars);
 					path = path.Substring(0, i + 1).TrimEnd(TrimedChars);
 				}
+				else
+				{
+					name = "";
+				}
 
 				string start;
-				Regex pattern;
+				Regex? pattern;
 				bool permanent = false;
 				if (path.IndexOfAny(Stars) < 0)
 				{
@@ -1178,14 +1196,14 @@ namespace Lexxys.Xml
 				}
 
 				return new SyntaxRule
-				{
-						_ignoreCase = ignoreCase,
-						_nodeName = name == null || name.Length == 0 ? null: name,
-						_attrib = attribs,
-						_start = start,
-						_pattern = pattern,
-						_permanent = permanent
-					};
+				(
+					ignoreCase: ignoreCase,
+					nodeName: name,
+					attrib: attribs,
+					start: start,
+					pattern: pattern,
+					permanent: permanent
+				);
 			}
 			private static readonly char[] Stars = { '*' };
 			private static readonly char[] StarsAndSlash = { '*', '/' };
@@ -1194,14 +1212,14 @@ namespace Lexxys.Xml
 			private static readonly Regex PrepareRex = new Regex(@"(\\\*)+|\\\((\\\*)+\\\)");
 
 
-			public SyntaxRule CreateFromTemplate(string path, bool ignoreCase)
+			public SyntaxRule? CreateFromTemplate(string path, bool ignoreCase)
 			{
 				return _ruleName == null ? null: Create(path, _nodeName, _attrib, ignoreCase, false);
 			}
 
-			public string RuleName => _ruleName;
+			public string? RuleName => _ruleName;
 
-			public string NodeName => _nodeName;
+			public string? NodeName => _nodeName;
 
 			public string[] Attrib => _attrib;
 
@@ -1230,7 +1248,7 @@ namespace Lexxys.Xml
 					_start.StartsWith(path, _ignoreCase ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal);
 			}
 
-			public bool TryMatch(string path, string node = null)
+			public bool TryMatch(string path, string? node = null)
 			{
 				if (path == null)
 					throw new ArgumentNullException(nameof(path));

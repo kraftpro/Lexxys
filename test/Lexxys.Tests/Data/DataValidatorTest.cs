@@ -5,14 +5,14 @@
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Lexxys.Data;
-using Lexxys.Testing;
 using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Data
 {
+	using Lexxys.Data;
+	using Lexxys.Testing;
+
 	/// <summary>
 	/// Summary description for DataValidatorTest
 	/// </summary>

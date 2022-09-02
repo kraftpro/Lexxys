@@ -6,10 +6,10 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Collections;
-using Lexxys;
+
+#nullable enable
 
 namespace Lexxys
 {
@@ -42,11 +42,11 @@ namespace Lexxys
 		public ErrorNotification AsReadOnly()
 			=> IsReadOnly ? this : new ErrorNotification(_errors, true);
 
-		public void Add(FieldError item)
+		public void Add(FieldError? item)
 		{
 			if (IsReadOnly)
 				throw EX.NotSupported("Add");
-			if (item != null && !_errors.Contains(item))
+			if (item is not null && !_errors.Contains(item))
 				_errors.Add(item);
 		}
 
@@ -99,7 +99,7 @@ namespace Lexxys
 	{
 		private static readonly string[] NoArguments = Array.Empty<string>();
 
-		private readonly string[] _arguments;
+		private readonly string[]? _arguments;
 
 		public FieldError()
 		{
@@ -110,15 +110,15 @@ namespace Lexxys
 			FieldName = fieldName;
 		}
 
-		public FieldError(string fieldName, string messageCode, params string[] arguments)
+		public FieldError(string fieldName, string messageCode, params string[]? arguments)
 		{
 			FieldName = fieldName;
 			MessageCode = messageCode;
 			_arguments = arguments;
 		}
 
-		public string FieldName { get; }
-		public string MessageCode { get; }
+		public string? FieldName { get; }
+		public string? MessageCode { get; }
 
 		public string[] GetArguments()
 		{
@@ -131,22 +131,24 @@ namespace Lexxys
 
 		public static bool operator ==(FieldError left, FieldError right) => Equals(left, right);
 
-		public static bool operator !=(FieldError left, FieldError right)
-			=> !Equals(left, right);
+		public static bool operator !=(FieldError left, FieldError right) => !Equals(left, right);
 
-		public static bool Equals(FieldError left, FieldError right)
-			=> Object.ReferenceEquals(left, right) || (
+		public static bool Equals(FieldError? left, FieldError? right)
+			=> ReferenceEquals(left, right) || (
 			left is not null && right is not null &&
 			left.FieldName == right.FieldName &&
 			left.MessageCode == right.MessageCode &&
 			Tools.Equals(left._arguments, right._arguments));
 
-		public override bool Equals(object obj)
+		/// <inheritdoc />
+		public override bool Equals(object? obj)
 			=> obj is FieldError error && Equals(this, error);
 
+		/// <inheritdoc />
 		public override int GetHashCode()
-			=> HashCode.Join(HashCode.Join(FieldName?.GetHashCode() ?? 0, MessageCode?.GetHashCode() ?? 0), _arguments);
+			=> HashCode.Join(FieldName?.GetHashCode() ?? 0, MessageCode?.GetHashCode() ?? 0, _arguments?.Length.GetHashCode() ?? 0);
 
+		/// <inheritdoc />
 		public override string ToString()
 		{
 			var sb = new StringBuilder();

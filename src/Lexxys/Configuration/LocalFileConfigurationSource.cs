@@ -44,7 +44,7 @@ namespace Lexxys.Configuration
 			{
 				if (_content == null)
 				{
-					lock (this)
+					lock (_location)
 					{
 						if (_content == null)
 						{
@@ -89,17 +89,19 @@ namespace Lexxys.Configuration
 		{
 			try
 			{
-				lock (this)
+				lock (_location)
 				{
 					_content = null;
 					FileWatcher.RemoveFileWatcher(_file.FullName, OnFileChanged);
 					Changed?.Invoke(sender ?? this, e);
 				}
 			}
+			#pragma warning disable CA1031 // Do not catch general exception types
 			catch (Exception flaw)
 			{
 				Config.LogConfigurationError(LogSource, flaw.Add("fileName", _file?.FullName));
 			}
+			#pragma warning restore CA1031 // Do not catch general exception types
 		}
 
 		private IEnumerable<XmlLiteNode>? OptionHandler(string option, IReadOnlyCollection<string> parameters)

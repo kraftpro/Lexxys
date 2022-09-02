@@ -4,7 +4,7 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
-﻿using System;
+ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -37,37 +37,28 @@ namespace Lexxys.Tests.Tools
 		}
 
 		[TestMethod()]
-		public void GetTypeTest()
+		[DataRow("Id", typeof(int))]
+		[DataRow("Id?", typeof(int?))]
+		[DataRow("int", typeof(int))]
+		[DataRow(" system.int32", typeof(int))]
+		[DataRow("ULong ? ", typeof(ulong?))]
+		[DataRow("date ? ", typeof(DateTime?))]
+		[DataRow("FactoryTest", typeof(FactoryTest))]
+		[DataRow("FactoryTest?", typeof(FactoryTest))]
+		[DataRow("X", typeof(void))]
+		[DataRow("X?", typeof(void))]
+		[DataRow("FT", typeof(FactoryTest))]
+		[DataRow("FT?", typeof(FactoryTest))]
+		[DataRow("Z", typeof(FactoryTest.ZeroElement))]
+		[DataRow("Z?", typeof(FactoryTest.ZeroElement?))]
+		[DataRow("Z??", typeof(FactoryTest.ZeroElement?))]
+		[DataRow("Z0", typeof(FactoryTest.PrivateZeroElement))]
+		[DataRow("Z0?", typeof(FactoryTest.PrivateZeroElement?))]
+		[DataRow("Fiction", null)]
+		public void GetTypeTest(string typeName, Type expected)
 		{
-			Dictionary<string, Type> dd = new Dictionary<string, Type>()
-				{
-					{ "Id",				typeof(int) },
-					{ "Id?",			typeof(int?) },
-					{ "int",			typeof(int) },
-					{ " system.int32",	typeof(int) },
-					{ "ULong ? ",		typeof(ulong?) },
-					{ "date ? ",		typeof(DateTime?) },
-					{ "FactoryTest",	typeof(FactoryTest) },
-					{ "FactoryTest?",	typeof(FactoryTest) },
-					{ "X",				typeof(void) },
-					{ "X?",             typeof(void) },
-					{ "FT",				typeof(FactoryTest) },
-					{ "FT?",            typeof(FactoryTest) },
-					{ "Z",				typeof(FactoryTest.ZeroElement) },
-					{ "Z?",				typeof(FactoryTest.ZeroElement?) },
-					{ "Z??",            typeof(FactoryTest.ZeroElement?) },
-					{ "Z0",				typeof(FactoryTest.PrivateZeroElement) },
-					{ "Z0?",			typeof(FactoryTest.PrivateZeroElement?) },
-					{ "Fiction",		null },
-				};
-
-			foreach (var item in dd)
-			{
-				Type expected = item.Value;
-				Type actual = Factory.GetType(item.Key);
-				Assert.AreEqual(expected, actual, item.Key);
-			}
-
+			Type actual = Factory.GetType(typeName);
+			Assert.AreEqual(expected, actual);
 		}
 
 	}

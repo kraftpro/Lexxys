@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace Lexxys
 {
 	public interface IBlobInfo
@@ -18,8 +20,8 @@ namespace Lexxys
 		long Length { get; }
 		string Path { get; }
 		DateTimeOffset LastModified { get; }
-		Stream CreateReadStream(bool async = false);
-		Task<Stream> CreateReadStreamAsync(bool async = false);
+		Stream CreateReadStream();
+		Task<Stream> CreateReadStreamAsync();
 	}
 }
 

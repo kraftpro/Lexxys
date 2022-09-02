@@ -7,12 +7,13 @@
 using System;
 using System.Linq;
 using System.Text;
-using Lexxys.Testing;
-using Lexxys.Xml;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Xml
 {
+	using Lexxys.Testing;
+	using Lexxys.Xml;
+
 	[TestClass]
 	public class XmlLiteSelectorTest
 	{

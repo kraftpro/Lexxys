@@ -122,7 +122,9 @@ namespace Lexxys
 
 		#region Specific services
 
+		#pragma warning disable CA1721 // Property names should not match get methods
 		public static LoggingFactoryFacade Logger => default;
+		#pragma warning restore CA1721 // Property names should not match get methods
 
 		public static ILogging GetLogger(string name) => Create<ILogging>(name);
 
@@ -274,7 +276,7 @@ namespace Lexxys
 				if (type == typeof(IConfigSource))
 					result = new MsConfig(_configuration);
 				else if (type == typeof(IConfigSection))
-					result = new ConfigSection(new MsConfig(_configuration));
+					result = new DisposibleConfigSection(new MsConfig(_configuration));
 				else
 					result = null!;
 				return result != null;
@@ -282,7 +284,7 @@ namespace Lexxys
 
 			public static IFactory? CreateFactory(IConfiguration? configuration) => configuration == null ? null: new MsConfigFactory(configuration);
 
-			sealed class MsConfig: IConfigSource, IDisposable
+			sealed class MsConfig: IDisposableConfigSource
 			{
 				private readonly IConfiguration _configuration;
 				private readonly IDisposable _changeCollback;

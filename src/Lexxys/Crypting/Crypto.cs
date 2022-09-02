@@ -7,9 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using Lexxys.Configuration;
 using System.Linq;
-using Lexxys;
 
 #nullable enable
 
@@ -81,7 +79,7 @@ namespace Lexxys.Crypting
 
 			try
 			{
-				return args == null || args.Length == 0 ? Factory.TryConstruct(item.Type, true): Factory.TryConstruct(item.Type, true, args);
+				return (args == null || args.Length == 0 ? Factory.TryConstruct(item.Type, true): Factory.TryConstruct(item.Type, true, args)) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(item.Type, args?.Length ?? 0));
 			}
 			catch (Exception flaw)
 			{
@@ -99,6 +97,7 @@ namespace Lexxys.Crypting
 			{
 				lock (SyncObj)
 				{
+#pragma warning disable CA1508 // Avoid dead conditional code.  __settings could be changed in a parallel thread
 					if (__settings == null)
 					{
 						const string Cryptors = "Lexxys.Crypting.Cryptors.";
@@ -117,7 +116,7 @@ namespace Lexxys.Crypting
 							__settings.Add(new CryptoProviderSettingItem(CryptoProviderType.Encryptor, x, Cryptors + x + "Encryptor"));
 							__settings.Add(new CryptoProviderSettingItem(CryptoProviderType.Decryptor, x, Cryptors + x + "Decryptor"));
 						}
-						var synonyms = new []
+						var synonyms = new[]
 						{
 							("MD5", new [] { "MD5P" }),
 							("Sha1", new [] { "SHA128", "SHA-128", "SHA" }),
@@ -136,10 +135,11 @@ namespace Lexxys.Crypting
 							}
 						}
 					}
+#pragma warning restore CA1508 // Avoid dead conditional code
 				}
 			}
 			return __settings.Find(x => x.ProviderType == providerType && String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
 		}
-		private static List<CryptoProviderSettingItem>? __settings;
+		private static volatile List<CryptoProviderSettingItem>? __settings;
 	}
 }

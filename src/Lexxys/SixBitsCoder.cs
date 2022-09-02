@@ -21,7 +21,6 @@ namespace Lexxys
 		private const string CharLine = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 		private const string CharLin2 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 		private const string CharLin3L= "0123456789abcdefghijklmnopqrstuvwxyz";
-		private const string CharLin3U= "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 		/// <summary>
 		/// Convert low 6 bits of integer value to character
@@ -218,6 +217,7 @@ namespace Lexxys
 			if (bits == null)
 				throw new ArgumentNullException(nameof(bits));
 			if (bits.Length != 16)
+				#pragma warning disable CA2208 // Instantiate argument exceptions correctly
 				throw new ArgumentOutOfRangeException(nameof(bits) + ".Length", bits.Length, null);
 
 			var result = new StringBuilder(24);
@@ -305,14 +305,14 @@ namespace Lexxys
 			return result;
 		}
 
-		public static string EncodeId(int id, uint encodeMult, ulong encodeMask, Func<ulong, string> convert, bool swap = false)
+		public static string EncodeId(int id, uint encodeMult, ulong encodeMask, Func<ulong, string> convert, bool straight = false)
 		{
 			if (id < 0)
 				throw new ArgumentOutOfRangeException(nameof(id), id, null);
 			if (convert == null)
 				throw new ArgumentNullException(nameof(convert));
 			var code = (ulong)id * encodeMult ^ encodeMask;
-			if (swap)
+			if (!straight)
 				code = Swap64(code);
 			return convert(code);
 		}
@@ -321,33 +321,38 @@ namespace Lexxys
 		private static uint Swap32(uint value) => (uint)Swap16((ushort)value) << 16 | Swap16((ushort)(value >> 16));
 		private static ulong Swap64(ulong value) => (ulong)Swap32((uint)value) << 32 | Swap32((uint)(value >> 32));
 
-		public static int DecodeId(string value, uint encodeMult, ulong encodeMask, Func<string, ulong> convert, bool swap = false)
+		public static int DecodeId(string value, uint encodeMult, ulong encodeMask, Func<string, ulong> convert)
 		{
 			if (convert == null)
 				throw new ArgumentNullException(nameof(convert));
 			if (value == null)
 				return 0;
 
-			ulong code = convert(value);
-			if (code == 0)
+			ulong source = convert(value);
+			if (source == 0)
 				return 0;
-			if (swap)
-				code = Swap64(code);
-			code ^= encodeMask;
-			if (code % encodeMult != 0)
-				return 0;
-			code /= encodeMult;
-			return code > int.MaxValue ? 0 : (int)code;
+
+			var code = source ^ encodeMask;
+			var r0 = Math.DivRem((long)code, encodeMult, out var r1);
+			if (r1 == 0 && r0 > 0 && r0 < int.MaxValue)
+				return (int)r0;
+
+			code = Swap64(source) ^ (ulong)encodeMask;
+			r0 = Math.DivRem((long)code, encodeMult, out r1);
+			if (r1 == 0 && r0 > 0 && r0 < int.MaxValue)
+				return (int)r0;
+
+			return 0;
 		}
 
-		public static string EncodeId(int id, uint encodeMult, ulong encodeMask, bool swap = false)
+		public static string EncodeId(int id, uint encodeMult, ulong encodeMask, bool straight = false)
 		{
-			return EncodeId(id, encodeMult, encodeMask, Sixty, swap);
+			return EncodeId(id, encodeMult, encodeMask, Sixty, straight);
 		}
 
-		public static int DecodeId(string value, uint encodeMult, ulong encodeMask, bool swap = false)
+		public static int DecodeId(string value, uint encodeMult, ulong encodeMask)
 		{
-			return DecodeId(value, encodeMult, encodeMask, Sixty, swap);
+			return DecodeId(value, encodeMult, encodeMask, Sixty);
 		}
 
 		public static unsafe int HashCode(string value, int length)
@@ -365,5 +370,3 @@ namespace Lexxys
 		}
 	}
 }
-
-

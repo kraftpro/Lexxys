@@ -91,16 +91,18 @@ using Xml;
 		{
 			try
 			{
-				lock (this)
+				lock (Location)
 				{
 					_content = null;
 					Changed?.Invoke(sender ?? this, e);
 				}
 			}
+#pragma warning disable CA1031 // Do not catch general exception types
 			catch (Exception flaw)
 			{
 				Config.LogConfigurationError(LogSource, flaw);
 			}
+#pragma warning restore CA1031 // Do not catch general exception types
 		}
 
 		private IEnumerable<XmlLiteNode>? OptionHandler(string option, IReadOnlyCollection<string> parameters)

@@ -31,14 +31,14 @@ namespace Lexxys
 		{
 		}
 
-		public ArgumentTypeException(string paramName, Type? actualType)
+		public ArgumentTypeException(string paramName, Type actualType)
 			: base(SR.ArgumentWrongTypeException(paramName, actualType), paramName)
 		{
 			base.Data[EX.DicArgName] = paramName;
 			base.Data[EX.DicArgActualType] = actualType;
 		}
 
-		public ArgumentTypeException(string paramName, Type? actualType, Type expectedType)
+		public ArgumentTypeException(string paramName, Type actualType, Type expectedType)
 			: base(SR.ArgumentWrongTypeException(paramName, actualType, expectedType), paramName)
 		{
 			base.Data[EX.DicArgName] = paramName;

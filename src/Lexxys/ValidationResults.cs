@@ -6,30 +6,31 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Lexxys;
 using System.Collections;
+
+
+#nullable enable
+
+#pragma warning disable CA2225 // Operator overloads have named alternates
 
 namespace Lexxys
 {
-	public class ValidationResults: IEnumerable<ValidationResults.ValidationResultsItem>
+	public class ValidationResults: IEnumerable<ValidationResultsItem>
 	{
 		public const char ErrorSeparator = ';';
 		public const char FieldSeparator = ':';
-		public static readonly ValidationResults Empty = new ValidationResults(Array.Empty<ValidationResultsItem>());
+		public static readonly ValidationResults Empty = new ValidationResults(ReadOnly.ListValueWrap<ValidationResultsItem>.Empty);
 
-		private readonly IList<ValidationResultsItem> _items;
+		private readonly ReadOnly.ListValueWrap<ValidationResultsItem> _items;
 
-		private ValidationResults(IList<ValidationResultsItem> items)
+		private ValidationResults(ReadOnly.ListValueWrap<ValidationResultsItem> items)
 		{
 			_items = items;
 		}
 
-		public static ValidationResults Create(string field)
+		public static ValidationResults Create(string? field)
 		{
 			field = CleanName(field);
 			if (field == null)
@@ -38,10 +39,10 @@ namespace Lexxys
 			if (field.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
-			return new ValidationResults(ReadOnly.Wrap(new[] { new ValidationResultsItem(field) }));
+			return new ValidationResults(ReadOnly.ValueWrap(new[] { new ValidationResultsItem(field) }));
 		}
 
-		public static ValidationResults Create(string field, string message)
+		public static ValidationResults Create(string? field, string? message)
 		{
 			field = CleanName(field);
 			message = CleanMessage(message);
@@ -51,10 +52,10 @@ namespace Lexxys
 			if (field != null && field.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
-			return new ValidationResults(ReadOnly.Wrap(new[] { new ValidationResultsItem(field, message) }));
+			return new ValidationResults(ReadOnly.ValueWrap(new[] { new ValidationResultsItem(field ?? "", message) }));
 		}
 
-		public static ValidationResults Create(string field, ErrorInfo errorInfo)
+		public static ValidationResults Create(string? field, ErrorInfo? errorInfo)
 		{
 			field = CleanName(field);
 			if (field == null)
@@ -63,10 +64,10 @@ namespace Lexxys
 			if (field.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
-			return new ValidationResults(ReadOnly.Wrap(new[] { new ValidationResultsItem(field, null, errorInfo) }));
+			return new ValidationResults(ReadOnly.ValueWrap(new[] { new ValidationResultsItem(field, null, errorInfo) }));
 		}
 
-		public static ValidationResults Create(string field, ErrorInfo errorInfo, string message)
+		public static ValidationResults Create(string? field, ErrorInfo? errorInfo, string? message)
 		{
 			field = CleanName(field);
 			message = CleanMessage(message);
@@ -76,22 +77,22 @@ namespace Lexxys
 			if (field != null && field.Contains(ErrorSeparator))
 				throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
-			return new ValidationResults(ReadOnly.Wrap(new[] { new ValidationResultsItem(field, message, errorInfo) }));
+			return new ValidationResults(ReadOnly.ValueWrap(new[] { new ValidationResultsItem(field ?? "", message, errorInfo) }));
 		}
 
 		public static ValidationResults Create(ValidationResultsItem value)
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
-			return new ValidationResults(ReadOnly.Wrap(new[] { value }));
+			return new ValidationResults(ReadOnly.ValueWrap(new[] { value }));
 		}
 
-		public static ValidationResults Create(params ValidationResults[] value)
+		public static ValidationResults Create(params ValidationResults[]? value)
 		{
-			if (value == null)
+			if (value == null || value.Length == 0)
 				return Empty;
 
-			List<ValidationResultsItem> items = null;
+			List<ValidationResultsItem>? items = null;
 			for (int i = 0; i < value.Length; ++i)
 			{
 				var item = value[i];
@@ -105,15 +106,15 @@ namespace Lexxys
 			}
 
 			return items == null ? Empty:
-				new ValidationResults(ReadOnly.Wrap(items));
+				new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
-		public static ValidationResults Create(IEnumerable<ValidationResults> value)
+		public static ValidationResults Create(IEnumerable<ValidationResults>? value)
 		{
 			if (value == null)
 				return Empty;
 
-			List<ValidationResultsItem> items = null;
+			List<ValidationResultsItem>? items = null;
 			foreach (var item in value)
 			{
 				if (item != null && !item.Success)
@@ -124,7 +125,7 @@ namespace Lexxys
 						items.AddRange(item._items);
 				}
 			}
-			return items == null ? Empty: new ValidationResults(ReadOnly.Wrap(items));
+			return items == null ? Empty: new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
 		public static ValidationResults Assert(bool success, ValidationResults value)
@@ -152,40 +153,29 @@ namespace Lexxys
 			return success ? Empty: Create(field, errorInfo, message);
 		}
 
-		public static ValidationResults AssertNotNull<T>(T? value, string field) where T: struct
+		public static ValidationResults AssertNotNull<T>(T? value, string field)
 		{
-			return value is null ? Create(field, ErrorInfo.NullValue()): Empty;
+			return value is not null ? Empty: Create(field, ErrorInfo.NullValue());
 		}
 
-		public static ValidationResults AssertNotNull<T>(T value, string field) where T: class
-		{
-			return value is null ? Create(field, ErrorInfo.NullValue()): Empty;
-		}
-
-		public static ValidationResults AssertNull<T>(T? value, string field) where T : struct
+		public static ValidationResults AssertNull<T>(T? value, string field)
 		{
 			return value is null ? Empty: Create(field, ErrorInfo.OutOfRange(value));
 		}
 
-		public static ValidationResults AssertNull<T>(T value, string field) where T : class
+		public static ValidationResults Parse(string? value)
 		{
-			return value is null ? Empty: Create(field, ErrorInfo.OutOfRange(value));
-		}
-
-
-		public static ValidationResults Parse(string value)
-		{
-			List<ValidationResultsItem> items = ParseItems(value);
-			return items == null ? Empty: new ValidationResults(ReadOnly.Wrap(items));
+			List<ValidationResultsItem>? items = ParseItems(value);
+			return items == null ? Empty: new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
 		public int Length => _items.Count;
 
-		public ICollection<ValidationResultsItem> Items => _items;
+		public IReadOnlyCollection<ValidationResultsItem> Items => _items;
 
 		public bool Success => _items.Count == 0;
 
-		public ValidationResults Add(ValidationResults value)
+		public ValidationResults Add(ValidationResults? value)
 		{
 			if (value == null || value.Success)
 				return this;
@@ -193,10 +183,14 @@ namespace Lexxys
 				return value;
 
 			var items = new ValidationResultsItem[_items.Count + value._items.Count];
+			for (int i = 0; i < _items.Count; ++i)
+			{
+
+			}
 			_items.CopyTo(items, 0);
 			value._items.CopyTo(items, _items.Count);
 
-			return new ValidationResults(ReadOnly.Wrap(items));
+			return new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
 		public ValidationResults Add(ValidationResultsItem value)
@@ -209,22 +203,22 @@ namespace Lexxys
 			var items = new ValidationResultsItem[_items.Count + 1];
 			_items.CopyTo(items, 0);
 			items[items.Length - 1] = value;
-			return new ValidationResults(ReadOnly.Wrap(items));
+			return new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
-		public ValidationResults Add(string value)
+		public ValidationResults Add(string? value)
 		{
 			if (Success)
 				return Parse(value);
 
-			List<ValidationResultsItem> items = ParseItems(value);
+			List<ValidationResultsItem>? items = ParseItems(value);
 			if (items == null)
 				return this;
 
 			var tmp = new ValidationResultsItem[_items.Count + items.Count];
 			_items.CopyTo(tmp, 0);
 			items.CopyTo(tmp, _items.Count);
-			return new ValidationResults(ReadOnly.Wrap(tmp));
+			return new ValidationResults(ReadOnly.ValueWrap(tmp));
 		}
 
 		public ValidationResults AndAlso(ValidationResults value)
@@ -232,12 +226,12 @@ namespace Lexxys
 			return Success ? this: Add(value);
 		}
 
-		public ValidationResults AndAlso(string value)
+		public ValidationResults AndAlso(string? value)
 		{
 			return Success ? this: Add(ValidationResults.Create(value));
 		}
 
-		public ValidationResults WithPrefix(string value)
+		public ValidationResults WithPrefix(string? value)
 		{
 			if (Success)
 				return this;
@@ -253,27 +247,34 @@ namespace Lexxys
 				if (items[i].Field != null)
 					items[i] = items[i].WithField(value + items[i].Field);
 			}
-			return new ValidationResults(ReadOnly.Wrap(items));
+			return new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
 		public ValidationResults WithMessage(string message, bool replace = false)
 		{
-			message = CleanMessage(message);
+			var msg = CleanMessage(message);
+			if (msg == null)
+				return this;
+
 			var items = new ValidationResultsItem[_items.Count];
 
 			for (int i = 0; i < _items.Count; ++i)
 			{
 				if (replace || _items[i].Message == null)
-					items[i] = _items[i].WithMassage(message);
+					items[i] = _items[i].WithMassage(msg);
 			}
-			return new ValidationResults(ReadOnly.Wrap(items));
+			return new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
 		public ValidationResults WithMessage(string field, string message, bool replace = false)
 		{
-			string[] fields = SplitName(field, out int n);
+			string[]? fields = SplitName(field, out int n);
 			if (fields == null || n == 0)
 				return this;
+			var msg = CleanMessage(message);
+			if (msg == null)
+				return this;
+
 			int[] ii = new int[n];
 			bool found = false;
 			for (int i = 0; i < ii.Length; i++)
@@ -292,18 +293,18 @@ namespace Lexxys
 				int j = ii[i];
 				if (j >= 0)
 					if (replace || items[j].Message == null)
-						items[j] = items[i].WithMassage(message);
+						items[j] = items[i].WithMassage(msg);
 			}
-			return new ValidationResults(ReadOnly.Wrap(items));
+			return new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
-		public ValidationResults Remove(ValidationResults value)
+		public ValidationResults Remove(ValidationResults? value)
 		{
 			if (Success || value == null || value.Success)
 				return this;
 
 			var items = new List<ValidationResultsItem>(_items.Count);
-			IList<ValidationResultsItem> subs = value._items;
+			var subs = value._items;
 			foreach (var item in _items)
 			{
 				string field = item.Field;
@@ -311,7 +312,7 @@ namespace Lexxys
 					items.Add(item);
 			}
 			return items.Count == _items.Count ? this:
-				items.Count == 0 ? Empty: new ValidationResults(ReadOnly.Wrap(items));
+				items.Count == 0 ? Empty: new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
 		public ValidationResults Remove(ValidationResultsItem value)
@@ -329,7 +330,7 @@ namespace Lexxys
 				if (item != value)
 					items.Add(item);
 			}
-			return new ValidationResults(items);
+			return new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
 		public ValidationResults Remove(Func<ValidationResultsItem, bool> predicate)
@@ -342,10 +343,10 @@ namespace Lexxys
 
 			var items = new List<ValidationResultsItem>(_items.Where(o => !predicate(o)));
 			return items.Count == _items.Count ? this:
-				items.Count == 0 ? Empty: new ValidationResults(ReadOnly.Wrap(items));
+				items.Count == 0 ? Empty: new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
-		public ValidationResults Remove(string value)
+		public ValidationResults Remove(string? value)
 		{
 			if (Success)
 				return this;
@@ -363,10 +364,10 @@ namespace Lexxys
 					items.Add(item);
 			}
 			return items.Count == _items.Count ? this:
-				items.Count == 0 ? Empty: new ValidationResults(ReadOnly.Wrap(items));
+				items.Count == 0 ? Empty: new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
-		public ValidationResults Replace(string source, string target)
+		public ValidationResults Replace(string? source, string? target)
 		{
 			source = CleanName(source);
 			target = CleanName(target);
@@ -395,7 +396,7 @@ namespace Lexxys
 					items[i] = _items[i];
 				}
 			}
-			return found ? new ValidationResults(ReadOnly.Wrap(items)): this;
+			return found ? new ValidationResults(ReadOnly.ValueWrap(items)): this;
 		}
 
 		public bool HasError()
@@ -403,7 +404,7 @@ namespace Lexxys
 			return !Success;
 		}
 
-		public bool HasError(string field)
+		public bool HasError(string? field)
 		{
 			field = CleanName(field);
 			if (field == null)
@@ -411,8 +412,8 @@ namespace Lexxys
 			if (field.IndexOf(ErrorSeparator) < 0)
 				return _items.FindIndex(o => o.Field == field) >= 0;
 
-			List<ValidationResultsItem> fields = ParseItems(field);
-			return fields.All(o => _items.FindIndex(p => p.Field == o.Field) >= 0);
+			var fields = ParseItems(field);
+			return fields == null || fields.All(o => _items.Any(p => p.Field == o.Field));
 		}
 
 		public bool HasMessage()
@@ -420,23 +421,23 @@ namespace Lexxys
 			return _items.Any(o => o.Message != null);
 		}
 
-		public bool Contains(string value)
+		public bool Contains(string? value)
 		{
 			value = CleanName(value);
 			return value != null && _items.Any(o => o.Field == value);
 		}
 
-		public bool ContainsAny(IEnumerable<string> fields)
+		public bool ContainsAny(IEnumerable<string>? fields)
 		{
 			return fields != null && fields.Any(Contains);
 		}
 
-		public bool ContainsAll(IEnumerable<string> fields)
+		public bool ContainsAll(IEnumerable<string>? fields)
 		{
 			return fields == null || fields.All(Contains);
 		}
 
-		public bool ContainsAny(IEnumerable<ValidationResultsItem> value)
+		public bool ContainsAny(IEnumerable<ValidationResultsItem>? value)
 		{
 			if (value == null)
 				return false;
@@ -449,7 +450,7 @@ namespace Lexxys
 			return false;
 		}
 
-		public bool ContainsAll(IEnumerable<ValidationResultsItem> value)
+		public bool ContainsAll(IEnumerable<ValidationResultsItem>? value)
 		{
 			if (value == null)
 				return false;
@@ -462,7 +463,7 @@ namespace Lexxys
 			return true;
 		}
 
-		public void Invariant(string source = null, Func<string> dump = null)
+		public void Invariant(string? source = null, Func<string>? dump = null)
 		{
 			if (Success)
 				return;
@@ -472,7 +473,7 @@ namespace Lexxys
 			throw flaw;
 		}
 
-		public void Invariant(string source, params object[] data)
+		public void Invariant(string? source, params object?[]? data)
 		{
 			if (Success)
 				return;
@@ -489,7 +490,7 @@ namespace Lexxys
 			throw flaw;
 		}
 
-		public void Invariant(string source, params ErrorAttrib[] data)
+		public void Invariant(string? source, params ErrorAttrib[]? data)
 		{
 			if (Success)
 				return;
@@ -504,7 +505,7 @@ namespace Lexxys
 			throw flaw;
 		}
 
-		public Exception InvariantException(string source = null)
+		public Exception InvariantException(string? source = null)
 		{
 			return new InvalidOperationException(SR.CheckInvariantFailed(this, source));
 		}
@@ -528,8 +529,8 @@ namespace Lexxys
 			var tmp = new ValidationResultsItem[_items.Count];
 			_items.CopyTo(tmp, 0);
 			Array.Sort(tmp, (p, q) => { int k = String.Compare(p.Field, q.Field, StringComparison.OrdinalIgnoreCase); return k == 0 ? String.Compare(p.Message, q.Message, StringComparison.OrdinalIgnoreCase): k; });
-			string fld = null;
-			string msg = null;
+			string? fld = null;
+			string? msg = null;
 			foreach (var item in tmp)
 			{
 				if (item.Field != fld)
@@ -595,19 +596,19 @@ namespace Lexxys
 			return value != null && !value.Success;
 		}
 
-		private static string CleanName(string value)
+		private static string? CleanName(string? value)
 		{
 			return value == null || (value = value.Trim(__nameWhiteSpace)).Length == 0 ? null: value.ToUpperInvariant();
 		}
 		private static readonly char[] __nameWhiteSpace = { ErrorSeparator, ' ', '\t', '\n', '\r', '\f' };
 
-		private static string CleanMessage(string value)
+		private static string? CleanMessage(string? value)
 		{
 			return value == null || (value = value.Trim(__messageWhiteSpace)).Length == 0 ? null: value;
 		}
 		private static readonly char[] __messageWhiteSpace = { FieldSeparator, ErrorSeparator, ' ', '\t', '\n', '\r', '\f' };
 
-		private static string[] SplitName(string value, out int length)
+		private static string[]? SplitName(string? value, out int length)
 		{
 			value = CleanName(value);
 			if (value == null)
@@ -625,7 +626,7 @@ namespace Lexxys
 			int k = 0;
 			for (int i = 0; i < result.Length; ++i)
 			{
-				string s = CleanName(result[i]);
+				string? s = CleanName(result[i]);
 				if (s != null)
 					result[k++] = s;
 			}
@@ -634,11 +635,14 @@ namespace Lexxys
 		}
 		private static readonly char[] __itemSeparators = { ErrorSeparator };
 
-		private static List<ValidationResultsItem> ParseItems(string value)
+		private static List<ValidationResultsItem>? ParseItems(string? value)
 		{
+			if (String.IsNullOrEmpty(value))
+				return null;
+
 			var result = new List<ValidationResultsItem>();
 			int i = 0;
-			string fld = null;
+			string? fld = null;
 			while (value != null && i < value.Length)
 			{
 				while (value[i] == ErrorSeparator || Char.IsWhiteSpace(value, i))
@@ -668,7 +672,7 @@ namespace Lexxys
 					{
 						string s = value.Substring(i).TrimEnd(__messageWhiteSpace);
 						if (fld != null || s.Length > 0)
-							result.Add(new ValidationResultsItem(fld, s));
+							result.Add(new ValidationResultsItem(fld ?? "", s));
 					}
 					else
 					{
@@ -685,7 +689,7 @@ namespace Lexxys
 					string s = value.Substring(i, k - i).TrimEnd(__messageWhiteSpace);
 					if (s.Length > 0)
 					{
-						result.Add(new ValidationResultsItem(fld, s));
+						result.Add(new ValidationResultsItem(fld ?? "", s));
 						fld = null;
 					}
 					i = k + 2;
@@ -705,40 +709,6 @@ namespace Lexxys
 			if (fld != null)
 				result.Add(new ValidationResultsItem(fld));
 			return result.Count == 0 ? null: result;
-		}
-
-		public class ValidationResultsItem
-		{
-			public readonly string Field;
-			public readonly string Message;
-			public readonly ErrorInfo ErrorInfo;
-
-			internal ValidationResultsItem(string field)
-			{
-				Field = field;
-				ErrorInfo = ErrorInfo.Empty;
-			}
-			internal ValidationResultsItem(string field, string message)
-			{
-				Field = field;
-				Message = message;
-				ErrorInfo = ErrorInfo.Empty;
-			}
-			internal ValidationResultsItem(string field, string message, ErrorInfo errorInfo)
-			{
-				Field = field;
-				Message = message;
-				ErrorInfo = errorInfo ?? ErrorInfo.Empty;
-			}
-
-			public ValidationResultsItem WithField(string field) => new ValidationResultsItem(field, Message, ErrorInfo);
-			public ValidationResultsItem WithMassage(string message) => new ValidationResultsItem(Field, message, ErrorInfo);
-			public ValidationResultsItem WithError(ErrorInfo errorInfo) => new ValidationResultsItem(Field, Message, errorInfo);
-
-			public override string ToString()
-			{
-				return Message != null ? Field + FieldSeparator + Message : Field;
-			}
 		}
 
 		public ValidationException ValidationException()

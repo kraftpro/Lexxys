@@ -97,6 +97,8 @@ namespace Lexxys
 
 		public void AddRange(IEnumerable<T> items)
 		{
+			if (items == null)
+				return;
 			foreach (var item in items)
 			{
 				Add(item);
@@ -166,6 +168,8 @@ namespace Lexxys
 
 		public void ExceptWith(IEnumerable<T> other)
 		{
+			if (other == null)
+				return;
 			foreach (var item in other)
 			{
 				int i = _list.FindIndex(o => _comparer.Equals(o, item));
@@ -176,6 +180,8 @@ namespace Lexxys
 
 		public void IntersectWith(IEnumerable<T> other)
 		{
+			if (other == null)
+				return;
 			var temp = new List<T>();
 			foreach (var item in other)
 			{

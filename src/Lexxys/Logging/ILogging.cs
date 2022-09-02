@@ -33,6 +33,7 @@ namespace Lexxys
 		bool ILogger.IsEnabled(LogLevel logLevel)
 			=> LoggingTools.IsEnabled(this, logLevel);
 
+		#pragma warning disable CA1033 // Interface methods should be callable by child types
 		IDisposable ILogger.BeginScope<TState>(TState state)
 			=> LoggingTools.BeginScope(this, state);
 #endif

@@ -111,7 +111,6 @@ public static class LogRecordsService
 				{
 					var arg = arguments?.Length > 0 && arguments[0] != null ? arguments[0]!.ToString(): null;
 					result = new Logger(arg ?? "*");
-					return true;
 				}
 			}
 			return result != null;
@@ -269,8 +268,12 @@ public static class LogRecordsService
 
 		public LogRecordWritersMap(int version, int[]?[] indexes)
 		{
+			if (indexes is null)
+				throw new ArgumentNullException(nameof(indexes));
+			if (indexes.Length != (int)LogType.MaxValue + 1)
+				throw new ArgumentOutOfRangeException(nameof(indexes), indexes.Length, null);
 			Version = version;
-			_indexes = indexes ?? throw new ArgumentNullException(nameof(indexes));
+			_indexes = indexes;
 		}
 
 		public int Version { get; }

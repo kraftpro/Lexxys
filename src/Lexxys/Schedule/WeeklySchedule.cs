@@ -91,9 +91,9 @@ namespace Lexxys
 			return WeekPeriod == other.WeekPeriod && Comparer.Equals(DayList, other.DayList);
 		}
 
-		public override bool Equals(Schedule that)
+		public override bool Equals(Schedule other)
 		{
-			return that is WeeklySchedule ws && Equals(ws);
+			return other is WeeklySchedule ws && Equals(ws);
 		}
 
 		public override bool Equals(object obj)
@@ -108,24 +108,27 @@ namespace Lexxys
 
 		public override DumpWriter DumpContent(DumpWriter writer)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
+
 			return base.DumpContent(writer)
-				.Text(",WeekPeriod=").Dump(WeekPeriod)
-				.Text(",DayList=").Dump(DayList);
+				.Then("WeekPeriod", WeekPeriod)
+				.Then("DayList", DayList);
 		}
 
-		public override XmlBuilder ToXmlContent(XmlBuilder xml)
+		public override XmlBuilder ToXmlContent(XmlBuilder builder)
 		{
-			if (xml is null)
-				throw new ArgumentNullException(nameof(xml));
+			if (builder is null)
+				throw new ArgumentNullException(nameof(builder));
 
-			xml.Item("type", ScheduleType);
+			builder.Item("type", ScheduleType);
 			if (WeekPeriod != 1)
-				xml.Item("week", WeekPeriod);
+				builder.Item("week", WeekPeriod);
 			if (!Object.ReferenceEquals(DayList, FridayOnly))
-				xml.Item("days", String.Join(",", DayList.Select(o => ((int)o).ToString(CultureInfo.InvariantCulture))));
+				builder.Item("days", String.Join(",", DayList.Select(o => ((int)o).ToString(CultureInfo.InvariantCulture))));
 			if (!Reminder.IsEmpty)
-				xml.Element("reminder").Value(Reminder).End();
-			return xml;
+				builder.Element("reminder").Value(Reminder).End();
+			return builder;
 		}
 
 		public override JsonBuilder ToJsonContent(JsonBuilder json)
@@ -145,10 +148,13 @@ namespace Lexxys
 
 		public new static WeeklySchedule FromXml(Xml.XmlLiteNode xml)
 		{
-			if (xml == null || xml.IsEmpty)
-				return null;
+			if (xml is null)
+				throw new ArgumentNullException(nameof(xml));
+			if (xml.IsEmpty)
+				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
 			if (xml["type"] != Type)
-				throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null);
+				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
+
 			IEnumerable<DayOfWeek> days = xml["days"] != null ?
 				xml["days"]?.Split(',').Select(o => o.AsEnum(DayOfWeek.Friday)) :
 				xml.Element("days").Elements.Select(o => o.Value.AsEnum<DayOfWeek>());
@@ -157,6 +163,9 @@ namespace Lexxys
 
 		public new static WeeklySchedule FromJson(string json)
 		{
+			if (json is null || json.Length <= 0)
+				throw new ArgumentNullException(nameof(json));
+
 			return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
 		}
 	}

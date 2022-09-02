@@ -9,15 +9,14 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Configuration;
-using System.IO;
-using Microsoft.Extensions.Logging;
-using Lexxys.Configuration;
 
 
 #nullable enable
 
 namespace Lexxys
 {
+	using Configuration;
+
 	public static class Lxx
 	{
 		private static bool _initialized;
@@ -48,7 +47,7 @@ namespace Lexxys
 #endif
 
 		public static string ConfigurationFile => __configurationFile.Value;
-		private static Lazy<string> __configurationFile = new Lazy<string>(() => GetConfigurationFile(), true);
+		private static readonly Lazy<string> __configurationFile = new Lazy<string>(GetConfigurationFile, true);
 
 		private static string GetConfigurationFile()
 		{
@@ -73,18 +72,18 @@ namespace Lexxys
 		}
 
 		public static string? ProductName => __productName.Value;
-		private static Lazy<string?> __productName = new Lazy<string?>(() => FileVersionInfo.GetVersionInfo(AssemblyLocation).ProductName, true);
+		private static readonly Lazy<string?> __productName = new Lazy<string?>(() => FileVersionInfo.GetVersionInfo(AssemblyLocation).ProductName, true);
 
 		private static string AssemblyLocation => __assemblyName.Value;
-		private static Lazy<string> __assemblyName = new Lazy<string>(() => GetEntry().Location, true);
+		private static readonly Lazy<string> __assemblyName = new Lazy<string>(() => GetEntry().Location, true);
 
 		private static Assembly GetEntry()
 		{
 			var a = Assembly.GetEntryAssembly();
 			if (a == null || a.IsDynamic)
 			{
-				StackFrame[] sf = new StackTrace().GetFrames();
-				if (sf.Length > 0)
+				StackFrame[]? sf = new StackTrace().GetFrames();
+				if (sf is { Length: > 0 })
 				{
 					for (int i = sf.Length - 1; i >= 0; --i)
 					{
@@ -116,7 +115,7 @@ namespace Lexxys
 						if (sender is IConfigService service)
 							service.Changed += OnConfigChanged;
 						AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
-						Type type = Factory.GetType("System.Windows.Forms.Application", Factory.SystemAssemblies);
+						Type? type = Factory.GetType("System.Windows.Forms.Application", Factory.SystemAssemblies);
 						if (type != null)
 						{
 							EventInfo? te = type.GetEvent("ThreadException");

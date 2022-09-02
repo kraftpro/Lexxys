@@ -7,8 +7,6 @@
 using System;
 using System.Collections.Generic;
 
-using Lexxys;
-
 #nullable enable
 
 namespace Lexxys.Configuration

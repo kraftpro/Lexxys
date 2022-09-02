@@ -87,7 +87,7 @@ namespace Lexxys
 
 	public readonly struct Vote<T>: IEquatable<Vote<T>>
 	{
-		public static readonly Vote<T> Empty = new Vote<T>();
+		public static readonly Vote<T> Empty;
 
 		public Vote(T value, VoteScore score)
 		{

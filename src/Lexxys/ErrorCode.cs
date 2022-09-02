@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
@@ -11,44 +8,44 @@ namespace Lexxys
 {
 	public readonly struct ErrorCode: IEquatable<ErrorCode>
 	{
+		private const int GroupsCount = 64;
+		private const int GroupSize = 32;
+		private const int BasketSize = 32;
+
 		public const int ErrorCodesCapacity = GroupsCount * GroupSize * BasketSize;
 		public const int TemporaryIndexStart = (GroupsCount - 16) * GroupSize * BasketSize;
 
-		private readonly static string[][][] __groups = new string[GroupsCount][][];
-		private volatile static int __index = TemporaryIndexStart;
+		private static readonly string?[]?[]?[] __groups = new string[GroupsCount][][];
+		private static volatile int __index = TemporaryIndexStart;
 
 		public static readonly ErrorCode Default = Create(0, "Default");
 		/// <summary>
 		/// The value is null or empty. parameters: value
 		/// </summary>
-		public static readonly ErrorCode NullValue = Create(1, "NullValue");
+		public static readonly ErrorCode NullValue = Create(1, nameof(NullValue));
 		/// <summary>
 		/// Foreign key reference not found. parameters: value, reference
 		/// </summary>
-		public static readonly ErrorCode BadReference = Create(2, "BadReferece");
+		public static readonly ErrorCode BadReference = Create(2, nameof(BadReference));
 		/// <summary>
 		/// The value is not unique. parameters: value
 		/// </summary>
-		public static readonly ErrorCode NotUniqueValue = Create(3, "NotUniqueValue");
+		public static readonly ErrorCode NotUniqueValue = Create(3, nameof(NotUniqueValue));
 		/// <summary>
 		/// The value is out of range of the valid values. parameters: value [, min] [, max]
 		/// </summary>
 		public static readonly ErrorCode OutOfRange = Create(4, "OutOfRange");
 		/// <summary>
-		/// Size of the value exceeds the allowed size. parameters: value, size
-		/// </summary>
-		public static readonly ErrorCode SizeOverflow = Create(5, "SizeOverflow");
-		/// <summary>
 		/// Invalid format of the value. parameters: value
 		/// </summary>
-		public static readonly ErrorCode BadFormat = Create(6, "BadFormat");
+		public static readonly ErrorCode BadFormat = Create(5, nameof(BadFormat));
 
 
 		public int Code { get; }
 
 		public ErrorCode(int value)
 		{
-			if (value < 0 || value >= ErrorCodesCapacity)
+			if (value is < 0 or >= ErrorCodesCapacity)
 				throw new ArgumentOutOfRangeException(nameof(value), value, null);
 			if(__groups[(uint)value >> 10]?[((uint)value >> 5) & 31]?[value & 31] == null)
 				throw new ArgumentOutOfRangeException(nameof(value), value, null);
@@ -59,22 +56,26 @@ namespace Lexxys
 		{
 			get
 			{
-				uint i = (uint)Code;
-				return __groups[i >> 10][(i >> 5) & 31][i & 31];
+				var i = (uint)Code;
+				return __groups[i >> 10]![(i >> 5) & 31]![i & 31]!;
 			}
 		}
 
-		private ErrorCode(int value, bool _)
+		private ErrorCode(uint value)
 		{
-			Code = value;
+			Code = (int)value;
 		}
 
+		/// <inheritdoc />
 		public override string ToString() => Name;
 
+		/// <inheritdoc />
 		public override bool Equals([NotNullWhen(true)] object? obj) => obj is ErrorCode error && Equals(error);
 
+		/// <inheritdoc />
 		public override int GetHashCode() => Code.GetHashCode();
 
+		/// <inheritdoc />
 		public bool Equals(ErrorCode other) => Code == other.Code;
 
 		public static bool operator == (ErrorCode left, ErrorCode right) => left.Code == right.Code;
@@ -86,22 +87,20 @@ namespace Lexxys
 		public static explicit operator ErrorCode(int value) => new ErrorCode(value);
 		public static implicit operator int(ErrorCode value) => value.Code;
 
-		private const int GroupsCount = 64;
-		private const int GroupSize = 32;
-		private const int BasketSize = 32;
-
 		/// <summary>
 		/// Finds the first <see cref="ErrorCode"/> with the specified name or creates a new one with random value.
 		/// </summary>
 		/// <param name="name"><see cref="ErrorCode"/> name to find or create a new one</param>
 		public static ErrorCode GetOrCreate(string name)
 		{
-			if (name is null || (name = name.Trim()).Length == 0)
+			if (name is null)
 				throw new ArgumentNullException(nameof(name));
+			if ((name = name.Trim()).Length == 0)
+				throw new ArgumentOutOfRangeException(nameof(name));
 
 			int i = FindIndex(name);
 			if (i >= 0)
-				return new ErrorCode(i, false);
+				return new ErrorCode((uint)i);
 
 			for (;;)
 			{
@@ -123,8 +122,10 @@ namespace Lexxys
 		{
 			if (value < 0 || value > ErrorCodesCapacity)
 				throw new ArgumentOutOfRangeException(nameof(value), value, null);
-			if (name == null || (name = name.Trim()).Length == 0)
+			if (name is null)
 				throw new ArgumentNullException(nameof(name));
+			if ((name = name.Trim()).Length == 0)
+				throw new ArgumentOutOfRangeException(nameof(name));
 
 			if (!TryCreate(value, name, out var code))
 				throw new ArgumentOutOfRangeException(nameof(name), name, null);
@@ -141,7 +142,7 @@ namespace Lexxys
 		/// <returns>True if the <see cref="ErrorCode"/> has been created.</returns>
 		public static bool TryCreate(int value, string? name, out ErrorCode result)
 		{
-			if (value < 0 || value > ErrorCodesCapacity || (name = name.TrimToNull()) == null)
+			if (value is < 0 or > ErrorCodesCapacity || (name = name.TrimToNull()) == null)
 			{
 				result = default;
 				return false;
@@ -151,16 +152,16 @@ namespace Lexxys
 			var ix = value & 31;
 			if (__groups[gi] == null)
 				Interlocked.CompareExchange(ref __groups[gi], new string[GroupSize][], null);
-			var group = __groups[gi];
+			var group = __groups[gi]!;
 			if (group[bi] == null)
 				Interlocked.CompareExchange(ref group[bi], new string[BasketSize], null);
-			var items = group[bi];
+			var items = group[bi]!;
 			if (Interlocked.CompareExchange(ref items[ix], name, null) != null && !String.Equals(name, items[ix], StringComparison.OrdinalIgnoreCase))
 			{
 				result = default;
 				return false;
 			}
-			result = new ErrorCode(value, false);
+			result = new ErrorCode((uint)value);
 			return true;
 		}
 
@@ -219,13 +220,13 @@ namespace Lexxys
 				code = default;
 				return false;
 			}
-			code = new ErrorCode(i, false);
+			code = new ErrorCode((uint)i);
 			return true;
 		}
 
-		private static int FindIndex(string? value)
+		private static int FindIndex(string value)
 		{
-			if ((value = value.TrimToNull()) == null)
+			if (value.Length == 0)
 				return -1;
 			for (int i = 0; i < __groups.Length; i++)
 			{

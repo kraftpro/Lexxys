@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Lexxys.Configuration;
-
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Usage
 {
+	using Lexxys.Configuration;
+
 	[TestClass]
 	public class UseCasesTests
 	{

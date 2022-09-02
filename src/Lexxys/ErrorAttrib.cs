@@ -1,23 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
+#nullable enable
 
 namespace Lexxys
 {
 	public readonly struct ErrorAttrib: IEquatable<ErrorAttrib>
 	{
 		public string Name { get; }
-		public object Value { get; }
+		public object? Value { get; }
 
-		public ErrorAttrib(string name, object value)
+		public ErrorAttrib(string name, object? value)
 		{
 			Name = name ?? throw new ArgumentNullException(nameof(name));
 			Value = value;
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is ErrorAttrib attrib && Equals(attrib);
 		}

@@ -10,6 +10,9 @@ using System.Xml;
 
 #nullable enable
 
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
+#pragma warning disable CA5351 // Do Not Use Broken Cryptographic Algorithms
+
 namespace Lexxys.Crypting.Cryptors
 {
 	public sealed class MD5Hasher: IHasherAlgorythm, IDisposable
@@ -127,7 +130,7 @@ namespace Lexxys.Crypting.Cryptors
 		private readonly KeyedHashAlgorithm _h;
 
 		public HmaHasher() => _h = new HMACSHA1();
-		public HmaHasher(object key) => _h = key is byte[] bk ? new HMACSHA1(bk): throw new ArgumentTypeException(nameof(key), key?.GetType());
+		public HmaHasher(object key) => _h = key is byte[] bk ? new HMACSHA1(bk): throw (key is null ? new ArgumentNullException(nameof(key)): new ArgumentTypeException(nameof(key), key.GetType()));
 		public bool SupportsStream => true;
 		public bool SupportsBlock => true;
 		public int HashSize => 20;

@@ -6,20 +6,13 @@
 //
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
-using System.Xml;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Lexxys;
-using Lexxys.Configuration;
-using Lexxys.Xml;
-
 
 namespace Lexxys.Tests.Configuration
 {
-
+	using Lexxys.Configuration;
+	using Lexxys.Xml;
 
 	/// <summary>
 	///This is a test class for XmlConfigurationProviderTest and is intended

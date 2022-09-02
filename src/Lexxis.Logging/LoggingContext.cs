@@ -8,10 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Lexxys.Configuration;
-using Lexxys.Xml;
 
 namespace Lexxys.Logging;
+using Configuration;
+using Xml;
 
 internal static class LoggingContext
 {
@@ -33,7 +33,7 @@ internal static class LoggingContext
 						.Attrib("class", "Lexxys.Logging.TextFileLogWriter")
 						.Attrib("file", "{YMD}-XX.log")
 						.Element("rule")
-							.Attrib("level", "TRACE")
+							.Attrib("level", "*")
 						.End()
 					.End().GetFirstNode()
 			})

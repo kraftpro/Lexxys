@@ -14,13 +14,15 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Globalization;
 
+#nullable enable
+
 namespace Lexxys.Xml
 {
 	public class XmlToTextConverter
 	{
 		private readonly XmlReader _reader;
 		private readonly TextWriter _writer;
-		private Element _element;
+		private Element? _element;
 
 
 		private XmlToTextConverter(XmlReader reader, TextWriter writer)
@@ -147,7 +149,7 @@ namespace Lexxys.Xml
 			FlushElement(null);
 		}
 
-		private void FlushElement(string value)
+		private void FlushElement(string? value)
 		{
 			if (_element == null)
 				return;
@@ -182,8 +184,6 @@ namespace Lexxys.Xml
 
 		private void WriteValue(string text, string indentation)
 		{
-			if (text == null)
-				return;
 			string[] ss = SplitLine(text);
 			if (ss.Length == 1)
 			{
@@ -207,8 +207,6 @@ namespace Lexxys.Xml
 
 		private void WriteText(string text, string indentation)
 		{
-			if (text == null)
-				return;
 			string[] ss = SplitLine(text);
 			if (ss.Length == 1)
 			{
@@ -260,13 +258,11 @@ namespace Lexxys.Xml
 
 		private static string[] SplitLine(string value)
 		{
-			return value == null ? Array.Empty<string>() : Regex.Replace(value, @"(?<!\n)\r\n|(?<!\r)\n\r|\r", "\n").Split('\n');
+			return Regex.Replace(value, @"(?<!\n)\r\n|(?<!\r)\n\r|\r", "\n").Split('\n');
 		}
 
 		private static string TextToValueString(string text)
 		{
-			if (text == null)
-				return "";
 			if (text.Length > 0)
 			{
 				if (text[text.Length - 1] <= ' ')

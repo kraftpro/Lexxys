@@ -14,6 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -879,7 +880,7 @@ namespace Lexxys.Data
 				{
 					Type[] parameters = Array.ConvertAll(cc[i].GetParameters(), o => o.ParameterType);
 					if (!constructors.ContainsKey(parameters.Length))
-						constructors[parameters.Length] = Factory.TryGetConstructor(type, true, parameters);
+						constructors[parameters.Length] = Factory.GetConstructor(type, parameters);
 				}
 				Constructors = constructors;
 			}

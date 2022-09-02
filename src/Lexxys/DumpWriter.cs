@@ -13,7 +13,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Lexxys
 {
@@ -1209,7 +1208,7 @@ namespace Lexxys
 			{
 				if (Left <= 0)
 					return this;
-				_w.Write(text.Substring(0, Left));
+				_w.Write(text.ToCharArray(0, Left));
 				Left = 0;
 			}
 			else
@@ -1277,7 +1276,7 @@ namespace Lexxys
 			{
 				if (Left <= 0)
 					return this;
-				_w.Append(text.Substring(0, Left));
+				_w.Append(text.ToCharArray(0, Left));
 				Left = 0;
 			}
 			else

@@ -9,6 +9,10 @@ using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using Microsoft.Extensions.Primitives;
+
+
+#nullable enable
 
 namespace Lexxys
 {
@@ -155,7 +159,7 @@ namespace Lexxys
 		{
 			return String.Format(Culture, "The object {0} is readonly (item: {1}).", objectInfo, item);
 		}
-		public static string CheckInvariantFailed(ValidationResults results = null, string source = null)
+		public static string CheckInvariantFailed(ValidationResults? results = null, string? source = null)
 		{
 			string message = String.IsNullOrEmpty(source) ?
 				(results == null || results.Success ? "Invariant check failed.": "Invariant check failed with message: \"{1}\"."):
@@ -164,6 +168,8 @@ namespace Lexxys
 		}
 		public static string ValidationFailed(ValidationResults validation)
 		{
+			if (validation == null)
+				return "Validation Failed.";
 			var text = new StringBuilder();
 			text.Append("Validation Failed. {");
 			string prefix = "";
@@ -271,15 +277,22 @@ namespace Lexxys
 		{
 			return String.Format(Culture, "Configuration file included ({0}).", fileName);
 		}
-		public static string UnknownOption(string option, string fileName)
+		public static string UnknownOption(string option, string? fileName)
 		{
-			return String.Format(Culture, "Unknown Option: {0}, file: {1}.", option, fileName);
+			return fileName == null ? String.Format(Culture, "Unknown Option: {0}.", option):
+				String.Format(Culture, "Unknown Option: {0}, file: {1}.", option, fileName);
 		}
-		public static string OptionIncludeFileNotFound(string fileName, string baseDirectory)
+		public static string OptionIncludeFileNotFound(string? fileName, string? baseDirectory)
 		{
-			return String.Format(Culture, "Including file not found. file: {0}, directory: {1}.", fileName, baseDirectory);
+			return fileName == null ?
+				baseDirectory == null ?
+					"Including file not found.":
+					String.Format(Culture, "Including file not found. directory: {1}.", baseDirectory):
+				baseDirectory == null ?
+					String.Format(Culture, "Including file not found. file: {0}.", fileName):
+					String.Format(Culture, "Including file not found. file: {0}, directory: {1}.", fileName, baseDirectory);
 		}
-		public static string ConfigValueNotFound(string key, Type type)
+		public static string ConfigValueNotFound(string key, Type? type)
 		{
 			return
 				type == null ? String.Format(Culture, "Configuration at path \"{0}\" not found.", key):
@@ -344,18 +357,24 @@ namespace Lexxys
 		{
 			return String.Format(Culture, "Cannot open log file '{0}'", fileName);
 		}
-		internal static string LOG_CannotCreateLogWriter(string writerName, string className = null, Exception exception = null)
+		internal static string LOG_CannotCreateLogWriter(string? writerName, string? className = null, Exception? exception = null)
 		{
-			return exception == null ?
-				String.Format(Culture, "Cannot create Log Writer (name={0}, class={1}).", writerName, className ?? "(null)"):
-				String.Format(Culture, "Cannot create Log Writer (name={0}, class={1})\nException: {2}.", writerName, className, exception.Message);
+			var text = new StringBuilder("Cannot create Log Writer");
+			if (writerName != null)
+				text.Append(" (name=").Append(writerName);
+			if (className != null)
+				text.Append(writerName == null ? "(class=": ", class=").Append(className);
+			text.Append(writerName == null && className == null ? '.': ')');
+			if (exception != null)
+				text.Append("\nException:").Append(exception);
+			return text.ToString();
 		}
 
-		internal static string LOG_CannotCreateLogFormatter(string className, Exception exception = null)
+		internal static string LOG_CannotCreateLogFormatter(string className, Exception? exception = null)
 		{
 			return exception == null ?
 				String.Format(Culture, "Cannot create Log Formatter (class={1}).", className) :
-				String.Format(Culture, "Cannot create Log Formatter (class={1})\nException: {2}.", className, exception.Message);
+				String.Format(Culture, "Cannot create Log Formatter (class={1})\nException: {2}", className, exception);
 		}
 
 		internal static string ValueCannotBeGreaterThan(object min, object max)
@@ -371,7 +390,7 @@ namespace Lexxys
 
 		// Char Stream
 
-		internal static string CHR_AtPosition(CultureInfo culture, int line, int column, int position)
+		internal static string CHR_AtPosition(CultureInfo? culture, int line, int column, int position)
 		{
 			return String.Format(culture ?? Culture, "at ({2}) L{0}, C{1}", line, column, position);
 		}
@@ -450,7 +469,7 @@ namespace Lexxys
 		{
 			return "Has Function too bad for StaticSet.";
 		}
-		internal static string TLS_CannotCreateType(string typeName, string assemblyName)
+		internal static string TLS_CannotCreateType(string typeName, string? assemblyName)
 		{
 			string comma = ", ";
 			if (assemblyName == null)

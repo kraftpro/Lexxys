@@ -936,7 +936,7 @@ namespace Lexxys.Xml
 			return false;
 		}
 
-		public static int GetIndex(string? value, params string[] variants)
+		public static int GetIndex(string? value, params string?[] variants)
 		{
 			if (variants == null)
 				throw new ArgumentNullException(nameof(variants));
@@ -1016,7 +1016,10 @@ namespace Lexxys.Xml
 
 		public static bool TryGetEnum(string? value, Type enumType, [MaybeNullWhen(false)] out object result)
 		{
-			if (enumType is null || !IsEnum(enumType))
+			if (enumType is null)
+				throw new ArgumentNullException(nameof(enumType));
+
+			if (!IsEnum(enumType))
 			{
 				result = null;
 				return false;
@@ -1068,6 +1071,7 @@ namespace Lexxys.Xml
 		{
 			if (type == null)
 				throw new ArgumentNullException(nameof(type));
+
 			return TryGetValue(value, type, out object? result) ? result : defaultValue;
 		}
 
@@ -1100,10 +1104,11 @@ namespace Lexxys.Xml
 			return false;
 		}
 
-		public static object GetValueOrDefault(string? value, Type returnType)
+		public static object? GetValueOrDefault(string? value, Type returnType)
 		{
 			if (returnType == null)
 				throw new ArgumentNullException(nameof(returnType));
+
 			return TryGetValue(value, returnType, out object? result) ? result : Factory.DefaultValue(returnType);
 		}
 
@@ -1410,15 +1415,21 @@ namespace Lexxys.Xml
 
 		public static T GetValue<T>(XmlLiteNode node)
 		{
+			if (node is null)
+				throw new ArgumentNullException(nameof(node));
+
 			return TryGetValue<T>(node, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString().Left(1024), typeof(T)));
 		}
 
 		public static T GetValue<T>(XmlLiteNode node, T defaultValue)
 		{
+			if (node is null)
+				throw new ArgumentNullException(nameof(node));
+
 			return TryGetValue<T>(node, out var result) ? result : defaultValue;
 		}
 
-		public static bool TryGetValue<T>(XmlLiteNode node, [MaybeNullWhen(false)] out T result)
+		public static bool TryGetValue<T>(XmlLiteNode? node, [MaybeNullWhen(false)] out T result)
 		{
 			if (TryGetValue(node, typeof(T), out var temp))
 			{
@@ -1431,12 +1442,18 @@ namespace Lexxys.Xml
 
 		public static object GetValue(XmlLiteNode node, Type returnType)
 		{
+			if (node is null)
+				throw new ArgumentNullException(nameof(node));
+
 			return TryGetValue(node, returnType, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString().Left(1024), returnType));
 		}
 
-		public static bool TryGetValue(XmlLiteNode node, Type returnType, [MaybeNullWhen(false)] out object result)
+		public static bool TryGetValue(XmlLiteNode? node, Type returnType, [MaybeNullWhen(false)] out object result)
 		{
-			if (node == null || returnType == null)
+			if (returnType is null)
+				throw new ArgumentNullException(nameof(returnType));
+
+			if (node == null)
 			{
 				result = Factory.DefaultValue(returnType);
 				return false;

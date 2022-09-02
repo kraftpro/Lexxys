@@ -45,20 +45,6 @@ namespace Lexxys
 			return obj == null ? "" : obj.ToXml(new XmlStringBuilder()).ToString();
 		}
 	}
-
-	public sealed class XmlElementAttribute: Attribute
-	{
-		public XmlElementAttribute()
-		{
-		}
-
-		public XmlElementAttribute(string name)
-		{
-			Name = name;
-		}
-
-		public string Name { get; set; }
-	}
 }
 
 

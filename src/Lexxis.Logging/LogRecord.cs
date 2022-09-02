@@ -150,6 +150,7 @@ public class LogRecord: IDumpJson
 	public JsonBuilder ToJsonContent(JsonBuilder json)
 	{
 		return json
+			.Item("eventId", EventId)
 			.Item("type", LogType)
 			.Item("indent", Indent)
 			.Item("source", Source)

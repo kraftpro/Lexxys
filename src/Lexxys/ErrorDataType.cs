@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
@@ -12,7 +11,7 @@ namespace Lexxys
 		#pragma warning disable CA1720 // Identifier contains type name
 		public const int ErrorDataTypesCapacity = 256;
 
-		private readonly static string[] __items = new string[ErrorDataTypesCapacity];
+		private static readonly string?[] __items = new string[ErrorDataTypesCapacity];
 
 		public static readonly ErrorDataType Object = Create(0, "Object");
 
@@ -20,6 +19,7 @@ namespace Lexxys
 		public static readonly ErrorDataType String = Create(Numeric + 1, "String");
 		public static readonly ErrorDataType Date = Create(String + 1, "Date");
 		public static readonly ErrorDataType Time = Create(Date + 1, "Time");
+		public static readonly ErrorDataType Binary = Create(Time + 1, "Binary");
 
 		public static readonly ErrorDataType Phone = Create(10, "Phone");
 		public static readonly ErrorDataType Email = Create(Phone + 1, "Email");
@@ -44,7 +44,7 @@ namespace Lexxys
 			TypeCode = typeCode;
 		}
 
-		public string Name => __items[TypeCode];
+		public string Name => __items[TypeCode]!;
 
 		public override bool Equals([NotNullWhen(true)] object? obj) => obj is ErrorDataType error && Equals(error);
 
@@ -85,7 +85,7 @@ namespace Lexxys
 		/// <param name="name">Name of the created <see cref="ErrorDataType"/></param>
 		/// <param name="result">Created <see cref="ErrorDataType"/> or default value</param>
 		/// <returns>True if the <see cref="ErrorDataType"/> has been created.</returns>
-		public static bool TryCreate(int value, string name, out ErrorDataType result)
+		public static bool TryCreate(int value, string? name, out ErrorDataType result)
 		{
 			if (value < 0 || value >= __items.Length || name == null || (name = name.Trim()).Length == 0)
 			{
@@ -139,6 +139,7 @@ namespace Lexxys
 				code = default;
 				return false;
 			}
+#pragma warning disable CA1307 // Specify StringComparison for clarity
 			value = value.Replace(" ", "").Replace("-", "").Replace("_", "");
 			if (Int32.TryParse(value, out var i))
 			{

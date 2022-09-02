@@ -13,6 +13,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+#nullable enable
+
 namespace Lexxys
 {
 	using Xml;
@@ -22,8 +24,8 @@ namespace Lexxys
 		public static readonly JsonItem Empty = new EmptyItem();
 
 		public IReadOnlyList<JsonPair> Attributes { get; }
-		public virtual object Value => null;
-		public virtual string Text => null;
+		public virtual object? Value => null;
+		public virtual string? Text => null;
 		public virtual JsonItem this[string item] => Empty;
 		public virtual JsonItem this[int index] => Empty;
 		public virtual bool IsArray => false;
@@ -32,21 +34,24 @@ namespace Lexxys
 		public virtual bool IsEmpty => false;
 		public virtual int Count => 0;
 
-		protected JsonItem(IReadOnlyList<JsonPair> attribues)
+		protected JsonItem(IReadOnlyList<JsonPair>? attribues = null)
 		{
 			Attributes = attribues ?? Array.Empty<JsonPair>();
 		}
 
 		public abstract XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false);
 
-		protected XmlLiteNode ToXml(string name, string value, bool ignoreCase, IEnumerable<XmlLiteNode> properties)
+		protected XmlLiteNode ToXml(string name, string? value, bool ignoreCase, IEnumerable<XmlLiteNode>? properties)
 		{
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+
 			return new XmlLiteNode(name, value, ignoreCase,
-				Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value))).ToList(),
+				Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")).ToList(),
 				properties?.ToList());
 		}
 
-		public virtual StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
+		public virtual StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
@@ -128,13 +133,13 @@ namespace Lexxys
 
 		private class EmptyItem: JsonItem
 		{
-			public EmptyItem(): base(null)
+			public EmptyItem()
 			{
 			}
 
 			public override bool IsEmpty => true;
 
-			public override StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
+			public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 			{
 				return text;
 			}
@@ -152,15 +157,26 @@ namespace Lexxys
 
 	public readonly struct JsonPair: IEquatable<JsonPair>
 	{
-		public static readonly JsonPair Empty = new JsonPair(null, JsonItem.Empty);
+		public static readonly JsonPair Empty;
 
 		public string Name { get; }
 		public JsonItem Item { get; }
 
 		public JsonPair(string name, JsonItem item)
 		{
+			if (name is null || name.Length <= 0)
+				throw new ArgumentNullException(nameof(name));
+			if (item is null)
+				throw new ArgumentNullException(nameof(item));
+
 			Name = name;
 			Item = item;
+		}
+
+		public JsonPair()
+		{
+			Name = String.Empty;
+			Item = JsonItem.Empty;
 		}
 
 		public void Deconstruct(out string name, out JsonItem item)
@@ -169,10 +185,13 @@ namespace Lexxys
 			item = Item;
 		}
 
-		public bool IsEmpty => Name == null || (Item != null && Item.IsEmpty);
+		public bool IsEmpty => Name.Length == 0;
 
-		public StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
+		public StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			if (IsEmpty)
 				return text;
 			Strings.EscapeCsString(text, Name);
@@ -231,7 +250,7 @@ namespace Lexxys
 
 		public bool Equals(JsonPair other) => Name == other.Name && Item == other.Item;
 
-		public override bool Equals([NotNullWhen(true)] object obj) => obj is JsonPair pair && Equals(pair);
+		public override bool Equals([NotNullWhen(true)] object? obj) => obj is JsonPair other && Equals(other);
 
 		public override int GetHashCode() => HashCode.Join(Name?.GetHashCode() ?? 0, Item.GetHashCode());
 
@@ -243,17 +262,17 @@ namespace Lexxys
 
 	public class JsonScalar: JsonItem
 	{
-		public override object Value { get; }
+		public override object? Value { get; }
 		public override string Text { get; }
 		public override bool IsScalar => true;
 
-		public JsonScalar(object value, IReadOnlyList<JsonPair> attribues = null) : base(attribues)
+		public JsonScalar(object? value, IReadOnlyList<JsonPair>? attribues = null) : base(attribues)
 		{
 			Value = value;
-			Text = null;
+			Text = String.Empty;
 		}
 
-		public JsonScalar(object value, string text, IReadOnlyList<JsonPair> attribues = null) : base(attribues)
+		public JsonScalar(object? value, string text, IReadOnlyList<JsonPair>? attribues = null) : base(attribues)
 		{
 			Value = value;
 			Text = text;
@@ -318,16 +337,18 @@ namespace Lexxys
 			_ => default
 		};
 
+#pragma warning disable CA1819 // Properties should not return arrays
 		public byte[] BytesValue => Value switch
 		{
-			null => default,
+			null => Array.Empty<byte>(),
 			byte[] v => v,
-			_ => default
+			_ => Array.Empty<byte>()
 		};
+#pragma warning restore CA1819 // Properties should not return arrays
 
 		public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false) => ToXml(name, XmlTools.Convert(Value), ignoreCase, null);
 
-		public override StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
+		public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
@@ -421,7 +442,7 @@ namespace Lexxys
 			}
 			else
 			{
-				stream.Write(Encoding.UTF8.GetBytes(Value.ToString()));
+				stream.Write(Encoding.UTF8.GetBytes(Value.ToString() ?? ""));
 			}
 
 			static unsafe void ToBase64(byte[] data, Stream stream)
@@ -451,23 +472,23 @@ namespace Lexxys
 		public IReadOnlyList<JsonPair> Properties { get; }
 
 		public override JsonItem this[string name] => Properties.FirstOrDefault(o => o.Name == name).Item ?? base[name];
-		public override JsonItem this[int index] => index < 0 || index >= Properties.Count ? base[index] : Properties[index].Item;
+		public override JsonItem this[int index] => index >= 0 && index < Properties.Count ? Properties[index].Item: base[index];
 		public override int Count => Properties.Count;
 		public override bool IsObject => true;
 
-		public JsonMap(IReadOnlyList<JsonPair> properties, IReadOnlyList<JsonPair> attribues = null) : base(attribues)
+		public JsonMap(IReadOnlyList<JsonPair> properties, IReadOnlyList<JsonPair>? attribues = null): base(attribues)
 		{
 			Properties = ReadOnly.ReWrap(properties);
 		}
 
-		public JsonMap(IWrappedList<JsonPair> properties, IReadOnlyList<JsonPair> attribues = null) : base(attribues)
+		public JsonMap(IWrappedList<JsonPair> properties, IReadOnlyList<JsonPair>? attribues = null): base(attribues)
 		{
 			Properties = properties;
 		}
 
 		public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
 		{
-			var attribs = Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value))).ToList();
+			var attribs = Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")).ToList();
 			var properties = new List<XmlLiteNode>();
 			if (Properties != null)
 			{
@@ -487,7 +508,7 @@ namespace Lexxys
 						}
 						if (attrib)
 						{
-							attribs.Add(new KeyValuePair<string, string>(nm, XmlTools.Convert(scalar.Value)));
+							attribs.Add(new KeyValuePair<string, string>(nm, XmlTools.Convert(scalar.Value) ?? ""));
 							continue;
 						}
 					}
@@ -497,7 +518,7 @@ namespace Lexxys
 			return new XmlLiteNode(name, null, ignoreCase, attribs, properties);
 		}
 
-		public override StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
+		public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
@@ -506,7 +527,7 @@ namespace Lexxys
 			text.Append('{');
 			if (Properties != null)
 			{
-				string indent2 = indent == null ? null : indent + "  ";
+				string? indent2 = indent == null ? null : indent + "  ";
 				string comma = "";
 				foreach (var item in Properties)
 				{
@@ -560,12 +581,12 @@ namespace Lexxys
 		public override int Count => Items.Count;
 		public override bool IsArray => true;
 
-		public JsonArray(IReadOnlyList<JsonItem> items, IReadOnlyList<JsonPair> attribues = null) : base(attribues)
+		public JsonArray(IReadOnlyList<JsonItem> items, IReadOnlyList<JsonPair>? attribues = null): base(attribues)
 		{
 			Items = ReadOnly.ReWrap(items);
 		}
 
-		public JsonArray(IWrappedList<JsonItem> items, IReadOnlyList<JsonPair> attribues = null) : base(attribues)
+		public JsonArray(IWrappedList<JsonItem> items, IReadOnlyList<JsonPair>? attribues = null): base(attribues)
 		{
 			Items = items;
 		}
@@ -575,7 +596,7 @@ namespace Lexxys
 			return ToXml(name, null, ignoreCase, Items?.Where(o => o != null && !o.IsEmpty).Select(o => o.ToXml(XmlItemName, ignoreCase, attributes)));
 		}
 
-		public override StringBuilder ToString(StringBuilder text, string indent = null, int stringLimit = 0, int arrayLimit = 0)
+		public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
@@ -584,7 +605,7 @@ namespace Lexxys
 			text.Append('[');
 			if (Items != null)
 			{
-				string indent2 = indent == null ? null : indent + "  ";
+				string? indent2 = indent == null ? null : indent + "  ";
 				string comma = "";
 				int i = 0;
 				foreach (var item in Items)

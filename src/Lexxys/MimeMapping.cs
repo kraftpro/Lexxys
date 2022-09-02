@@ -726,7 +726,7 @@ namespace Lexxys
 				throw new ArgumentNullException(nameof(extension));
 			if (extension.IndexOf('/') > 0)
 				return extension.ToLowerInvariant();
-			if (!extension.StartsWith("."))
+			if (!extension.StartsWith(".", StringComparison.Ordinal))
 				extension = "." + extension;
 			return Mappings.TryGetValue(extension, out var mime) ? mime: defaultMimeType;
 		}
@@ -738,7 +738,7 @@ namespace Lexxys
 			int i = mimeType.IndexOf(';');
 			if (i >= 0)
 				mimeType = mimeType.Substring(0, i).TrimEnd();
-			if (mimeType.StartsWith("."))
+			if (mimeType.StartsWith(".", StringComparison.Ordinal))
 				return mimeType.ToLowerInvariant();
 			if (mimeType.IndexOf('/') < 0)
 				return "." + mimeType.ToLowerInvariant();

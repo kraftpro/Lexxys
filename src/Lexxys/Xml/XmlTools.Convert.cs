@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 #nullable enable
+
+#pragma warning disable CA1307 // Specify StringComparison for clarity
 
 namespace Lexxys.Xml
 {
@@ -364,7 +363,7 @@ namespace Lexxys.Xml
 			}
 		}
 
-		public static string EncodeAttribute(string value)
+		public static string EncodeAttribute(string? value)
 		{
 			if (value == null || value.Length == 0)
 				return "\"\"";
@@ -375,8 +374,11 @@ namespace Lexxys.Xml
 				"\"" + Encode(value, true) + "\"";
 		}
 
-		public static StringBuilder EncodeAttribute(StringBuilder text, string value)
+		public static StringBuilder EncodeAttribute(StringBuilder text, string? value)
 		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			if (value == null || value.Length == 0)
 				return text.Append("\"\"");
 

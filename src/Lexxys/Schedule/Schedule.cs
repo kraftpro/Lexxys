@@ -5,11 +5,12 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Globalization;
 using System.Text;
 
 namespace Lexxys
 {
+#pragma warning disable CA1716 // Identifiers should not match keywords
+
 	public class Schedule: IDump, IDumpJson, IDumpXml, IEquatable<Schedule>
 	{
 		public const string Type = "none";
@@ -85,15 +86,15 @@ namespace Lexxys
 			return HashCode.Join(h1, h2);
 		}
 
-		public virtual bool Equals(Schedule that)
+		public virtual bool Equals(Schedule other)
 		{
-			if (that is null)
+			if (other is null)
 				return false;
-			if (ReferenceEquals(this, that))
+			if (ReferenceEquals(this, other))
 				return true;
-			if (ScheduleType != that.ScheduleType)
+			if (ScheduleType != other.ScheduleType)
 				return false;
-			if (!Reminder.Equals(that.Reminder))
+			if (!Reminder.Equals(other.Reminder))
 				return false;
 			return true;
 		}
@@ -112,27 +113,32 @@ namespace Lexxys
 		{
 			if (writer is null)
 				throw new ArgumentNullException(nameof(writer));
+
 			return writer
-				.Text("TypeScheduleType=").Dump(ScheduleType)
-				.Text(",Reminder=").Dump(Reminder);
+				.Item("TypeScheduleType", ScheduleType)
+				.Then("Reminder", Reminder);
 		}
 
+#pragma warning disable CA1033 // Interface methods should be callable by child types
 		string IDumpXml.XmlElementName => "schedule";
+#pragma warning restore CA1033 // Interface methods should be callable by child types
 
-		public virtual XmlBuilder ToXmlContent(XmlBuilder xml)
+		public virtual XmlBuilder ToXmlContent(XmlBuilder builder)
 		{
-			if (xml is null)
-				throw new ArgumentNullException(nameof(xml));
-			xml.Item("type", ScheduleType);
+			if (builder is null)
+				throw new ArgumentNullException(nameof(builder));
+
+			builder.Item("type", ScheduleType);
 			if (!Reminder.IsEmpty)
-				xml.Element("reminder").Value(Reminder).End();
-			return xml;
+				builder.Element("reminder").Value(Reminder).End();
+			return builder;
 		}
 
 		public virtual JsonBuilder ToJsonContent(JsonBuilder json)
 		{
 			if (json is null)
 				throw new ArgumentNullException(nameof(json));
+
 			json.Item("type").Val(ScheduleType);
 			if (!Reminder.IsEmpty)
 				json.Item("reminder").Val(Reminder);
@@ -149,7 +155,7 @@ namespace Lexxys
 				DailySchedule.Type => DailySchedule.FromXml(xml),
 				WeeklySchedule.Type => WeeklySchedule.FromXml(xml),
 				MonthlySchedule.Type => MonthlySchedule.FromXml(xml),
-				_ => throw new ArgumentOutOfRangeException(nameof(xml) + ".type", xml["type"], null)
+				_ => throw new ArgumentOutOfRangeException(nameof(xml), xml, null)
 			};
 		}
 

@@ -7,11 +7,13 @@
 using System;
 using System.Collections.Generic;
 
+#nullable enable
+
 namespace Lexxys
 {
 	public class Arguments
 	{
-		public Arguments(IEnumerable<string> args)
+		public Arguments(IEnumerable<string>? args)
 		{
 			Args = new List<string>(args ?? Array.Empty<string>());
 		}
@@ -24,11 +26,13 @@ namespace Lexxys
 
 		public bool? Option(string argument, bool? missingValue = null) => Value(argument, (p, _) => p.Length == 0 || p.AsBoolean(false), true, missingValue);
 
-		public T Value<T>(string argument, T defaultValue = default) => Value(argument, (p, d) => p.AsValue(d), defaultValue);
-		public T Value<T>(string argument, T defaultValue, T missingValue) => Value(argument, (p, d) => p.AsValue(d), defaultValue, missingValue);
+		public T? Value<T>(string argument, T? defaultValue = default) => Value(argument, (p, d) => p.AsValue(d), defaultValue, defaultValue);
 
-		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue) => Value(argument, parser, defaultValue, defaultValue);
-		public T Value<T>(string argument, Func<string, T, T> parser, T defaultValue, T missingValue)
+		public T? Value<T>(string argument, T? defaultValue, T? missingValue) => Value(argument, (p, d) => p.AsValue(d), defaultValue, missingValue);
+
+		public T? Value<T>(string argument, Func<string, T?, T?> parser, T? defaultValue) => Value(argument, parser, defaultValue, defaultValue);
+		
+		public T? Value<T>(string argument, Func<string, T?, T?> parser, T? defaultValue, T? missingValue)
 		{
 			if (argument is null)
 				throw new ArgumentNullException(nameof(argument));
@@ -39,7 +43,7 @@ namespace Lexxys
 				if (arg == null || (arg = arg.Trim()).Length <= 1 || arg[0] != '/' && arg[0] != '-')
 					continue;
 				arg = arg.Substring(1).TrimStart();
-				string v = null;
+				string? v = null;
 				int k = arg.IndexOfAny(Separators);
 				if (k >= 0 && arg.Length > 1)
 				{
@@ -59,6 +63,26 @@ namespace Lexxys
 			return missingValue;
 		}
 		private static readonly char[] Separators = { ':', '=' };
+
+		public string? First(string? defaultValue = null)
+		{
+			for (int i = 0; i < Args.Count; ++i)
+			{
+				string item = Args[i];
+				if (item == null)
+					continue;
+				string arg = item.Trim();
+				if (arg.Length > 1 && (arg[0] == '-' || arg[0] == '/'))
+				{
+					int k = arg.IndexOfAny(Separators);
+					if (k == arg.Length - 1 && i < Args.Count - 1)
+						++i;
+					continue;
+				}
+				return item;
+			}
+			return defaultValue;
+		}
 
 		public IEnumerable<string> Positional => new PositionalArguments(this);
 
@@ -96,69 +120,14 @@ namespace Lexxys
 			}
 		}
 
-		public string First(string defaultValue = null)
-		{
-			for (int i = 0; i < Args.Count; ++i)
-			{
-				string item = Args[i];
-				if (item == null)
-					continue;
-				string arg = item.Trim();
-				if (arg.Length > 1 && (arg[0] == '-' || arg[0] == '/'))
-				{
-					int k = arg.IndexOfAny(Separators);
-					if (k == arg.Length - 1 && i < Args.Count - 1)
-						++i;
-					continue;
-				}
-				return item;
-			}
-			return defaultValue;
-		}
-
-		public static string Select(string value, params string[] variants)
-		{
-			if (value == null || (value = value.Trim()).Length == 0)
-				return null;
-			if (variants is null)
-				throw new ArgumentNullException(nameof(variants));
-
-			string match = null;
-			foreach (var arg in variants)
-			{
-				if (Match(value, arg))
-				{
-					if (match != null)
-						return null;
-					match = arg;
-				}
-			}
-			return match;
-		}
-
-		public static KeyValuePair<string, string> Split(string arg, char separator)
-		{
-			if (arg is null)
-				throw new ArgumentNullException(nameof(arg));
-
-#pragma warning disable CA1307 // Specify StringComparison for clarity
-			int i = arg.IndexOf(separator);
-#pragma warning restore CA1307 // Specify StringComparison for clarity
-			return i < 0 ?
-				new KeyValuePair<string, string>(NullIfEmpty(arg), null):
-				new KeyValuePair<string, string>(NullIfEmpty(arg.Substring(0, i)), NullIfEmpty(arg.Substring(i + 1)));
-		}
-
-		private static string NullIfEmpty(string value) => String.IsNullOrWhiteSpace(value) ? null: value;
-
-		public static bool Match(string value, string mask)
+		private static bool Match(string value, string mask)
 		{
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
 			if (mask is null)
 				throw new ArgumentNullException(nameof(mask));
 
-			return MatchRest(value, 0, mask.Split((char[])null, StringSplitOptions.RemoveEmptyEntries), 0);
+			return MatchRest(value, 0, mask.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries), 0);
 		}
 
 		private static bool MatchRest(string value, int valueIndex, string[] parts, int maskIndex)

@@ -10,6 +10,10 @@ using System.Data;
 using System.Globalization;
 using System.Linq;
 
+#pragma warning disable CA2225 // Operator overloads have named alternates
+#pragma warning disable CA1062 // Validate arguments of public methods
+#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
+
 namespace Lexxys.Data
 {
 	public interface IFieldsCollection: IEnumerable<AField>
@@ -37,86 +41,26 @@ namespace Lexxys.Data
 		public abstract Guid? GetGuid();
 		public abstract RowVersion? GetRowVersion();
 
-		public static explicit operator bool(AField value)
-		{
-			return value.GetBoolean().Value;
-		}
-		public static explicit operator bool?(AField value)
-		{
-			return value.GetBoolean();
-		}
-		public static explicit operator short(AField value)
-		{
-			return value.GetInt16().Value;
-		}
-		public static explicit operator short?(AField value)
-		{
-			return value.GetInt16();
-		}
-		public static explicit operator int(AField value)
-		{
-			return value.GetInt32().Value;
-		}
-		public static explicit operator int?(AField value)
-		{
-			return value.GetInt32();
-		}
-		public static explicit operator long(AField value)
-		{
-			return value.GetInt64().Value;
-		}
-		public static explicit operator long?(AField value)
-		{
-			return value.GetInt64();
-		}
-		public static explicit operator decimal(AField value)
-		{
-			return value.GetDecimal().Value;
-		}
-		public static explicit operator decimal?(AField value)
-		{
-			return value.GetDecimal();
-		}
-		public static explicit operator double(AField value)
-		{
-			return value.GetDouble().Value;
-		}
-		public static explicit operator double?(AField value)
-		{
-			return value.GetDouble();
-		}
-		public static explicit operator DateTime(AField value)
-		{
-			return value.GetDateTime().Value;
-		}
-		public static explicit operator DateTime?(AField value)
-		{
-			return value.GetDateTime();
-		}
-		public static explicit operator byte[](AField value)
-		{
-			return value.GetBytes();
-		}
-		public static explicit operator string(AField value)
-		{
-			return value.GetString();
-		}
-		public static explicit operator Guid(AField value)
-		{
-			return value.GetGuid().Value;
-		}
-		public static explicit operator Guid?(AField value)
-		{
-			return value.GetGuid();
-		}
-		public static explicit operator RowVersion(AField value)
-		{
-			return value.GetRowVersion().Value;
-		}
-		public static explicit operator RowVersion?(AField value)
-		{
-			return value.GetRowVersion();
-		}
+		public static explicit operator bool(AField value) => value.GetBoolean().Value;
+		public static explicit operator bool?(AField value) => value.GetBoolean();
+		public static explicit operator short(AField value) => value.GetInt16().Value;
+		public static explicit operator short?(AField value) => value.GetInt16();
+		public static explicit operator int(AField value) => value.GetInt32().Value;
+		public static explicit operator int?(AField value) => value.GetInt32();
+		public static explicit operator long(AField value) => value.GetInt64().Value;
+		public static explicit operator long?(AField value) => value.GetInt64();
+		public static explicit operator decimal(AField value) => value.GetDecimal().Value;
+		public static explicit operator decimal?(AField value) => value.GetDecimal();
+		public static explicit operator double(AField value) => value.GetDouble().Value;
+		public static explicit operator double?(AField value) => value.GetDouble();
+		public static explicit operator DateTime(AField value) => value.GetDateTime().Value;
+		public static explicit operator DateTime?(AField value) => value.GetDateTime();
+		public static explicit operator byte[](AField value) => value.GetBytes();
+		public static explicit operator string(AField value) => value.GetString();
+		public static explicit operator Guid(AField value) => value.GetGuid().Value;
+		public static explicit operator Guid?(AField value) => value.GetGuid();
+		public static explicit operator RowVersion(AField value) => value.GetRowVersion().Value;
+		public static explicit operator RowVersion?(AField value) => value.GetRowVersion();
 	}
 
 	public sealed class RowsCollection

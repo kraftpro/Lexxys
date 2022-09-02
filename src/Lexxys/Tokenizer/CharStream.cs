@@ -622,7 +622,7 @@ namespace Lexxys.Tokenizer
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
 		public SyntaxException SyntaxException(string message)
 		{
-			var at = GetPosition();
+			var at = GetCharPosition();
 			return new SyntaxException(message, null, at.Line + 1, at.Column + 1);
 		}
 
@@ -634,7 +634,7 @@ namespace Lexxys.Tokenizer
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
 		public SyntaxException SyntaxException(string message, string file)
 		{
-			var at = GetPosition();
+			var at = GetCharPosition();
 			return new SyntaxException(message, file, at.Line + 1, at.Column + 1);
 		}
 
@@ -646,7 +646,7 @@ namespace Lexxys.Tokenizer
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
 		public SyntaxException SyntaxException(string message, int position)
 		{
-			var at = GetPosition(position);
+			var at = GetCharPosition(position);
 			return new SyntaxException(message, null, at.Line + 1, at.Column + 1);
 		}
 
@@ -659,21 +659,21 @@ namespace Lexxys.Tokenizer
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
 		public SyntaxException SyntaxException(string message, string file, int position)
 		{
-			var at = GetPosition(position);
+			var at = GetCharPosition(position);
 			return new SyntaxException(message, file, at.Line + 1, at.Column + 1);
 		}
 
-		public CharPosition GetPosition()
+		public CharPosition GetCharPosition()
 		{
-			return GetPosition(_position);
+			return GetCharPosition(_position);
 		}
 
-		public CharPosition GetPosition(int position, CharPosition prev)
+		public CharPosition GetCharPosition(int position, CharPosition prev)
 		{
-			return position < prev.Position ? GetPosition(position):  GetPosition(prev, position - prev.Position);
+			return position < prev.Position ? GetCharPosition(position):  GetCharPosition(prev, position - prev.Position);
 		}
 
-		public CharPosition GetPosition(int position)
+		public CharPosition GetCharPosition(int position)
 		{
 			if (position <= 0)
 				return default;
@@ -683,7 +683,7 @@ namespace Lexxys.Tokenizer
 			return new CharPosition(end, line, column);
 		}
 
-		private CharPosition GetPosition(CharPosition at, int offset)
+		private CharPosition GetCharPosition(CharPosition at, int offset)
 		{
 			if (offset <= 0)
 				return at;

@@ -322,13 +322,8 @@ namespace Lexxys
 		public string ToString(string? format, IFormatProvider? formatProvider = null)
 		{
 			return Amount.ToString(format, formatProvider)
-#if NET6_0_OR_GREATER
-				.Replace("s", Currency.Symbol, StringComparison.Ordinal)
-				.Replace("S", Currency.Code, StringComparison.Ordinal);
-#else
 				.Replace("s", Currency.Symbol)
 				.Replace("S", Currency.Code);
-#endif
 		}
 
 		public int CompareTo(Money other)

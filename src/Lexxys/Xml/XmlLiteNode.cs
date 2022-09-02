@@ -15,17 +15,16 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
-using Lexxys;
 #if USE_XML_DOC
 using System.Xml.XPath;
 #endif
 
 #nullable enable
 
+#pragma warning disable CA1307 // Specify StringComparison for clarity
+
 namespace Lexxys.Xml
 {
-
 	/// <summary>
 	/// Represents readonly node of XML document
 	/// </summary>
@@ -237,10 +236,6 @@ namespace Lexxys.Xml
 		}
 
 #if USE_XML_DOC
-		//public XmlLiteNode(XPathNavigator node, bool ignoreCase)
-		//	: this(node, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)
-		//{
-		//}
 
 		public XmlLiteNode(XPathNavigator node, IEqualityComparer<string>? comparer = null)
 		{
@@ -365,11 +360,6 @@ namespace Lexxys.Xml
 			}
 		}
 
-		//public XmlLiteNode(XmlNode node, bool ignoreCase)
-		//	: this(node, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)
-		//{
-		//}
-
 		public XmlLiteNode(XmlNode node, IEqualityComparer<string>? comparer = null)
 		{
 			if (node == null)
@@ -428,6 +418,7 @@ namespace Lexxys.Xml
 				Elements = ReadOnly.ValueWrap(_elements);
 			}
 		}
+
 #endif
 
 		/// <summary>
@@ -589,9 +580,21 @@ namespace Lexxys.Xml
 
 		public object AsObject(Type returnType) => XmlTools.GetValue(this, returnType);
 
-		public void Apply(Action<XmlLiteNode> action) => action(this);
+		public void Apply(Action<XmlLiteNode> action)
+		{
+			if (action is null)
+				throw new ArgumentNullException(nameof(action));
 
-		public T Apply<T>(Func<XmlLiteNode, T> action) => action(this);
+			action(this);
+		}
+
+		public T Apply<T>(Func<XmlLiteNode, T> action)
+		{
+			if (action is null)
+				throw new ArgumentNullException(nameof(action));
+
+			return action(this);
+		}
 
 		public T[] ConvertElements<T>(Func<XmlLiteNode, T> converter)
 		{
@@ -674,27 +677,6 @@ namespace Lexxys.Xml
 
 		public XmlReader ReadSubtree() => XmlReader.Create(new StringReader(ToString()));
 
-		#region Obsolete
-
-		[Obsolete("Use Elements")]
-		public ReadOnly.ListValueWrap<XmlLiteNode> Descendant => Elements;
-		[Obsolete("Use Elements")]
-		public IEnumerable<XmlLiteNode> Children() => Elements;
-
-		[Obsolete("Use Where")]
-		public IEnumerable<XmlLiteNode> Children(string? name) => _elements.Where(o => Comparer.Equals(o.Name, name));
-
-		[Obsolete("Use Where")]
-		public IEnumerable<XmlLiteNode> Children(string? name, StringComparison comparision) => _elements.Where(o => o.Name.Equals(name, comparision));
-
-		[Obsolete("Use FirstOrDefault or Element")]
-		public XmlLiteNode? FirstChild(string? name) => FirstOrDefault(name, Comparer);
-
-		[Obsolete("Use FirstOrDefault or Element")]
-		public XmlLiteNode? FirstChild(string? name, IEqualityComparer<string> comparer) => FirstOrDefault(name, comparer);
-
-		#endregion
-
 		#region IReadOnlyNode
 
 		IReadOnlyList<KeyValuePair<string, string>> IXmlReadOnlyNode.Attributes => Attributes;
@@ -766,7 +748,7 @@ namespace Lexxys.Xml
 		public override int GetHashCode()
 			=> HashCode.Join(HashCode.Join(HashCode.Join(Name.GetHashCode(), Value.GetHashCode()), _elements), _attributes);
 
-		public bool Equals(XmlLiteNode? that) => Equals(this, that);
+		public bool Equals(XmlLiteNode? other) => Equals(this, other);
 
 		public override bool Equals(object? obj) => obj is XmlLiteNode that && Equals(this, that);
 

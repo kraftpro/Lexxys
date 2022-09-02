@@ -12,6 +12,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 
+#nullable enable
+
+#pragma warning disable CA2225 // Operator overloads have named alternates
+
 namespace Lexxys
 {
 	public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<FlagSet>
@@ -21,26 +25,26 @@ namespace Lexxys
 
 		private readonly SortedSet<string> _set;
 
-		public FlagSet(IComparer<string> comparer = null)
+		public FlagSet(IComparer<string>? comparer = null)
 		{
 			_set = new SortedSet<string>(comparer ?? StringComparer.OrdinalIgnoreCase);
 		}
 
-		public FlagSet(FlagSet value)
+		public FlagSet(FlagSet? value)
 		{
 			_set = value is null ?
 				new SortedSet<string>(StringComparer.OrdinalIgnoreCase):
 				new SortedSet<string>(value._set, value._set.Comparer);
 		}
 
-		public FlagSet(string value, IComparer<string> comparer = null)
+		public FlagSet(string? value, IComparer<string>? comparer = null)
 		{
 			_set = value is null ?
 				new SortedSet<string>(comparer ?? StringComparer.OrdinalIgnoreCase):
 				new SortedSet<string>(Collect(value.Split(ItemDelimiter)), comparer ?? StringComparer.OrdinalIgnoreCase);
 		}
 
-		public static unsafe string Clean(string item)
+		public static unsafe string? Clean(string? item)
 		{
 			if (item == null)
 				return null;
@@ -97,14 +101,14 @@ namespace Lexxys
 			}
 		}
 
-		private static List<string> Collect(IEnumerable<string> values)
+		private static List<string> Collect(IEnumerable<string?>? values)
 		{
 			var bag = new List<string>();
 			if (values == null)
 				return bag;
 			foreach (var item in values)
 			{
-				string value = Clean(item);
+				string? value = Clean(item);
 				if (value == null)
 					continue;
 				int k = value.IndexOf(VariantDelimiter);
@@ -134,7 +138,7 @@ namespace Lexxys
 			return bag;
 		}
 
-		public static FlagSet operator +(FlagSet left, FlagSet right)
+		public static FlagSet? operator +(FlagSet? left, FlagSet? right)
 		{
 			if (right is null || right.Count == 0)
 				return left is null && right is null ? null: new FlagSet(left);
@@ -145,7 +149,7 @@ namespace Lexxys
 			return result;
 		}
 
-		public static FlagSet operator +(FlagSet left, string right)
+		public static FlagSet? operator +(FlagSet? left, string? right)
 		{
 			if (String.IsNullOrEmpty(right))
 				return left is null && right == null ? null: new FlagSet(left);
@@ -154,7 +158,7 @@ namespace Lexxys
 				new FlagSet(left) { right };
 		}
 
-		public static FlagSet operator -(FlagSet left, FlagSet right)
+		public static FlagSet? operator -(FlagSet? left, FlagSet? right)
 		{
 			if (left is null)
 				return null;
@@ -165,7 +169,7 @@ namespace Lexxys
 			return result;
 		}
 
-		public static FlagSet operator -(FlagSet left, string right)
+		public static FlagSet? operator -(FlagSet? left, string? right)
 		{
 			if (left is null)
 				return null;
@@ -176,48 +180,32 @@ namespace Lexxys
 			return result;
 		}
 
-		public static explicit operator FlagSet(string value)
-		{
-			return value == null ? null: new FlagSet(value);
-		}
+		public static FlagSet? FromString(string? value) => value == null ? null : new FlagSet(value);
 
-		public static explicit operator string (FlagSet value)
-		{
-			return value?.ToString();
-		}
+		public static explicit operator FlagSet?(string? value) => value == null ? null : new FlagSet(value);
 
-		public static bool operator == (FlagSet left, FlagSet right)
-		{
-			return right is null ? left is null: right.Equals(left);
-		}
+		public static explicit operator string?(FlagSet? value) => value?.ToString();
 
-		public static bool operator !=(FlagSet left, FlagSet right)
-		{
-			return right is null ? left is not null : !right.Equals(left);
-		}
+		public static bool operator ==(FlagSet? left, FlagSet? right) => right is null ? left is null : right.Equals(left);
 
-		public override int GetHashCode()
-		{
-			return HashCode.Join(18775, _set);
-		}
+		public static bool operator !=(FlagSet? left, FlagSet? right) => right is null ? left is not null : !right.Equals(left);
 
-		public override bool Equals(object obj)
-		{
-			return Equals(obj as FlagSet);
-		}
+		public override int GetHashCode() => HashCode.Join(18775, _set);
 
-		public bool Equals(FlagSet value)
+		public override bool Equals(object? obj) => obj is FlagSet other && Equals(other);
+
+		public bool Equals(FlagSet? other)
 		{
-			if (value is null)
+			if (other is null)
 				return false;
 
-			if (_set.Count != value._set.Count)
+			if (_set.Count != other._set.Count)
 				return false;
 			if (_set.Count == 0)
 				return true;
 
 			using IEnumerator<string> a = _set.GetEnumerator();
-			using IEnumerator<string> b = value._set.GetEnumerator();
+			using IEnumerator<string> b = other._set.GetEnumerator();
 			while (a.MoveNext() && b.MoveNext())
 			{
 				if (!String.Equals(a.Current, b.Current, StringComparison.OrdinalIgnoreCase))
@@ -226,10 +214,7 @@ namespace Lexxys
 			return true;
 		}
 
-		public override string ToString()
-		{
-			return ToString(true);
-		}
+		public override string ToString() => ToString(true);
 
 		public string ToString(bool compact)
 		{
@@ -274,75 +259,33 @@ namespace Lexxys
 			return k > _set.Count;
 		}
 
-		public void ExceptWith(IEnumerable<string> other)
-		{
-			_set.ExceptWith(other);
-		}
+		public void ExceptWith(IEnumerable<string> other) => _set.ExceptWith(other);
 
-		public void IntersectWith(IEnumerable<string> other)
-		{
-			_set.IntersectWith(other);
-		}
+		public void IntersectWith(IEnumerable<string> other) => _set.IntersectWith(other);
 
-		public bool IsProperSubsetOf(IEnumerable<string> other)
-		{
-			return _set.IsProperSubsetOf(other);
-		}
+		public bool IsProperSubsetOf(IEnumerable<string> other) => _set.IsProperSubsetOf(other);
 
-		public bool IsProperSupersetOf(IEnumerable<string> other)
-		{
-			return _set.IsProperSupersetOf(other);
-		}
+		public bool IsProperSupersetOf(IEnumerable<string> other) => _set.IsProperSupersetOf(other);
 
-		public bool IsSubsetOf(IEnumerable<string> other)
-		{
-			return _set.IsSubsetOf(other);
-		}
+		public bool IsSubsetOf(IEnumerable<string> other) => _set.IsSubsetOf(other);
 
-		public bool IsSupersetOf(IEnumerable<string> other)
-		{
-			return _set.IsSupersetOf(other);
-		}
+		public bool IsSupersetOf(IEnumerable<string> other) => _set.IsSupersetOf(other);
 
-		public bool Overlaps(IEnumerable<string> other)
-		{
-			return _set.Overlaps(other);
-		}
+		public bool Overlaps(IEnumerable<string> other) => _set.Overlaps(other);
 
-		public bool SetEquals(IEnumerable<string> other)
-		{
-			return _set.SetEquals(other);
-		}
+		public bool SetEquals(IEnumerable<string> other) => _set.SetEquals(other);
 
-		public void SymmetricExceptWith(IEnumerable<string> other)
-		{
-			_set.SymmetricExceptWith(other);
-		}
+		public void SymmetricExceptWith(IEnumerable<string> other) => _set.SymmetricExceptWith(other);
 
-		public void UnionWith(IEnumerable<string> other)
-		{
-			_set.UnionWith(other);
-		}
+		public void UnionWith(IEnumerable<string> other) => _set.UnionWith(other);
 
-		void ICollection<string>.Add(string item)
-		{
-			Add(item);
-		}
+		void ICollection<string>.Add(string item) => Add(item);
 
-		public void Clear()
-		{
-			_set.Clear();
-		}
+		public void Clear() => _set.Clear();
 
-		public bool Contains(string item)
-		{
-			return _set.Contains(item);
-		}
+		public bool Contains(string item) => _set.Contains(item);
 
-		public void CopyTo(string[] array, int arrayIndex)
-		{
-			_set.CopyTo(array, arrayIndex);
-		}
+		public void CopyTo(string[] array, int arrayIndex) => _set.CopyTo(array, arrayIndex);
 
 		public int Count
 		{
@@ -354,15 +297,9 @@ namespace Lexxys
 			get { return false; }
 		}
 
-		public IEnumerator<string> GetEnumerator()
-		{
-			return _set.GetEnumerator();
-		}
+		public IEnumerator<string> GetEnumerator() => _set.GetEnumerator();
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return _set.GetEnumerator();
-		}
+		IEnumerator IEnumerable.GetEnumerator() => _set.GetEnumerator();
 
 		#endregion
 	}

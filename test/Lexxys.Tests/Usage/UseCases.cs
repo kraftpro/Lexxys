@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-
-using Lexxys.Configuration;
-using Lexxys.Data;
 
 #nullable enable
 
 namespace Lexxys.Tests.Usage
 {
+	using Lexxys.Configuration;
+	using Lexxys.Data;
+
 	internal class UseCases
 	{
 

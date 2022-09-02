@@ -4,15 +4,15 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
-using Lexxys.Tokenizer;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Globalization;
-using System.Text.RegularExpressions;
-using Lexxys.Testing;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Tokenizer
 {
+	using Lexxys.Tokenizer;
+	using Lexxys.Testing;
+
 	/// <summary>
 	///This is a test class for CharStreamTest and is intended
 	///to contain all CharStreamTest Unit Tests
@@ -20,8 +20,6 @@ namespace Lexxys.Tests.Tokenizer
 	[TestClass()]
 	public class CharStreamTest
 	{
-
-
 		private TestContext testContextInstance;
 
 		/// <summary>
@@ -339,7 +337,7 @@ namespace Lexxys.Tests.Tokenizer
 				CharStream cs = GetStream();
 				cs.Forward(__r.Next(cs.Length));
 				cs.Rewind();
-				Assert.AreEqual(CharPosition.Start, cs.GetPosition());
+				Assert.AreEqual(CharPosition.Start, cs.GetCharPosition());
 			}
 		}
 
@@ -353,10 +351,10 @@ namespace Lexxys.Tests.Tokenizer
 			{
 				CharStream cs = GetStream();
 				cs.Forward(__r.Next(cs.Length));
-				CharPosition expected = cs.GetPosition();
+				CharPosition expected = cs.GetCharPosition();
 				cs.Rewind();
 				cs.Move(expected.Position);
-				Assert.AreEqual(expected, cs.GetPosition());
+				Assert.AreEqual(expected, cs.GetCharPosition());
 			}
 		}
 

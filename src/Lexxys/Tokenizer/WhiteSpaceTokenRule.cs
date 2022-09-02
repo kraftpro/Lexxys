@@ -42,14 +42,6 @@ namespace Lexxys.Tokenizer
 				throw new ArgumentNullException(nameof(stream));
 
 			int nl = 0;
-			bool Space(char c)
-			{
-				if (c != '\n')
-					return c <= 127 ? c <= ' ': Char.IsWhiteSpace(c) || Char.IsControl(c);
-				++nl;
-				return true;
-			}
-
 			var len = stream.Match(Space);
 			if (len == 0)
 				return null;
@@ -58,9 +50,19 @@ namespace Lexxys.Tokenizer
 			int position = stream.Position;
 			stream.Forward(len);
 
+#pragma warning disable CA1508 // Avoid dead conditional code.  Value of nl increased in Space fragment.
 			return NewLineTokenType == LexicalTokenType.IGNORE || nl == 0 ?
 				new LexicalToken(WhiteSpaceTokenType, text, position, stream.CultureInfo):
 				new LexicalToken(NewLineTokenType, text, position, nl, stream.CultureInfo);
+#pragma warning restore CA1508
+
+			bool Space(char c)
+			{
+				if (c != '\n')
+					return c <= 127 ? c <= ' ' : Char.IsWhiteSpace(c) || Char.IsControl(c);
+				++nl;
+				return true;
+			}
 		}
 	}
 }

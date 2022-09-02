@@ -59,7 +59,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 	public const int MaxIndents = 20;
 	private const int MAX_STACK_ALLOC = 16 * 1024;
 	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff} {IndentMark}{Source}{EventId:\\.0}: {Message}",
+		"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}{EventId:\\.0}: {Message}",
 		"  ",
 		". ");
 

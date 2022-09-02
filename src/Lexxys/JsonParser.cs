@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+#nullable enable
+
 namespace Lexxys
 {
 	using Tokenizer;
@@ -24,7 +26,7 @@ namespace Lexxys
 		private const int COMMA = 8;
 		private const int EQUAL = 9;
 
-		private JsonParser(CharStream stream, string sourceName)
+		private JsonParser(CharStream stream, string? sourceName)
 		{
 			SourceName = sourceName;
 			Scanner = new TokenScannerWithBack(stream,
@@ -58,7 +60,7 @@ namespace Lexxys
 
 
 		private TokenScannerWithBack Scanner { get; }
-		private string SourceName { get; }
+		private string? SourceName { get; }
 
 		private SyntaxException SyntaxException(string message)
 		{
@@ -66,7 +68,7 @@ namespace Lexxys
 		}
 
 
-		public static JsonItem Parse(string text, string sourceName = null)
+		public static JsonItem Parse(string text, string? sourceName = null)
 		{
 			if (text == null)
 				throw new ArgumentNullException(nameof(text));
@@ -76,7 +78,7 @@ namespace Lexxys
 			return converter.ParseItem();
 		}
 
-		public static JsonItem Parse(TextReader text, string sourceName = null)
+		public static JsonItem Parse(TextReader text, string? sourceName = null)
 		{
 			if (text == null)
 				throw new ArgumentNullException(nameof(text));
@@ -91,7 +93,7 @@ namespace Lexxys
 		private JsonItem ParseItem(bool allowColon = false)
 		{
 			var token = Scanner.Current;
-			List<JsonPair> args = null;
+			List<JsonPair>? args = null;
 			// [ '(' args ')' [:] ]
 			if (token.Is(LexicalTokenType.SEQUENCE, PRMBEG))
 			{
@@ -108,7 +110,7 @@ namespace Lexxys
 			return ParseScalar(args);
 		}
 
-		private JsonScalar ParseScalar(List<JsonPair> args)
+		private JsonScalar ParseScalar(List<JsonPair>? args)
 		{
 			var token = Scanner.Current;
 			if (token.Is(LexicalTokenType.NUMERIC))
@@ -123,10 +125,10 @@ namespace Lexxys
 					token.Text, args
 					);
 			Scanner.Back();
-			return new JsonScalar(null, null, args);
+			return new JsonScalar(null, args);
 		}
 
-		private JsonMap ParseMap(List<JsonPair> args)
+		private JsonMap ParseMap(List<JsonPair>? args)
 		{
 			var result = new List<JsonPair>();
 
@@ -198,7 +200,7 @@ namespace Lexxys
 			}
 		}
 
-		private JsonArray ParseArray(List<JsonPair> args)
+		private JsonArray ParseArray(List<JsonPair>? args)
 		{
 			var result = new List<JsonItem>();
 

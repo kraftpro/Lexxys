@@ -20,4 +20,8 @@ namespace Lexxys.Configuration
 		IReadOnlyList<T> GetList<T>(string key);
 		object? GetValue(string key, Type objectType);
 	}
+
+	public interface IDisposableConfigSource: IConfigSource, IDisposable
+	{
+	}
 }

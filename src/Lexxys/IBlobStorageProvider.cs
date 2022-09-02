@@ -7,7 +7,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
+
+#nullable enable
 
 namespace Lexxys
 {
@@ -23,11 +26,16 @@ namespace Lexxys
 		/// <param name="location">Blob location</param>
 		/// <returns></returns>
 		bool CanOpen(string location);
-		IBlobInfo GetFileInfo(string location);
+		IBlobInfo? GetFileInfo(string location);
+		Task<IBlobInfo?> GetFileInfoAsync(string location, CancellationToken cancellationToken = default);
 		void SaveFile(string location, Stream stream, bool overwrite);
-		Task SaveFileAsync(string location, Stream stream, bool overwrite);
+		Task SaveFileAsync(string location, Stream stream, bool overwrite, CancellationToken cancellationToken = default);
+		void CopyFile(string source, string destination);
+		Task CopyFileAsync(string source, string destination, CancellationToken cancellationToken = default);
 		void MoveFile(string source, string destination);
+		Task MoveFileAsync(string source, string destination, CancellationToken cancellationToken = default);
 		void DeleteFile(string location);
+		Task DeleteFileAsync(string location, CancellationToken cancellationToken = default);
 	}
 }
 
