@@ -165,7 +165,7 @@ namespace Lexxys
 
 		#region String as Value
 
-		public static byte AsByte(this string? value)
+		public static byte AsByte(this string value)
 		{
 			return XmlTools.GetByte(value);
 		}
@@ -180,7 +180,7 @@ namespace Lexxys
 			return XmlTools.GetByte(value, defaultValue);
 		}
 
-		public static sbyte AsSByte(this string? value)
+		public static sbyte AsSByte(this string value)
 		{
 			return XmlTools.GetSByte(value);
 		}
@@ -195,7 +195,7 @@ namespace Lexxys
 			return XmlTools.GetSByte(value, defaultValue);
 		}
 
-		public static Int16 AsInt16(this string? value)
+		public static Int16 AsInt16(this string value)
 		{
 			return XmlTools.GetInt16(value);
 		}
@@ -210,7 +210,7 @@ namespace Lexxys
 			return XmlTools.GetInt16(value, defaultValue);
 		}
 
-		public static UInt16 AsUInt16(this string? value)
+		public static UInt16 AsUInt16(this string value)
 		{
 			return XmlTools.GetUInt16(value);
 		}
@@ -225,7 +225,7 @@ namespace Lexxys
 			return XmlTools.GetUInt16(value, defaultValue);
 		}
 
-		public static Int32 AsInt32(this string? value)
+		public static Int32 AsInt32(this string value)
 		{
 			return XmlTools.GetInt32(value);
 		}
@@ -240,7 +240,7 @@ namespace Lexxys
 			return XmlTools.GetInt32(value, defaultValue);
 		}
 
-		public static UInt32 AsUInt32(this string? value)
+		public static UInt32 AsUInt32(this string value)
 		{
 			return XmlTools.GetUInt32(value);
 		}
@@ -255,7 +255,7 @@ namespace Lexxys
 			return XmlTools.GetUInt32(value, defaultValue);
 		}
 
-		public static Int64 AsInt64(this string? value)
+		public static Int64 AsInt64(this string value)
 		{
 			return XmlTools.GetInt64(value);
 		}
@@ -270,7 +270,7 @@ namespace Lexxys
 			return XmlTools.GetInt64(value, defaultValue);
 		}
 
-		public static UInt64 AsUInt64(this string? value)
+		public static UInt64 AsUInt64(this string value)
 		{
 			return XmlTools.GetUInt64(value);
 		}
@@ -285,7 +285,7 @@ namespace Lexxys
 			return XmlTools.GetUInt64(value, defaultValue);
 		}
 
-		public static Single AsSingle(this string? value)
+		public static Single AsSingle(this string value)
 		{
 			return XmlTools.GetSingle(value);
 		}
@@ -300,7 +300,7 @@ namespace Lexxys
 			return XmlTools.GetSingle(value, defaultValue);
 		}
 
-		public static Double AsDouble(this string? value)
+		public static Double AsDouble(this string value)
 		{
 			return XmlTools.GetDouble(value);
 		}
@@ -315,7 +315,7 @@ namespace Lexxys
 			return XmlTools.GetDouble(value, defaultValue);
 		}
 
-		public static Decimal AsDecimal(this string? value)
+		public static Decimal AsDecimal(this string value)
 		{
 			return XmlTools.GetDecimal(value);
 		}
@@ -330,7 +330,7 @@ namespace Lexxys
 			return XmlTools.GetDecimal(value, defaultValue);
 		}
 
-		public static Char AsChar(this string? value)
+		public static Char AsChar(this string value)
 		{
 			return XmlTools.GetChar(value);
 		}
@@ -345,7 +345,7 @@ namespace Lexxys
 			return XmlTools.GetChar(value, defaultValue);
 		}
 
-		public static string? AsString(this string? value)
+		public static string? AsString(this string value)
 		{
 			return XmlTools.GetString(value, null);
 		}
@@ -356,7 +356,7 @@ namespace Lexxys
 			return XmlTools.GetString(value, defaultValue);
 		}
 
-		public static TimeSpan AsTimeSpan(this string? value)
+		public static TimeSpan AsTimeSpan(this string value)
 		{
 			return XmlTools.GetTimeSpan(value);
 		}
@@ -371,7 +371,7 @@ namespace Lexxys
 			return XmlTools.GetTimeSpan(value, defaultValue);
 		}
 
-		public static DateTime AsDateTime(this string? value)
+		public static DateTime AsDateTime(this string value)
 		{
 			return XmlTools.GetDateTime(value);
 		}
@@ -386,7 +386,7 @@ namespace Lexxys
 			return XmlTools.TryGetDateTime(value, out var result) ? result: defaultValue;
 		}
 
-		public static DateTimeOffset AsDateTimeOffset(this string? value)
+		public static DateTimeOffset AsDateTimeOffset(this string value)
 		{
 			return XmlTools.GetDateTime(value);
 		}
@@ -401,7 +401,7 @@ namespace Lexxys
 			return XmlTools.TryGetDateTimeOffset(value, out var result) ? result : defaultValue;
 		}
 
-		public static Guid AsGuid(this string? value)
+		public static Guid AsGuid(this string value)
 		{
 			return XmlTools.GetGuid(value);
 		}
@@ -416,7 +416,7 @@ namespace Lexxys
 			return XmlTools.GetGuid(value, defaultValue);
 		}
 
-		public static T AsEnum<T>(this string? value)
+		public static T AsEnum<T>(this string value)
 			where T: struct
 		{
 			return XmlTools.GetEnum<T>(value);
@@ -434,7 +434,7 @@ namespace Lexxys
 			return XmlTools.GetEnum(value, defaultValue);
 		}
 
-		public static Boolean AsBoolean(this string? value)
+		public static Boolean AsBoolean(this string value)
 		{
 			return XmlTools.GetBoolean(value);
 		}
@@ -449,17 +449,7 @@ namespace Lexxys
 			return XmlTools.TryGetBoolean(value, out bool result) ? result : defaultValue;
 		}
 
-		public static Ternary AsTernary(this string? value)
-		{
-			return XmlTools.GetTernary(value);
-		}
-
-		public static Ternary AsTernary(this string? value, Ternary defaultValue)
-		{
-			return XmlTools.GetTernary(value, defaultValue);
-		}
-
-		public static T AsValue<T>(this string? value)
+		public static T AsValue<T>(this string value)
 		{
 			return XmlTools.GetValue<T>(value);
 		}
@@ -469,7 +459,7 @@ namespace Lexxys
 			return XmlTools.GetValue(value, defaultValue);
 		}
 
-		public static object AsValue(this string? value, Type returnType)
+		public static object AsValue(this string value, Type returnType)
 		{
 			return XmlTools.GetValue(value, returnType);
 		}

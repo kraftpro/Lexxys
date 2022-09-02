@@ -11,6 +11,8 @@ using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
 
+using Lexxys;
+
 #nullable enable
 
 namespace Lexxys.Xml
@@ -19,8 +21,10 @@ namespace Lexxys.Xml
 	{
 		#region Parse Primitives
 
-		public static byte GetByte(string? value)
+		public static byte GetByte(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return Byte.TryParse(value, out byte result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -34,8 +38,10 @@ namespace Lexxys.Xml
 			return Byte.TryParse(value, out byte result) ? result : defaultValue;
 		}
 
-		public static sbyte GetSByte(string? value)
+		public static sbyte GetSByte(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return SByte.TryParse(value, out sbyte result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -49,8 +55,10 @@ namespace Lexxys.Xml
 			return SByte.TryParse(value, out sbyte result) ? result : defaultValue;
 		}
 
-		public static short GetInt16(string? value)
+		public static short GetInt16(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return Int16.TryParse(value, out short result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -64,8 +72,10 @@ namespace Lexxys.Xml
 			return Int16.TryParse(value, out short result) ? result : defaultValue;
 		}
 
-		public static ushort GetUInt16(string? value)
+		public static ushort GetUInt16(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return UInt16.TryParse(value, out ushort result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -79,8 +89,10 @@ namespace Lexxys.Xml
 			return UInt16.TryParse(value, out ushort result) ? result : defaultValue;
 		}
 
-		public static int GetInt32(string? value)
+		public static int GetInt32(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return Int32.TryParse(value, out int result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -99,8 +111,10 @@ namespace Lexxys.Xml
 			return !Int32.TryParse(value, out int result) ? defaultValue : result < minValue ? minValue : result > maxValue ? maxValue : result;
 		}
 
-		public static uint GetUInt32(string? value)
+		public static uint GetUInt32(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return UInt32.TryParse(value, out uint result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -114,8 +128,10 @@ namespace Lexxys.Xml
 			return UInt32.TryParse(value, out uint result) ? result : defaultValue;
 		}
 
-		public static long GetInt64(string? value)
+		public static long GetInt64(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return Int64.TryParse(value, out long result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -129,8 +145,10 @@ namespace Lexxys.Xml
 			return Int64.TryParse(value, out long result) ? result : defaultValue;
 		}
 
-		public static ulong GetUInt64(string? value)
+		public static ulong GetUInt64(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return UInt64.TryParse(value, out ulong result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -144,8 +162,10 @@ namespace Lexxys.Xml
 			return UInt64.TryParse(value, out ulong result) ? result : defaultValue;
 		}
 
-		public static float GetSingle(string? value)
+		public static float GetSingle(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return Single.TryParse(value, out float result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -159,8 +179,10 @@ namespace Lexxys.Xml
 			return Single.TryParse(value, out float result) ? result : defaultValue;
 		}
 
-		public static double GetDouble(string? value)
+		public static double GetDouble(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return Double.TryParse(value, out double result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -174,8 +196,10 @@ namespace Lexxys.Xml
 			return Double.TryParse(value, out double result) ? result : defaultValue;
 		}
 
-		public static decimal GetDecimal(string? value)
+		public static decimal GetDecimal(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return Decimal.TryParse(value, out decimal result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -189,8 +213,10 @@ namespace Lexxys.Xml
 			return Decimal.TryParse(value, out decimal result) ? result : defaultValue;
 		}
 
-		public static char GetChar(string? value)
+		public static char GetChar(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return TryGetChar(value) ?? throw new FormatException(SR.FormatException(value));
 		}
 
@@ -234,8 +260,10 @@ namespace Lexxys.Xml
 		}
 
 
-		public static TimeSpan GetTimeSpan(string? value)
+		public static TimeSpan GetTimeSpan(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return TryGetTimeSpan(value, out TimeSpan result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -599,8 +627,10 @@ namespace Lexxys.Xml
 			}
 		}
 
-		public static DateTime GetDateTime(string? value)
+		public static DateTime GetDateTime(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return TryGetDateTime(value, out DateTime result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -625,8 +655,10 @@ namespace Lexxys.Xml
 			return true;
 		}
 
-		public static DateTimeOffset GetDateTimeOffset(string? value)
+		public static DateTimeOffset GetDateTimeOffset(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -828,8 +860,10 @@ namespace Lexxys.Xml
 			return true;
 		}
 
-		public static Guid GetGuid(string? value)
+		public static Guid GetGuid(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return Guid.TryParse(value, out Guid result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -848,8 +882,10 @@ namespace Lexxys.Xml
 			return Guid.TryParse(value, out result);
 		}
 
-		public static Type GetType(string? value)
+		public static Type GetType(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return TryGetType(value, out Type? result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -874,8 +910,10 @@ namespace Lexxys.Xml
 			return TryGetBoolean(value, out bool result) ? result : defaultValue;
 		}
 
-		public static bool GetBoolean(string? value)
+		public static bool GetBoolean(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return TryGetBoolean(value, out bool result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -899,43 +937,6 @@ namespace Lexxys.Xml
 			return false;
 		}
 
-		public static Ternary GetTernary(string? value)
-		{
-			return TryGetTernary(value, out Ternary result) ? result : throw new FormatException(SR.FormatException(value));
-		}
-
-		public static Ternary GetTernary(string? value, Ternary defaultValue)
-		{
-			return TryGetTernary(value, out Ternary result) ? result : defaultValue;
-		}
-
-		public static bool TryGetTernary(string? value, out Ternary result)
-		{
-			if (value == null)
-			{
-				result = Ternary.Unknown;
-				return false;
-			}
-			value = value.Trim().ToUpperInvariant();
-			if (value == "TRUE" || value == "ON" || value == "YES" || value == "1" || value == "GRANT")
-			{
-				result = Ternary.True;
-				return true;
-			}
-			if (value == "FALSE" || value == "OFF" || value == "NO" || value == "0" || value == "DENY")
-			{
-				result = Ternary.False;
-				return true;
-			}
-			if (value == "UNKNOWN" || value == "SOME" || value == "ANY" || value == "ALL" || value == "2" || value == "BOTH" || value == "DEFAULT")
-			{
-				result = Ternary.Unknown;
-				return true;
-			}
-			result = Ternary.Unknown;
-			return false;
-		}
-
 		public static int GetIndex(string? value, params string?[] variants)
 		{
 			if (variants == null)
@@ -952,22 +953,21 @@ namespace Lexxys.Xml
 			return -1;
 		}
 
-		public static T GetEnum<T>(string? value)
-			where T : struct
+		public static T GetEnum<T>(string value) where T : struct
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			if (TryGetEnum(value, out T result))
 				return result;
 			throw new FormatException(SR.FormatException(value));
 		}
 
-		public static T GetEnum<T>(string? value, T defaultValue)
-			where T : struct
+		public static T GetEnum<T>(string? value, T defaultValue) where T : struct
 		{
 			return TryGetEnum(value, out T result) ? result : defaultValue;
 		}
 
-		public static T? GetEnum<T>(string? value, T? defaultValue)
-			where T : struct
+		public static T? GetEnum<T>(string? value, T? defaultValue) where T : struct
 		{
 			return TryGetEnum(value, out T result) ? result : defaultValue;
 		}
@@ -977,8 +977,7 @@ namespace Lexxys.Xml
 			return type.IsEnum;
 		}
 
-		public static bool TryGetEnum<T>(string? value, out T result)
-			where T : struct
+		public static bool TryGetEnum<T>(string? value, out T result) where T : struct
 		{
 			if (value == null || value.Length == 0 || !IsEnum(typeof(T)))
 			{
@@ -1003,8 +1002,10 @@ namespace Lexxys.Xml
 			return false;
 		}
 
-		public static object GetEnum(string? value, Type enumType)
+		public static object GetEnum(string value, Type enumType)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return TryGetEnum(value, enumType, out object? result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
@@ -1075,8 +1076,10 @@ namespace Lexxys.Xml
 			return TryGetValue(value, type, out object? result) ? result : defaultValue;
 		}
 
-		public static object GetValue(string? value, Type type)
+		public static object GetValue(string value, Type type)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			if (type == null)
 				throw new ArgumentNullException(nameof(type));
 			return TryGetValue(value, type, out object? result) ? result! : throw new FormatException(SR.FormatException(value));
@@ -1088,8 +1091,10 @@ namespace Lexxys.Xml
 			return TryGetValue<T>(value, out var result) ? result : defaultValue;
 		}
 
-		public static T GetValue<T>(string? value)
+		public static T GetValue<T>(string value)
 		{
+			if (value is null || value.Length <= 0)
+				throw new ArgumentNullException(nameof(value));
 			return TryGetValue<T>(value, out var result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 

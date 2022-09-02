@@ -925,7 +925,6 @@ namespace Lexxys.Data
 				{ typeof(DateTimeOffset), o => (DateTimeOffset?)o[0] ?? default },
 				{ typeof(TimeSpan), o => (TimeSpan?)o[0] ?? default },
 				{ typeof(Guid), o => (Guid?)o[0] ?? default },
-				{ typeof(Ternary), o => new Ternary((bool?)o[0]) },
 				{ typeof(RowVersion), o =>
 				{
 					var v = o[0];
@@ -952,7 +951,6 @@ namespace Lexxys.Data
 				{ typeof(DateTimeOffset?), o => (DateTimeOffset?)o[0] },
 				{ typeof(TimeSpan?), o => (TimeSpan?)o[0] },
 				{ typeof(Guid?), o => (Guid?)o[0] },
-				{ typeof(Ternary?), o => (Ternary?)new Ternary((bool?)o[0]) },
 				{ typeof(RowVersion?), o =>
 				{
 					var v = o[0];

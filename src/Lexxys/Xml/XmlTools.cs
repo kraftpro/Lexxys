@@ -873,7 +873,6 @@ namespace Lexxys.Xml
 			ParserPair.New<char>(TryGetChar),
 			ParserPair.New<DateTime>(TryGetDateTime),
 			ParserPair.New<TimeSpan>(TryGetTimeSpan),
-			ParserPair.New<Ternary>(TryGetTernary),
 			ParserPair.New<Guid>(TryGetGuid),
 			ParserPair.New<Type>(TryGetType),
 			ParserPair.New<string>(TryParseString),

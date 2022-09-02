@@ -435,7 +435,6 @@ namespace Lexxys
 		private static readonly Dictionary<string, Type> __typesSynonyms = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
 			{
 				{ "bool",		typeof(bool) },
-				{ "ternary",	typeof(Ternary) },
 				{ "byte",		typeof(byte) },
 				{ "sbyte",		typeof(sbyte) },
 				{ "short",		typeof(short) },
@@ -462,7 +461,6 @@ namespace Lexxys
 				{ "void",		typeof(void) },
 
 				{ "bool?",		typeof(bool?) },
-				{ "ternary?",	typeof(Ternary?) },
 				{ "byte?",		typeof(byte?) },
 				{ "sbyte?",		typeof(sbyte?) },
 				{ "short?",		typeof(short?) },
