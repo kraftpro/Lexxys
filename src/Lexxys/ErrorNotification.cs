@@ -9,8 +9,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Collections;
 
-#nullable enable
-
 namespace Lexxys
 {
 	#pragma warning disable CA1710 // Identifiers should have correct suffix

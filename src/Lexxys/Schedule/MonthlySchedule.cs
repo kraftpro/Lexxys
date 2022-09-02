@@ -28,13 +28,13 @@ namespace Lexxys
 
 		public new const string Type = "monthly";
 
-		public MonthlySchedule(int day = 0, IEnumerable<int> monthList = null, ScheduleReminder reminder = null): base(Type, reminder)
+		public MonthlySchedule(int day = 0, IEnumerable<int>? monthList = null, ScheduleReminder? reminder = null): base(Type, reminder)
 		{
 			Day = Math.Max(1, Math.Min(day, ScheduleLastDay));
 			MonthList = Months(monthList);
 		}
 
-		public MonthlySchedule(ScheduleWeekType week, DayOfWeek weekDay, IEnumerable<int> monthList = null, ScheduleReminder reminder = null) : base(Type, reminder)
+		public MonthlySchedule(ScheduleWeekType week, DayOfWeek weekDay, IEnumerable<int>? monthList = null, ScheduleReminder? reminder = null) : base(Type, reminder)
 		{
 			if (week == ScheduleWeekType.None)
 				throw new ArgumentOutOfRangeException(nameof(week), week, null);
@@ -44,7 +44,7 @@ namespace Lexxys
 			MonthList = Months(monthList);
 		}
 
-		private static IReadOnlyList<int> Months(IEnumerable<int> monthList)
+		private static IReadOnlyList<int> Months(IEnumerable<int>? monthList)
 		{
 			if (monthList == null)
 				return AllMonths;
@@ -106,12 +106,12 @@ namespace Lexxys
 			}
 		}
 
-		public override StringBuilder ToString(StringBuilder text, IFormatProvider provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
+		public override StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
 
-			var format = (DateTimeFormatInfo)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
+			var format = (DateTimeFormatInfo?)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
 			text.Append("the ");
 			if (Week == ScheduleWeekType.None)
 			{
@@ -138,7 +138,7 @@ namespace Lexxys
 			return text;
 		}
 
-		public bool Equals(MonthlySchedule other)
+		public bool Equals(MonthlySchedule? other)
 		{
 			if (other is null)
 				return false;
@@ -147,12 +147,12 @@ namespace Lexxys
 			return Day == other.Day && Week == other.Week && WeekDay == other.WeekDay && Comparer.Equals(MonthList, other.MonthList);
 		}
 
-		public override bool Equals(Schedule other)
+		public override bool Equals(Schedule? other)
 		{
 			return other is MonthlySchedule ms && Equals(ms);
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is MonthlySchedule ms && Equals(ms);
 		}
@@ -228,7 +228,7 @@ namespace Lexxys
 				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
 			if (xml["type"] != Type)
 				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
-			IEnumerable<int> months = xml["months"] != null ?
+			IEnumerable<int>? months = xml["months"] != null ?
 				xml["months"]?.Split(',').Select(o => o.AsInt32(0)):
 				xml.Element("months").Elements.Select(o => o.Value.AsInt32());
 

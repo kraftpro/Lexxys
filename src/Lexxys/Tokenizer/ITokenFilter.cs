@@ -30,13 +30,13 @@ namespace Lexxys.Tokenizer
 		{
 			if (source is null)
 				throw new ArgumentNullException(nameof(source));
-			return _stack.Count > 0 ? _stack.Pop() : source();
+			return _stack.Count > 0 ? _stack.Pop(): source();
 		}
 	}
 
 	public class OneBackFilter: ITokenFilter
 	{
-		private LexicalToken _last;
+		private LexicalToken _last = LexicalToken.Empty;
 		private bool _back;
 
 		public void Back()
@@ -63,7 +63,7 @@ namespace Lexxys.Tokenizer
 	{
 		private readonly Stack<int> _indent;
 		private CharPosition _last;
-		private LexicalToken _current;
+		private LexicalToken? _current;
 		private int _currentColumn;
 
 		public IndentFilter()
@@ -98,10 +98,10 @@ namespace Lexxys.Tokenizer
 				return tmp;
 			}
 			LexicalToken token = source();
-			if (token == null)
+			if (token.IsEmpty)
 			{
 				if (_indent.Count == 0)
-					return null;
+					return token;
 				_indent.Pop();
 				return new LexicalToken(LexicalTokenType.UNDENT, "", _last.Position);
 			}

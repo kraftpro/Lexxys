@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-#nullable enable
+using Lexxys;
 
 namespace Lexxys
 {
@@ -35,8 +35,8 @@ namespace Lexxys
 		public static StringBuilder ToJson(this IDumpJson? obj, StringBuilder text)
 		{
 			Contract.Ensures(Contract.Result<StringBuilder>() != null);
-			if (text == null)
-				text = new StringBuilder();
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
 			if (obj == null)
 				return text;
 			obj.ToJson(new JsonStringBuilder(text)).Flush();

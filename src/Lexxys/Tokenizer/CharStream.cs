@@ -46,7 +46,7 @@ namespace Lexxys.Tokenizer
 			_culture = charStream._culture;
 		}
 
-		public CharStream(string buffer, int tabSize = 0, CultureInfo culture = null)
+		public CharStream(string buffer, int tabSize = 0, CultureInfo? culture = null)
 			: this(buffer, true, tabSize, culture)
 		{
 		}
@@ -60,7 +60,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="culture">Culture-specific information (default null)</param>
 		/// <exception cref="System.ArgumentNullException"><paramref name="buffer"/>is null</exception>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="tabSize"/> is less than zero or greater than 32</exception>
-		public CharStream(string buffer, bool appendNewLine, int tabSize = 0, CultureInfo culture = null)
+		public CharStream(string buffer, bool appendNewLine, int tabSize = 0, CultureInfo? culture = null)
 		{
 			if (buffer == null)
 				throw new ArgumentNullException(nameof(buffer));
@@ -69,7 +69,7 @@ namespace Lexxys.Tokenizer
 
 			_buffer = KeepNewLine(buffer, appendNewLine);
 			_tabSize = tabSize == 0 ? DefaultTabSize: tabSize;
-			_culture = culture == null ? CultureInfo.InvariantCulture: _culture;
+			_culture = culture ?? CultureInfo.InvariantCulture;
 		}
 
 		/// <summary>
@@ -80,7 +80,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="culture">Culture-specific information (default null)</param>
 		/// <exception cref="System.ArgumentNullException"><paramref name="stream"/> is null</exception>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="tabSize"/> is less than zero or greater than 32</exception>
-		public CharStream(TextReader stream, int tabSize = 0, CultureInfo culture = null)
+		public CharStream(TextReader stream, int tabSize = 0, CultureInfo? culture = null)
 		{
 			if (stream == null)
 				throw new ArgumentNullException(nameof(stream));
@@ -89,13 +89,13 @@ namespace Lexxys.Tokenizer
 
 			_buffer = KeepNewLine(stream);
 			_tabSize = tabSize == 0 ? DefaultTabSize: tabSize;
-			_culture = culture == null ? CultureInfo.InvariantCulture : _culture;
+			_culture = culture ?? CultureInfo.InvariantCulture;
 		}
 
 		private static string KeepNewLine(TextReader stream)
 		{
 			var buffer = new StringBuilder();
-			string line;
+			string? line;
 			while ((line = stream.ReadLine()) != null)
 			{
 				buffer.Append(line).Append('\n');
@@ -266,7 +266,7 @@ namespace Lexxys.Tokenizer
 		public LexicalToken Token(LexicalTokenType tokenType, int length, string text)
 		{
 			if (Eof)
-				return null;
+				return LexicalToken.Eof(_position);
 			var token = new LexicalToken(tokenType, text, _position, _culture);
 			Forward(length);
 			return token;
@@ -279,7 +279,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="length">Number of characters to copy from current position of stream into the content (textual value) of new <see cref="LexicalToken"/>.</param>
 		/// <param name="value">Value of the <see cref="LexicalToken"/>.</param>
 		/// <returns>New <see cref="LexicalToken"/> or null if the stream has been at the EOF state.</returns>
-		public LexicalToken Token(LexicalTokenType tokenType, int length, object value)
+		public LexicalToken Token(LexicalTokenType tokenType, int length, object? value)
 		{
 			return Token(tokenType, length, Substring(0, length), value);
 		}
@@ -292,10 +292,10 @@ namespace Lexxys.Tokenizer
 		/// <param name="text">Content of the <see cref="LexicalToken"/>.</param>
 		/// <param name="value">Value of the <see cref="LexicalToken"/>.</param>
 		/// <returns>New <see cref="LexicalToken"/> or null if the stream has been at the EOF state.</returns>
-		public LexicalToken Token(LexicalTokenType tokenType, int length, string text, object value)
+		public LexicalToken Token(LexicalTokenType tokenType, int length, string text, object? value)
 		{
 			if (Eof)
-				return null;
+				return LexicalToken.Eof(_position);
 			var token = new LexicalToken(tokenType, text, _position, value, _culture);
 			Forward(length);
 			return token;
@@ -571,7 +571,7 @@ namespace Lexxys.Tokenizer
 		/// <returns>An object that contains information about the match.</returns>
 		/// <exception cref="System.ArgumentNullException"><paramref name="regex"/> is null.</exception>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
-		public Match Match(Regex regex, int offset = 0)
+		public Match? Match(Regex regex, int offset = 0)
 		{
 			if (regex == null)
 				throw new ArgumentNullException(nameof(regex));
@@ -592,7 +592,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="comparision">One of the enumeration values that determines how this string and value are compared.</param>
 		/// <returns>true if the value parameter matches the Stream; otherwise, false.</returns>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
-		public bool StartsWith(string value, int offset, StringComparison comparision)
+		public bool StartsWith(string? value, int offset, StringComparison comparision)
 		{
 			if (value == null || value.Length == 0)
 				return false;
@@ -620,7 +620,7 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="message">Exception message.</param>
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
-		public SyntaxException SyntaxException(string message)
+		public SyntaxException SyntaxException(string? message)
 		{
 			var at = GetCharPosition();
 			return new SyntaxException(message, null, at.Line + 1, at.Column + 1);
@@ -632,7 +632,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="message">Exception message.</param>
 		/// <param name="file">File info to include into the result</param>
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
-		public SyntaxException SyntaxException(string message, string file)
+		public SyntaxException SyntaxException(string? message, string? file)
 		{
 			var at = GetCharPosition();
 			return new SyntaxException(message, file, at.Line + 1, at.Column + 1);
@@ -644,7 +644,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="message">Exception message.</param>
 		/// <param name="position">Position in the Stream.</param>
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
-		public SyntaxException SyntaxException(string message, int position)
+		public SyntaxException SyntaxException(string? message, int position)
 		{
 			var at = GetCharPosition(position);
 			return new SyntaxException(message, null, at.Line + 1, at.Column + 1);
@@ -657,7 +657,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="file">File info to include into the result</param>
 		/// <param name="position">Position in the Stream.</param>
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
-		public SyntaxException SyntaxException(string message, string file, int position)
+		public SyntaxException SyntaxException(string? message, string? file, int position)
 		{
 			var at = GetCharPosition(position);
 			return new SyntaxException(message, file, at.Line + 1, at.Column + 1);

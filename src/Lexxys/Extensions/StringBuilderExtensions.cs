@@ -14,7 +14,7 @@ namespace Lexxys
 {
 	public static class StringBuilderExtensions
 	{
-		public static StringBuilder Append(this StringBuilder text, params string[] values)
+		public static StringBuilder Append(this StringBuilder text, params string?[]? values)
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
@@ -27,7 +27,7 @@ namespace Lexxys
 			return text;
 		}
 
-		public static StringBuilder Append<T>(this StringBuilder text, IEnumerable<T> source, Func<T, string> producer, string separator = null)
+		public static StringBuilder Append<T>(this StringBuilder text, IEnumerable<T>? source, Func<T, string?> producer, string? separator = null)
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
@@ -36,7 +36,7 @@ namespace Lexxys
 			if (producer == null)
 				throw new ArgumentNullException(nameof(producer));
 
-			string sep = "";
+			string? sep = "";
 			foreach (T item in source)
 			{
 				text.Append(sep).Append(producer(item));

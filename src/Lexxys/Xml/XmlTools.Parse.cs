@@ -13,8 +13,6 @@ using System.Xml.Serialization;
 
 using Lexxys;
 
-#nullable enable
-
 namespace Lexxys.Xml
 {
 	public static partial class XmlTools

@@ -9,8 +9,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 
-#nullable enable
-
 namespace Lexxys.Configuration
 {
 using System.Text;

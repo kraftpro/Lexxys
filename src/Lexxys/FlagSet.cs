@@ -12,8 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 
-#nullable enable
-
 #pragma warning disable CA2225 // Operator overloads have named alternates
 
 namespace Lexxys

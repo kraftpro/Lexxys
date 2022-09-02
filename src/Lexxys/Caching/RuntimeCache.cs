@@ -9,8 +9,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.Caching;
 
-#nullable enable
-
 namespace Lexxys
 {
 	#pragma warning disable CA1720 // Identifier contains type name

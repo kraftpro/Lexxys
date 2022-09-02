@@ -14,8 +14,6 @@ using System.Reflection;
 using System.Text;
 using System.Xml;
 
-#nullable enable
-
 #pragma warning disable CA1720 // Identifier contains type name
 #pragma warning disable CA1031 // Do not catch general exception types
 #pragma warning disable CA2225 // Operator overloads have named alternates

@@ -19,7 +19,9 @@ namespace Lexxys.Tokenizer
 	public readonly struct LexicalTokenType: IEquatable<LexicalTokenType>
 	{
 		#pragma warning disable CA1720 // Identifier contains type name
-		public static readonly LexicalTokenType EOF			= new LexicalTokenType(0, 0, "eof");
+		public static readonly LexicalTokenType EMPTY		= new LexicalTokenType(0, 0, "empty");
+		public static readonly LexicalTokenType BOF			= new LexicalTokenType(0, 1, "bof");
+		public static readonly LexicalTokenType EOF			= new LexicalTokenType(0, 2, "eof");
 		public static readonly LexicalTokenType NUMERIC		= new LexicalTokenType(1, 0, "number");
 		public static readonly LexicalTokenType IDENTIFIER	= new LexicalTokenType(2, 0, "identifier");
 		public static readonly LexicalTokenType STRING		= new LexicalTokenType(3, 0, "string");
@@ -40,7 +42,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="group">Group Id.</param>
 		/// <param name="item">Item Id.</param>
 		/// <param name="name">Type name.</param>
-		public LexicalTokenType(short group, short item = 0, string name = null)
+		public LexicalTokenType(short group, short item, string name)
 		{
 			Group = group;
 			Item = item;
@@ -197,7 +199,7 @@ namespace Lexxys.Tokenizer
 		}
 
 		/// <inheritdoc />
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is LexicalTokenType ltt && this == ltt;
 		}

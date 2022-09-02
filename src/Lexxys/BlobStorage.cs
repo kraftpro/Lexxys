@@ -12,8 +12,6 @@ using System.Linq;
 using System.Text;
 // Re Sharper disable ConditionIsAlwaysTrueOrFalse
 
-#nullable enable
-
 namespace Lexxys
 {
 	/// <summary>

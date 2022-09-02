@@ -19,8 +19,6 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 
-#nullable enable
-
 namespace Lexxys.Xml
 {
 	public static partial class XmlTools

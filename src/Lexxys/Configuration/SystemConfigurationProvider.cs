@@ -10,9 +10,6 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 
-
-#nullable enable
-
 namespace Lexxys.Configuration
 {
 	using Xml;

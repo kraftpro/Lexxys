@@ -19,8 +19,6 @@ using System.Collections;
 using System.Xml.XPath;
 #endif
 
-#nullable enable
-
 #pragma warning disable CA1307 // Specify StringComparison for clarity
 
 namespace Lexxys.Xml

@@ -14,8 +14,6 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Globalization;
 
-#nullable enable
-
 namespace Lexxys.Xml
 {
 	public class XmlToTextConverter

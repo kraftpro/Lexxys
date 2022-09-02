@@ -6,6 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -52,12 +53,8 @@ namespace Lexxys.Tokenizer
 			}
 			_beginning = beginning;
 		}
-		protected CommentsTokenRule(LexicalTokenType tokenType)
-		{
-			TokenType = tokenType;
-		}
-		
-		public override string BeginningChars => _beginning;
+
+		public override string? BeginningChars => _beginning;
 
 		public LexicalTokenType TokenType { get; }
 
@@ -66,13 +63,13 @@ namespace Lexxys.Tokenizer
 			return _beginning.Contains(value);
 		}
 
-		public override LexicalToken TryParse(CharStream stream)
+		public override LexicalToken? TryParse(CharStream stream)
 		{
 			if (stream is null)
 				throw new ArgumentNullException(nameof(stream));
 
-			string commentStart = null;
-			string commentEnd = null;
+			string? commentStart = null;
+			string? commentEnd = null;
 			string s = stream.Substring(0, _startLength);
 			for (int i = 0; i < _startEnd.Length; i += 2)
 			{
@@ -85,17 +82,17 @@ namespace Lexxys.Tokenizer
 			}
 			if (commentStart == null)
 				return null;
+			Debug.Assert(commentEnd != null);
 
-			int position = stream.IndexOf(commentEnd, commentStart.Length);
+			int position = stream.IndexOf(commentEnd!, commentStart.Length);
 			if (position < 0)
 			{
-				if (commentEnd == "\n")
-					position = stream.Length;
-				else
+				if (commentEnd != "\n")
 					throw stream.SyntaxException(SR.EofInComments());
+				position = stream.Length;
 			}
 			string comment = stream.Substring(commentStart.Length, position - commentStart.Length);
-			return stream.Token(TokenType, position + (commentEnd == "\n" ? 0: commentEnd.Length), comment);
+			return stream.Token(TokenType, position + (commentEnd == "\n" ? 0: commentEnd!.Length), comment);
 		}
 	}
 
@@ -121,7 +118,7 @@ namespace Lexxys.Tokenizer
 			return value == '/';
 		}
 
-		public override LexicalToken TryParse(CharStream stream)
+		public override LexicalToken? TryParse(CharStream stream)
 		{
 			if (stream is null)
 				throw new ArgumentNullException(nameof(stream));
@@ -169,7 +166,7 @@ namespace Lexxys.Tokenizer
 			return value == '#';
 		}
 
-		public override LexicalToken TryParse(CharStream stream)
+		public override LexicalToken? TryParse(CharStream stream)
 		{
 			if (stream is null)
 				throw new ArgumentNullException(nameof(stream));

@@ -97,14 +97,14 @@ namespace Lexxys
 		/// <summary>
 		/// String used for indenting.
 		/// </summary>
-		public string Tab { get; set; }
+		public string? Tab { get; set; }
 
 		/// <summary>
 		/// Writes <see cref="String"/> value to the stream.
 		/// </summary>
 		/// <param name="text">The value to write.</param>
 		/// <returns></returns>
-		public abstract DumpWriter Text(string text);
+		public abstract DumpWriter Text(string? text);
 		/// <summary>
 		/// Writes <see cref="Char"/> value to the stream.
 		/// </summary>
@@ -123,6 +123,8 @@ namespace Lexxys
 		/// <returns></returns>
 		public static DumpWriter Create(TextWriter writer, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
 			return new DumpStreamWriter(writer, maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit);
 		}
 
@@ -138,6 +140,8 @@ namespace Lexxys
 		/// <returns></returns>
 		public static DumpWriter Create(StringBuilder writer, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0)
 		{
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
 			return new DumpStringWriter(writer, maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit);
 		}
 
@@ -155,9 +159,11 @@ namespace Lexxys
 			return new DumpStringWriter(new StringBuilder(), maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit);
 		}
 
-		public static string ToString(object value, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0, bool pretty = false)
+		public static string ToString(object? value, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0, bool pretty = false)
 		{
-			return Create(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit).Pretty(pretty, "  ").DumpIt(value, ignoreToString: true).ToString();
+			return Create(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
+				.Pretty(pretty, "  ")
+				.DumpIt(value, ignoreToString: true).ToString()!;
 		}
 
 		/// <summary>
@@ -166,7 +172,7 @@ namespace Lexxys
 		/// <param name="formatted"></param>
 		/// <param name="tab"></param>
 		/// <returns></returns>
-		public DumpWriter Pretty(bool formatted = true, string tab = null)
+		public DumpWriter Pretty(bool formatted = true, string? tab = null)
 		{
 			Format = formatted;
 			Tab = tab;
@@ -330,7 +336,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The value to dump.</param>
 		/// <returns></returns>
-		public DumpWriter Dump(string value)
+		public DumpWriter Dump(string? value)
 		{
 			if (value == null)
 				return Text(NullValue);
@@ -367,7 +373,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The value to dump.</param>
 		/// <returns></returns>
-		public DumpWriter Dump(IEnumerable<byte> value)
+		public DumpWriter Dump(IEnumerable<byte>? value)
 		{
 			if (value == null)
 				return Text(NullValue);
@@ -410,7 +416,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The value to dump.</param>
 		/// <returns></returns>
-		public DumpWriter Dump(BitArray value)
+		public DumpWriter Dump(BitArray? value)
 		{
 			if (value == null)
 				return Text(NullValue);
@@ -428,7 +434,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The value to dump.</param>
 		/// <returns></returns>
-		public DumpWriter Dump(IDump value)
+		public DumpWriter Dump(IDump? value)
 		{
 			return Dump(value, false);
 		}
@@ -439,7 +445,7 @@ namespace Lexxys
 		/// <param name="value">The value to dump.</param>
 		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter Dump(IEnumerable value, bool ignoreToString = false)
+		public DumpWriter Dump(IEnumerable? value, bool ignoreToString = false)
 		{
 			if (value == null)
 				return Text(NullValue);
@@ -485,7 +491,7 @@ namespace Lexxys
 		/// <param name="value">The value to dump.</param>
 		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter Dump(IEnumerator value, bool ignoreToString = false)
+		public DumpWriter Dump(IEnumerator? value, bool ignoreToString = false)
 		{
 			if (value == null)
 				return Text(NullValue);
@@ -523,7 +529,7 @@ namespace Lexxys
 		/// <param name="value">The value to dump.</param>
 		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter Dump(IDictionary value, bool ignoreToString = false)
+		public DumpWriter Dump(IDictionary? value, bool ignoreToString = false)
 		{
 			if (value == null)
 				return Text(NullValue);
@@ -574,7 +580,7 @@ namespace Lexxys
 		/// <param name="value">The value to dump</param>
 		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter Dump(object value, bool ignoreToString = false)
+		public DumpWriter Dump(object? value, bool ignoreToString = false)
 		{
 			return DumpIt(value, ignoreToString: ignoreToString);
 		}
@@ -585,7 +591,7 @@ namespace Lexxys
 		/// <param name="value">The value to dump</param>
 		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter DumpObject(object value, bool ignoreToString = false)
+		public DumpWriter DumpObject(object? value, bool ignoreToString = false)
 		{
 			return DumpIt(value, skipIDump: true, ignoreToString: ignoreToString);
 		}
@@ -596,7 +602,7 @@ namespace Lexxys
 		/// <param name="value">The value to dump</param>
 		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter DumpObjectContent(object value, bool ignoreToString = false)
+		public DumpWriter DumpObjectContent(object? value, bool ignoreToString = false)
 		{
 			return DumpIt(value, skipIDump: true, contentOnly: true, ignoreToString: ignoreToString);
 		}
@@ -607,7 +613,7 @@ namespace Lexxys
 		/// <param name="value">The value to dump</param>
 		/// <param name="ignoreToString">Don't use ToString method for dump</param>
 		/// <returns></returns>
-		public DumpWriter DumpContent(object value, bool ignoreToString = false)
+		public DumpWriter DumpContent(object? value, bool ignoreToString = false)
 		{
 			return DumpIt(value, contentOnly: true, ignoreToString: ignoreToString);
 		}
@@ -617,7 +623,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The value to dump</param>
 		/// <returns></returns>
-		public DumpWriter DumpContent(IDump value)
+		public DumpWriter DumpContent(IDump? value)
 		{
 			return Dump(value, true);
 		}
@@ -630,7 +636,7 @@ namespace Lexxys
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Item(string name, object value) => Text(name).Text('=').Dump(value);
+		public DumpWriter Item(string name, object? value) => Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form Name=Value
 		/// </summary>
@@ -799,7 +805,7 @@ namespace Lexxys
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Then(string name, object value) => Text(',').Text(name).Text('=').Dump(value);
+		public DumpWriter Then(string name, object? value) => Text(',').Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form: ,Name=Value
 		/// </summary>
@@ -813,35 +819,35 @@ namespace Lexxys
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Then(string name, IDictionary value) => Text(',').Text(name).Text('=').Dump(value);
+		public DumpWriter Then(string name, IDictionary? value) => Text(',').Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form: ,Name=Value
 		/// </summary>
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Then(string name, IEnumerator value) => Text(',').Text(name).Text('=').Dump(value);
+		public DumpWriter Then(string name, IEnumerator? value) => Text(',').Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form: ,Name=Value
 		/// </summary>
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Then(string name, IEnumerable value) => Text(',').Text(name).Text('=').Dump(value);
+		public DumpWriter Then(string name, IEnumerable? value) => Text(',').Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form: ,Name=Value
 		/// </summary>
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Then(string name, IDump value) => Text(',').Text(name).Text('=').Dump(value);
+		public DumpWriter Then(string name, IDump? value) => Text(',').Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form: ,Name=Value
 		/// </summary>
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Then(string name, BitArray value) => Text(',').Text(name).Text('=').Dump(value);
+		public DumpWriter Then(string name, BitArray? value) => Text(',').Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form: ,Name=Value
 		/// </summary>
@@ -876,7 +882,7 @@ namespace Lexxys
 		/// <param name="name">Name of the item</param>
 		/// <param name="value">Value of the item</param>
 		/// <returns></returns>
-		public DumpWriter Then(string name, IEnumerable<byte> value) => Text(',').Text(name).Text('=').Dump(value);
+		public DumpWriter Then(string name, IEnumerable<byte>? value) => Text(',').Text(name).Text('=').Dump(value);
 		/// <summary>
 		/// Dumps item in form: ,Name=Value
 		/// </summary>
@@ -964,7 +970,7 @@ namespace Lexxys
 
 		#endregion
 
-		private DumpWriter Dump(IDump value, bool contentOnly)
+		private DumpWriter Dump(IDump? value, bool contentOnly)
 		{
 			if (value == null)
 				return Text(NullValue);
@@ -986,7 +992,7 @@ namespace Lexxys
 			}
 		}
 
-		private DumpWriter DumpIt(object value, bool skipIDump = false, bool contentOnly = false, bool ignoreToString = false)
+		private DumpWriter DumpIt(object? value, bool skipIDump = false, bool contentOnly = false, bool ignoreToString = false)
 		{
 			if (Depth > MaxDepth)
 				return Text("...");
@@ -1093,7 +1099,7 @@ namespace Lexxys
 							return this;
 						try
 						{
-							object v = item.GetValue(value);
+							object? v = item.GetValue(value);
 							if (pad != '\0')
 								Text(pad);
 							NewLine();
@@ -1134,7 +1140,7 @@ namespace Lexxys
 			return this;
 		}
 
-		private static string Repeat(string value, int count)
+		private static string Repeat(string? value, int count)
 		{
 			if (count == 0)
 				return "";
@@ -1199,7 +1205,7 @@ namespace Lexxys
 		}
 
 		/// <inheritdoc />
-		public override DumpWriter Text(string text)
+		public override DumpWriter Text(string? text)
 		{
 			if (text == null)
 				text = NullValue;
@@ -1263,11 +1269,13 @@ namespace Lexxys
 		public DumpStringWriter(StringBuilder writer, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0)
 			: base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
 		{
-			_w = writer ?? new StringBuilder();
+			if (writer is null)
+				throw new ArgumentNullException(nameof(writer));
+			_w = writer;
 		}
 
 		/// <inheritdoc />
-		public override DumpWriter Text(string text)
+		public override DumpWriter Text(string? text)
 		{
 			if (text == null)
 				text = NullValue;

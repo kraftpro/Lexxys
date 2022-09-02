@@ -15,8 +15,8 @@ namespace Lexxys
 	public class ValueList<TValue>: IList<TValue>
 		where TValue: struct
 	{
-		private static readonly TValue[][] NoItems = Array.Empty<TValue[]>();
-		private TValue[][] _items;
+		private static readonly TValue[]?[] NoItems = Array.Empty<TValue[]>();
+		private TValue[]?[] _items;
 		private int _count;
 		private int _capacity;
 		private int _topI;
@@ -84,13 +84,13 @@ namespace Lexxys
 			{
 				if (_count == 0)
 					throw new InvalidOperationException(SR.CollectionIsEmpty());
-				return _items[0][0];
+				return _items[0]![0];
 			}
 			set
 			{
 				if (_count == 0)
 					throw new InvalidOperationException(SR.CollectionIsEmpty());
-				_items[0][0] = value;
+				_items[0]![0] = value;
 			}
 		}
 
@@ -101,17 +101,17 @@ namespace Lexxys
 				if (_count == 0)
 					throw new InvalidOperationException(SR.CollectionIsEmpty());
 				return _topJ == 0 ?
-					_items[_topI-1][_items[_topI-1].Length - 1]:
-					_items[_topI][_topJ - 1];
+					_items[_topI-1]![_items[_topI-1]!.Length - 1]:
+					_items[_topI]![_topJ - 1];
 			}
 			set
 			{
 				if (_count == 0)
 					throw new InvalidOperationException(SR.CollectionIsEmpty());
 				if (_topJ == 0)
-					_items[_topI-1][_items[_topI-1].Length - 1] = value;
+					_items[_topI-1]![_items[_topI-1]!.Length - 1] = value;
 				else
-					_items[_topI][_topJ - 1] = value;
+					_items[_topI]![_topJ - 1] = value;
 			}
 		}
 
@@ -123,9 +123,9 @@ namespace Lexxys
 					throw new ArgumentOutOfRangeException(nameof(index), index, null);
 				for (int i = 0; i <= _topI; ++i)
 				{
-					if (index < _items[i].Length)
-						return _items[i][index];
-					index -= _items[i].Length;
+					if (index < _items[i]!.Length)
+						return _items[i]![index];
+					index -= _items[i]!.Length;
 				}
 				throw EX.Argument(SR.EndOfCollection(), nameof(index), index);
 			}
@@ -142,12 +142,12 @@ namespace Lexxys
 
 				for (int i = 0; i <= _topI; ++i)
 				{
-					if (index < _items[i].Length)
+					if (index < _items[i]!.Length)
 					{
-						_items[i][index] = value;
+						_items[i]![index] = value;
 						return;
 					}
-					index -= _items[i].Length;
+					index -= _items[i]!.Length;
 				}
 				throw EX.Argument(SR.EndOfCollection(), nameof(index), index);
 			}
@@ -167,12 +167,12 @@ namespace Lexxys
 				if (++ij >= len)
 				{
 					++ii;
-					len = _items[ii].Length;
+					len = _items[ii]!.Length;
 					ij = 0;
 				}
-				if (predicate(_items[ii][ij]))
+				if (predicate(_items[ii]![ij]))
 				{
-					result = _items[ii][ij];
+					result = _items[ii]![ij];
 					return true;
 				}
 			}
@@ -189,17 +189,17 @@ namespace Lexxys
 
 			int ii = 0;
 			int ij = 0;
-			int len = _items[0].Length;
+			int len = _items[0]!.Length;
 
 			for (int i = 0; i < _count; ++i, ++ij)
 			{
 				if (ij >= len)
 				{
 					++ii;
-					len = _items[ii].Length;
+					len = _items[ii]!.Length;
 					ij = 0;
 				}
-				if (predicate(_items[ii][ij]))
+				if (predicate(_items[ii]![ij]))
 				{
 					return i;
 				}
@@ -213,13 +213,13 @@ namespace Lexxys
 			{
 				for (int i = 0; i <= _topI; ++i)
 				{
-					if (index < _items[i].Length)
+					if (index < _items[i]!.Length)
 					{
 						ii = i;
 						ij = index;
 						return true;
 					}
-					index -= _items[i].Length;
+					index -= _items[i]!.Length;
 				}
 			}
 			ii = -1;
@@ -234,16 +234,16 @@ namespace Lexxys
 
 			if (FindIndexPosition(start, out int ii, out int ij))
 			{
-				int len = _items[ii].Length;
+				int len = _items[ii]!.Length;
 				for (int i = start; i < _count; ++i, ++ij)
 				{
 					if (ij >= len)
 					{
 						++ii;
-						len = _items[ii].Length;
+						len = _items[ii]!.Length;
 						ij = 0;
 					}
-					if (predicate(_items[ii][ij]))
+					if (predicate(_items[ii]![ij]))
 					{
 						return i;
 					}
@@ -303,7 +303,7 @@ namespace Lexxys
 						var tmp = new TValue[_items.Length*2][];
 						for (int i = 0; i<_items.Length; ++i)
 						{
-							tmp[i] = _items[i];
+							tmp[i] = _items[i]!;
 							_items[i] = null;
 						}
 						_items = tmp;
@@ -312,7 +312,7 @@ namespace Lexxys
 					}
 				}
 			}
-			_items[_topI][_topJ] = item;
+			_items[_topI]![_topJ] = item;
 			++_topJ;
 			++_count;
 		}
@@ -329,7 +329,7 @@ namespace Lexxys
 		public bool Contains(TValue item)
 		{
 			int left = _count;
-			foreach (TValue[] t in _items)
+			foreach (TValue[]? t in _items)
 			{
 				if (t == null)
 					return false;
@@ -343,7 +343,7 @@ namespace Lexxys
 					return false;
 			}
 			left = _count;
-			foreach (TValue[] t in _items)
+			foreach (TValue[]? t in _items)
 			{
 				if (t == null)
 					return false;
@@ -369,7 +369,7 @@ namespace Lexxys
 		public void CopyTo(TValue[] array, int arrayIndex)
 		{
 			int left = _count;
-			foreach (TValue[] t in _items)
+			foreach (TValue[]? t in _items)
 			{
 				if (t == null)
 					return;
@@ -382,7 +382,7 @@ namespace Lexxys
 					return;
 			}
 			left = _count;
-			foreach (TValue[] t in _items)
+			foreach (TValue[]? t in _items)
 			{
 				if (t == null)
 					return;
@@ -422,13 +422,13 @@ namespace Lexxys
 			int ij = -1;
 			for (int i = 0; i < _count; ++i)
 			{
-				if (++ij >= _items[ii].Length)
+				if (++ij >= _items[ii]!.Length)
 				{
 					if (++ii >= _items.Length)
 						break;
 					ij = 0;
 				}
-				yield return _items[ii][ij];
+				yield return _items[ii]![ij];
 			}
 		}
 		#endregion
@@ -440,13 +440,13 @@ namespace Lexxys
 			int ij = -1;
 			for (int i = 0; i < _count; ++i)
 			{
-				if (++ij >= _items[ii].Length)
+				if (++ij >= _items[ii]!.Length)
 				{
 					if (++ii >= _items.Length)
 						break;
 					ij = 0;
 				}
-				yield return _items[ii][ij];
+				yield return _items[ii]![ij];
 			}
 		}
 		#endregion

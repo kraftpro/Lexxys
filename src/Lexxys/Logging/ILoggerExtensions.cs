@@ -5,8 +5,6 @@ using System.Text;
 
 using Microsoft.Extensions.Logging;
 
-#nullable enable
-
 namespace Lexxys
 {
 	#pragma warning disable CA1062 // Validate arguments of public methods

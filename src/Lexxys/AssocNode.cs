@@ -18,107 +18,78 @@ namespace Lexxys
 	/// </remarks>
 	public class AssocNode
 	{
-		private List<AssocNode> _forwards;
+		private List<AssocNode>? _forwards;
 		private bool _forwardsBuilt;
-		private List<AssocNode> _backwards;
+		private List<AssocNode>? _backwards;
 		private bool _backwardsBuilt;
 
-		private static readonly List<AssocNode> _emptyList = new List<AssocNode>();
-		private static readonly IEnumerable<AssocNode> _emptyCollection = _emptyList.AsReadOnly();
+		private static readonly IEnumerable<AssocNode> _emptyCollection = Array.Empty<AssocNode>();
 
-		protected static IList<AssocNode> EmptyList
-		{
-			get { return _emptyList; }
-		}
+		protected static IEnumerable<AssocNode> EmptyCollection => _emptyCollection;
 
-		protected static IEnumerable<AssocNode> EmptyCollection
-		{
-			get { return _emptyCollection; }
-		}
-
-		public IList<AssocNode> Forwards
+		public IReadOnlyList<AssocNode> Forwards
 		{
 			get
 			{
 				if (!_forwardsBuilt)
 					BuildForwards();
-				return _forwards;
+				return (IReadOnlyList<AssocNode>?)_forwards ?? Array.Empty<AssocNode>();
 			}
 		}
 
-		public IList<AssocNode> Backwards
+		public IReadOnlyList<AssocNode> Backwards
 		{
 			get
 			{
 				if (!_backwardsBuilt)
 					BuildBackwards();
-				return _backwards;
+				return (IReadOnlyList<AssocNode>?)_backwards ?? Array.Empty<AssocNode>();
 			}
 		}
 
-		protected IList<AssocNode> CollectedForwards
-		{
-			get { return _forwards ?? _emptyList; }
-		}
+		protected IReadOnlyList<AssocNode> CollectedForwards => (IReadOnlyList<AssocNode>?)_forwards ?? Array.Empty<AssocNode>();
 
-		protected IList<AssocNode> CollectedBackwards
-		{
-			get { return _backwards ?? _emptyList; }
-		}
+		protected IReadOnlyList<AssocNode> CollectedBackwards => (IReadOnlyList<AssocNode>?)_backwards ?? Array.Empty<AssocNode>();
 
-		public bool ForwardsCollected
-		{
-			get { return _forwardsBuilt || _forwards != null; }
-		}
+		public bool ForwardsCollected => _forwardsBuilt || _forwards != null;
 
-		public bool BackwardsCollected
-		{
-			get { return _backwardsBuilt || _backwards != null; }
-		}
+		public bool BackwardsCollected => _backwardsBuilt || _backwards != null;
 
-		protected virtual IEnumerable<AssocNode> ComposeForwards()
-		{
-			return _emptyCollection;
-		}
+		public string XmlElementName { get; } = String.Empty;
 
-		protected virtual IEnumerable<AssocNode> ComposeBackwards()
-		{
-			return _emptyCollection;
-		}
+		protected virtual IEnumerable<AssocNode> ComposeForwards() => _emptyCollection;
+
+		protected virtual IEnumerable<AssocNode> ComposeBackwards() => _emptyCollection;
 
 		private void BuildForwards()
 		{
-			if (!_forwardsBuilt)
-			{
-				foreach (AssocNode x in ComposeForwards())
-					AddForward(x);
-				_forwards ??= _emptyList;
-				_forwardsBuilt = true;
-			}
+			if (_forwardsBuilt)
+				return;
+			foreach (AssocNode x in ComposeForwards())
+				AddForward(x);
+			_forwardsBuilt = true;
 		}
 
 		private void BuildBackwards()
 		{
-			if (!_backwardsBuilt)
-			{
-				foreach (AssocNode x in ComposeBackwards())
-					AddBackward(x);
-				_backwards ??= _emptyList;
-				_backwardsBuilt = true;
-			}
+			if (_backwardsBuilt)
+				return;
+			foreach (AssocNode x in ComposeBackwards())
+				AddBackward(x);
+			_backwardsBuilt = true;
 		}
 
 		public bool AddForward(AssocNode node)
 		{
 			if (node == null)
-				throw EX.ArgumentNull(nameof(node));
+				throw new ArgumentNullException(nameof(node));
 			CheckMisReference(node);
-			if (_forwards == null || _forwards == _emptyList)
+			if (_forwards == null)
 				_forwards = new List<AssocNode>();
 			else if (_forwards.Contains(node))
 				return false;
 			_forwards.Add(node);
-			if (node._backwards == null || node._backwards == _emptyList)
+			if (node._backwards == null)
 				node._backwards = new List<AssocNode>();
 			node._backwards.Add(this);
 			return true;
@@ -127,14 +98,14 @@ namespace Lexxys
 		public bool AddBackward(AssocNode node)
 		{
 			if (node == null)
-				throw EX.ArgumentNull(nameof(node));
+				throw new ArgumentNullException(nameof(node));
 			CheckMisReference(node);
-			if (_backwards == null || _backwards == _emptyList)
+			if (_backwards == null)
 				_backwards = new List<AssocNode>();
 			else if (_backwards.Contains(node))
 				return false;
 			_backwards.Add(node);
-			if (node._forwards == null || node._forwards == _emptyList)
+			if (node._forwards == null)
 				node._forwards = new List<AssocNode>();
 			node._forwards.Add(this);
 			return true;
@@ -143,24 +114,24 @@ namespace Lexxys
 		public void RemoveForward(AssocNode node)
 		{
 			if (node == null)
-				throw EX.ArgumentNull(nameof(node));
+				throw new ArgumentNullException(nameof(node));
 			CheckMisReference(node);
 			if (HasForward(node))
 			{
-				_forwards.Remove(node);
-				node._backwards.Remove(this);
+				_forwards!.Remove(node);
+				node._backwards!.Remove(this);
 			}
 		}
 
 		public void RemoveBackward(AssocNode node)
 		{
 			if (node == null)
-				throw EX.ArgumentNull(nameof(node));
+				throw new ArgumentNullException(nameof(node));
 			CheckMisReference(node);
 			if (HasBackward(node))
 			{
-				_backwards.Remove(node);
-				node._forwards.Remove(this);
+				_backwards!.Remove(node);
+				node._forwards!.Remove(this);
 			}
 		}
 
@@ -170,7 +141,8 @@ namespace Lexxys
 			{
 				foreach (AssocNode node in _forwards)
 				{
-					node._backwards.Remove(this);
+					CheckForward(node);
+					node._backwards!.Remove(this);
 				}
 				_forwards = null;
 			}
@@ -183,7 +155,8 @@ namespace Lexxys
 			{
 				foreach (AssocNode node in _backwards)
 				{
-					node._forwards.Remove(this);
+					CheckBackward(node);
+					node._forwards!.Remove(this);
 				}
 				_backwards = null;
 			}
@@ -201,7 +174,8 @@ namespace Lexxys
 			{
 				foreach (AssocNode node in _forwards)
 				{
-					node._backwards.Remove(this);
+					CheckForward(node);
+					node._backwards!.Remove(this);
 					if (temporary)
 						node._backwardsBuilt = false;
 				}
@@ -213,7 +187,8 @@ namespace Lexxys
 			{
 				foreach (AssocNode node in _backwards)
 				{
-					node._forwards.Remove(this);
+					CheckBackward(node);
+					node._forwards!.Remove(this);
 					if (temporary)
 						node._forwardsBuilt = false;
 				}
@@ -222,15 +197,9 @@ namespace Lexxys
 			_backwardsBuilt = false;
 		}
 
-		private bool HasForward(AssocNode node)
-		{
-			return _forwards != null && _forwards.Contains(node);
-		}
+		private bool HasForward(AssocNode node) => _forwards != null && _forwards.Contains(node);
 
-		private bool HasBackward(AssocNode node)
-		{
-			return _backwards != null && _backwards.Contains(node);
-		}
+		private bool HasBackward(AssocNode node) => _backwards != null && _backwards.Contains(node);
 
 		[Conditional("DEBUG")]
 		private void CheckMisReference(AssocNode node)
@@ -238,6 +207,20 @@ namespace Lexxys
 			if (HasForward(node) ^ node.HasBackward(this))
 				throw new InvalidOperationException(SR.AssocNodeMissReference());
 			if (HasBackward(node) ^ node.HasForward(this))
+				throw new InvalidOperationException(SR.AssocNodeMissReference());
+		}
+
+		[Conditional("DEBUG")]
+		private void CheckBackward(AssocNode node)
+		{
+			if (!node.HasForward(this))
+				throw new InvalidOperationException(SR.AssocNodeMissReference());
+		}
+
+		[Conditional("DEBUG")]
+		private void CheckForward(AssocNode node)
+		{
+			if (!node.HasBackward(this))
 				throw new InvalidOperationException(SR.AssocNodeMissReference());
 		}
 

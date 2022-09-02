@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
 
-#nullable enable
-
 namespace Lexxys
 {
 	public static class ILoggingExtensions

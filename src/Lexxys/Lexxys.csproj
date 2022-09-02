@@ -19,7 +19,7 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <AnalysisLevel>6.0-all</AnalysisLevel>
     <LangVersion>preview</LangVersion>
-    <!--Nullable>enable</Nullable-->
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net471'">

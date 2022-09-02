@@ -18,29 +18,29 @@ namespace Lexxys
 		{
 		}
 
-		public DataSourceException(string message)
+		public DataSourceException(string? message)
 			: base(message)
 		{
 		}
 
-		public DataSourceException(string message, string connectionInfo)
+		public DataSourceException(string? message, string? connectionInfo)
 			: base(message)
 		{
 			base.Data["connection"] = connectionInfo;
 		}
 
-		public DataSourceException(string message, Exception exception)
+		public DataSourceException(string? message, Exception? exception)
 			: base(message, exception)
 		{
 		}
 
-		public DataSourceException(string message, string connectionInfo, Exception exception)
+		public DataSourceException(string? message, string? connectionInfo, Exception? exception)
 			: base(message, exception)
 		{
 			base.Data["connection"] = connectionInfo;
 		}
 
-		public DataSourceException(string message, string connectionInfo, string statement, Exception exception)
+		public DataSourceException(string? message, string? connectionInfo, string? statement, Exception? exception)
 			: base(message, exception)
 		{
 			if (connectionInfo != null && connectionInfo.Length > 0)
@@ -49,7 +49,7 @@ namespace Lexxys
 			base.Data["statement"] = statement;
 		}
 
-		public DataSourceException(string message, string connectionInfo, string statement, IEnumerable<DbParameter> dbParameters, Exception exception)
+		public DataSourceException(string? message, string? connectionInfo, string? statement, IEnumerable<DbParameter>? dbParameters, Exception? exception)
 			: base(message, exception)
 		{
 			if (connectionInfo != null && connectionInfo.Length > 0)

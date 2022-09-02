@@ -4,9 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 
-
-#nullable enable
-
 namespace Lexxys.Configuration
 {
 	using Xml;

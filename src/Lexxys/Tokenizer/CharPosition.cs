@@ -11,8 +11,6 @@ using System.Text;
 using System.Globalization;
 using System.Diagnostics.Contracts;
 
-#nullable enable
-
 namespace Lexxys.Tokenizer
 {
 	/// <summary>

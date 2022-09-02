@@ -5,9 +5,6 @@ using System.Text;
 
 using Microsoft.Extensions.Primitives;
 
-
-#nullable enable
-
 namespace Lexxys
 {
 	public static class TypeExtensions

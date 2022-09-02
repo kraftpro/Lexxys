@@ -7,6 +7,8 @@
 using System;
 using System.Text;
 
+using Lexxys;
+
 namespace Lexxys
 {
 	public enum BusinessDayShiftType
@@ -46,7 +48,7 @@ namespace Lexxys
 		/// <param name="scheduledTime">The scheduled date and time</param>
 		/// <param name="businessDay">Predicate for business days calcualtions</param>
 		/// <returns>Date and time when for the specified reminder</returns>
-		public DateTime? Remind(DateTime? scheduledTime, Func<DateTime, bool> businessDay = null)
+		public DateTime? Remind(DateTime? scheduledTime, Func<DateTime, bool>? businessDay = null)
 		{
 			if (scheduledTime == null)
 				return null;
@@ -86,9 +88,11 @@ namespace Lexxys
 			return ToString(new StringBuilder(), null).ToString();
 		}
 
-		public StringBuilder ToString(StringBuilder text, IFormatProvider provider)
+		public StringBuilder ToString(StringBuilder text, IFormatProvider? provider)
 		{
-			text ??= new StringBuilder();
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
 			if (ShiftToBusinessDay != BusinessDayShiftType.None)
 			{
 				text.Append(" or the nearest business day ")
@@ -116,7 +120,7 @@ namespace Lexxys
 			return text;
 		}
 
-		public bool Equals(ScheduleReminder other)
+		public bool Equals(ScheduleReminder? other)
 		{
 			if (other is null)
 				return false;
@@ -125,9 +129,9 @@ namespace Lexxys
 			return Value == other.Value && RemindInBusinessDays == other.RemindInBusinessDays && ShiftToBusinessDay == other.ShiftToBusinessDay;
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
-			return Equals(obj as ScheduleReminder);
+			return obj is ScheduleReminder reminder && Equals(reminder);
 		}
 
 		public override int GetHashCode()
@@ -167,6 +171,7 @@ namespace Lexxys
 		{
 			if (json is null)
 				throw new ArgumentNullException(nameof(json));
+
 			if (Value != TimeSpan.Zero)
 			{
 				json.Item("value").Val(Value);
@@ -185,7 +190,7 @@ namespace Lexxys
 			return new ScheduleReminder(reminder, remindInBusinessDays, shiftToBusinessDay);
 		}
 
-		public static ScheduleReminder FromXml(Xml.XmlLiteNode xml)
+		public static ScheduleReminder FromXml(Xml.XmlLiteNode? xml)
 		{
 			return xml == null || xml.IsEmpty ? Empty:
 				new ScheduleReminder(xml["value"].AsTimeSpan(default), xml["businessDays"].AsBoolean(false), xml["shift"].AsEnum(default(BusinessDayShiftType)));

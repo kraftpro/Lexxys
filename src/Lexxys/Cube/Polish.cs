@@ -6,7 +6,6 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Collections.ObjectModel;
 
 namespace Lexxys.Cube
@@ -60,7 +59,7 @@ namespace Lexxys.Cube
 		/// <summary>Evaluate expression and return top element of stack</summary>
 		/// <param name="context">execution context</param>
 		/// <returns>top element of stack as a result of evaluation</returns>
-		public PolishToken Evaluate(Delegate context)
+		public PolishToken? Evaluate(Delegate context)
 		{
 			if (_stack.Count > 0)
 				Flush();

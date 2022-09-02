@@ -24,23 +24,22 @@ namespace Lexxys.Tokenizer
 		private readonly List<LexicalTokenRule> _extraRules;
 		private Func<LexicalToken> _getter;
 
-		private TokenScanner()
-		{
-			_rules = new List<LexicalTokenRule>(32);
-			_extraRules = new List<LexicalTokenRule>(32);
-			_asciiRules = new List<LexicalTokenRule>[HighAscii - LowAscii + 1];
-			_getter = GetNextToken;
-		}
-
 		/// <summary>
 		/// Initializes a new <see cref="TokenScanner"/> with the specified <paramref name="stream"/> and the list of the <see cref="LexicalTokenRule"/>s.
 		/// </summary>
 		/// <param name="stream">The <see cref="CharStream"/> to parse</param>
 		/// <param name="rules">Collection of the <see cref="LexicalTokenRule"/>s.</param>
 		public TokenScanner(CharStream stream, params LexicalTokenRule[] rules)
-			: this()
 		{
-			Stream = stream ?? throw new ArgumentNullException(nameof(stream));
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+
+			_rules = new List<LexicalTokenRule>(32);
+			_extraRules = new List<LexicalTokenRule>(32);
+			_asciiRules = new List<LexicalTokenRule>[HighAscii - LowAscii + 1];
+			_getter = GetNextToken;
+			Stream = stream;
+			Current = LexicalToken.Empty;
 			if (rules != null)
 			{
 				foreach (var rule in rules)
@@ -69,6 +68,7 @@ namespace Lexxys.Tokenizer
 			_asciiRules = scanner._asciiRules;
 			_extraRules = scanner._extraRules;
 			_getter = copyFilters ? scanner._getter: GetNextToken;
+			Current = LexicalToken.Empty;
 		}
 
 		/// <summary>
@@ -102,7 +102,7 @@ namespace Lexxys.Tokenizer
 		public void Reset()
 		{
 			Stream.Rewind();
-			Current = null;
+			Current = LexicalToken.Empty;
 		}
 
 		/// <summary>
@@ -135,7 +135,7 @@ namespace Lexxys.Tokenizer
 				do
 				{
 					token = getter();
-				} while (token != null && !predicate(token));
+				} while (!token.IsEmpty && !predicate(token));
 				return token;
 			};
 			return this;
@@ -192,7 +192,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="message"></param>
 		/// <param name="at"></param>
 		/// <returns></returns>
-		public SyntaxException SyntaxException(string message, int at = default)
+		public SyntaxException SyntaxException(string? message, int at = default)
 		{
 			if (at == default && Current != null)
 				at = Current.Position;
@@ -206,7 +206,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="fileName"></param>
 		/// <param name="at"></param>
 		/// <returns></returns>
-		public SyntaxException SyntaxException(string message, string fileName, int at = default)
+		public SyntaxException SyntaxException(string? message, string? fileName, int at = default)
 		{
 			if (at == default && Current != null)
 				at = Current.Position;
@@ -223,17 +223,17 @@ namespace Lexxys.Tokenizer
 			do
 			{
 				token = GetFirstByRule();
-			} while (token != null && token.Is(LexicalTokenType.IGNORE));
+			} while (!token.IsEmpty && token.Is(LexicalTokenType.IGNORE));
 			return token;
 		}
 
 		private LexicalToken GetFirstByRule()
 		{
 			if (Stream.Eof)
-				return null;
+				return LexicalToken.Eof(Stream.Position);
 			foreach (var rule in GetRules(Stream[0]))
 			{
-				LexicalToken token = rule.TryParse(Stream);
+				LexicalToken? token = rule.TryParse(Stream);
 				if (token != null)
 					return token;
 			}

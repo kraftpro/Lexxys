@@ -13,7 +13,7 @@ namespace Lexxys
 	{
 		public new const string Type = "daily";
 
-		public DailySchedule(int dayPeriod = 0, ScheduleReminder reminder = null): base(Type, reminder)
+		public DailySchedule(int dayPeriod = 0, ScheduleReminder? reminder = null): base(Type, reminder)
 		{
 			DayPeriod = Math.Max(1, dayPeriod);
 		}
@@ -49,7 +49,7 @@ namespace Lexxys
 			}
 		}
 
-		public override StringBuilder ToString(StringBuilder text, IFormatProvider provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
+		public override StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
@@ -62,7 +62,7 @@ namespace Lexxys
 			return text;
 		}
 
-		public bool Equals(DailySchedule other)
+		public bool Equals(DailySchedule? other)
 		{
 			if (other is null)
 				return false;
@@ -71,12 +71,12 @@ namespace Lexxys
 			return base.Equals(other) && DayPeriod == other.DayPeriod;
 		}
 
-		public override bool Equals(Schedule other)
+		public override bool Equals(Schedule? other)
 		{
 			return other is DailySchedule ds && Equals(ds);
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is DailySchedule ds && Equals(ds);
 		}

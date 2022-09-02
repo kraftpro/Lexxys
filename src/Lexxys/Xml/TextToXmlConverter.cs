@@ -11,8 +11,6 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Linq;
 
-#nullable enable
-
 #pragma warning disable CA1845 // Use span-based 'string.Concat'
 #pragma warning disable CA1307 // Specify StringComparison for clarity
 

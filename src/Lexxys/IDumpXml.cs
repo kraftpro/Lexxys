@@ -11,6 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Lexxys;
+
 namespace Lexxys
 {
 	public interface IDumpXml
@@ -21,7 +23,7 @@ namespace Lexxys
 
 	public static class DumpXmlExtensions
 	{
-		public static XmlBuilder ToXml(this IDumpXml obj, XmlBuilder xml)
+		public static XmlBuilder ToXml(this IDumpXml? obj, XmlBuilder xml)
 		{
 			if (xml is null)
 				throw new ArgumentNullException(nameof(xml));
@@ -29,20 +31,19 @@ namespace Lexxys
 			return xml;
 		}
 
-		public static StringBuilder ToXml(this IDumpXml obj, StringBuilder text)
+		public static StringBuilder ToXml(this IDumpXml? obj, StringBuilder text)
 		{
-			Contract.Ensures(Contract.Result<StringBuilder>() != null);
-			text ??= new StringBuilder();
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
 			if (obj == null)
 				return text;
 			obj.ToXml(new XmlStringBuilder(text));
 			return text;
 		}
 
-		public static string ToXml(this IDumpXml obj)
+		public static string ToXml(this IDumpXml? obj)
 		{
-			Contract.Ensures(Contract.Result<string>() != null);
-			return obj == null ? "" : obj.ToXml(new XmlStringBuilder()).ToString();
+			return obj == null ? "" : obj.ToXml(new XmlStringBuilder()).ToString()!;
 		}
 	}
 }

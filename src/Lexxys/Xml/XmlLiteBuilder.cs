@@ -12,12 +12,14 @@ using System.Linq;
 using System.Reflection;
 using System.Xml;
 
+using Lexxys;
+
 namespace Lexxys.Xml
 {
 	public class XmlLiteBuilder
 	{
-		private List<XmlLiteNode> _nodes;
-		private XmlDraftNode _next;
+		private List<XmlLiteNode>? _nodes;
+		private XmlDraftNode? _next;
 		private readonly StringComparer _comparer;
 
 		public XmlLiteBuilder(bool ignoreCase = false)
@@ -61,6 +63,9 @@ namespace Lexxys.Xml
 
 		public XmlLiteBuilder Element(string name)
 		{
+			if (name is null || name.Length <= 0)
+				throw new ArgumentNullException(nameof(name));
+
 			if (_next == null)
 				_next = new XmlDraftNode(name, _comparer);
 			else
@@ -85,6 +90,9 @@ namespace Lexxys.Xml
 
 		public XmlLiteBuilder Descendant(XmlLiteNode node)
 		{
+			if (_next == null)
+				throw new InvalidOperationException();
+
 			_next.Descendant(node);
 			return this;
 		}
@@ -93,6 +101,8 @@ namespace Lexxys.Xml
 		{
 			if (nodes is null)
 				throw new ArgumentNullException(nameof(nodes));
+			if (_next == null)
+				throw new InvalidOperationException();
 
 			foreach (var node in nodes)
 			{
@@ -105,6 +115,8 @@ namespace Lexxys.Xml
 		{
 			if (nodes is null)
 				throw new ArgumentNullException(nameof(nodes));
+			if (_next == null)
+				throw new InvalidOperationException();
 
 			foreach (var node in nodes)
 			{
@@ -156,7 +168,7 @@ namespace Lexxys.Xml
 		/// <param name="name">The name of the attribute.</param>
 		/// <param name="value">The value of the attribute.</param>
 		/// <returns></returns>
-		public XmlLiteBuilder Attrib(string name, string value)
+		public XmlLiteBuilder Attrib(string name, string? value)
 		{
 			if (value != null)
 			{
@@ -508,7 +520,7 @@ namespace Lexxys.Xml
 		/// <returns></returns>
 		public XmlLiteBuilder Attrib(string name, DateTime? value)
 		{
-			return value == null ? Attrib(name, (string)null) : Attrib(name, value.GetValueOrDefault());
+			return value == null ? Attrib(name, (string?)null) : Attrib(name, value.GetValueOrDefault());
 		}
 		/// <summary>
 		/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
@@ -519,7 +531,7 @@ namespace Lexxys.Xml
 		/// <returns></returns>
 		public XmlLiteBuilder Attrib(string name, DateTime? value, XmlDateTimeSerializationMode dateTimeOption)
 		{
-			return value == null ? Attrib(name, (string)null) : Attrib(name, value.GetValueOrDefault(), dateTimeOption);
+			return value == null ? Attrib(name, (string?)null) : Attrib(name, value.GetValueOrDefault(), dateTimeOption);
 		}
 		/// <summary>
 		/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
@@ -923,14 +935,14 @@ namespace Lexxys.Xml
 
 		#endregion
 
-		public XmlLiteBuilder Value(object value, bool elements = false)
+		public XmlLiteBuilder Value(object? value, bool elements = false)
 		{
 			if (value != null)
 				Item(value, elements);
 			return this;
 		}
 
-		public XmlLiteBuilder Element(string name, object value, bool elements = false)
+		public XmlLiteBuilder Element(string name, object? value, bool elements = false)
 		{
 			if (name == null)
 				throw new ArgumentNullException(nameof(name));
@@ -939,9 +951,9 @@ namespace Lexxys.Xml
 			return this;
 		}
 
-		private void Item(string name, object value, bool elements, bool keepOpen)
+		private void Item(string name, object? value, bool elements, bool keepOpen)
 		{
-			string xmlValue = value as string ?? XmlTools.Convert(value);
+			string? xmlValue = value as string ?? XmlTools.Convert(value);
 			if (xmlValue != null)
 			{
 				if (keepOpen)
@@ -984,9 +996,12 @@ namespace Lexxys.Xml
 				End();
 		}
 
-		private void Item(object value, bool elements)
+		private void Item(object? value, bool elements)
 		{
-			string xmlValue = value as string ?? XmlTools.Convert(value);
+			if (value is null)
+				return;
+
+			string? xmlValue = value as string ?? XmlTools.Convert(value);
 			if (xmlValue != null)
 			{
 				Value(xmlValue);
@@ -1003,7 +1018,7 @@ namespace Lexxys.Xml
 			{
 				try
 				{
-					object v = item.GetValue(value);
+					object? v = item.GetValue(value);
 					Item(item.Name, v, elements, false);
 				}
 #pragma warning disable CA1031 // Do not catch general exception types
@@ -1020,7 +1035,7 @@ namespace Lexxys.Xml
 				{
 					try
 					{
-						object v = item.GetValue(value);
+						object? v = item.GetValue(value);
 						Item(item.Name, v, elements, false);
 					}
 #pragma warning disable CA1031 // Do not catch general exception types
@@ -1044,7 +1059,7 @@ namespace Lexxys.Xml
 		private class XmlDraftNode
 		{
 			private const string EmptyAttibuteName = "@";
-			private Stack<Node> _node;
+			private Stack<Node>? _node;
 			private Node _top;
 			private readonly StringComparer _comparer;
 
@@ -1061,6 +1076,9 @@ namespace Lexxys.Xml
 
 			public void StartElement(string name)
 			{
+				if (name is null)
+					throw new ArgumentNullException(nameof(name));
+
 				if (_node == null)
 					_node = new Stack<Node>();
 				_node.Push(_top);
@@ -1096,7 +1114,7 @@ namespace Lexxys.Xml
 				return _top.Convert();
 			}
 
-			public void Attribute(string name, string value)
+			public void Attribute(string name, string? value)
 			{
 				if (value != null)
 				{
@@ -1112,10 +1130,10 @@ namespace Lexxys.Xml
 			{
 				private readonly string _name;
 				private readonly IEqualityComparer<string> _comparer;
-				private OrderedBag<string, string> _attrib;
-				private List<Node> _nodeDescendants;
-				private List<XmlLiteNode> _xmlDescendants;
-				private string _value;
+				private OrderedBag<string, string>? _attrib;
+				private List<Node>? _nodeDescendants;
+				private List<XmlLiteNode>? _xmlDescendants;
+				private string? _value;
 
 				public Node(string name, StringComparer comparer)
 				{

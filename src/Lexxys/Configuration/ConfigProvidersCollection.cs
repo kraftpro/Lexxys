@@ -8,8 +8,6 @@ using System.Threading;
 
 using Microsoft.Extensions.Logging;
 
-#nullable enable
-
 namespace Lexxys.Configuration
 {
 

@@ -29,7 +29,7 @@ namespace Lexxys
 			set => throw new NotImplementedException("Out<T>.Value.Set in not implemented.");
 		}
 
-		object IValue.Value => Value;
+		object? IValue.Value => Value;
 
 		public static implicit operator T(Out<T> value) => value.Value;
 	}
@@ -57,7 +57,7 @@ namespace Lexxys
 			return new Ref<T>(() => boxed.Value, v => Interlocked.Exchange(ref boxed, new Boxed { Value = v }));
 		}
 
-		private class Boxed { public T Value; }
+		private class Boxed { public T? Value; }
 	}
 
 

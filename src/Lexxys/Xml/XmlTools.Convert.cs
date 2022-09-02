@@ -3,8 +3,6 @@ using System.Collections;
 using System.Text;
 using System.Xml;
 
-#nullable enable
-
 #pragma warning disable CA1307 // Specify StringComparison for clarity
 
 namespace Lexxys.Xml

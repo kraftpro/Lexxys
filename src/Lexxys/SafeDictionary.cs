@@ -1,48 +1,49 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Lexxys
 {
-	public class SafeDictionary<TKey, TValue>: ISafeDictionary<TKey, TValue>
+	public class SafeDictionary<TKey, TValue>: ISafeDictionary<TKey, TValue> where TKey: notnull
 	{
 		private readonly Dictionary<TKey, TValue> _map;
 		private readonly TValue _emptyValue;
 
-		public SafeDictionary(TValue emptyValue = default)
+		public SafeDictionary(TValue emptyValue = default!)
 		{
 			_map = new Dictionary<TKey, TValue>();
 			_emptyValue = emptyValue;
 		}
 
-		public SafeDictionary(IEqualityComparer<TKey> comparer, TValue emptyValue = default)
+		public SafeDictionary(IEqualityComparer<TKey> comparer, TValue emptyValue = default!)
 		{
 			_map = new Dictionary<TKey, TValue>(comparer);
 			_emptyValue = emptyValue;
 		}
 
-		public SafeDictionary(int count, TValue emptyValue = default)
+		public SafeDictionary(int count, TValue emptyValue = default!)
 		{
 			_map = new Dictionary<TKey, TValue>(count);
 			_emptyValue = emptyValue;
 		}
 
-		public SafeDictionary(IDictionary<TKey, TValue> dictionary, TValue emptyValue = default)
+		public SafeDictionary(IDictionary<TKey, TValue> dictionary, TValue emptyValue = default!)
 		{
 			_map = new Dictionary<TKey, TValue>(dictionary);
 			_emptyValue = emptyValue;
 		}
 
-		public SafeDictionary(int capacity, IEqualityComparer<TKey> comparer, TValue emptyValue = default)
+		public SafeDictionary(int capacity, IEqualityComparer<TKey> comparer, TValue emptyValue = default!)
 		{
 			_map = new Dictionary<TKey, TValue>(capacity, comparer);
 			_emptyValue = emptyValue;
 		}
 
-		public SafeDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer, TValue emptyValue = default)
+		public SafeDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer, TValue emptyValue = default!)
 		{
 			_map = new Dictionary<TKey, TValue>(dictionary, comparer);
 			_emptyValue = emptyValue;
@@ -106,7 +107,7 @@ namespace Lexxys
 			return ((IDictionary<TKey, TValue>)_map).Remove(item);
 		}
 
-		public bool TryGetValue(TKey key, out TValue value)
+		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
 		{
 			return _map.TryGetValue(key, out value);
 		}

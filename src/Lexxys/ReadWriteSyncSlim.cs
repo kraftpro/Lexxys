@@ -13,9 +13,9 @@ namespace Lexxys
 	public sealed class ReadWriteSyncSlim: IReadWriteSync
 	{
 		private static ILogging Log => _log ??= StaticServices.Create<ILogging>("Lexxys.ReadWriteSyncSlim");
-		private static ILogging _log;
+		private static ILogging? _log;
 		#pragma warning disable CA2213 // Disposable fields should be disposed
-		private ReaderWriterLockSlim _locker;
+		private ReaderWriterLockSlim? _locker;
 		public const int DefaultTimingThreshold = 100;
 		public const int DefaultLockTimeout = 5 * 60 * 1000;
 
@@ -27,34 +27,34 @@ namespace Lexxys
 			_locker = new ReaderWriterLockSlim();
 		}
 
-		private ReadWriteSyncSlim(ReaderWriterLockSlim locker)
+		private ReadWriteSyncSlim(ReaderWriterLockSlim? locker)
 		{
 			_locker = locker;
 		}
 
 		#region IReadWriteSync Members
-		public IDisposable Read()
+		public IDisposable? Read()
 		{
 			return Read(DefaultLockTimeout, null, DefaultTimingThreshold);
 		}
-		public IDisposable Read(int timeout)
+		public IDisposable? Read(int timeout)
 		{
 			return Read(timeout, null, DefaultTimingThreshold);
 		}
-		public IDisposable Read(string source)
+		public IDisposable? Read(string source)
 		{
 			return Read(DefaultLockTimeout, source, DefaultTimingThreshold);
 		}
-		public IDisposable Read(int timeout, string source)
+		public IDisposable? Read(int timeout, string source)
 		{
 			return Read(timeout, source, DefaultTimingThreshold);
 		}
-		public IDisposable Read(int timeout, string source, int timingThreshold)
+		public IDisposable? Read(int timeout, string? source, int timingThreshold)
 		{
 			if (timingThreshold < 0)
 				throw EX.ArgumentOutOfRange("logTiming", timingThreshold);
 
-			ReaderWriterLockSlim locker = _locker;
+			ReaderWriterLockSlim? locker = _locker;
 			if (locker == null || locker.IsReadLockHeld || locker.IsWriteLockHeld)
 				return null;
 			if (timingThreshold == 0)
@@ -71,28 +71,28 @@ namespace Lexxys
 			}
 		}
 
-		public IDisposable Write()
+		public IDisposable? Write()
 		{
 			return Write(DefaultLockTimeout, null, DefaultTimingThreshold);
 		}
-		public IDisposable Write(int timeout)
+		public IDisposable? Write(int timeout)
 		{
 			return Write(timeout, null, DefaultTimingThreshold);
 		}
-		public IDisposable Write(string source)
+		public IDisposable? Write(string source)
 		{
 			return Write(DefaultLockTimeout, source, DefaultTimingThreshold);
 		}
-		public IDisposable Write(int timeout, string source)
+		public IDisposable? Write(int timeout, string source)
 		{
 			return Write(timeout, source, DefaultTimingThreshold);
 		}
-		public IDisposable Write(int timeout, string source, int timingThreshold)
+		public IDisposable? Write(int timeout, string? source, int timingThreshold)
 		{
 			if (timingThreshold < 0)
 				throw EX.ArgumentOutOfRange("logTiming", timingThreshold);
 
-			ReaderWriterLockSlim locker = _locker;
+			ReaderWriterLockSlim? locker = _locker;
 			if (locker == null || locker.IsWriteLockHeld)
 				return null;
 			if (timingThreshold == 0)
@@ -130,7 +130,7 @@ namespace Lexxys
 
 		private class NewReader: IDisposable
 		{
-			ReaderWriterLockSlim _locker;
+			ReaderWriterLockSlim? _locker;
 
 			public NewReader(ReaderWriterLockSlim locker, int timeout)
 			{
@@ -147,7 +147,7 @@ namespace Lexxys
 
 		private class NewWriter: IDisposable
 		{
-			ReaderWriterLockSlim _locker;
+			ReaderWriterLockSlim? _locker;
 			readonly bool _upgrade;
 
 			public NewWriter(ReaderWriterLockSlim locker, int timeout)
@@ -162,7 +162,7 @@ namespace Lexxys
 
 			public void Dispose()
 			{
-				ReaderWriterLockSlim tmp = Interlocked.Exchange(ref _locker, null);
+				ReaderWriterLockSlim? tmp = Interlocked.Exchange(ref _locker, null);
 				if (tmp != null)
 				{
 					tmp.ExitWriteLock();

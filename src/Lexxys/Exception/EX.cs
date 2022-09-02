@@ -19,8 +19,8 @@ namespace Lexxys
 
 	public static class EX
 	{
-		private static ILogging Log => __loger ??= StaticServices.TryCreate<ILogging>("Lexxys.EX");
-		private static ILogging __loger;
+		private static ILogging? Log => __loger ??= StaticServices.TryCreate<ILogging>("Lexxys.EX");
+		private static ILogging? __loger;
 #if DEBUG
 		private static int _debugLogging;
 #endif
@@ -60,7 +60,7 @@ namespace Lexxys
 			return exception;
 		}
 
-		private static object Serializable(object value)
+		private static object? Serializable(object? value)
 		{
 			return value is null || value.GetType().IsSerializable ? value: value.ToString();
 		}
@@ -79,25 +79,25 @@ namespace Lexxys
 		{
 			return new UnauthorizedAccessException(SR.UnauthorizedAccess()).DebugLog();
 		}
-		public static UnauthorizedAccessException UnauthorizedAccess(string resourceName)
+		public static UnauthorizedAccessException UnauthorizedAccess(string? resourceName)
 		{
 			var e = new UnauthorizedAccessException(SR.UnauthorizedAccess(resourceName));
 			e.Data[DicResource] = resourceName;
 			return e.DebugLog();
 		}
-		public static UnauthorizedAccessException UnauthorizedAccess(string message, string resourceName)
+		public static UnauthorizedAccessException UnauthorizedAccess(string? message, string? resourceName)
 		{
 			var e = new UnauthorizedAccessException(message);
 			e.Data[DicResource] = resourceName;
 			return e.DebugLog();
 		}
-		public static UnauthorizedAccessException UnauthorizedAccess(string resourceName, Exception exception)
+		public static UnauthorizedAccessException UnauthorizedAccess(string? resourceName, Exception? exception)
 		{
 			var e = new UnauthorizedAccessException(SR.UnauthorizedAccess(resourceName), exception);
 			e.Data[DicResource] = resourceName;
 			return e.DebugLog();
 		}
-		public static UnauthorizedAccessException UnauthorizedAccess(string message, string resourceName, Exception exception)
+		public static UnauthorizedAccessException UnauthorizedAccess(string? message, string? resourceName, Exception? exception)
 		{
 			var e = new UnauthorizedAccessException(message, exception);
 			e.Data[DicResource] = resourceName;
@@ -117,28 +117,28 @@ namespace Lexxys
 		{
 			return new ArgumentException(SR.ArgumentException()).DebugLog();
 		}
-		public static ArgumentException Argument(string message)
+		public static ArgumentException Argument(string? message)
 		{
 			return new ArgumentException(message).DebugLog();
 		}
-		public static ArgumentException Argument(string message, Exception exception)
+		public static ArgumentException Argument(string? message, Exception? exception)
 		{
 			return new ArgumentException(message, exception).DebugLog();
 		}
-		public static ArgumentException Argument(string message, string paramName)
+		public static ArgumentException Argument(string? message, string? paramName)
 		{
 			var e = new ArgumentException(message, paramName);
 			e.Data[DicArgName] = paramName;
 			return e.DebugLog();
 		}
-		public static ArgumentException Argument(string message, string paramName, object actualValue)
+		public static ArgumentException Argument(string? message, string? paramName, object? actualValue)
 		{
 			var e = new ArgumentException(message, paramName);
 			e.Data[DicArgName] = paramName;
 			e.Data[DicArgActual] = Serializable(actualValue);
 			return e.DebugLog();
 		}
-		public static ArgumentException Argument(string message, string paramName, object actualValue, Exception exception)
+		public static ArgumentException Argument(string? message, string? paramName, object? actualValue, Exception? exception)
 		{
 			var e = new ArgumentException(message, paramName, exception);
 			e.Data[DicArgName] = paramName;
@@ -164,21 +164,21 @@ namespace Lexxys
 			e.Data[DicArgName] = paramName;
 			return e.DebugLog();
 		}
-		public static ArgumentOutOfRangeException ArgumentOutOfRange(string paramName, object actualValue)
+		public static ArgumentOutOfRangeException ArgumentOutOfRange(string paramName, object? actualValue)
 		{
 			var e = new ArgumentOutOfRangeException(paramName, actualValue, SR.ArgumentOutOfRangeException(paramName));
 			e.Data[DicArgName] = paramName;
 			e.Data[DicArgActual] = Serializable(actualValue);
 			return e.DebugLog();
 		}
-		public static ArgumentOutOfRangeException ArgumentOutOfRange(string paramName, object actualValue, Exception exception)
+		public static ArgumentOutOfRangeException ArgumentOutOfRange(string paramName, object? actualValue, Exception? exception)
 		{
 			var e = new ArgumentOutOfRangeException(SR.ArgumentOutOfRangeException(paramName), exception);
 			e.Data[DicArgName] = paramName;
 			e.Data[DicArgActual] = Serializable(actualValue);
 			return e.DebugLog();
 		}
-		public static ArgumentOutOfRangeException ArgumentOutOfRange(string paramName, object actualValue, object expectedValue)
+		public static ArgumentOutOfRangeException ArgumentOutOfRange(string paramName, object? actualValue, object? expectedValue)
 		{
 			var e = new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRangeException(paramName));
 			e.Data[DicArgName] = paramName;
@@ -186,7 +186,7 @@ namespace Lexxys
 			e.Data[DicArgExpected] = Serializable(expectedValue);
 			return e.DebugLog();
 		}
-		public static ArgumentOutOfRangeException ArgumentOutOfRange(string paramName, object actualValue, object minValue, object maxValue)
+		public static ArgumentOutOfRangeException ArgumentOutOfRange(string paramName, object? actualValue, object? minValue, object? maxValue)
 		{
 			var e = new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRangeException(paramName));
 			e.Data[DicArgName] = paramName;
@@ -209,23 +209,23 @@ namespace Lexxys
 		{
 			return new ConfigurationException().DebugLog();
 		}
-		public static ConfigurationException Configuration(Xml.XmlLiteNode config)
+		public static ConfigurationException Configuration(Xml.XmlLiteNode? config)
 		{
 			return new ConfigurationException(config).DebugLog();
 		}
-		public static ConfigurationException Configuration(string message)
+		public static ConfigurationException Configuration(string? message)
 		{
 			return new ConfigurationException(message).DebugLog();
 		}
-		public static ConfigurationException Configuration(string message, Xml.XmlLiteNode config)
+		public static ConfigurationException Configuration(string? message, Xml.XmlLiteNode? config)
 		{
 			return new ConfigurationException(message, config).DebugLog();
 		}
-		public static ConfigurationException Configuration(string message, Exception exception)
+		public static ConfigurationException Configuration(string? message, Exception? exception)
 		{
 			return new ConfigurationException(message, exception).DebugLog();
 		}
-		public static ConfigurationException Configuration(string message, Xml.XmlLiteNode config, Exception exception)
+		public static ConfigurationException Configuration(string? message, Xml.XmlLiteNode? config, Exception? exception)
 		{
 			return new ConfigurationException(message, config, exception).DebugLog();
 		}
@@ -235,11 +235,11 @@ namespace Lexxys
 		{
 			return new ValidationException().DebugLog();
 		}
-		public static ValidationException Validation(string message)
+		public static ValidationException Validation(string? message)
 		{
 			return new ValidationException(message).DebugLog();
 		}
-		public static ValidationException Validation(string message, Exception exception)
+		public static ValidationException Validation(string? message, Exception? exception)
 		{
 			return new ValidationException(message, exception).DebugLog();
 		}
@@ -249,11 +249,11 @@ namespace Lexxys
 		{
 			return new InvalidOperationException().DebugLog();
 		}
-		public static InvalidOperationException InvalidOperation(string message)
+		public static InvalidOperationException InvalidOperation(string? message)
 		{
 			return new InvalidOperationException(message).DebugLog();
 		}
-		public static InvalidOperationException InvalidOperation(string message, Exception exception)
+		public static InvalidOperationException InvalidOperation(string? message, Exception? exception)
 		{
 			return new InvalidOperationException(message, exception).DebugLog();
 		}
@@ -262,11 +262,11 @@ namespace Lexxys
 		{
 			return new FormatException(SR.FormatException()).DebugLog();
 		}
-		public static FormatException WrongFormat(string message)
+		public static FormatException WrongFormat(string? message)
 		{
 			return new FormatException(message).DebugLog();
 		}
-		public static FormatException WrongFormat(string message, Exception exception)
+		public static FormatException WrongFormat(string? message, Exception? exception)
 		{
 			return new FormatException(message, exception).DebugLog();
 		}

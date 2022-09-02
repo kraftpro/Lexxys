@@ -8,29 +8,27 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-// TODO: Copied from Lexxys.Data
-
 namespace Lexxys.Data
 {
 	public static class ValueValidator
 	{
 		#region URL Validators
-		public static bool IsUrl(string value, int maxLength)
+		public static bool IsUrl(string? value, int maxLength)
 		{
 			return value != null && value.Length <= maxLength && UrlValueValidator.IsLegalHttpFtpUrl(value);
 		}
 
-		public static bool IsUrl(string value)
+		public static bool IsUrl(string? value)
 		{
 			return value != null && UrlValueValidator.IsLegalHttpFtpUrl(value);
 		}
 
-		public static bool IsHttpUrl(string value, int maxLength)
+		public static bool IsHttpUrl(string? value, int maxLength)
 		{
 			return value != null && value.Length <= maxLength && UrlValueValidator.IsLegalHttpUrl(value);
 		}
 
-		public static bool IsHttpUrl(string value)
+		public static bool IsHttpUrl(string? value)
 		{
 			return value != null && UrlValueValidator.IsLegalHttpUrl(value);
 		}
@@ -41,7 +39,7 @@ namespace Lexxys.Data
 		private static readonly Regex _validDbSsn = new Regex(@"\A\d{4}(\d{5})?\z", RegexOptions.Singleline);
 		private static readonly Regex _invalidDbSsn = new Regex(@"\A((000|666|9\d\d)\d{6}|\d{3}00\d{4}|\d*0000)\z", RegexOptions.Singleline);
 
-		public static bool IsSsn(string value)
+		public static bool IsSsn(string? value)
 		{
 			return value != null && _validDbSsn.IsMatch(value) && !_invalidDbSsn.IsMatch(value);
 		}
@@ -58,7 +56,7 @@ namespace Lexxys.Data
 		private static readonly Regex _invalidDbUsZipCode = new Regex(@"\A0{5}(\d{4})?\z", RegexOptions.Singleline);
 		private static readonly Regex _validPostalCode = new Regex(@"^[a-zA-Z0-9]([a-zA-Z0-9 -]*[a-zA-Z0-9])?$");
 
-		public static bool IsUsZipCode(string value)
+		public static bool IsUsZipCode(string? value)
 		{
 			return (value != null) && _validDbUsZipCode.IsMatch(value) && !_invalidDbUsZipCode.IsMatch(value);
 		}
@@ -68,7 +66,7 @@ namespace Lexxys.Data
 			return value >= 999 && value < 999999999 && (value > 99999 ? IsUsZipCode(value.ToString("000000000")): IsUsZipCode(value.ToString("00000")));
 		}
 
-		public static bool IsPostalCode(string value)
+		public static bool IsPostalCode(string? value)
 		{
 			return value != null && _validPostalCode.IsMatch(value);
 		}
@@ -80,12 +78,12 @@ namespace Lexxys.Data
 		private static readonly Regex _invalidDbPhone0 = new Regex(@"\A0{10}");
 		private static readonly Regex _invalidDbPhone1 = new Regex(@"\A[01]\d{9}");
 
-		public static bool IsPhone(string value, int maxLength, bool strict = false)
+		public static bool IsPhone(string? value, int maxLength, bool strict = false)
 		{
 			return value != null && (maxLength <= 0 || value.Length <= maxLength) && _validDbPhone.IsMatch(value) && !(strict ? _invalidDbPhone1: _invalidDbPhone0).IsMatch(value);
 		}
 
-		public static bool IsPhone(string value, bool strict = false)
+		public static bool IsPhone(string? value, bool strict = false)
 		{
 			return value != null && _validDbPhone.IsMatch(value) && !(strict ? _invalidDbPhone1: _invalidDbPhone0).IsMatch(value);
 		}
@@ -93,12 +91,12 @@ namespace Lexxys.Data
 		#endregion
 
 		#region Email Validators
-		public static bool IsEmail(string value, int maxLength)
+		public static bool IsEmail(string? value, int maxLength)
 		{
 			return value != null && (maxLength <= 0 || value.Length <= maxLength) && UrlValueValidator.IsLegalEmailAddress(value);
 		}
 
-		public static bool IsEmail(string value)
+		public static bool IsEmail(string? value)
 		{
 			return value != null && UrlValueValidator.IsLegalEmailAddress(value);
 		}
@@ -108,7 +106,7 @@ namespace Lexxys.Data
 		#region EIN Validators
 		private static readonly Regex _validDbEin = new Regex(@"\A(0[1-9]|[1-9]\d)\d{7}\z", RegexOptions.Singleline);
 
-		public static bool IsEin(string value)
+		public static bool IsEin(string? value)
 		{
 			return value != null && _validDbEin.IsMatch(value);
 		}
@@ -195,12 +193,12 @@ namespace Lexxys.Data
 		//#endregion
 
 		//#region Miscellaneous Simple Validators
-		//public static bool IsString(string value, int maxLength)
+		//public static bool IsString(string? value, int maxLength)
 		//{
 		//    return value != null && value.Length <= maxLength;
 		//}
 
-		//public static bool IsString(string value, int minLength, int maxLength)
+		//public static bool IsString(string? value, int minLength, int maxLength)
 		//{
 		//    return value != null && (value.Length >= minLength) && (maxLength > 0 && value.Length <= maxLength);
 		//}
@@ -322,17 +320,17 @@ namespace Lexxys.Data
 		private static readonly Regex _unexpectedHostName = new Regex(UnexpectedHostNameRex, RegexOptions.Singleline | RegexOptions.IgnoreCase);
 		#endregion
 
-		public static bool IsDomainName(string value)
+		public static bool IsDomainName(string? value)
 		{
 			return value != null && _legalDomainName.IsMatch(value);
 		}
 
-		public static bool IsEmailAddress(string value)
+		public static bool IsEmailAddress(string? value)
 		{
 			return value != null && _legalEmailAddress.IsMatch(value);
 		}
 
-		public static bool IsLegalEmailAddress(string value)
+		public static bool IsLegalEmailAddress(string? value)
 		{
 			if (value == null)
 				return false;
@@ -345,12 +343,12 @@ namespace Lexxys.Data
 			return g["hostname"].Success && !_unexpectedHostName.IsMatch(g["hostname"].Value);
 		}
 
-		public static bool IsHttpUrl(string value)
+		public static bool IsHttpUrl(string? value)
 		{
 			return value != null && _legalHttpUrl.IsMatch(value);
 		}
 
-		public static bool IsLegalHttpUrl(string value)
+		public static bool IsLegalHttpUrl(string? value)
 		{
 			if (value == null)
 				return false;
@@ -368,12 +366,12 @@ namespace Lexxys.Data
 				!_unexpectedHostName.IsMatch(g["hostname"].Value);
 		}
 
-		public static bool IsFtpUrl(string value)
+		public static bool IsFtpUrl(string? value)
 		{
 			return value != null && _legalFtpUrl.IsMatch(value);
 		}
 
-		public static bool IsLegalFtpUrl(string value)
+		public static bool IsLegalFtpUrl(string? value)
 		{
 			if (value == null)
 				return false;
@@ -381,22 +379,22 @@ namespace Lexxys.Data
 			Match m = _legalFtpUrl.Match(value);
 			if (!m.Success)
 				return false;
-			
+
 			GroupCollection g = m.Groups;
 			if (g["user"].Success && !g["schema"].Success)
 				return false;
 
-			return (g["hostip"].Success) ?
+			return g["hostip"].Success ?
 				!_internalIp.IsMatch(g["hostip"].ToString()):
 				!_unexpectedHostName.IsMatch(g["hostname"].Value);
 		}
 
-		public static bool IsHttpFtpUrl(string value)
+		public static bool IsHttpFtpUrl(string? value)
 		{
 			return value != null && _legalHttpFtpUrl.IsMatch(value);
 		}
 
-		public static bool IsLegalHttpFtpUrl(string value)
+		public static bool IsLegalHttpFtpUrl(string? value)
 		{
 			if (value == null)
 				return false;
@@ -409,7 +407,7 @@ namespace Lexxys.Data
 			if (g["user"].Success && !g["schema"].Success)
 				return false;
 
-			return (g["hostip"].Success) ?
+			return g["hostip"].Success ?
 				!_internalIp.IsMatch(g["hostip"].ToString()):
 				!_unexpectedHostName.IsMatch(g["hostname"].Value);
 		}

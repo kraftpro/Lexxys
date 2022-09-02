@@ -7,21 +7,23 @@
 using System;
 using System.Text;
 
-namespace Lexxys
-{
+using Lexxys;
+
 #pragma warning disable CA1716 // Identifiers should not match keywords
 
+namespace Lexxys
+{
 	public class Schedule: IDump, IDumpJson, IDumpXml, IEquatable<Schedule>
 	{
 		public const string Type = "none";
 
-		public Schedule(ScheduleReminder reminder = null)
+		public Schedule(ScheduleReminder? reminder)
 		{
 			ScheduleType = Type;
-			Reminder = reminder;
+			Reminder = reminder ?? ScheduleReminder.Empty;
 		}
 
-		protected Schedule(string type, ScheduleReminder reminder)
+		protected Schedule(string type, ScheduleReminder? reminder)
 		{
 			ScheduleType = type ?? throw new ArgumentNullException(nameof(type));
 			Reminder = reminder ?? ScheduleReminder.Empty;
@@ -53,7 +55,7 @@ namespace Lexxys
 		/// <param name="scheduledTime">The scheduled date and time</param>
 		/// <param name="businessDay">Predicate for business days calcualtions</param>
 		/// <returns>Date and time when for the specified reminder</returns>
-		public DateTime? Remind(DateTime? scheduledTime, Func<DateTime, bool> businessDay = null)
+		public DateTime? Remind(DateTime? scheduledTime, Func<DateTime, bool>? businessDay = null)
 		{
 			return Reminder.Remind(scheduledTime, businessDay);
 		}
@@ -63,18 +65,20 @@ namespace Lexxys
 			return ToString(null);
 		}
 
-		public string ToString(IFormatProvider provider)
+		public string ToString(IFormatProvider? provider)
 		{
 			return ToString(new StringBuilder(), provider).ToString();
 		}
 
-		public virtual StringBuilder ToString(StringBuilder text, IFormatProvider provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
+		public virtual StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 		{
-			Reminder.ToString(text, provider);
-			return text;
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
+			return Reminder.ToString(text, provider);
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is Schedule sc && Equals(sc);
 		}
@@ -86,7 +90,7 @@ namespace Lexxys
 			return HashCode.Join(h1, h2);
 		}
 
-		public virtual bool Equals(Schedule other)
+		public virtual bool Equals(Schedule? other)
 		{
 			if (other is null)
 				return false;
@@ -145,7 +149,7 @@ namespace Lexxys
 			return json;
 		}
 
-		public static Schedule FromXml(Xml.XmlLiteNode xml)
+		public static Schedule? FromXml(Xml.XmlLiteNode xml)
 		{
 			if (xml == null || xml.IsEmpty)
 				return null;
@@ -159,12 +163,12 @@ namespace Lexxys
 			};
 		}
 
-		public static Schedule FromXml(string xml)
+		public static Schedule? FromXml(string xml)
 		{
 			return FromXml(Xml.XmlLiteNode.FromXml(xml));
 		}
 
-		public static Schedule FromJson(string json)
+		public static Schedule? FromJson(string json)
 		{
 			return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
 		}

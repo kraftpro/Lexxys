@@ -5,8 +5,6 @@
 // You may use this code under the terms of the MIT license
 //
 
-#nullable enable
-
 #pragma warning disable CA2225 // Operator overloads have named alternates
 
 namespace Lexxys

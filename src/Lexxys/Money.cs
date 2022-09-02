@@ -14,8 +14,6 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Threading;
 
-#nullable enable
-
 #pragma warning disable CA2225 // Operator overloads have named alternates
 #pragma warning disable CA1051 // Do not declare visible instance fields
 

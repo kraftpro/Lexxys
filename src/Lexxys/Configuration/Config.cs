@@ -10,8 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-#nullable enable
-
 namespace Lexxys
 {
 	using Configuration;

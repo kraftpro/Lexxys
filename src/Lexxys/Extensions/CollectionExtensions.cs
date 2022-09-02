@@ -14,10 +14,10 @@ namespace Lexxys
 	{
 		public static int FindIndex<T>(this IEnumerable<T> collection, Predicate<T> match)
 		{
-			if (match == null)
-				throw new ArgumentNullException(nameof(match));
 			if (collection == null)
 				throw new ArgumentNullException(nameof(collection));
+			if (match == null)
+				throw new ArgumentNullException(nameof(match));
 
 			int i = 0;
 			foreach (var item in collection)
@@ -48,7 +48,6 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
-
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -64,7 +63,6 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
-
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -80,7 +78,6 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
-
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -96,7 +93,6 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
-
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -112,7 +108,6 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
-
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 
@@ -128,7 +123,6 @@ namespace Lexxys
 		{
 			if (list is null)
 				throw new ArgumentNullException(nameof(list));
-
 			if (match == null)
 				throw new ArgumentNullException(nameof(match));
 

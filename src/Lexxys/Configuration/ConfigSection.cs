@@ -10,8 +10,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
-#nullable enable
-
 namespace Lexxys.Configuration
 {
 	public sealed class ConfigSection: IConfigSection

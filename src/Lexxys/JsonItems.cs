@@ -13,8 +13,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-#nullable enable
-
 namespace Lexxys
 {
 	using Xml;

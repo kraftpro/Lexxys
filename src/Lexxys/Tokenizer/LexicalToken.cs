@@ -17,6 +17,8 @@ namespace Lexxys.Tokenizer
 	/// </summary>
 	public sealed class LexicalToken
 	{
+		public static readonly LexicalToken Empty = new LexicalToken(LexicalTokenType.EMPTY, "", 0);
+
 		/// <summary>
 		/// Creates a copy of the specified <paramref name="token"/>.
 		/// </summary>
@@ -38,7 +40,7 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="token"></param>
 		/// <param name="value"></param>
-		public LexicalToken(LexicalToken token, object value)
+		public LexicalToken(LexicalToken token, object? value)
 		{
 			if (token == null)
 				throw new ArgumentNullException(nameof(token));
@@ -57,7 +59,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="text">Textual value of the token</param>
 		/// <param name="position">Position of the token in the text</param>
 		/// <param name="cultureInfo">The culture of the token</param>
-		public LexicalToken(LexicalTokenType tokenType, string text, int position, CultureInfo cultureInfo = null)
+		public LexicalToken(LexicalTokenType tokenType, string text, int position, CultureInfo? cultureInfo = null)
 		{
 			Text = text ?? throw new ArgumentNullException(nameof(text));
 			TokenType = tokenType;
@@ -74,7 +76,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="position">Position of the token in the text</param>
 		/// <param name="value">Value of the token.</param>
 		/// <param name="cultureInfo">The culture of the token</param>
-		public LexicalToken(LexicalTokenType tokenType, string text, int position, object value, CultureInfo cultureInfo = null)
+		public LexicalToken(LexicalTokenType tokenType, string text, int position, object? value, CultureInfo? cultureInfo = null)
 		{
 			Text = text ?? throw new ArgumentNullException(nameof(text));
 			TokenType = tokenType;
@@ -82,6 +84,8 @@ namespace Lexxys.Tokenizer
 			Value = value;
 			CultureInfo = cultureInfo ?? CultureInfo.InvariantCulture;
 		}
+
+		public bool IsEmpty => TokenType.Is(LexicalTokenType.EMPTY);
 
 		/// <summary>
 		/// Gets type of the token.
@@ -106,7 +110,7 @@ namespace Lexxys.Tokenizer
 		/// <summary>
 		/// The token's value.
 		/// </summary>
-		public object Value { get; }
+		public object? Value { get; }
 
 		/// <summary>
 		/// The group value of the token type.
@@ -170,6 +174,8 @@ namespace Lexxys.Tokenizer
 		/// <param name="items">Collection of the items IDs to test.</param>
 		/// <returns></returns>
 		public bool Is(LexicalTokenType other, params int[] items) => TokenType.Is(other, items);
+
+		public static LexicalToken Eof(int position) => new LexicalToken(LexicalTokenType.EOF, "", position);
 
 		/// <inheritdoc />
 		public override string ToString()

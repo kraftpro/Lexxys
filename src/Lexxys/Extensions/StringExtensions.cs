@@ -11,8 +11,6 @@ using System.Text.RegularExpressions;
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 
-#nullable enable
-
 namespace Lexxys
 {
 	using Xml;

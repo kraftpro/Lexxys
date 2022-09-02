@@ -22,7 +22,7 @@ namespace Lexxys
 			stream.WriteByte(value);
 		}
 
-		public static void Write(this Stream stream, byte[] value)
+		public static void Write(this Stream stream, byte[]? value)
 		{
 			if (stream is null)
 				throw new ArgumentNullException(nameof(stream));

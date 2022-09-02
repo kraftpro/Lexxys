@@ -12,7 +12,6 @@ using System.Xml.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-#nullable enable
 #pragma warning disable CA1034 // Nested types should not be visible
 
 namespace Lexxys

@@ -7,8 +7,6 @@
 using System;
 using System.Collections.Generic;
 
-#nullable enable
-
 namespace Lexxys
 {
 	public class Arguments
@@ -31,7 +29,7 @@ namespace Lexxys
 		public T? Value<T>(string argument, T? defaultValue, T? missingValue) => Value(argument, (p, d) => p.AsValue(d), defaultValue, missingValue);
 
 		public T? Value<T>(string argument, Func<string, T?, T?> parser, T? defaultValue) => Value(argument, parser, defaultValue, defaultValue);
-		
+
 		public T? Value<T>(string argument, Func<string, T?, T?> parser, T? defaultValue, T? missingValue)
 		{
 			if (argument is null)

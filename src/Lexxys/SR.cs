@@ -8,11 +8,6 @@ using System;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using Microsoft.Extensions.Primitives;
-
-
-#nullable enable
 
 namespace Lexxys
 {
@@ -67,7 +62,7 @@ namespace Lexxys
 		{
 			return "Attempted to perform an unauthorized operation.";
 		}
-		internal static string UnauthorizedAccess(string resource)
+		internal static string UnauthorizedAccess(string? resource)
 		{
 			return String.IsNullOrEmpty(resource) ? UnauthorizedAccess(): String.Format(Culture, "Attempted to access an unauthorized resource '{0}'.", resource);
 		}

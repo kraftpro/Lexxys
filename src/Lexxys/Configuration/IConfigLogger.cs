@@ -2,8 +2,6 @@
 
 using Microsoft.Extensions.Logging;
 
-#nullable enable
-
 namespace Lexxys.Configuration
 {
 	public interface IConfigLogger

@@ -16,7 +16,7 @@ namespace Lexxys
 	{
 		public new const string Type = "weekly";
 
-		public WeeklySchedule(int weekPeriod = 0, IEnumerable<DayOfWeek> dayList = null, ScheduleReminder reminder = null): base(Type, reminder)
+		public WeeklySchedule(int weekPeriod = 0, IEnumerable<DayOfWeek>? dayList = null, ScheduleReminder? reminder = null): base(Type, reminder)
 		{
 			WeekPeriod = Math.Max(1, weekPeriod);
 			if (dayList == null)
@@ -64,12 +64,12 @@ namespace Lexxys
 			return null;
 		}
 
-		public override StringBuilder ToString(StringBuilder text, IFormatProvider provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
+		public override StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
 
-			var format = (DateTimeFormatInfo)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
+			var format = (DateTimeFormatInfo?)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
 			text.Append("every ")
 				.Append(
 					DayList.Count == 7 ? "day" :
@@ -82,7 +82,7 @@ namespace Lexxys
 			return text;
 		}
 
-		public bool Equals(WeeklySchedule other)
+		public bool Equals(WeeklySchedule? other)
 		{
 			if (other is null)
 				return false;
@@ -91,12 +91,12 @@ namespace Lexxys
 			return WeekPeriod == other.WeekPeriod && Comparer.Equals(DayList, other.DayList);
 		}
 
-		public override bool Equals(Schedule other)
+		public override bool Equals(Schedule? other)
 		{
 			return other is WeeklySchedule ws && Equals(ws);
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			return obj is WeeklySchedule ws && Equals(ws);
 		}
@@ -155,7 +155,7 @@ namespace Lexxys
 			if (xml["type"] != Type)
 				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
 
-			IEnumerable<DayOfWeek> days = xml["days"] != null ?
+			IEnumerable<DayOfWeek>? days = xml["days"] != null ?
 				xml["days"]?.Split(',').Select(o => o.AsEnum(DayOfWeek.Friday)) :
 				xml.Element("days").Elements.Select(o => o.Value.AsEnum<DayOfWeek>());
 			return new WeeklySchedule(xml["week"].AsInt32(1), days, ScheduleReminder.FromXml(xml.Element("reminder")));

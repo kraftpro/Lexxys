@@ -15,7 +15,7 @@ namespace Lexxys
 
 	public interface IValue
 	{
-		object Value { get; }
+		object? Value { get; }
 	}
 }
 

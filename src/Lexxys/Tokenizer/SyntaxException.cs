@@ -13,8 +13,6 @@ using System.Runtime.Serialization;
 using System.Security.Permissions;
 #endif
 
-#nullable enable
-
 namespace Lexxys
 {
 	[Serializable]
@@ -25,17 +23,17 @@ namespace Lexxys
 		{
 		}
 
-		public SyntaxException(string message)
+		public SyntaxException(string? message)
 			: base(message ?? SR.SyntaxException())
 		{
 		}
 
-		public SyntaxException(string message, Exception exception)
+		public SyntaxException(string? message, Exception? exception)
 			: base(message ?? SR.SyntaxException(), exception)
 		{
 		}
 
-		public SyntaxException(string message, string file, int line, int column)
+		public SyntaxException(string? message, string? file, int line, int column)
 			: base(message ?? SR.SyntaxException())
 		{
 			Line = line;
@@ -43,7 +41,7 @@ namespace Lexxys
 			File = file;
 		}
 
-		public SyntaxException(string message, string file, int line, int column, Exception exception)
+		public SyntaxException(string? message, string? file, int line, int column, Exception? exception)
 			: base(message ?? SR.SyntaxException(), exception)
 		{
 			Line = line;

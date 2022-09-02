@@ -36,7 +36,7 @@ namespace Lexxys.Tokenizer
 			return Char.IsWhiteSpace(value) || Char.IsControl(value);
 		}
 
-		public override LexicalToken TryParse(CharStream stream)
+		public override LexicalToken? TryParse(CharStream stream)
 		{
 			if (stream is null)
 				throw new ArgumentNullException(nameof(stream));

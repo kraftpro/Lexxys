@@ -60,7 +60,7 @@ namespace Lexxys.Tokenizer
 			return this;
 		}
 
-		public override string BeginningChars => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+		public override string? BeginningChars => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 
 		public override bool HasExtraBeginning => true;
 
@@ -72,7 +72,7 @@ namespace Lexxys.Tokenizer
 			return (Char.IsLetter(value) || value == '_');
 		}
 
-		public override LexicalToken TryParse(CharStream stream)
+		public override LexicalToken? TryParse(CharStream stream)
 		{
 			if (stream is null)
 				throw new ArgumentNullException(nameof(stream));

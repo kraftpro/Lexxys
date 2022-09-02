@@ -15,8 +15,6 @@ using System.Security.Permissions;
 #endif
 using System.Threading;
 
-#nullable enable
-
 namespace Lexxys
 {
 #if !NETCOREAPP

@@ -10,9 +10,6 @@ using System.Reflection;
 using System.Threading;
 using System.Configuration;
 
-
-#nullable enable
-
 namespace Lexxys
 {
 	using Configuration;

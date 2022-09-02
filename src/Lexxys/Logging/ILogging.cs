@@ -2,8 +2,6 @@
 using System.Collections;
 using Microsoft.Extensions.Logging;
 
-#nullable enable
-
 namespace Lexxys
 {
 	#pragma warning disable CA1027 // Mark enums with FlagsAttribute

@@ -14,11 +14,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-
-#nullable enable
 
 namespace Lexxys.Data
 {

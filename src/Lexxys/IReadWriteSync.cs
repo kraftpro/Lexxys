@@ -12,16 +12,16 @@ namespace Lexxys
 	{
 		bool IsReaderLockHeld { get; }
 		bool IsWriterLockHeld { get; }
-		IDisposable Read(int timeout, string source, int timingThreshold);
-		IDisposable Read();
-		IDisposable Read(int timeout);
-		IDisposable Read(string source);
-		IDisposable Read(int timeout, string source);
-		IDisposable Write(int timeout, string source, int timingThreshold);
-		IDisposable Write();
-		IDisposable Write(int timeout);
-		IDisposable Write(string source);
-		IDisposable Write(int timeout, string source);
+		IDisposable? Read(int timeout, string source, int timingThreshold);
+		IDisposable? Read();
+		IDisposable? Read(int timeout);
+		IDisposable? Read(string source);
+		IDisposable? Read(int timeout, string source);
+		IDisposable? Write(int timeout, string source, int timingThreshold);
+		IDisposable? Write();
+		IDisposable? Write(int timeout);
+		IDisposable? Write(string source);
+		IDisposable? Write(int timeout, string source);
 	}
 }
 

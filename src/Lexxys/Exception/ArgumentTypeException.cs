@@ -8,8 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 
-#nullable enable
-
 namespace Lexxys
 {
 
@@ -26,7 +24,7 @@ namespace Lexxys
 			base.Data[EX.DicArgName] = paramName;
 		}
 
-		public ArgumentTypeException(string message, Exception exception)
+		public ArgumentTypeException(string? message, Exception? exception)
 			: base(message, exception)
 		{
 		}
@@ -47,13 +45,13 @@ namespace Lexxys
 			base.Data[EX.DicArgExpectedType] = expectedType;
 		}
 
-		public ArgumentTypeException(string message, string paramName, Exception innerException)
+		public ArgumentTypeException(string? message, string paramName, Exception? innerException)
 			: base(message, paramName, innerException)
 		{
 			base.Data[EX.DicArgName] = paramName;
 		}
 
-		public ArgumentTypeException(string message, string paramName)
+		public ArgumentTypeException(string? message, string paramName)
 			: base(message, paramName)
 		{
 			base.Data[EX.DicArgName] = paramName;

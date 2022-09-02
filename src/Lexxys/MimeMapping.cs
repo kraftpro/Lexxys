@@ -731,7 +731,7 @@ namespace Lexxys
 			return Mappings.TryGetValue(extension, out var mime) ? mime: defaultMimeType;
 		}
 
-		public static string GetExtension(string mimeType, string defaultExtension = null)
+		public static string GetExtension(string mimeType, string? defaultExtension = null)
 		{
 			if (mimeType == null)
 				throw new ArgumentNullException(nameof(mimeType));

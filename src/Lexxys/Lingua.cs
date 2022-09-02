@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Globalization;
+using Lexxys;
 
 namespace Lexxys
 {
@@ -17,27 +18,42 @@ namespace Lexxys
 	{
 		public static string Plural(string text)
 		{
-			return String.IsNullOrEmpty(text) ? text: PluralRules.Plural(text, false);
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
+			return String.IsNullOrWhiteSpace(text) ? text: PluralRules.Plural(text, false);
 		}
 
 		public static string Plural(string text, int count)
 		{
-			return count == 1 || String.IsNullOrEmpty(text) ? text: PluralRules.Plural(text, false);
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
+			return String.IsNullOrWhiteSpace(text) ? text: PluralRules.Plural(text, false);
 		}
 
 		public static string Plural(string text, bool classicalEnglish)
 		{
-			return String.IsNullOrEmpty(text) ? text: PluralRules.Plural(text, classicalEnglish);
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
+			return String.IsNullOrWhiteSpace(text) ? text: PluralRules.Plural(text, classicalEnglish);
 		}
 
 		public static string Singular(string text)
 		{
-			return String.IsNullOrEmpty(text) ? text: PluralRules.Singular(text, false);
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
+			return String.IsNullOrWhiteSpace(text) ? text: PluralRules.Singular(text, false);
 		}
 
 		public static string Singular(string text, bool classicalEnglish)
 		{
-			return String.IsNullOrEmpty(text) ? text: PluralRules.Singular(text, classicalEnglish);
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
+			return String.IsNullOrWhiteSpace(text) ? text: PluralRules.Singular(text, classicalEnglish);
 		}
 
 		public static string Ord(long value)
@@ -52,6 +68,9 @@ namespace Lexxys
 
 		public static string Ord(string value)
 		{
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+
 			return NumberRules.Ord(value);
 		}
 
@@ -60,7 +79,7 @@ namespace Lexxys
 			return NumberRules.GetOrdinalPostfix(value);
 		}
 
-		public static string NumWord(string value, string comma = null, string and = null)
+		public static string NumWord(string value, string? comma = null, string? and = null)
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
@@ -75,7 +94,7 @@ namespace Lexxys
 		}
 		private static readonly Regex DigitsRex = new Regex(@"(\d+(?:,\d+)*)");
 
-		public static string NumWord(decimal value, string comma = null, string and = null)
+		public static string NumWord(decimal value, string? comma = null, string? and = null)
 		{
 			return NumberRules.NumWord(value, comma, and);
 		}
@@ -152,10 +171,10 @@ namespace Lexxys
 
 			private static string PluralLc4(string word, bool toPlural, bool classicalEnglish)
 			{
-				if (word == null || word.Length == 0)
+				if (word.Length == 0)
 					return word;
 
-				string w;
+				string? w;
 				if (classicalEnglish)
 				{
 					w = PluralLc5(word, toPlural ? _rule.SPC: _rule.PSC);
@@ -172,12 +191,12 @@ namespace Lexxys
 				return SetCase(w, word);
 			}
 
-			private static string PluralLc5(string word, OneWay r)
+			private static string? PluralLc5(string word, OneWay r)
 			{
-				if (r.Map.TryGetValue(word, out string result))
+				if (r.Map.TryGetValue(word, out string? result))
 					return result;
 
-				Match m = r.Rex.Match(word);
+				Match m = r.Rex!.Match(word);
 				if (!m.Success)
 					return null;
 
@@ -716,7 +735,7 @@ namespace Lexxys
 			class OneWay
 			{
 				public Dictionary<string, string> Map;
-				public Regex Rex;
+				public Regex? Rex;
 				public List<Ending> Ending;
 
 				public OneWay(Dictionary<string, string> map)
@@ -774,13 +793,13 @@ namespace Lexxys
 				for (int i = 0; i < rr.Length; ++i)
 				{
 					int k = 0;
-					string[] ww = rr[i].Words.Split('|');
+					string?[] ww = rr[i].Words.Split('|');
 					for (int j = 0; j < ww.Length; ++j)
 					{
-						string s = ww[j];
+						string s = ww[j]!;
 						string w = s.Substring(0, s.Length - rr[i].SingualEnding.Length);
 						ww[j] = w;
-						if (ww[j].IndexOfAny(new[] { '.', '[' }) < 0)
+						if (w.IndexOfAny(new[] { '.', '[' }) < 0)
 						{
 							string p = w + rr[i].PluralEnding;
 							if (rr[i].Classical)
@@ -834,7 +853,7 @@ namespace Lexxys
 				return ir;
 			}
 
-			private static void Append(StringBuilder text, string[] values, string ending)
+			private static void Append(StringBuilder text, string?[] values, string ending)
 			{
 				text.Append('(');
 				bool next = false;
@@ -868,7 +887,7 @@ namespace Lexxys
 
 			public static string Ord(string value)
 			{
-				if (value == null || value.Length == 0)
+				if (value.Length == 0)
 					return value;
 
 				if (Int64.TryParse(value, NumberStyles.Any, null, out long n))
@@ -887,7 +906,7 @@ namespace Lexxys
 				return __nthRex.Replace(value, m => SetCase(m.Value.Length == 1 ? m.Value + "th": __nth[m.Value], m.Value), 1);
 			}
 
-			public static string NumWord(string value, string comma, string and)
+			public static string NumWord(string value, string? comma, string? and)
 			{
 				comma = Separator(comma, ", ");
 				and = Separator(and, " and ");
@@ -941,7 +960,7 @@ namespace Lexxys
 			private static readonly Regex __oneDigitRex = new Regex(@"\d");
 
 
-			public static string NumWord(decimal value, string comma, string and)
+			public static string NumWord(decimal value, string? comma, string? and)
 			{
 				comma = Separator(comma, ", ");
 				and = " hundred" + Separator(and, " and ");
@@ -1012,7 +1031,7 @@ namespace Lexxys
 				return n == 1 ? "st" : (n == 2 ? "nd" : (n == 3 ? "rd" : "th"));
 			}
 
-			private static string Separator(string value, string defaultValue)
+			private static string Separator(string? value, string defaultValue)
 			{
 				if (value == null)
 					return defaultValue;

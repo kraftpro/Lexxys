@@ -20,7 +20,7 @@ namespace Lexxys.Cube
 	/// <summary>Represents logical expression.</summary>
 	public class LogicalExpression
 	{
-		Polish _polish;
+		Polish? _polish;
 		readonly Dictionary<string, int> _dictionary;
 
 		/// <summary>Create new <see cref="LogicalExpression"/></summary>
@@ -101,7 +101,7 @@ namespace Lexxys.Cube
 			while (tokenizer.MoveNext())
 			{
 				t = tokenizer.Current;
-				PolishToken lt;
+				PolishToken? lt;
 				if (t.TokenType.Is(LexicalTokenType.SEQUENCE))
 				{
 					switch (t.Item)
@@ -125,9 +125,7 @@ namespace Lexxys.Cube
 							lt = new LogicalNot();
 							break;
 						default:
-							Debug.Assert(true);
-							lt = null;
-							break;
+							throw new FormatException(SR.EXP_UnknownSymbol(t.Text));
 					}
 				}
 				else if (t.TokenType.Is(LexicalTokenType.IDENTIFIER))
@@ -162,7 +160,7 @@ namespace Lexxys.Cube
 		{
 			if (_polish == null)
 				throw new InvalidOperationException(SR.ParserFirst());
-			PolishToken token = _polish.Evaluate(mapper);
+			PolishToken? token = _polish.Evaluate(mapper);
 			if (token == null)
 				return true;
 			if (token is LogicalValue result)
@@ -437,7 +435,7 @@ namespace Lexxys.Cube
 			string[] ss = (exp1 + "&" + exp2).Split('&');
 			Array.Sort(ss, StringComparer.OrdinalIgnoreCase);
 			var text = new StringBuilder();
-			string s = null;
+			string? s = null;
 			for (int i = 0; i < ss.Length; i++)
 			{
 				if (s != ss[i])
@@ -469,7 +467,7 @@ namespace Lexxys.Cube
 				string[] ss = exp2.Split('|');
 				Array.Sort(ss, StringComparer.OrdinalIgnoreCase);
 				var text = new StringBuilder();
-				string s = null;
+				string? s = null;
 				for (int i = 0; i < ss.Length; i++)
 				{
 					if (s != ss[i])
@@ -514,7 +512,7 @@ namespace Lexxys.Cube
 					string[] ss = exp1.Split('|');
 					Array.Sort(ss, StringComparer.OrdinalIgnoreCase);
 					var text = new StringBuilder();
-					string s = null;
+					string? s = null;
 					for (int i = 0; i < ss.Length; i++)
 					{
 						if (s != ss[i])
@@ -681,6 +679,6 @@ namespace Lexxys.Cube
 
 		private static readonly Regex __removeSpaceRex = new Regex(@"\s+");
 
-		protected static Exception ParameterTypeException(string name, PolishToken token) => new ArgumentTypeException(name, token?.GetType(), typeof(LogicalValue));
+		protected static Exception ParameterTypeException(string name, PolishToken token) => new ArgumentTypeException(name, token?.GetType() ?? typeof(void), typeof(LogicalValue));
 	}
 }

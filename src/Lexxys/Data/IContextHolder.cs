@@ -6,8 +6,6 @@
 //
 using System;
 
-#nullable enable
-
 namespace Lexxys.Data
 {
 	public interface IContextHolder: IDisposable

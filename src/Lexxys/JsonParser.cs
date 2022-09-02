@@ -8,8 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-#nullable enable
-
 namespace Lexxys
 {
 	using Tokenizer;

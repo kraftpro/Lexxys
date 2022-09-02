@@ -10,8 +10,6 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 
-#nullable enable
-
 #pragma warning disable CA1710 // Identifiers should have correct suffix
 
 namespace Lexxys

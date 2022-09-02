@@ -10,9 +10,6 @@ using System.Linq;
 using System.Text;
 using System.Collections;
 
-
-#nullable enable
-
 #pragma warning disable CA2225 // Operator overloads have named alternates
 
 namespace Lexxys

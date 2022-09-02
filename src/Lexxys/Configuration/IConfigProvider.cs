@@ -7,8 +7,6 @@
 using System;
 using System.Collections.Generic;
 
-#nullable enable
-
 namespace Lexxys.Configuration
 {
 	public interface IConfigProvider: IConfigSource

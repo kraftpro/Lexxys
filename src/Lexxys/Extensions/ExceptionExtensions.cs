@@ -13,11 +13,11 @@ namespace Lexxys
 {
 	public static class ExceptionExtensions
 	{
-		public static T Add<T>(this T exception, string name, object value)
-			where T: Exception
+		public static T Add<T>(this T exception, string name, object? value) where T: Exception
 		{
 			if (exception == null)
-				return null;
+				return exception!;
+			name ??= "item";
 			if (value != null && !value.GetType().IsSerializable)
 				value = value.ToString();
 			if (exception.Data.Contains(name))
@@ -66,7 +66,7 @@ namespace Lexxys
 		public static Exception Unwrap(this Exception exception)
 		{
 			if (exception == null)
-				return null;
+				return exception!;
 
 			while (exception.InnerException != null && (exception is TypeInitializationException || exception is TargetInvocationException || (exception as AggregateException)?.InnerExceptions.Count == 1))
 			{

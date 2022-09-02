@@ -23,35 +23,35 @@ namespace Lexxys
 		{
 		}
 
-		public ConfigurationException(XmlLiteNode config)
+		public ConfigurationException(XmlLiteNode? config)
 		{
 			if (config != null)
 				base.Data[DicNodeName] = config.ToString();
 		}
 
-		public ConfigurationException(string message)
+		public ConfigurationException(string? message)
 			: base(message)
 		{
 		}
 
-		public ConfigurationException(string key, Type type)
+		public ConfigurationException(string key, Type? type)
 			: base(SR.ConfigValueNotFound(key, type))
 		{
 		}
 
-		public ConfigurationException(string message, XmlLiteNode config)
+		public ConfigurationException(string? message, XmlLiteNode? config)
 			: base(message)
 		{
 			if (config != null)
 				base.Data[DicNodeName] = config.ToString();
 		}
 
-		public ConfigurationException(string message, Exception exception)
+		public ConfigurationException(string? message, Exception? exception)
 			: base(message, exception)
 		{
 		}
 
-		public ConfigurationException(string message, XmlLiteNode config, Exception exception)
+		public ConfigurationException(string? message, XmlLiteNode? config, Exception? exception)
 			: base(message, exception)
 		{
 			if (config != null)

@@ -35,12 +35,13 @@ namespace Lexxys.Data
 		public abstract long? GetInt64();
 		public abstract double? GetDouble();
 		public abstract DateTime? GetDateTime();
-		public abstract string GetString();
+		public abstract string? GetString();
 		public abstract decimal? GetDecimal();
-		public abstract byte[] GetBytes();
+		public abstract byte[]? GetBytes();
 		public abstract Guid? GetGuid();
 		public abstract RowVersion? GetRowVersion();
 
+#pragma warning disable CS8629 // Nullable value type may be null.
 		public static explicit operator bool(AField value) => value.GetBoolean().Value;
 		public static explicit operator bool?(AField value) => value.GetBoolean();
 		public static explicit operator short(AField value) => value.GetInt16().Value;
@@ -55,12 +56,13 @@ namespace Lexxys.Data
 		public static explicit operator double?(AField value) => value.GetDouble();
 		public static explicit operator DateTime(AField value) => value.GetDateTime().Value;
 		public static explicit operator DateTime?(AField value) => value.GetDateTime();
-		public static explicit operator byte[](AField value) => value.GetBytes();
-		public static explicit operator string(AField value) => value.GetString();
+		public static explicit operator byte[]?(AField value) => value.GetBytes();
+		public static explicit operator string?(AField value) => value.GetString();
 		public static explicit operator Guid(AField value) => value.GetGuid().Value;
 		public static explicit operator Guid?(AField value) => value.GetGuid();
 		public static explicit operator RowVersion(AField value) => value.GetRowVersion().Value;
 		public static explicit operator RowVersion?(AField value) => value.GetRowVersion();
+#pragma warning restore CS8629 // Nullable value type may be null.
 	}
 
 	public sealed class RowsCollection
@@ -150,7 +152,7 @@ namespace Lexxys.Data
 			{
 				if (type == null)
 					throw EX.ArgumentNull(nameof(type));
-				
+
 				_name = name ?? throw EX.ArgumentNull(nameof(name));
 				_records = records ?? throw EX.ArgumentNull(nameof(records));
 
@@ -227,7 +229,7 @@ namespace Lexxys.Data
 				return value == null ? default: Convert.ToDateTime(value, CultureInfo.InvariantCulture);
 			}
 
-			public override string GetString()
+			public override string? GetString()
 			{
 				return Convert.ToString(_records.Row[_columnIndex]);
 			}
@@ -238,10 +240,10 @@ namespace Lexxys.Data
 				return value == null ? default: Convert.ToDecimal(value, CultureInfo.InvariantCulture);
 			}
 
-			public override byte[] GetBytes()
+			public override byte[]? GetBytes()
 			{
 				object value = _records.Row[_columnIndex];
-				return (byte[])value;
+				return value == null ? null: (byte[])value;
 			}
 
 			public override Guid? GetGuid()

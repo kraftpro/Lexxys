@@ -10,8 +10,6 @@ using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
 
-#nullable enable
-
 #pragma warning disable CA1003 // Use generic event handler instances
 
 namespace Lexxys.Data

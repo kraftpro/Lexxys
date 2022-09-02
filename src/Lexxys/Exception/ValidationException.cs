@@ -19,12 +19,12 @@ namespace Lexxys
 		{
 		}
 
-		public ValidationException(string message)
+		public ValidationException(string? message)
 			: base(message)
 		{
 		}
 
-		public ValidationException(string message, Exception exception)
+		public ValidationException(string? message, Exception? exception)
 			: base(message, exception)
 		{
 		}

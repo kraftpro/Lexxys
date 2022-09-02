@@ -15,7 +15,7 @@ namespace Lexxys
 	public class SafeList<T>: ISafeList<T>
 	{
 		private readonly List<T> _list;
-		private readonly T _emptyValue;
+		private readonly T _emptyValue = default!;
 
 		public SafeList()
 		{

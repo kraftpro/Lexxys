@@ -14,8 +14,8 @@ namespace Lexxys
 	public sealed class ReadWriteSyncFat: IReadWriteSync
 	{
 		private static ILogging Log => _log ??= StaticServices.Create<ILogging>("Lexxys.ReadWriteSyncFat");
-		private static ILogging _log;
-		private readonly ReaderWriterLock _locker;
+		private static ILogging? _log;
+		private readonly ReaderWriterLock? _locker;
 		public const int DefaultTimingThreshold = 100;
 		public const int DefaultLockTimeout = 5 * 60 * 1000;
 
@@ -26,29 +26,29 @@ namespace Lexxys
 			_locker = new ReaderWriterLock();
 		}
 
-		private ReadWriteSyncFat(ReaderWriterLock locker)
+		private ReadWriteSyncFat(ReaderWriterLock? locker)
 		{
 			_locker = locker;
 		}
 
 		#region IReadWriteSync Members
-		public IDisposable Read()
+		public IDisposable? Read()
 		{
 			return Read(DefaultLockTimeout, null, DefaultTimingThreshold);
 		}
-		public IDisposable Read(int timeout)
+		public IDisposable? Read(int timeout)
 		{
 			return Read(timeout, null, DefaultTimingThreshold);
 		}
-		public IDisposable Read(string source)
+		public IDisposable? Read(string source)
 		{
 			return Read(DefaultLockTimeout, source, DefaultTimingThreshold);
 		}
-		public IDisposable Read(int timeout, string source)
+		public IDisposable? Read(int timeout, string source)
 		{
 			return Read(timeout, source, DefaultTimingThreshold);
 		}
-		public IDisposable Read(int timeout, string source, int timingThreshold)
+		public IDisposable? Read(int timeout, string? source, int timingThreshold)
 		{
 			if (_locker == null || _locker.IsReaderLockHeld || _locker.IsWriterLockHeld)
 				return null;
@@ -69,23 +69,23 @@ namespace Lexxys
 			}
 		}
 
-		public IDisposable Write()
+		public IDisposable? Write()
 		{
 			return Write(DefaultLockTimeout, null, DefaultTimingThreshold);
 		}
-		public IDisposable Write(int timeout)
+		public IDisposable? Write(int timeout)
 		{
 			return Write(timeout, null, DefaultTimingThreshold);
 		}
-		public IDisposable Write(string source)
+		public IDisposable? Write(string source)
 		{
 			return Write(DefaultLockTimeout, source, DefaultTimingThreshold);
 		}
-		public IDisposable Write(int timeout, string source)
+		public IDisposable? Write(int timeout, string source)
 		{
 			return Write(timeout, source, DefaultTimingThreshold);
 		}
-		public IDisposable Write(int timeout, string source, int timingThreshold)
+		public IDisposable? Write(int timeout, string? source, int timingThreshold)
 		{
 			if (_locker == null || _locker.IsWriterLockHeld)
 				return null;
@@ -129,7 +129,7 @@ namespace Lexxys
 
 		private class NewReader: IDisposable
 		{
-			ReaderWriterLock _locker;
+			ReaderWriterLock? _locker;
 
 			public NewReader(ReaderWriterLock locker, int timeout)
 			{

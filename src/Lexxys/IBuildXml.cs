@@ -23,7 +23,7 @@ namespace Lexxys
 
 	public static class BuildXmlExtensions
 	{
-		public static XmlLiteBuilder ToXml(this IBuildXml obj, XmlLiteBuilder xml)
+		public static XmlLiteBuilder ToXml(this IBuildXml? obj, XmlLiteBuilder xml)
 		{
 			if (xml is null)
 				throw new ArgumentNullException(nameof(xml));

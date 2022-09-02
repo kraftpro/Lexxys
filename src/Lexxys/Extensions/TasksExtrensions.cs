@@ -14,7 +14,7 @@ namespace Lexxys
 {
 	public static class TasksExtrensions
 	{
-		public static void Forget(this Task _)
+		public static void Forget(this Task? _)
 		{
 			// Do Nothing
 		}

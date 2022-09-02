@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 
-#nullable enable
-
 namespace Lexxys
 {
 	public readonly struct ErrorAttrib: IEquatable<ErrorAttrib>

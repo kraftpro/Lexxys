@@ -9,8 +9,6 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
 
-#nullable enable
-
 namespace Lexxys.Crypting
 {
 

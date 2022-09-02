@@ -2,8 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
-#nullable enable
-
 namespace Lexxys
 {
 	public readonly struct ErrorDataType: IEquatable<ErrorDataType>

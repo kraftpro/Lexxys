@@ -9,8 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-#nullable enable
-
 namespace Lexxys.Tokenizer
 {
 	#pragma warning disable CA1720 // Identifier contains type name

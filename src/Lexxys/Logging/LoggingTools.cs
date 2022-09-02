@@ -4,8 +4,6 @@ using System.Runtime.CompilerServices;
 
 using Microsoft.Extensions.Logging;
 
-#nullable enable
-
 namespace Lexxys
 {
 

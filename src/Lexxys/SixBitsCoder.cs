@@ -158,7 +158,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">String to decode</param>
 		/// <returns>Decoded bytes</returns>
-		public static byte[] Decode(string value)
+		public static byte[]? Decode(string value)
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
@@ -259,7 +259,7 @@ namespace Lexxys
 			return new String(p);
 		}
 
-		public static ulong Sixty(string value)
+		public static ulong Sixty(string? value)
 		{
 			if (value == null)
 				return 0;
@@ -288,7 +288,7 @@ namespace Lexxys
 			return new String(p);
 		}
 
-		public static ulong Thirty(string value)
+		public static ulong Thirty(string? value)
 		{
 			if (value == null)
 				return 0;
@@ -321,7 +321,7 @@ namespace Lexxys
 		private static uint Swap32(uint value) => (uint)Swap16((ushort)value) << 16 | Swap16((ushort)(value >> 16));
 		private static ulong Swap64(ulong value) => (ulong)Swap32((uint)value) << 32 | Swap32((uint)(value >> 32));
 
-		public static int DecodeId(string value, uint encodeMult, ulong encodeMask, Func<string, ulong> convert)
+		public static int DecodeId(string? value, uint encodeMult, ulong encodeMask, Func<string, ulong> convert)
 		{
 			if (convert == null)
 				throw new ArgumentNullException(nameof(convert));
@@ -350,13 +350,17 @@ namespace Lexxys
 			return EncodeId(id, encodeMult, encodeMask, Sixty, straight);
 		}
 
-		public static int DecodeId(string value, uint encodeMult, ulong encodeMask)
+		public static int DecodeId(string? value, uint encodeMult, ulong encodeMask)
 		{
 			return DecodeId(value, encodeMult, encodeMask, Sixty);
 		}
 
-		public static unsafe int HashCode(string value, int length)
+		public static unsafe int HashCode(string? value, int length)
 		{
+			if (value == null)
+				return 0;
+			if (value.Length < length)
+				length = value.Length;
 			int code = 1234567891;
 			fixed (char* str = value)
 			{

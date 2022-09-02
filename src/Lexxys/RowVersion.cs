@@ -7,8 +7,6 @@
 using System;
 using System.Globalization;
 
-#nullable enable
-
 namespace Lexxys
 {
 	public readonly struct RowVersion: IEquatable<RowVersion>, IComparable<RowVersion>, IComparable
