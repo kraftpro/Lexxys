@@ -25,7 +25,7 @@ dotnet_diagnostic.CA1200.severity = suggestion
 dotnet_diagnostic.CA1305.severity = suggestion
 
 # Default severity for all analyzer diagnostics
-dotnet_analyzer_diagnostic.severity = suggestion
+dotnet_analyzer_diagnostic.severity = none
 
 # CA2249: Consider using 'string.Contains' instead of 'string.IndexOf'
 dotnet_diagnostic.CA2249.severity = suggestion

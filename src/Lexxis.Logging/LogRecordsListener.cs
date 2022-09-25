@@ -11,17 +11,21 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 
-namespace Lexxys.Logging;
+using static System.Net.Mime.MediaTypeNames;
+
+namespace Lexxys.Logging.Legacy;
 
 public static class LogRecordsService
 {
 	private const int ListenerTurnSleep = 0;
 	private const int ListenerPulseInterval = 5000;
+	internal const int LogTypeCount = (int)LogType.MaxValue + 1;
 
-	private static volatile InstanceCollection Instance = new InstanceCollection(Array.Empty<Listener>(), 1);
+	private static volatile InstanceCollection Instance = new InstanceCollection(Array.Empty<LogRecordQueueListener>(), 1);
 	private static readonly Object SyncRoot = new Object();
 	private static volatile int _lockDepth;
 
@@ -33,7 +37,7 @@ public static class LogRecordsService
 		lock (SyncRoot)
 		{
 			var prev = Instance;
-			var next = new InstanceCollection(writers.Where(o => o != null).Select(o => new Listener(o)).ToArray(), prev.Version + 1);
+			var next = new InstanceCollection(writers.Where(o => o != null).Select(o => new LogRecordQueueListener(o)).ToArray(), prev.Version + 1);
 			next.Start();
 			Interlocked.Exchange(ref Instance, next);
 			prev.Stop();
@@ -41,6 +45,8 @@ public static class LogRecordsService
 	}
 
 	public static bool IsStarted => !Instance.IsEmpty;
+
+	internal static int MaxQueueSize => LoggingContext.MaxQueueSize;
 
 	//public static void Flush() => Instance.Flush();
 
@@ -50,17 +56,11 @@ public static class LogRecordsService
 		long x = WatchTimer.Start();
 		Console.WriteLine("Start flushing.");
 #endif
-		IEnumerable<Thread> pool;
 		lock (SyncRoot)
 		{
 			var inst = Instance;
-			Instance = InstanceCollection.Empty;
-			pool = inst.StopParallel(force);
-		}
-
-		foreach (var item in pool)
-		{
-			item.Join();
+			Interlocked.Exchange(ref Instance, InstanceCollection.Empty);
+			inst.Stop(force);
 		}
 
 #if TraceFlushing
@@ -110,7 +110,8 @@ public static class LogRecordsService
 				if (type == typeof(ILogging) || type == typeof(ILogger))
 				{
 					var arg = arguments?.Length > 0 && arguments[0] != null ? arguments[0]!.ToString(): null;
-					result = new Logger(arg ?? "*");
+					result = Statics.GetLogger(arg ?? "*");
+					//result = new Logger(arg ?? "*");
 				}
 			}
 			return result != null;
@@ -119,11 +120,11 @@ public static class LogRecordsService
 
 	class InstanceCollection
 	{
-		public static readonly InstanceCollection Empty = new InstanceCollection(Array.Empty<Listener>(), 0);
+		public static readonly InstanceCollection Empty = new InstanceCollection(Array.Empty<LogRecordQueueListener>(), 0);
 
-		private readonly Listener?[] _listeners;
+		private readonly ILogRecordQueueListener?[] _listeners;
 
-		public InstanceCollection(Listener?[] listeners, int version)
+		public InstanceCollection(LogRecordQueueListener?[] listeners, int version)
 		{
 			_listeners = listeners ?? throw new ArgumentNullException(nameof(listeners));
 			Version = version;
@@ -139,10 +140,36 @@ public static class LogRecordsService
 				_listeners[i]?.Start();
 		}
 
+		//public void Stop(bool force = false)
+		//{
+		//	for (int i = 0; i < _listeners.Length; i++)
+		//		_listeners[i]?.Stop(force);
+		//}
+
 		public void Stop(bool force = false)
 		{
-			for (int i = 0; i < _listeners.Length; i++)
-				_listeners[i]?.Stop(force);
+			var pool = new List<Task>();
+			var listeners = _listeners;
+			for (int i = 0; i < listeners.Length; ++i)
+			{
+				var listener = listeners[i];
+				if (listener != null)
+				{
+					listeners[i] = null;
+					if (force || listener.QueueIsEmpty)
+					{
+						listener.ClearBuffers();
+						listener.Stop(force);
+					}
+					else
+					{
+						var stopper = new Task(() => listener.Stop(force));
+						pool.Add(stopper);
+						stopper.Start();
+					}
+				}
+			}
+			Task.WaitAll(pool.ToArray());
 		}
 
 		public void Write(LogRecord record, int[]? index)
@@ -155,36 +182,9 @@ public static class LogRecordsService
 			}
 		}
 
-		public IEnumerable<Thread> StopParallel(bool force = false)
-		{
-			var pool = new List<Thread>();
-			var listeners = _listeners;
-			for (int i = 0; i < listeners.Length; ++i)
-			{
-				Listener? listener = listeners[i];
-				if (listener != null)
-				{
-					listeners[i] = null;
-					if (force || listener.QueueIsEmpty)
-					{
-						listener.ClearBuffers();
-						listener.Stop(force);
-					}
-					else
-					{
-						var stopper = new Thread(Stopper);
-						pool.Add(stopper);
-						stopper.Start(listener);
-					}
-				}
-			}
-
-			return pool;
-		}
-
 		private static void Stopper(object? obj)
 		{
-			if (obj is Listener listener)
+			if (obj is LogRecordQueueListener listener)
 			{
 #if TraceFlushing
 				long y = WatchTimer.Start();
@@ -201,8 +201,8 @@ public static class LogRecordsService
 		{
 			var listeners = _listeners;
 			var version = Version;
-			var result = new int[]?[LoggingContext.LogTypeCount];
-			for (int type = 0; type < LoggingContext.LogTypeCount; ++type)
+			var result = new int[]?[LogTypeCount];
+			for (int type = 0; type < LogTypeCount; ++type)
 			{
 				var indices = new List<int>();
 				for (int i = 0; i < listeners.Length; ++i)
@@ -235,7 +235,7 @@ public static class LogRecordsService
 
 		public void Write(LogRecord? record)
 		{
-			if (record == null || _lockDepth > 0)
+			if (record == null)
 				return;
 			var (inst, map) = Actual();
 			map.Write(record, inst);
@@ -262,7 +262,7 @@ public static class LogRecordsService
 
 	class LogRecordWritersMap
 	{
-		public static readonly LogRecordWritersMap Empty = new LogRecordWritersMap(0, new int[]?[LoggingContext.LogTypeCount]);
+		public static readonly LogRecordWritersMap Empty = new LogRecordWritersMap(0, new int[]?[LogTypeCount]);
 
 		private readonly int[]?[] _indexes;
 
@@ -285,7 +285,17 @@ public static class LogRecordsService
 			=> instance.Write(record, _indexes[(int)record.LogType]);
 	}
 
-	class Listener
+	interface ILogRecordQueueListener
+	{
+		bool QueueIsEmpty { get; }
+		ILogWriter Writer { get; }
+		void ClearBuffers();
+		void Start();
+		void Stop(bool force);
+		void Write(LogRecord? record);
+	}
+
+	class LogRecordQueueListener: ILogRecordQueueListener
 	{
 		private const string Source = "Lexxys.Logging.LogRecordsListenner";
 		private readonly ILogWriter _writer;
@@ -293,7 +303,7 @@ public static class LogRecordsService
 		private volatile EventWaitHandle? _data;
 		private Thread? _thread;
 
-		public Listener(ILogWriter writer)
+		public LogRecordQueueListener(ILogWriter writer)
 		{
 			_writer = writer ?? throw new ArgumentNullException(nameof(writer));
 			_queue = new LogRecordQueue();
@@ -327,7 +337,7 @@ public static class LogRecordsService
 
 		private bool IsStarted => _thread != null;
 
-		public int MaxQueueSize => LoggingContext.MaxQueueSize;
+		private int MaxQueueSize => LogRecordsService.MaxQueueSize;
 
 		public void ClearBuffers()
 		{
@@ -369,12 +379,12 @@ public static class LogRecordsService
 				Thread.Sleep(0);
 				if ((_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0)
 					_thread!.Join(100);
-				SystemLog.WriteEventLogMessage(Source, "Terminating...", LogRecord.Args("ThreadName", _thread!.Name));
+				SystemLog.WriteEventLogMessage(Source, "Terminating '{_writer.Name}'...", LogRecord.Args("ThreadName", _thread!.Name));
+				_writer.Write(new[] { new LogRecord(LogType.Warning, Source, "Terminating '{_writer.Name}'...", null) });
 #if !NETCOREAPP
 				if ((_thread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) == 0)
 					_thread.Abort();
 #endif
-				_writer.Write(new[] { new LogRecord(LogType.Warning, Source, "Terminating...", null) });
 			}
 			else
 			{
@@ -387,20 +397,15 @@ public static class LogRecordsService
 					var stopped = (_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0 || _thread!.Join(LoggingContext.FlushTimeout);
 					if (!stopped)
 					{
-						SystemLog.WriteEventLogMessage(Source, "Waiting for working thread", LogRecord.Args("ThreadName", _thread.Name));
-						stopped = (_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0 || _thread!.Join(LoggingContext.LogoffTimeout);
-						if (!stopped)
-						{
-							SystemLog.WriteErrorMessage(Source, "Thread join operation has been timed out", LogRecord.Args("time-out", LoggingContext.LogoffTimeout));
+						SystemLog.WriteErrorMessage(Source, "Thread join operation for '{_writer.Name}' has been timed out", LogRecord.Args("time-out"));
 #if !NETCOREAPP
-							Interlocked.Exchange(ref _queue, new LogRecordQueue());
+						Interlocked.Exchange(ref _queue, new LogRecordQueue());
 #else
-							_queue.Clear();
+						_queue.Clear();
 #endif
-							if (!data.SafeWaitHandle.IsClosed)
-								data.Set();
-							_thread!.Join(10);
-						}
+						if (!data.SafeWaitHandle.IsClosed)
+							data.Set();
+						_thread!.Join(10);
 					}
 #if !NETCOREAPP
 					if ((_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0)
@@ -470,13 +475,9 @@ public static class LogRecordsService
 			}
 		}
 
-		class LogRecordQueue : ConcurrentQueue<LogRecord>, IEnumerable<LogRecord>
+		class LogRecordQueue: ConcurrentQueue<LogRecord>, IEnumerable<LogRecord>
 		{
 			public LogRecordQueue()
-			{
-			}
-
-			public LogRecordQueue(IEnumerable<LogRecord> records): base(records)
 			{
 			}
 

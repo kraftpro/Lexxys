@@ -12,8 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-using Lexxys;
-
 namespace Lexxys
 {
 	public interface IDumpJson

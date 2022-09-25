@@ -13,12 +13,13 @@ namespace Lexxys
 		Information = 3,
 		Trace = 4,
 		Debug = 5,
+		Verbose = Debug,
 		MaxValue = Debug
 	}
 
 	public interface ILogging: ILogger
 	{
-		string Source { get; }
+		string Source { get; set; }
 		bool IsEnabled(LogType logType);
 		void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IDictionary? args);
 		IDisposable? Enter(LogType logType, string? section, IDictionary? args);

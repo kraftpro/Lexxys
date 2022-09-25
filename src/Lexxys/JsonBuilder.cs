@@ -290,7 +290,7 @@ namespace Lexxys
 		public JsonBuilder Val(byte value)
 		{
 			Comma();
-			Text(value.ToString(CultureInfo.InvariantCulture));
+			Text(value.ToString());
 			_state = State.Value;
 			return this;
 		}
@@ -303,7 +303,7 @@ namespace Lexxys
 		public JsonBuilder Val(sbyte value)
 		{
 			Comma();
-			Text(value.ToString(CultureInfo.InvariantCulture));
+			Text(value.ToString());
 			_state = State.Value;
 			return this;
 		}
@@ -316,7 +316,7 @@ namespace Lexxys
 		public JsonBuilder Val(short value)
 		{
 			Comma();
-			Text(value.ToString(CultureInfo.InvariantCulture));
+			Text(value.ToString());
 			_state = State.Value;
 			return this;
 		}
@@ -329,7 +329,7 @@ namespace Lexxys
 		public JsonBuilder Val(ushort value)
 		{
 			Comma();
-			Text(value.ToString(CultureInfo.InvariantCulture));
+			Text(value.ToString());
 			_state = State.Value;
 			return this;
 		}
@@ -342,7 +342,7 @@ namespace Lexxys
 		public JsonBuilder Val(int value)
 		{
 			Comma();
-			Text(value.ToString(CultureInfo.InvariantCulture));
+			Text(value.ToString());
 			_state = State.Value;
 			return this;
 		}
@@ -355,7 +355,7 @@ namespace Lexxys
 		public JsonBuilder Val(uint value)
 		{
 			Comma();
-			Text(value.ToString(CultureInfo.InvariantCulture));
+			Text(value.ToString());
 			_state = State.Value;
 			return this;
 		}
@@ -368,7 +368,7 @@ namespace Lexxys
 		public JsonBuilder Val(long value)
 		{
 			Comma();
-			Text(value.ToString(CultureInfo.InvariantCulture));
+			Text(value.ToString());
 			_state = State.Value;
 			return this;
 		}
@@ -381,7 +381,7 @@ namespace Lexxys
 		public JsonBuilder Val(ulong value)
 		{
 			Comma();
-			Text(value.ToString(CultureInfo.InvariantCulture));
+			Text(value.ToString());
 			_state = State.Value;
 			return this;
 		}

@@ -111,7 +111,7 @@ namespace Lexxys.Tokenizer
 			if (i > 0 && text[i-1] == '\n')
 				--i;
 
-			if (text.Length < 1024*64)
+			if (text.Length < Tools.MaxStackAllocSize)
 			{
 				char* buffer = stackalloc char[text.Length + 1];
 				return KeepNewLine(text, buffer, i, appendNewLine);
@@ -128,10 +128,9 @@ namespace Lexxys.Tokenizer
 			fixed (char* pvalue = value)
 			{
 				char* q = pvalue;
-				for (int j = 0; j < index; ++j)
-				{
-					*p++ = *q++;
-				}
+				Buffer.MemoryCopy(q, p, index, index * sizeof(char));
+				p += index;
+				q += index;
 				for (; index <= length; ++index)
 				{
 					char c = *q++;

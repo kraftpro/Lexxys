@@ -6,6 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 // ReSharper disable StringLiteralTypo
@@ -27,7 +28,7 @@ namespace Lexxys
 				return _mappings;
 			}
 		}
-		private static IReadOnlyDictionary<string, string> _mappings;
+		private static IReadOnlyDictionary<string, string>? _mappings;
 
 		private static IReadOnlyDictionary<string, string> BuildMappings()
 		{
@@ -701,8 +702,8 @@ namespace Lexxys
 
 			foreach (var item in node.Where("map"))
 			{
-				var ext = item["ext"].AsString();
-				var type = item["type"].AsString();
+				var ext = item["ext"]?.AsString();
+				var type = item["type"]?.AsString();
 				if (!String.IsNullOrEmpty(ext) && !String.IsNullOrEmpty(type))
 					if (ext.IndexOf('/') > 0)
 						mappings[ext] = type[0] == '.' ? type : "." + type;
@@ -731,7 +732,8 @@ namespace Lexxys
 			return Mappings.TryGetValue(extension, out var mime) ? mime: defaultMimeType;
 		}
 
-		public static string GetExtension(string mimeType, string? defaultExtension = null)
+		[return: NotNullIfNotNull("defaultExtension")]
+		public static string? GetExtension(string mimeType, string? defaultExtension = null)
 		{
 			if (mimeType == null)
 				throw new ArgumentNullException(nameof(mimeType));

@@ -82,48 +82,48 @@ namespace Lexxys.Tests.Xml
 		/// <summary>Test stub for GetTernary(String)</summary>
 		//[PexMethod(MaxRunsWithoutNewTests = 200)]
 		//[PexAllowedExceptionFromTypeUnderTest(typeof(FormatException)), PexAllowedException(typeof(FormatException))]
-		public Ternary GetTernary(string value)
-		{
-			Ternary result = XmlTools.GetTernary(value, Ternary.Unknown);
+		//public Ternary GetTernary(string value)
+		//{
+		//	Ternary result = XmlTools.GetTernary(value, Ternary.Unknown);
 
-			string[] xtrue =  new string[] { "TRUE", "ON", "YES", "1", "GRANT" };
-			string[] xfalse = new string[] { "FALSE", "OFF", "NO", "0", "DENY" };
+		//	string[] xtrue =  new string[] { "TRUE", "ON", "YES", "1", "GRANT" };
+		//	string[] xfalse = new string[] { "FALSE", "OFF", "NO", "0", "DENY" };
 
-			if (value == null)
-				Assert.AreEqual(Ternary.Unknown, result);
-			else if (Array.IndexOf(xtrue, value.Trim().ToUpperInvariant()) >= 0)
-				Assert.AreEqual(Ternary.True, result);
-			else if (Array.IndexOf(xfalse, value.Trim().ToUpperInvariant()) >= 0)
-				Assert.AreEqual(Ternary.False, result);
-			else
-				Assert.AreEqual(Ternary.Unknown, result);
+		//	if (value == null)
+		//		Assert.AreEqual(Ternary.Unknown, result);
+		//	else if (Array.IndexOf(xtrue, value.Trim().ToUpperInvariant()) >= 0)
+		//		Assert.AreEqual(Ternary.True, result);
+		//	else if (Array.IndexOf(xfalse, value.Trim().ToUpperInvariant()) >= 0)
+		//		Assert.AreEqual(Ternary.False, result);
+		//	else
+		//		Assert.AreEqual(Ternary.Unknown, result);
 
-			return result;
-		}
+		//	return result;
+		//}
 
 		/// <summary>Test stub for GetTernary(String, Ternary)</summary>
 		//[PexMethod(MaxRunsWithoutNewTests = 200)]
-		public Ternary GetTernary01(string value, Ternary defaultValue)
-		{
-			Ternary result = XmlTools.GetTernary(value, defaultValue);
+		//public Ternary GetTernary01(string value, Ternary defaultValue)
+		//{
+		//	Ternary result = XmlTools.GetTernary(value, defaultValue);
 
-			string[] xtrue =  new string[] { "TRUE", "ON", "YES", "1", "GRANT" };
-			string[] xfalse = new string[] { "FALSE", "OFF", "NO", "0", "DENY" };
-			string[] xunknown = new string[] { "UNKNOWN", "SOME", "ANY", "ALL", "2", "BOTH", "DEFAULT" };
+		//	string[] xtrue =  new string[] { "TRUE", "ON", "YES", "1", "GRANT" };
+		//	string[] xfalse = new string[] { "FALSE", "OFF", "NO", "0", "DENY" };
+		//	string[] xunknown = new string[] { "UNKNOWN", "SOME", "ANY", "ALL", "2", "BOTH", "DEFAULT" };
 
-			if (value == null)
-				Assert.AreEqual(defaultValue, result);
-			else if (Array.IndexOf(xtrue, value.Trim().ToUpperInvariant()) >= 0)
-				Assert.AreEqual(Ternary.True, result);
-			else if (Array.IndexOf(xfalse, value.Trim().ToUpperInvariant()) >= 0)
-				Assert.AreEqual(Ternary.False, result);
-			else if (Array.IndexOf(xunknown, value.Trim().ToUpperInvariant()) >= 0)
-				Assert.AreEqual(Ternary.Unknown, result);
-			else
-				Assert.AreEqual(defaultValue, result);
+		//	if (value == null)
+		//		Assert.AreEqual(defaultValue, result);
+		//	else if (Array.IndexOf(xtrue, value.Trim().ToUpperInvariant()) >= 0)
+		//		Assert.AreEqual(Ternary.True, result);
+		//	else if (Array.IndexOf(xfalse, value.Trim().ToUpperInvariant()) >= 0)
+		//		Assert.AreEqual(Ternary.False, result);
+		//	else if (Array.IndexOf(xunknown, value.Trim().ToUpperInvariant()) >= 0)
+		//		Assert.AreEqual(Ternary.Unknown, result);
+		//	else
+		//		Assert.AreEqual(defaultValue, result);
 
-			return result;
-		}
+		//	return result;
+		//}
 
 		//[PexMethod]
 		public void GetTimeSpanPex(string value)

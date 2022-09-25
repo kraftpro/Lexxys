@@ -11,8 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Lexxys;
-
 namespace Lexxys
 {
 	public interface IDump

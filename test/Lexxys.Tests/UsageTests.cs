@@ -73,7 +73,7 @@ namespace Lexxys.Tests
 				_logger = logger;
 			}
 
-			public string Source => "";
+			public string Source { get => ""; set {} }
 
 			public IDisposable Enter(LogType logType, string sectionName, IDictionary args) => _logger.Enter(logType, sectionName, args);
 

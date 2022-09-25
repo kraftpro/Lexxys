@@ -10,7 +10,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Globalization;
-using Lexxys;
 
 namespace Lexxys
 {
@@ -877,7 +876,7 @@ namespace Lexxys
 		{
 			public static string Ord(long value)
 			{
-				return value.ToString(CultureInfo.InvariantCulture) + GetOrdinalPostfix(value);
+				return value.ToString() + GetOrdinalPostfix(value);
 			}
 
 			public static string Ord(decimal value)

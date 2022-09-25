@@ -4,13 +4,11 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-#undef CSHARP_PREVIEW
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -19,6 +17,8 @@ using System.Threading;
 
 namespace Lexxys
 {
+	using System.Security.Claims;
+
 	using Xml;
 
 	/// <summary>
@@ -26,14 +26,13 @@ namespace Lexxys
 	/// </summary>
 	[Serializable]
 	public readonly struct Money:
-#if NET6_0_OR_GREATER && CSHARP_PREVIEW
-		ISignedNumber<Money>, IConvertible, IDumpValue, IDumpXml, IDumpJson
-#else
+#if NET7_0_OR_GREATER
+		ISignedNumber<Money>, INumber<Money>,
+#endif
 #if NET6_0_OR_GREATER
 		ISpanFormattable,
 #endif
 		IComparable, IComparable<Money>, IConvertible, IEquatable<Money>, IFormattable, ISerializable, IDumpValue, IDumpXml, IDumpJson
-#endif
 	{
 		private readonly long _value;
 		private readonly Currency _currency;
@@ -347,18 +346,18 @@ namespace Lexxys
 
 		string IDumpXml.XmlElementName => "money";
 
-		#region INumber
-
-#if NET6_0_OR_GREATER && CSHARP_PREVIEW
-		static Money ISignedNumber<Money>.NegativeOne => __negOne;
 		private static readonly Money __negOne = new Money(-1);
-		static Money INumber<Money>.One => __one;
 		private static readonly Money __one = new Money(1);
-		static Money INumber<Money>.Zero => __zero;
 		private static readonly Money __zero = new Money(0);
-		static Money IAdditiveIdentity<Money, Money>.AdditiveIdentity => __zero;
-		static Money IMultiplicativeIdentity<Money, Money>.MultiplicativeIdentity => __one;
-#endif
+
+		public static Money NegativeOne => __negOne;
+		public static Money One => __one;
+		public static int Radix => 10;
+		public static Money Zero => __zero;
+		public static Money AdditiveIdentity => __zero;
+		public static Money MultiplicativeIdentity => __one;
+
+		#region INumber
 
 		public static Money Abs(Money value)
 		{
@@ -376,34 +375,6 @@ namespace Lexxys
 			return value < min ? min : value > max ? max : value;
 		}
 
-#if NET6_0_OR_GREATER && CSHARP_PREVIEW
-		static Money INumber<Money>.Sign(Money value)
-		{
-			return value._value < 0 ? value.Currency.MinusOne : value._value > 0 ? value.Currency.One : value.Currency.Zero;
-			//return value._value < 0 ? Create(-1, value._currency): value._value > 0 ? Create(1, value._currency): Create(0, value._currency);
-		}
-
-		static Money INumber<Money>.Create<TOther>(TOther value)
-		{
-			return TryCreate(value, out var result) ? result : throw new NotSupportedException();
-		}
-
-		static Money INumber<Money>.CreateSaturating<TOther>(TOther value)
-		{
-			return TryCreate(value, out var result) ? result : throw new NotSupportedException();
-		}
-
-		static Money INumber<Money>.CreateTruncating<TOther>(TOther value)
-		{
-			return TryCreate(value, out var result) ? result : throw new NotSupportedException();
-		}
-
-		static (Money Quotient, Money Remainder) INumber<Money>.DivRem(Money left, Money right)
-		{
-			return (left / right.Amount, left % right.Amount);
-		}
-#endif
-
 		public static (Money Quotient, Money Remainder) DivRem(Money left, decimal right)
 		{
 			return (left / right, left % right);
@@ -416,56 +387,34 @@ namespace Lexxys
 
 		public static Money Max(Money x, Money y)
 		{
-			if (x.Currency.Code != y.Currency.Code)
+			if (x.Currency != y.Currency)
 				throw new ArgumentException(SR.DifferentCurrencyCodes(x.Currency, y.Currency));
 			return x._value < y._value ? y : x;
 		}
 
 		public static Money Min(Money x, Money y)
 		{
-			if (x.Currency.Code != y.Currency.Code)
+			if (x.Currency != y.Currency)
 				throw new ArgumentException(SR.DifferentCurrencyCodes(x.Currency, y.Currency));
 			return x._value > y._value ? y : x;
 		}
 
-		public static Money Parse(string value, NumberStyles style, IFormatProvider? provider)
+		public static Money Parse(string s, NumberStyles style, IFormatProvider? provider)
 		{
-			if (value is null)
-				throw new ArgumentNullException(nameof(value));
-			if (!TryParse(value, style, provider, out var result))
-				throw new FormatException(SR.CannotParseValue(value.ToString()));
+			if (s is null)
+				throw new ArgumentNullException(nameof(s));
+			if (!TryParse(s, style, provider, out var result))
+				throw new FormatException(SR.CannotParseValue(s.ToString()));
 			return result;
 		}
 
 #if NET6_0_OR_GREATER
-		public static Money Parse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider)
+		public static Money Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
 		{
-			if (!TryParse(value, style, provider, out var result))
-				throw new FormatException(SR.CannotParseValue(value.ToString()));
+			if (!TryParse(s, style, provider, out var result))
+				throw new FormatException(SR.CannotParseValue(s.ToString()));
 			return result;
 		}
-
-#if CSHARP_PREVIEW
-		static bool INumber<Money>.TryCreate<TOther>(TOther value, out Money result) => TryCreate(value, out result);
-
-		private static bool TryCreate<TOther>(TOther value, out Money result) where TOther : INumber<TOther>
-		{
-			if (value is Money m)
-			{
-				result = m;
-				return true;
-			}
-			if (TryCreate<decimal>(value, out decimal d))
-			{
-				result = (Money)d;
-				return true;
-			}
-			result = default;
-			return false;
-
-			static bool TryCreate<T>(TOther value, out T result) where T : INumber<T> => T.TryCreate(value, out result);
-		}
-#endif
 
 		public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
 		{
@@ -557,30 +506,30 @@ namespace Lexxys
 		/// <summary>
 		/// Converts the string representation of a number to its <see cref="Money"/> equivalent.
 		/// </summary>
-		/// <param name="value">The string representation of the number to convert.</param>
-		/// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of <paramref name="value"/>.</param>
-		/// <param name="provider">An object that supplies culture-specific parsing information about <paramref name="value"/>.</param>
+		/// <param name="s">The string representation of the number to convert.</param>
+		/// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of <paramref name="s"/>.</param>
+		/// <param name="provider">An object that supplies culture-specific parsing information about <paramref name="s"/>.</param>
 		/// <param name="result">The parsed <see cref="Money"/> value.</param>
-		/// <returns>true if <paramref name="value"/> was converted successfully; otherwise, false.</returns>
-		public static bool TryParse(string? value, NumberStyles style, IFormatProvider? provider, out Money result)
+		/// <returns>true if <paramref name="s"/> was converted successfully; otherwise, false.</returns>
+		public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out Money result)
 		{
 #if NET6_0_OR_GREATER
-			if (value == null)
+			if (s == null)
 			{
 				result = default;
 				return false;
 			}
-			return TryParse(value.AsSpan(), style, provider, out result);
+			return TryParse(s.AsSpan(), style, provider, out result);
 #else
-			if ((value = value.TrimToNull()) == null)
+			if ((s = s.TrimToNull()) == null)
 			{
 				result = default;
 				return false;
 			}
 			Currency? currency = null;
-			if (value.Length > 4 && value[value.Length - 4] == ' ')
+			if (s.Length > 4 && s[s.Length - 4] == ' ')
 			{
-				var symbol = value.Substring(value.Length - 3);
+				var symbol = s.Substring(s.Length - 3);
 				if (Char.IsLetter(symbol[0]) && Char.IsLetter(symbol[1]) && Char.IsLetter(symbol[2]))
 				{
 					currency = Currency.Find(symbol);
@@ -589,10 +538,10 @@ namespace Lexxys
 						result = default;
 						return false;
 					}
-					value = value.Slice(0, value.Length - 4).TrimEnd();
+					s = s.Slice(0, s.Length - 4).TrimEnd();
 				}
 			}
-			if (decimal.TryParse(value, style, provider, out var d))
+			if (decimal.TryParse(s, style, provider, out var d))
 			{
 				result = new Money(d, currency);
 				return true;
@@ -608,18 +557,18 @@ namespace Lexxys
 			return TryParse(s, NumberStyles.Currency, provider, out result);
 		}
 
-		public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out Money result)
+		public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Money result)
 		{
-			value = value.Trim();
-			if (value.Length == 0)
+			s = s.Trim();
+			if (s.Length == 0)
 			{
 				result = default;
 				return false;
 			}
 			Currency? currency = null;
-			if (value.Length > 4 && value[value.Length - 4] == ' ')
+			if (s.Length > 4 && s[s.Length - 4] == ' ')
 			{
-				var symbol = value.Slice(value.Length - 3);
+				var symbol = s.Slice(s.Length - 3);
 				if (Char.IsLetter(symbol[0]) && Char.IsLetter(symbol[1]) && Char.IsLetter(symbol[2]))
 				{
 					currency = Currency.Find(symbol.ToString());
@@ -628,10 +577,10 @@ namespace Lexxys
 						result = new Money();
 						return false;
 					}
-					value = value.Slice(0, value.Length - 5).TrimEnd();
+					s = s.Slice(0, s.Length - 5).TrimEnd();
 				}
 			}
-			if (decimal.TryParse(value, style, provider, out var d))
+			if (decimal.TryParse(s, style, provider, out var d))
 			{
 				result = new Money(d, currency);
 				return true;
@@ -773,6 +722,440 @@ namespace Lexxys
 				info.AddValue("sym", _currency.Symbol);
 			}
 		}
+
+		public static bool IsCanonical(Money value) => true;
+
+		public static bool IsComplexNumber(Money value) => false;
+
+		public static bool IsEvenInteger(Money value) => ((long)value & 1) == 0;
+
+		public static bool IsFinite(Money value) => true;
+
+		public static bool IsImaginaryNumber(Money value) => false;
+
+		public static bool IsInfinity(Money value) => false;
+
+		public static bool IsInteger(Money value) => value._value % value.Currency.Multiplier == 0;
+
+		public static bool IsNaN(Money value) => false;
+
+		public static bool IsNegative(Money value) => value._value < 0;
+
+		public static bool IsNegativeInfinity(Money value) => false;
+
+		public static bool IsNormal(Money value) => value._value != 0;
+
+		public static bool IsOddInteger(Money value) => ((long)value & 1) == 1;
+
+		public static bool IsPositive(Money value) => value._value >= 0;
+
+		public static bool IsPositiveInfinity(Money value) => false;
+
+		public static bool IsRealNumber(Money value) => true;
+
+		public static bool IsSubnormal(Money value) => false;
+
+		public static bool IsZero(Money value) => value._value == 0;
+
+		public static Money MaxMagnitude(Money x, Money y)
+		{
+			if (x.Currency != y.Currency)
+				throw new ArgumentException(SR.DifferentCurrencyCodes(x.Currency, y.Currency));
+
+			long xv = Math.Abs(x._value);
+			long yv = Math.Abs(y._value);
+			return
+				xv > yv ? x:
+				yv > xv ? y:
+				x >= 0 ? x: y;
+		}
+
+		public static Money MaxMagnitudeNumber(Money x, Money y) => MaxMagnitude(x, y);
+
+		public static Money MinMagnitude(Money x, Money y)
+		{
+			if (x.Currency != y.Currency)
+				throw new ArgumentException(SR.DifferentCurrencyCodes(x.Currency, y.Currency));
+
+			long xv = Math.Abs(x._value);
+			long yv = Math.Abs(y._value);
+			return
+				xv < yv ? x:
+				yv > xv ? y:
+				x < 0 ? x: y;
+		}
+
+		public static Money MinMagnitudeNumber(Money x, Money y) => MinMagnitude(x, y);
+
+#if NET7_0_OR_GREATER
+		static bool INumberBase<Money>.TryConvertFromChecked<TOther>(TOther value, out Money result)
+		{
+			if (typeof(TOther) == typeof(Money))
+			{
+				result = (Money)(object)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(decimal))
+			{
+				result = new Money((ulong)checked((long)((decimal)(object)value * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(double))
+			{
+				result = new Money((ulong)checked((long)((double)(object)value * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(float))
+			{
+				result = new Money((ulong)checked((long)((float)(object)value * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(Half))
+			{
+				result = new Money((ulong)checked((long)((Half)(object)value * (Half)Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(long))
+			{
+				result = new Money((ulong)checked((long)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(Int128))
+			{
+				result = new Money((ulong)checked((long)((Int128)(object)value * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(int))
+			{
+				result = new Money((ulong)((int)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(short))
+			{
+				result = new Money((ulong)((short)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(sbyte))
+			{
+				result = new Money((ulong)((sbyte)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			result = Zero;
+			return false;
+		}
+
+		static bool INumberBase<Money>.TryConvertFromSaturating<TOther>(TOther value, out Money result)
+		{
+			if (typeof(TOther) == typeof(Money))
+			{
+				result = (Money)(object)value;
+				return true;
+			}
+			var c = Currency.ApplicationDefault;
+			if (typeof(TOther) == typeof(decimal))
+			{
+				var nv = (decimal)(object)value;
+				result = new Money((ulong)(nv > c.MaxValue ? long.MaxValue: nv < c.MinValue ? long.MinValue: (long)(nv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(double))
+			{
+				var dv = (double)(object)value;
+				result = new Money((ulong)(dv > (double)c.MaxValue ? long.MaxValue : dv < (double)c.MinValue ? long.MinValue : (long)(dv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(float))
+			{
+				var fv = (float)(object)value;
+				result = new Money((ulong)(fv > (float)c.MaxValue ? long.MaxValue : fv < (float)c.MinValue ? long.MinValue : (long)(fv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(Half))
+			{
+				var hv = (Half)(object)value;
+				result = new Money((ulong)(long)(hv * (Half)Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(long))
+			{
+				var lv = (long)(object)value;
+				var minInt = long.MinValue / c.Multiplier;
+				var maxInt = long.MaxValue / c.Multiplier;
+				result = new Money((ulong)(lv > maxInt ? long.MaxValue : lv < minInt ? long.MinValue : lv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(Int128))
+			{
+				var xv = (Int128)(object)value;
+				var minInt = long.MinValue / c.Multiplier;
+				var maxInt = long.MaxValue / c.Multiplier;
+				result = new Money((ulong)(xv > maxInt ? long.MaxValue : xv < minInt ? long.MinValue : (long)xv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(int))
+			{
+				var iv = (int)(object)value;
+				var minInt = long.MinValue / c.Multiplier;
+				var maxInt = long.MaxValue / c.Multiplier;
+				result = new Money((ulong)((long)iv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(short))
+			{
+				var sv = (short)(object)value;
+				var minInt = long.MinValue / c.Multiplier;
+				var maxInt = long.MaxValue / c.Multiplier;
+				result = new Money((ulong)((long)sv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(sbyte))
+			{
+				var bv = (sbyte)(object)value;
+				var minInt = long.MinValue / c.Multiplier;
+				var maxInt = long.MaxValue / c.Multiplier;
+				result = new Money((ulong)((long)bv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			result = Zero;
+			return false;
+		}
+
+		static bool INumberBase<Money>.TryConvertFromTruncating<TOther>(TOther value, out Money result)
+		{
+			if (typeof(TOther) == typeof(Money))
+			{
+				result = (Money)(object)value;
+				return true;
+			}
+			var c = Currency.ApplicationDefault;
+			if (typeof(TOther) == typeof(decimal))
+			{
+				var nv = (decimal)(object)value;
+				result = new Money((ulong)(nv > c.MaxValue ? long.MaxValue : nv < c.MinValue ? long.MinValue : (long)(nv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(double))
+			{
+				var dv = (double)(object)value;
+				result = new Money((ulong)(dv > (double)c.MaxValue ? long.MaxValue : dv < (double)c.MinValue ? long.MinValue : (long)(dv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(float))
+			{
+				var fv = (float)(object)value;
+				result = new Money((ulong)(fv > (float)c.MaxValue ? long.MaxValue : fv < (float)c.MinValue ? long.MinValue : (long)(fv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(Half))
+			{
+				var hv = (Half)(object)value;
+				result = new Money((ulong)(long)(hv * (Half)Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(long))
+			{
+				var lv = (long)(object)value;
+				result = new Money((ulong)(lv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(Int128))
+			{
+				var xv = (Int128)(object)value;
+				result = new Money((ulong)(long)(xv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(int))
+			{
+				var iv = (int)(object)value;
+				result = new Money((ulong)((long)iv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(short))
+			{
+				var sv = (short)(object)value;
+				result = new Money((ulong)((long)sv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			if (typeof(TOther) == typeof(sbyte))
+			{
+				var bv = (sbyte)(object)value;
+				result = new Money((ulong)((long)bv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+				return true;
+			}
+			result = Zero;
+			return false;
+		}
+
+		static bool INumberBase<Money>.TryConvertToChecked<TOther>(Money value, [MaybeNullWhen(false)] out TOther result)
+		{
+			if (typeof(TOther) == typeof(Money))
+			{
+				result = (TOther)(object)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(decimal))
+			{
+				result = (TOther)(object)(decimal)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(double))
+			{
+				result = (TOther)(object)(double)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(float))
+			{
+				result = (TOther)(object)(float)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(Half))
+			{
+				result = (TOther)(object)checked((Half)(float)value);
+				return true;
+			}
+			if (typeof(TOther) == typeof(long))
+			{
+				result = (TOther)(object)(long)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(Int128))
+			{
+				result = (TOther)(object)(Int128)(long)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(int))
+			{
+				result = (TOther)(object)checked((int)(long)value);
+				return true;
+			}
+			if (typeof(TOther) == typeof(short))
+			{
+				result = (TOther)(object)checked((short)(long)value);
+				return true;
+			}
+			if (typeof(TOther) == typeof(sbyte))
+			{
+				result = (TOther)(object)checked((sbyte)(long)value);
+				return true;
+			}
+			result = default;
+			return false;
+		}
+
+		static bool INumberBase<Money>.TryConvertToSaturating<TOther>(Money value, [MaybeNullWhen(false)] out TOther result)
+		{
+			if (typeof(TOther) == typeof(Money))
+			{
+				result = (TOther)(object)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(decimal))
+			{
+				result = (TOther)(object)(decimal)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(double))
+			{
+				result = (TOther)(object)(double)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(float))
+			{
+				result = (TOther)(object)(float)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(Half))
+			{
+				result = (TOther)(object)(value > 65504 ? Half.MaxValue: value < -65504 ? Half.MinValue: (Half)(float)value);
+				return true;
+			}
+			if (typeof(TOther) == typeof(long))
+			{
+				result = (TOther)(object)(long)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(Int128))
+			{
+				result = (TOther)(object)(Int128)(long)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(int))
+			{
+				result = (TOther)(object)(value > int.MaxValue ? int.MaxValue: value < int.MinValue ? int.MinValue: (int)value);
+				return true;
+			}
+			if (typeof(TOther) == typeof(short))
+			{
+				result = (TOther)(object)(value > short.MaxValue ? short.MaxValue : value < short.MinValue ? short.MinValue : (short)value);
+				return true;
+			}
+			if (typeof(TOther) == typeof(sbyte))
+			{
+				result = (TOther)(object)(value > sbyte.MaxValue ? sbyte.MaxValue : value < sbyte.MinValue ? sbyte.MinValue : (sbyte)value);
+				return true;
+			}
+			result = default;
+			return false;
+		}
+
+		static bool INumberBase<Money>.TryConvertToTruncating<TOther>(Money value, [MaybeNullWhen(false)] out TOther result)
+		{
+			if (typeof(TOther) == typeof(Money))
+			{
+				result = (TOther)(object)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(decimal))
+			{
+				result = (TOther)(object)(decimal)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(double))
+			{
+				result = (TOther)(object)(double)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(float))
+			{
+				result = (TOther)(object)(float)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(Half))
+			{
+				result = (TOther)(object)(value > 65504 ? Half.MaxValue : value < -65504 ? Half.MinValue : (Half)(float)value);
+				return true;
+			}
+			if (typeof(TOther) == typeof(long))
+			{
+				result = (TOther)(object)(long)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(Int128))
+			{
+				result = (TOther)(object)(Int128)(long)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(int))
+			{
+				result = (TOther)(object)(int)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(short))
+			{
+				result = (TOther)(object)(short)value;
+				return true;
+			}
+			if (typeof(TOther) == typeof(sbyte))
+			{
+				result = (TOther)(object)(sbyte)value;
+				return true;
+			}
+			result = default;
+			return false;
+		}
+
+#endif
+
 		private static readonly Currency[] __internalCurrencies = new[] { Currency.Empty, Currency.Usd, Currency.Eur, Currency.Rub, Currency.Uzs };
 
 
@@ -796,17 +1179,17 @@ namespace Lexxys
 
 		#region Comparison operators
 
-		public static bool operator ==(Money left, Money right) => left.Currency.Code == right.Currency.Code && left._value == right._value;
+		public static bool operator ==(Money left, Money right) => left.Currency == right.Currency && left._value == right._value;
 
-		public static bool operator !=(Money left, Money right) => left.Currency.Code != right.Currency.Code || left._value != right._value;
+		public static bool operator !=(Money left, Money right) => left.Currency != right.Currency || left._value != right._value;
 
-		public static bool operator >(Money left, Money right) => left.Currency.Code == right.Currency.Code && left._value > right._value;
+		public static bool operator >(Money left, Money right) => left.Currency == right.Currency && left._value > right._value;
 
-		public static bool operator >=(Money left, Money right) => left.Currency.Code == right.Currency.Code && left._value >= right._value;
+		public static bool operator >=(Money left, Money right) => left.Currency == right.Currency && left._value >= right._value;
 
-		public static bool operator <(Money left, Money right) => left.Currency.Code == right.Currency.Code && left._value < right._value;
+		public static bool operator <(Money left, Money right) => left.Currency == right.Currency && left._value < right._value;
 
-		public static bool operator <=(Money left, Money right) => left.Currency.Code == right.Currency.Code && left._value <= right._value;
+		public static bool operator <=(Money left, Money right) => left.Currency == right.Currency && left._value <= right._value;
 
 		public static bool operator ==(Money left, long right) => left._value == right * left.Currency.Multiplier;
 
@@ -850,7 +1233,7 @@ namespace Lexxys
 
 		public static Money operator +(Money left, Money right)
 		{
-			if (left.Currency.Code != right.Currency.Code)
+			if (left.Currency != right.Currency)
 				throw new ArgumentException(SR.DifferentCurrencyCodes(left.Currency, right.Currency));
 			return Create(checked(left._value + right._value), left._currency);
 		}
@@ -892,7 +1275,7 @@ namespace Lexxys
 
 		public static Money operator -(Money left, Money right)
 		{
-			if (left.Currency.Code != right.Currency.Code)
+			if (left.Currency != right.Currency)
 				throw new ArgumentException(SR.DifferentCurrencyCodes(left.Currency, right.Currency));
 			return Create(checked(left._value - right._value), left._currency);
 		}
@@ -1032,21 +1415,36 @@ namespace Lexxys
 			return value;
 		}
 
-#if NET6_0_OR_GREATER && PREVIW
-		static Money IDivisionOperators<Money, Money, Money>.operator /(Money left, Money right)
+		public static Money operator /(Money left, Money right)
 		{
-			return left / (decimal)right;
+			throw new NotImplementedException();
 		}
 
-		static Money IModulusOperators<Money, Money, Money>.operator %(Money left, Money right)
+		public static Money operator *(Money left, Money right)
 		{
-			return Create(left._value % right._value, left._currency);
+			throw new NotImplementedException();
 		}
 
-		static Money IMultiplyOperators<Money, Money, Money>.operator *(Money left, Money right)
-		{
-			return left * (decimal)right;
-		}
+#if NET7_0_OR_GREATER
+
+		static Money IDivisionOperators<Money, Money, Money>.operator /(Money left, Money right) => left / right.Amount;
+
+		static Money IModulusOperators<Money, Money, Money>.operator %(Money left, Money right) => left % right.Amount;
+
+		static Money IMultiplyOperators<Money, Money, Money>.operator *(Money left, Money right) => left * right.Amount;
+
+		static Money INumber<Money>.Clamp(Money value, Money min, Money max) => value < min ? min : value > max ? max : value;
+
+		static Money INumber<Money>.CopySign(Money value, Money sign) => (value._value & long.MinValue) == (sign._value & long.MinValue) ? value : -value;
+
+		static Money INumber<Money>.Max(Money x, Money y) => x > y ? x : y;
+
+		static Money INumber<Money>.MaxNumber(Money x, Money y) => x > y ? x : y;
+
+		static Money INumber<Money>.Min(Money x, Money y) => x < y ? x : y;
+
+		static Money INumber<Money>.MinNumber(Money x, Money y) => x < y ? x : y;
+
 #endif
 
 		#endregion

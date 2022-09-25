@@ -263,11 +263,11 @@ namespace Lexxys
 
 			if (ctx.Find(this, out int id))
 			{
-				writer.WriteAttributeString("ref", id.ToString(CultureInfo.InvariantCulture));
+				writer.WriteAttributeString("ref", id.ToString());
 			}
 			else
 			{
-				writer.WriteAttributeString("id", id.ToString(CultureInfo.InvariantCulture));
+				writer.WriteAttributeString("id", id.ToString());
 
 				DumpInternal(writer);
 

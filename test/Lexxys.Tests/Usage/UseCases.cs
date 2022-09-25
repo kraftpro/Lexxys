@@ -42,7 +42,7 @@ namespace Lexxys.Tests.Usage
 			string listNode = "usage.listNode";
 			string timeoutNode = "usage.timeout";
 			string settingsNode = "usage.app-settings";
-			Lexxys.Logging.LogRecordsService.RegisterFactory();
+			//TODO: Lexxys.Logging.LogRecordsService.RegisterFactory();
 
 			var l1 = StaticServices.Create<ILogging<UseCases>>();
 			var l2 = StaticServices.Create<ILogging>(nameof(UseCases));

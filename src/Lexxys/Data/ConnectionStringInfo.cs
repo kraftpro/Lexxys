@@ -123,13 +123,13 @@ namespace Lexxys.Data
 						break;
 					case "MINPOOLSIZE":
 					case "CONNECTIONLIFETIME":
-						value = XmlTools.GetInt32(value, 0).ToString(CultureInfo.InvariantCulture);
+						value = XmlTools.GetInt32(value, 0).ToString();
 						break;
 					case "MAXPOOLSIZE":
-						value = XmlTools.GetInt32(value, 16).ToString(CultureInfo.InvariantCulture);
+						value = XmlTools.GetInt32(value, 16).ToString();
 						break;
 					case "PACKETSIZE":
-						value = XmlTools.GetInt32(value, 8192).ToString(CultureInfo.InvariantCulture);
+						value = XmlTools.GetInt32(value, 8192).ToString();
 						break;
 					case "TRANSACTIONBINDING":
 						if (value.StartsWith("IMP", StringComparison.OrdinalIgnoreCase))
@@ -256,7 +256,7 @@ namespace Lexxys.Data
 			if (Workstation != null)
 				Append("wsid", Workstation);
 			if (ConnectionTimeout.Ticks > 0)
-				Append("timeout", (ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).ToString(CultureInfo.InvariantCulture));
+				Append("timeout", (ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).ToString());
 
 			if (Password == null)
 			{

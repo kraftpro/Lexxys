@@ -7,8 +7,6 @@
 using System;
 using System.Text;
 
-using Lexxys;
-
 namespace Lexxys
 {
 	public enum BusinessDayShiftType

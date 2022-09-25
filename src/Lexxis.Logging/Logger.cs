@@ -16,13 +16,17 @@ public class Logger<T>: Logger, ILogging<T>
 {
 	public new static readonly ILogging<T> Empty = new EmptyLogger();
 
-	public Logger(): base(typeof(T).GetTypeName())
+	//public Logger(): base(typeof(T).GetTypeName())
+	//{
+	//}
+
+	public Logger(ILoggingService service): base(service, typeof(T).GetTypeName())
 	{
 	}
 
 	private class EmptyLogger: ILogging<T>, ILogging
 	{
-		public string Source => "Empty";
+		public string Source { get { return "Empty"; } set { } }
 
 		public IDisposable BeginScope<TState>(TState state) => LoggingTools.Disposable;
 
@@ -48,17 +52,38 @@ public class Logger: ILogging
 {
 	public static readonly ILogging Empty = new EmptyLogger();
 
-	private ILogRecordWriter _writer;
-	private LogTypeMask _levels;
+	private readonly ILoggingService _service;
+	private string _source;
+	private ILogRecordWriter? _writer;
+	private LogTypeFilter _levels;
 
-	public Logger(string source)
+	//public Logger(): this("Logger")
+	//{
+	//}
+
+	public Logger(ILoggingService service): this(service, "Logger")
 	{
-		Source = source ?? throw new ArgumentNullException(nameof(source));
-		_writer = LogRecordsService.GetLogRecordWriter(source);
-		_levels = GetLogTypeMask(_writer);
 	}
 
-	private static LogTypeMask GetLogTypeMask(ILogRecordWriter writer)
+	public Logger(ILoggingService service, string source)
+	{
+		if (service is null)
+			throw new ArgumentNullException(nameof(service));
+		if (source is null)
+			throw new ArgumentNullException(nameof(source));
+
+		_source = source;
+		_service = service;
+	}
+
+	[Obsolete]
+	public Logger(string source)
+	{
+		_source = source ?? throw new ArgumentNullException(nameof(source));
+		_service = default!;
+	}
+
+	private static LogTypeFilter GetLogTypeMask(ILogRecordWriter writer)
 	{
 		int levels = 0;
 		int mask = 1;
@@ -67,13 +92,25 @@ public class Logger: ILogging
 			if (writer.IsEnabled(i))
 				levels |= mask;
 		}
-		return (LogTypeMask)levels;
+		return (LogTypeFilter)levels;
 	}
 
 	/// <summary>
 	/// Get logger source (usually class name)
 	/// </summary>
-	public string Source { get; }
+	public string Source
+	{
+		get
+		{
+			return _source;
+		}
+		set
+		{
+			_levels = 0;
+			_source = value;
+			_writer = null;
+		}
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IDictionary? args)
@@ -88,6 +125,11 @@ public class Logger: ILogging
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Log(LogRecord record)
 	{
+		if (_writer == null)
+		{
+			_writer = _service.GetLogWriter(Source);
+			_levels = GetLogTypeMask(_writer);
+		}
 		_writer.Write(record);
 	}
 
@@ -109,11 +151,19 @@ public class Logger: ILogging
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsEnabled(LogType logType) => (_levels & (LogTypeMask)(1 << (int)logType)) != 0;
+	public bool IsEnabled(LogType logType)
+	{
+		if (_writer == null)
+		{
+			_writer = _service.GetLogWriter(Source);
+			_levels = GetLogTypeMask(_writer);
+		}
+		return (_levels & (LogTypeFilter)(1 << (int)logType)) != 0;
+	}
 
 	public void TurnOn()
 	{
-		_levels = GetLogTypeMask(_writer);
+		_levels = GetLogTypeMask(_writer ??= _service.GetLogWriter(Source));
 	}
 
 	public void TurnOff()
@@ -205,7 +255,7 @@ public class Logger: ILogging
 
 	private class EmptyLogger: ILogging
 	{
-		public string Source => "Empty";
+		public string Source { get { return "Empty"; } set { } }
 
 		public IDisposable BeginScope<TState>(TState state) => LoggingTools.Disposable;
 

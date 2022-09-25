@@ -486,7 +486,7 @@ namespace Lexxys.Configuration
 		private static Uri? GetConfigurationLocation(Assembly? asm)
 		{
 			string? name;
-			if (asm == null || asm.IsDynamic || String.IsNullOrEmpty(name = asm.GetName().CodeBase))
+			if (asm == null || asm.IsDynamic || String.IsNullOrEmpty(name = asm.Location))
 				return null;
 			return new Uri(Path.ChangeExtension(name, null));
 		}

@@ -14,7 +14,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lexxys.Logging;
-using Xml;
 
 public enum FormatItemType
 {
@@ -72,19 +71,13 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 
 	public LogRecordTextFormatter(TextFormatSetting setting)
 	{
-		Setting = new TextFormatSetting(Defaults).Join(setting);
+		Setting = setting;
 		_mappedFormat = MapFormat(Setting.Format);
 	}
 
-	public LogRecordTextFormatter(string format, string? indent = null, string? para = null)
+	public LogRecordTextFormatter(string format, string? indent = null, string? section = null)
 	{
-		Setting = new TextFormatSetting(format, indent ?? "  ", para ?? (indent == null ? ". ": indent.Length == 0 ? "": "." + new string(' ', indent.Length -1)));
-		_mappedFormat = MapFormat(Setting.Format);
-	}
-
-	public LogRecordTextFormatter(XmlLiteNode config)
-	{
-		Setting = new TextFormatSetting(Defaults).Join(config);
+		Setting = new TextFormatSetting(format, indent ?? section ?? "  ", section);
 		_mappedFormat = MapFormat(Setting.Format);
 	}
 
@@ -134,7 +127,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		var section = GetIndentString(record.Indent);
 		var newLine = Environment.NewLine + Setting.Indent + section;
 
-		LogRecordTextFormatter.Format(writer, record, _mappedFormat, section, newLine);
+		Format(writer, record, _mappedFormat, section, newLine);
 
 		if (record.Data != null)
 			WriteArgs(writer, record.Data, newLine, Setting.Indent);
@@ -194,11 +187,12 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		int length = 0;
 		foreach (LogRecordFormatItem item in format)
 		{
-			writer.Write(item.Prefix);
+			if (item.Prefix.Length > 0)
+				WriteTextStraight(writer, item.Prefix.AsSpan(), newLine);
 			switch (item.Index)
 			{
 				case FormatItemType.IndentMark:
-					if (indent != null)
+					if (indent != null && indent.Length > 0)
 						writer.Write(indent);
 					break;
 				case FormatItemType.EventId:
@@ -230,12 +224,12 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 				case FormatItemType.Timestamp:
 					if (item.Format == null)
 					{
-						LogRecordTextFormatter.AppendTimeStamp(writer, record.Context.Timestamp, true);
+						AppendTimeStamp(writer, record.Context.Timestamp, true);
 						length += 23;
 					}
 					else if (item.Format == "t")
 					{
-						LogRecordTextFormatter.AppendTimeStamp(writer, record.Context.Timestamp, false);
+						AppendTimeStamp(writer, record.Context.Timestamp, false);
 						length += 10;
 					}
 					else
@@ -245,21 +239,64 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 					break;
 				case FormatItemType.Source:
 					if (record.Source != null)
-						writer.Write(LogRecordTextFormatter.NormalizeWs(record.Source));
+						writer.Write(NormalizeWs(record.Source));
 					break;
 				case FormatItemType.Message:
 					if (record.Message != null)
-						LogRecordTextFormatter.WriteText(writer, record.Message.AsSpan().Trim(), newLine);
+						WriteText(writer, record.Message.AsSpan().Trim(), newLine);
 					break;
 				case FormatItemType.Type:
-					if (item.Format == null)
-						writer.Write(record.LogType.ToString());
-					else if (item.Format == "1")
-						writer.Write(record.LogType >= LogType.Output && record.LogType <= LogType.MaxValue ? __severity1[(int)record.LogType] : record.LogType.ToString());
-					else if (item.Format == "3")
-						writer.Write(record.LogType >= LogType.Output && record.LogType <= LogType.MaxValue ? __severity3[(int)record.LogType] : record.LogType.ToString());
-					else
-						writer.Write(record.LogType.ToString(item.Format));
+					if (item.Format == null|| record.LogType < LogType.Output || record.LogType > LogType.MaxValue)
+					{
+						record.LogType.ToString();
+						break;
+					}
+
+					switch (item.Format?.ToUpper())
+					{
+						case null:
+							writer.Write(record.LogType.ToString());
+							break;
+						case "1":
+							writer.Write(__severity1[(int)record.LogType]);
+							break;
+						case "3":
+							writer.Write(__severity3[(int)record.LogType]);
+							break;
+						case "4":
+							writer.Write(__severity4[(int)record.LogType]);
+							break;
+						case "X":
+							if (item.Format[0] == 'x')
+								writer.Write(__severity3[(int)record.LogType].ToLowerInvariant());
+							else
+								writer.Write(__severity1[(int)record.LogType]);
+							break;
+						case "XXX":
+							if (item.Format[0] == 'x')
+								writer.Write(__severity3[(int)record.LogType].ToLowerInvariant());
+							else if (item.Format.StartsWith("Xx", StringComparison.Ordinal))
+								writer.Write(__severity3[(int)record.LogType]);
+							else
+								writer.Write(__severity3[(int)record.LogType].ToUpperInvariant());
+							break;
+						case "XXXX":
+							if (item.Format[0] == 'x')
+								writer.Write(__severity4[(int)record.LogType].ToLowerInvariant());
+							else if (item.Format.StartsWith("Xx", StringComparison.Ordinal))
+								writer.Write(__severity4[(int)record.LogType]);
+							else
+								writer.Write(__severity4[(int)record.LogType].ToUpperInvariant());
+							break;
+
+						case "D":
+							writer.Write(record.LogType.ToString(item.Format));
+							break;
+
+						default:
+							writer.Write(record.LogType.ToString());
+							break;
+					}
 					break;
 				case FormatItemType.Grouping:
 					writer.Write(record.RecordType.ToString(item.Format));
@@ -271,7 +308,8 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		}
 	}
 	private static readonly string[] __severity1 = new[] { "O", "E", "W", "I", "T", "D" };
-	private static readonly string[] __severity3 = new[] { "OUT", "ERR", "WRN", "INF", "TRC", "DBG" };
+	private static readonly string[] __severity3 = new[] { "Out", "Err", "Wrn", "Inf", "Trc", "Dbg" };
+	private static readonly string[] __severity4 = new[] { "Outp", "Fail", "Warn", "Info", "Trce", "Dbug" };
 
 	private static void AppendTimeStamp(TextWriter writer, DateTime date, bool useDate)
 	{
@@ -348,6 +386,25 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			writer.Write(newLine);
 		}
 		writer.Write(value);
+	}
+
+	public static void WriteTextStraight(TextWriter writer, ReadOnlySpan<char> value, string newLine)
+	{
+		var crLf = CrLfFf.AsSpan();
+		int k;
+		while ((k = value.IndexOfAny(crLf)) >= 0)
+		{
+			if (k > 0)
+				writer.Write(value.Slice(0, k));
+			value = value.Slice(k + 1);
+			writer.Write(newLine);
+			int i = 0;
+			for (; i < value.Length && crLf.IndexOf(value[i]) >= 0; ++i)
+				;
+			value = value.Slice(i);
+		}
+		if (value.Length > 0)
+			writer.Write(value);
 	}
 	private const string CrLfFf = "\r\n\f\u0085\u2028\u2029";
 
@@ -486,7 +543,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		}
 
 		/// <inheritdoc />
-		public override DumpWriter Text(string text)
+		public override DumpWriter Text(string? text)
 		{
 			if (Left == 0)
 				return this;

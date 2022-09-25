@@ -85,7 +85,7 @@ namespace Lexxys
 		public DirectoryStorageConfig(int directoryCount = default, int fileCount = default, string? directoryFormat = default, string? fileFormat = default, char pathSeparator = default, string? temporaryFolder = default, DirectoryGenerationMode mode = default)
 		{
 			DirectoryCount = directoryCount == 0 ? 100: directoryCount;
-			DirectoryFormat = directoryFormat ?? new String('0', (directoryCount - 1).ToString(CultureInfo.InvariantCulture).Length);
+			DirectoryFormat = directoryFormat ?? new String('0', (directoryCount - 1).ToString().Length);
 			FileCount = fileCount == 0 ? 1000: fileCount;
 			FileFormat = fileFormat ?? "{index:0000000}-{salt}{ext}";
 			PathSeparator = pathSeparator  == default ? Path.DirectorySeparatorChar: pathSeparator;

@@ -191,7 +191,7 @@ namespace Lexxys
 					.Item("weekDay", WeekDay);
 			}
 			if (!Object.ReferenceEquals(MonthList, AllMonths))
-				builder.Item("months", String.Join(",", MonthList.Select(o => o.ToString(CultureInfo.InvariantCulture))));
+				builder.Item("months", String.Join(",", MonthList.Select(o => o.ToString())));
 			if (!Reminder.IsEmpty)
 				builder.Element("reminder").Value(Reminder).End();
 			return builder;

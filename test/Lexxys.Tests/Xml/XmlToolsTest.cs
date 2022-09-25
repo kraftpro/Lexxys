@@ -22,47 +22,47 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 		/// <summary>
 		///A test for GetTernary
 		///</summary>
-		[TestMethod]
-		public void GetTernaryTest()
-		{
-			string value;
-			Ternary defaultValue;
-			Ternary expected;
-			Ternary actual;
-			Ternary[] expectedTable = new Ternary[] { Ternary.True, Ternary.False, Ternary.Unknown };
-			string[][] table = new string[][]
-				{
-					new[] { "True", "On", "Yes", "Grant", "1" },
-					new[] { "False", "Off", "No", "Deny", "0" },
-					new[] { "Unknown", "Some", "Any", "All", "Both", "Default", "2" },
-				};
+		//[TestMethod]
+		//public void GetTernaryTest()
+		//{
+		//	string value;
+		//	Ternary defaultValue;
+		//	Ternary expected;
+		//	Ternary actual;
+		//	Ternary[] expectedTable = new Ternary[] { Ternary.True, Ternary.False, Ternary.Unknown };
+		//	string[][] table = new string[][]
+		//		{
+		//			new[] { "True", "On", "Yes", "Grant", "1" },
+		//			new[] { "False", "Off", "No", "Deny", "0" },
+		//			new[] { "Unknown", "Some", "Any", "All", "Both", "Default", "2" },
+		//		};
 
-			defaultValue = Ternary.False;
-			for (int i = 0; i < table.Length; ++i)
-			{
-				expected = expectedTable[i];
-				string[] vv = table[i];
-				for (int j = 0; j < vv.Length; ++j)
-				{
-					value = vv[j];
-					actual = XmlTools.GetTernary(value, defaultValue);
-					Assert.AreEqual(expected, actual, value);
+		//	defaultValue = Ternary.False;
+		//	for (int i = 0; i < table.Length; ++i)
+		//	{
+		//		expected = expectedTable[i];
+		//		string[] vv = table[i];
+		//		for (int j = 0; j < vv.Length; ++j)
+		//		{
+		//			value = vv[j];
+		//			actual = XmlTools.GetTernary(value, defaultValue);
+		//			Assert.AreEqual(expected, actual, value);
 
-					value = vv[j].ToUpperInvariant();
-					actual = XmlTools.GetTernary(value, defaultValue);
-					Assert.AreEqual(expected, actual, value);
+		//			value = vv[j].ToUpperInvariant();
+		//			actual = XmlTools.GetTernary(value, defaultValue);
+		//			Assert.AreEqual(expected, actual, value);
 
-					value = vv[j].ToLowerInvariant();
-					actual = XmlTools.GetTernary(value, defaultValue);
-					Assert.AreEqual(expected, actual, value);
+		//			value = vv[j].ToLowerInvariant();
+		//			actual = XmlTools.GetTernary(value, defaultValue);
+		//			Assert.AreEqual(expected, actual, value);
 
-					value = new string(' ', Testing.Rand.Int(5)) + vv[j] + new string(' ', Testing.Rand.Int(5));
-					actual = XmlTools.GetTernary(value, defaultValue);
-					Assert.AreEqual(expected, actual, value);
-				}
-				defaultValue = Ternary.True;
-			}
-		}
+		//			value = new string(' ', Testing.Rand.Int(5)) + vv[j] + new string(' ', Testing.Rand.Int(5));
+		//			actual = XmlTools.GetTernary(value, defaultValue);
+		//			Assert.AreEqual(expected, actual, value);
+		//		}
+		//		defaultValue = Ternary.True;
+		//	}
+		//}
 
 		/// <summary>
 		///A test for GetIndex

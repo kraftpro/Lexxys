@@ -11,21 +11,19 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
-using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'
+
 namespace Lexxys
 {
 
 	using Configuration;
 	using Tokenizer;
-
-#pragma warning disable CA1307 // Specify StringComparison for clarity N/A in Replace, IndexOf, etc.
-#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'
 
 	public static class Factory
 	{
@@ -862,7 +860,7 @@ namespace Lexxys
 
 				private Type? FindType()
 				{
-					var name = IsGeneric ? Name + "`" + GenericParametersCount.ToString(CultureInfo.InvariantCulture): Name;
+					var name = IsGeneric ? Name + "`" + GenericParametersCount.ToString(): Name;
 					var type = GetSynonym(name) ?? (Assembly == null ?
 						Factory.FindType(name, DomainAssemblies) ?? Factory.FindType(name, SystemAssemblies):
 						DomainAssemblies.FirstOrDefault(o => String.Equals(o.GetName().Name, Assembly, StringComparison.OrdinalIgnoreCase))

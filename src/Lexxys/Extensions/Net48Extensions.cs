@@ -14,11 +14,10 @@ namespace Lexxys
 	{
 		public static void Write(this TextWriter writer, ReadOnlySpan<char> value)
 		{
-			if (value.Length == 0)
-				return;
-			if (value.Length == 1)
+			if (value.Length < 2)
 			{
-				writer.Write(value[0]);
+				if (value.Length == 1)
+					writer.Write(value[0]);
 				return;
 			}
 			char[] array = ArrayPool<char>.Shared.Rent(value.Length);
@@ -35,14 +34,12 @@ namespace Lexxys
 
 		public static void WriteLine(this TextWriter writer, ReadOnlySpan<char> value)
 		{
-			if (value.Length == 0)
+			if (value.Length < 2)
 			{
-				writer.WriteLine();
-				return;
-			}
-			if (value.Length == 1)
-			{
-				writer.WriteLine(value[0]);
+				if (value.Length == 1)
+					writer.WriteLine(value[0]);
+				else
+					writer.WriteLine();
 				return;
 			}
 			char[] array = ArrayPool<char>.Shared.Rent(value.Length);

@@ -27,9 +27,9 @@ public class FileLogWriter: LogWriter
 	public const int DefaultBatchSize = 4096/200;
 	public const int DefaultFlushBound = 4096/200;
 
-	public static readonly TimeSpan DefaultTimeout = new TimeSpan(0, 0, 2);
-	public static readonly TimeSpan MaxTimeout = new TimeSpan(0, 0, 10);
-	public static readonly TimeSpan MinTimeout = new TimeSpan(0, 0, 0, 100);
+	public static readonly TimeSpan DefaultTimeout = new TimeSpan(TimeSpan.TicksPerSecond * 2);
+	public static readonly TimeSpan MaxTimeout = new TimeSpan(TimeSpan.TicksPerSecond * 10);
+	public static readonly TimeSpan MinTimeout = new TimeSpan(TimeSpan.TicksPerMillisecond * 100);
 
 	/// <summary>
 	/// Creates a new <see cref="LogWriter"/> to write logs to the text file.
@@ -58,6 +58,16 @@ public class FileLogWriter: LogWriter
 	{
 	}
 
+	public FileLogWriter(LoggingFileParameters parameters): base(parameters)
+	{
+		_file = parameters.Path ?? DefaultLogFileMask;
+		_timeout = Range(parameters.Timeout, DefaultTimeout, MinTimeout, MaxTimeout);
+		_truncate = parameters.Overwrite;
+
+		TimeSpan Range(TimeSpan? value, TimeSpan def, TimeSpan min, TimeSpan max)
+			=> value == null ? def: value.GetValueOrDefault() < min ? min: value.GetValueOrDefault() > max ? max: value.GetValueOrDefault();
+	}
+
 	public override string Target => _file;
 
 	public override void Write(IEnumerable<LogRecord> records)
@@ -71,8 +81,11 @@ public class FileLogWriter: LogWriter
 			{
 				foreach (var record in records)
 				{
-					if (record != null)
-						o.Write(record, Formatter).WriteLine();
+					if (record == null)
+						continue;
+
+					Formatter.Format(o, record);
+					o.WriteLine();
 				}
 				return;
 			}
@@ -117,15 +130,15 @@ public class FileLogWriter: LogWriter
 		}
 	}
 
-	private static string FileMaskToName(string logFileMask)
+	private static unsafe string FileMaskToName(string logFileMask)
 	{
 		if (logFileMask == null)
 			return String.Empty;
-
 		if (logFileMask.IndexOf('{') < 0)
 			return logFileMask;
 
 		DateTime tm = DateTime.Now;
+		var digits = stackalloc char[4];
 
 		return __fileMaskRe.Replace(logFileMask, match =>
 		{
@@ -136,25 +149,30 @@ public class FileLogWriter: LogWriter
 				switch (s[i])
 				{
 					case 'Y':
-						r.Append(tm.Year.ToString(CultureInfo.InvariantCulture));
+						r.Append(D4(tm.Year), 4);
 						break;
 					case 'y':
-						r.Append((tm.Year % 100).ToString("D2", CultureInfo.InvariantCulture));
+						r.Append(D2(tm.Year % 100), 2);
 						break;
 					case 'M':
-						r.Append(tm.Month.ToString("D2", CultureInfo.InvariantCulture));
+						r.Append(D2(tm.Month), 2);
 						break;
 					case 'D':
-						r.Append(tm.Day.ToString("D2", CultureInfo.InvariantCulture));
+						r.Append(D2(tm.Day), 2);
 						break;
 					case 'd':
-						r.Append(tm.DayOfYear.ToString("D3", CultureInfo.InvariantCulture));
+						r.Append(D3(tm.DayOfYear), 3);
 						break;
 					case 'H':
-						r.Append(tm.Hour.ToString("D2", CultureInfo.InvariantCulture));
+						r.Append(D2(tm.Hour), 2);
 						break;
 					case 'm':
-						r.Append(tm.Minute.ToString("D2", CultureInfo.InvariantCulture));
+						r.Append(D2(tm.Minute), 2);
+						break;
+					case 'W':
+						var calendar = new GregorianCalendar();
+						var day = calendar.GetWeekOfYear(tm, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+						r.Append(D2(day), 2);
 						break;
 					default:
 						r.Append(s[i]);
@@ -163,6 +181,36 @@ public class FileLogWriter: LogWriter
 			}
 			return r.ToString();
 		});
+
+		char* D2(int value)
+		{
+			digits[1] = (char)('0' + value % 10);
+			value /= 10;
+			digits[0] = (char)('0' + value % 10);
+			return digits;
+		}
+
+		char* D3(int value)
+		{
+			digits[2] = (char)('0' + value % 10);
+			value /= 10;
+			digits[1] = (char)('0' + value % 10);
+			value /= 10;
+			digits[0] = (char)('0' + value % 10);
+			return digits;
+		}
+
+		char* D4(int value)
+		{
+			digits[3] = (char)('0' + value % 10);
+			value /= 10;
+			digits[2] = (char)('0' + value % 10);
+			value /= 10;
+			digits[1] = (char)('0' + value % 10);
+			value /= 10;
+			digits[0] = (char)('0' + value % 10);
+			return digits;
+		}
 	}
 	private static readonly Regex __fileMaskRe = new Regex(@"\{[^\}]*\}");
 
@@ -242,22 +290,53 @@ public class NullLogWriter: LogWriter
 	}
 }
 
+
 public class ConsoleLogWriter: LogWriter
 {
 	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{Type} {IndentMark}{Source}: {Message}",
+		"{Type:xxxx} {IndentMark}{Source}: {Message}",
 		"  ",
 		". ");
 
+	private readonly bool _isEnabled;
+
 	public ConsoleLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
 	{
+		_isEnabled = IsEnabled();
+	}
+
+	public ConsoleLogWriter(LoggingConsoleParameters parameters): base(parameters)
+	{
+		_isEnabled = IsEnabled();
+	}
+
+	private static bool IsEnabled()
+	{
+		try
+		{
+			return Console.BufferHeight > 0 || Console.IsOutputRedirected || Console.IsErrorRedirected;
+			//if (Console.IsOutputRedirected)
+			//{
+			//	if (Console.Out != TextWriter.Null)
+			//		return true;
+			//	if (Console.IsErrorRedirected)
+			//		return Console.Error != TextWriter.Null;
+			//}
+			//else if (Console.IsErrorRedirected)
+			//{
+			//	if (Console.Error != TextWriter.Null)
+			//		return true;
+			//}
+			//return Console.BufferHeight > 0;
+		}
+		catch { return false; }
 	}
 
 	public override string Target => "Console";
 
 	public override void Write(IEnumerable<LogRecord> records)
 	{
-		if (records == null)
+		if (!_isEnabled || records == null)
 			return;
 		foreach (var record in records)
 		{
@@ -275,7 +354,9 @@ public class ConsoleLogWriter: LogWriter
 				writer = Console.Out;
 			//	redirected = Console.IsOutputRedirected;
 			}
+
 			Formatter.Format(writer, record);
+			writer.WriteLine();
 		}
 	}
 }
@@ -287,6 +368,10 @@ public class TraceLogWriter: LogWriter
 		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}: {Message}",
 		"  ",
 		". ");
+
+	public TraceLogWriter(ILogWriterParameters parameters): base(parameters)
+	{
+	}
 
 	public TraceLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
 	{
@@ -301,7 +386,11 @@ public class TraceLogWriter: LogWriter
 		foreach (var record in records)
 		{
 			if (record != null)
+			{
+				if (record.Indent != Trace.IndentLevel)
+					Trace.IndentLevel = record.Indent;
 				Trace.WriteLine(Formatter.Format(record));
+			}
 		}
 	}
 }
@@ -314,15 +403,23 @@ public class DebuggerLogWriter: LogWriter
 		"  ",
 		". ");
 
+	private readonly bool _isLogging;
+
+	public DebuggerLogWriter(ILogWriterParameters parameters): base(parameters)
+	{
+		_isLogging = Debugger.IsLogging();
+	}
+
 	public DebuggerLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
 	{
+		_isLogging = Debugger.IsLogging();
 	}
 
 	public override string Target => "Debugger";
 
 	public override void Write(IEnumerable<LogRecord> records)
 	{
-		if (!Debugger.IsLogging() || records == null)
+		if (!_isLogging || records == null)
 			return;
 		foreach (var record in records)
 		{
@@ -344,15 +441,24 @@ public class EventLogLogWriter: LogWriter
 
 	private readonly string? _eventSource;
 
+	public EventLogLogWriter(LoggingEventParameters parameters) : base(parameters)
+	{
+		_eventSource = GetEventSource(parameters.EventSource, parameters.LogName);
+	}
+
 	public EventLogLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
 	{
 		config ??= XmlLiteNode.Empty;
-		var eventSource = XmlTools.GetString(config["eventSource"], SystemLog.EventSource)!;
+		_eventSource = GetEventSource(config["eventSource"], config["logName"]);
+	}
+
+	private string? GetEventSource(string? eventSource, string? logName)
+	{
+		eventSource ??= SystemLog.EventSource;
+		logName ??= "Application";
 		if (eventSource.Length > 254)
 			eventSource = eventSource.Substring(0, 254);
-		var logName = XmlTools.GetString(config["logName"], "Application")!;
-		if (SystemLog.TestEventLog(eventSource, logName))
-			_eventSource = eventSource;
+		return SystemLog.TestEventLog(eventSource, logName) ? eventSource: null;
 	}
 
 	public override string Target => "EventLog";

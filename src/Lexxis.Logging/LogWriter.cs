@@ -31,6 +31,13 @@ public abstract class LogWriter: ILogWriter
 		_rule = LoggingRule.Create(config);
 	}
 
+	public LogWriter(ILogWriterParameters parameters)
+	{
+		Name = parameters.Name ?? this.GetType().Name;
+		Formatter = (parameters.Formatter ?? new LogRecordTextParameters()).CreateFormatter();
+		_rule = LoggingRule.Create(parameters.Rules);
+	}
+
 	public void Initialize(LogWriterConfig? config)
 	{
 		if (config is null)
@@ -39,7 +46,7 @@ public abstract class LogWriter: ILogWriter
 			Formatter = config.Formatter;
 	}
 
-	public void Configure(LoggingParameters? parameters)
+	public void Configure(LogWriterParameters? parameters)
 	{
 		if (parameters is null)
 			return;

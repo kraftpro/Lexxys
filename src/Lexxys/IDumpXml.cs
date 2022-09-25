@@ -5,13 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-
-using Lexxys;
 
 namespace Lexxys
 {

@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Web;
 using System.Xml;
 
 #pragma warning disable CA1307 // Specify StringComparison for clarity
 
 namespace Lexxys.Xml
 {
-    public static partial class XmlTools
-    {
+	public static partial class XmlTools
+	{
 		public static string Convert(bool value)
 		{
 			return value ? "true" : "false";
@@ -302,7 +304,7 @@ namespace Lexxys.Xml
 			if (k == length)
 				return null;
 
-			if (k <= MaxStackAllocSize / sizeof(char))
+			if (k <= Tools.MaxStackAllocSize / sizeof(char))
 			{
 				char* target = stackalloc char[k];
 				return text.Append(target, EncodeMemory(source, target, first, length, encodeQuote));
@@ -402,7 +404,7 @@ namespace Lexxys.Xml
 			(int k, int first) = EncodeSize(source, length, encodeQuote);
 			if (k == length)
 				return null;
-			if (k <= MaxStackAllocSize / sizeof(char))
+			if (k <= Tools.MaxStackAllocSize / sizeof(char))
 			{
 				char* target = stackalloc char[k];
 				return new String(target, 0, EncodeMemory(source, target, first, length, encodeQuote));
@@ -454,7 +456,7 @@ namespace Lexxys.Xml
 			char* s = source + skip;
 			char* t = target + skip;
 			char* e = source + count;
-			Memcpy((byte*)source, (byte*)target, skip * sizeof(char));
+			Buffer.MemoryCopy(source, target, skip * sizeof(char), skip * sizeof(char));
 			while (s != e)
 			{
 				char c = *s++;
@@ -516,7 +518,7 @@ namespace Lexxys.Xml
 			fixed (char* source = value)
 			{
 				int n = value.Length;
-				if (n <= MaxStackAllocSize / sizeof(char))
+				if (n <= Tools.MaxStackAllocSize / sizeof(char))
 				{
 					char* target = stackalloc char[n];
 					return text.Append(target, DecodeMemory(source, target, i, n));
@@ -539,7 +541,7 @@ namespace Lexxys.Xml
 			fixed (char* source = value)
 			{
 				int n = value.Length;
-				if (n <= MaxStackAllocSize / sizeof(char))
+				if (n <= Tools.MaxStackAllocSize / sizeof(char))
 				{
 					char* target = stackalloc char[n];
 					return new String(target, 0, DecodeMemory(source, target, i, n));
@@ -553,7 +555,7 @@ namespace Lexxys.Xml
 
 		private static unsafe int DecodeMemory(char* source, char* target, int start, int count)
 		{
-			Memcpy((byte*)source, (byte*)target, start * sizeof(char));
+			Buffer.MemoryCopy(source, target, start * sizeof(char), start * sizeof(char));
 			char* s = source + start;
 			char* t = target + start;
 			int left = count - start;
@@ -616,46 +618,6 @@ namespace Lexxys.Xml
 				--left;
 			}
 			return (int)(t - target);
-		}
-
-		private static unsafe void Memcpy(byte* source, byte* target, int count)
-		{
-			if (count >= 16)
-			{
-				do
-				{
-					*(int*)target = *(int*)source;
-					*(int*)(target + 4) = *(int*)(source + 4);
-					*(int*)(target + 8) = *(int*)(source + 8);
-					*(int*)(target + 12) = *(int*)(source + 12);
-					target += 16;
-					source += 16;
-				}
-				while ((count -= 16) >= 16);
-			}
-			if (count <= 0)
-				return;
-			if ((count & 8) != 0)
-			{
-				*(int*)target = *(int*)source;
-				*(int*)(target + 4) = *(int*)(source + 4);
-				target += 8;
-				source += 8;
-			}
-			if ((count & 4) != 0)
-			{
-				*(int*)target = *(int*)source;
-				target += 4;
-				source += 4;
-			}
-			if ((count & 2) != 0)
-			{
-				*(short*)target = *(short*)source;
-				target += 2;
-				source += 2;
-			}
-			if ((count & 1) != 0)
-				*target = *source;
 		}
 	}
 }

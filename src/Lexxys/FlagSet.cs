@@ -64,7 +64,7 @@ namespace Lexxys
 				} while (!((c > '\u0020' && c < '\u007F' && c != ':' && c != ';') || (c > '\u00A0' && c < '\uD800')));
 				++t;
 
-				int w = Math.Min((int)(t - p), 4096);
+				int w = Math.Min((int)(t - p), Tools.MaxStackAllocSize);
 				char* buffer = stackalloc char[w];
 				char* q = buffer;
 				int n = 0;

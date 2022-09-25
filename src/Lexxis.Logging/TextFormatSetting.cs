@@ -16,7 +16,7 @@ public readonly struct TextFormatSetting
 	public string Indent { get; }
 	public string Section { get; }
 
-	public TextFormatSetting(string format, string indent, string? section)
+	public TextFormatSetting(string format, string indent, string? section = default)
 	{
 		if (format == null)
 			throw new ArgumentNullException(nameof(format));
@@ -25,7 +25,22 @@ public readonly struct TextFormatSetting
 
 		Format = FixIndentMark(format);
 		Indent = indent;
-		Section = section ?? indent;
+		Section = section ?? (
+			indent.Length == 0 ? indent:
+			indent[0] == '\t' ? "." + indent:
+			indent.Length == 1 ? indent: "." + indent.Substring(1, indent.Length - 1));
+
+		static string FixIndentMark(string value)
+		{
+			if (value.IndexOf("{IndentMark", StringComparison.OrdinalIgnoreCase) >= 0)
+				return value;
+			int i = value.IndexOf("{Source", StringComparison.OrdinalIgnoreCase);
+			if (i < 0)
+				i = value.IndexOf("{Message", StringComparison.OrdinalIgnoreCase);
+			if (i < 0)
+				i = 0;
+			return value.Substring(0, i) + "{IndentMark}" + value.Substring(i);
+		}
 	}
 
 	public TextFormatSetting(TextFormatSetting other)
@@ -33,18 +48,6 @@ public readonly struct TextFormatSetting
 		Format = other.Format;
 		Section = other.Section;
 		Indent = other.Indent;
-	}
-
-	private static string FixIndentMark(string value)
-	{
-		if (value.IndexOf("{IndentMark", StringComparison.OrdinalIgnoreCase) >= 0)
-			return value;
-		int i = value.IndexOf("{Source", StringComparison.OrdinalIgnoreCase);
-		if (i < 0)
-			i = value.IndexOf("{Message", StringComparison.OrdinalIgnoreCase);
-		if (i < 0)
-			i = 0;
-		return value.Substring(0, i) + "{IndentMark}" + value.Substring(i);
 	}
 
 	/// <summary>
@@ -65,19 +68,6 @@ public readonly struct TextFormatSetting
 				XmlTools.GetString(config["format"], Format)!,
 				XmlTools.GetString(config["indent"], Section)!,
 				XmlTools.GetString(config["para"], Indent));
-	}
-
-	/// <summary>
-	/// Replace non empty setting from <paramref name="setting"/>.
-	/// </summary>
-	/// <param name="setting">Parameters to replace</param>
-	/// <returns>this object</returns>
-	public TextFormatSetting Join(TextFormatSetting setting)
-	{
-		return new TextFormatSetting(
-			setting.Format ?? Format,
-			setting.Section ?? Section,
-			setting.Indent ?? Indent);
 	}
 }
 

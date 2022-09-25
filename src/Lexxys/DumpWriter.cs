@@ -238,7 +238,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public DumpWriter Dump(sbyte value)
 		{
-			return Text(value.ToString(CultureInfo.InvariantCulture));
+			return Text(value.ToString());
 		}
 
 		/// <summary>
@@ -248,7 +248,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public DumpWriter Dump(short value)
 		{
-			return Text(value.ToString(CultureInfo.InvariantCulture));
+			return Text(value.ToString());
 		}
 
 		/// <summary>
@@ -258,7 +258,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public DumpWriter Dump(ushort value)
 		{
-			return Text(value.ToString(CultureInfo.InvariantCulture));
+			return Text(value.ToString());
 		}
 
 		/// <summary>
@@ -268,7 +268,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public DumpWriter Dump(int value)
 		{
-			return Text(value.ToString(CultureInfo.InvariantCulture));
+			return Text(value.ToString());
 		}
 
 		/// <summary>
@@ -278,7 +278,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public DumpWriter Dump(uint value)
 		{
-			return Text(value.ToString(CultureInfo.InvariantCulture));
+			return Text(value.ToString());
 		}
 
 		/// <summary>
@@ -288,7 +288,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public DumpWriter Dump(long value)
 		{
-			return Text(value.ToString(CultureInfo.InvariantCulture));
+			return Text(value.ToString());
 		}
 
 		/// <summary>
@@ -298,7 +298,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public DumpWriter Dump(ulong value)
 		{
-			return Text(value.ToString(CultureInfo.InvariantCulture));
+			return Text(value.ToString());
 		}
 
 		/// <summary>

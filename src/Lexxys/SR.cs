@@ -130,6 +130,14 @@ namespace Lexxys
 		{
 			return String.Format(Culture, "The Type '{1}' of parameter '{0}' is wrong. Required type is {2}", paramName, actualType, expectedType);
 		}
+		internal static string ArgumentItemIsNull()
+		{
+			return "One or more items of a parameter is null.";
+		}
+		internal static string ArgumentItemIsNull(string paramName)
+		{
+			return $"One or more items of parameter '{paramName}' is null.";
+		}
 		internal static string OverflowException()
 		{
 			return "The value is exceed of valid value range.";

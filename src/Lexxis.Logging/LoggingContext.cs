@@ -9,18 +9,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace Lexxys.Logging;
+namespace Lexxys.Logging.Legacy;
 using Configuration;
 using Xml;
 
 internal static class LoggingContext
 {
 	private const int DefaultMaxQueueSize = 256 * 1024;
-	private const int DefaultLogoffTimeout = 5000;
+	private static readonly TimeSpan DefaultFlushTimeout = TimeSpan.FromSeconds(5);
 
-	internal const int LogTypeCount = (int)LogType.MaxValue + 1;
 	internal const int LogWatcherSleep = 500;
-	internal const int FlushTimeout = 1000;
+	//internal const int FlushTimeout = 1000;
 	internal const int FlushBoundMultiplier = 1024;
 
 	private static readonly LoggingConfiguration[] DefaultLoggingConfiguration = new [] {
@@ -42,8 +41,9 @@ internal static class LoggingContext
 	private static volatile bool _initialized;
 	private static readonly object SyncRoot = new object();
 
+	public static TimeSpan FlushTimeout { get; set; }
+
 	internal static int MaxQueueSize { get; private set; }
-	internal static int LogoffTimeout { get; private set; }
 
 	internal static bool Initialize()
 	{
@@ -115,13 +115,16 @@ internal static class LoggingContext
 
 		LoggingRule.GlobalExclude = String.Join(",", config.Select(o => o.Exclude.TrimToNull()).Where(o => o != null)).TrimToNull();
 
-		MaxQueueSize = Value(config.Select(o => o?.MaxQueueSize).FirstOrDefault(o => o != null), 0, int.MaxValue, DefaultMaxQueueSize);
-		LogoffTimeout = Value((int?)(config.Select(o => o?.LogoffTimeout).FirstOrDefault(o => o != null)?.Ticks / TimeSpan.TicksPerMillisecond), 0, int.MaxValue, DefaultLogoffTimeout);
+		MaxQueueSize = IntValue(config.Select(o => o?.MaxQueueSize).FirstOrDefault(o => o != null), 0, int.MaxValue, DefaultMaxQueueSize);
+		FlushTimeout = TimeValue(config.Select(o => o?.FlushTimeout).FirstOrDefault(o => o != null), TimeSpan.Zero, TimeSpan.MaxValue, DefaultFlushTimeout);
 
 		LogRecordsService.Start(GetLogWriters(config));
 
-		static int Value(int? value, int min, int max, int def)
+		static int IntValue(int? value, int min, int max, int def)
 			=> value == null ? def : Math.Max(min, Math.Min(max, value.GetValueOrDefault()));
+
+		static TimeSpan TimeValue(TimeSpan? value, TimeSpan min, TimeSpan max, TimeSpan def)
+			=> value == null ? def : TimeSpan.FromTicks(Math.Max(min.Ticks, Math.Min(max.Ticks, value.GetValueOrDefault().Ticks)));
 	}
 
 	private static IEnumerable<ILogWriter> GetLogWriters(IEnumerable<LoggingConfiguration> config)
@@ -154,14 +157,14 @@ internal static class LoggingContext
 
 	private class LoggingConfiguration
 	{
-		public TimeSpan? LogoffTimeout { get; }
+		public TimeSpan? FlushTimeout { get; }
 		public string? Exclude { get; }
 		public int? MaxQueueSize { get; }
 		public List<XmlLiteNode> Loggers { get; }
 
-		public LoggingConfiguration(TimeSpan? logoffTimeout, string? exclude, int? maxQueueSize, List<XmlLiteNode> loggers)
+		public LoggingConfiguration(TimeSpan? timeout, string? exclude, int? maxQueueSize, List<XmlLiteNode> loggers)
 		{
-			LogoffTimeout = logoffTimeout;
+			FlushTimeout = timeout;
 			Exclude = exclude;
 			MaxQueueSize = maxQueueSize;
 			Loggers = loggers ?? new List<XmlLiteNode>();
@@ -174,7 +177,7 @@ internal static class LoggingContext
 
 			return new LoggingConfiguration(
 				exclude: XmlTools.GetString(config["exclude"], null),
-				logoffTimeout: XmlTools.GetTimeSpan(config["logoffTimeout"], null),
+				timeout: XmlTools.GetTimeSpan(config["logoffTimeout"], null),
 				maxQueueSize: XmlTools.GetInt32(config["maxQueueSize"], null),
 				loggers: config.Where("logger").Where(o => !o.IsEmpty).ToList());
 		}

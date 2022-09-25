@@ -321,7 +321,7 @@ namespace Lexxys.Data
 		}
 		public static string Equal(int value)
 		{
-			return "=" + value.ToString(CultureInfo.InvariantCulture);
+			return "=" + value.ToString();
 		}
 		public static string Equal(int? value)
 		{
@@ -329,7 +329,7 @@ namespace Lexxys.Data
 		}
 		public static string Equal(long value)
 		{
-			return "=" + value.ToString(CultureInfo.InvariantCulture);
+			return "=" + value.ToString();
 		}
 		public static string Equal(long? value)
 		{
@@ -386,7 +386,7 @@ namespace Lexxys.Data
 		}
 		public static string NotEqual(int value)
 		{
-			return "<>" + value.ToString(CultureInfo.InvariantCulture);
+			return "<>" + value.ToString();
 		}
 		public static string NotEqual(int? value)
 		{
@@ -394,7 +394,7 @@ namespace Lexxys.Data
 		}
 		public static string NotEqual(long value)
 		{
-			return "<>" + value.ToString(CultureInfo.InvariantCulture);
+			return "<>" + value.ToString();
 		}
 		public static string NotEqual(long? value)
 		{
@@ -431,23 +431,23 @@ namespace Lexxys.Data
 
 		public static string Id(int value)
 		{
-			return value > 0 ? value.ToString(CultureInfo.InvariantCulture): "0";
+			return value > 0 ? value.ToString(): "0";
 		}
 		public static string Id(int? value)
 		{
-			return value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture): "0";
+			return value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(): "0";
 		}
 		public static string Id(string? value)
 		{
-			return Int32.TryParse(value, out int id) && id > 0 ? id.ToString(CultureInfo.InvariantCulture): "0";
+			return Int32.TryParse(value, out int id) && id > 0 ? id.ToString(): "0";
 		}
 		public static string IdOrNull(int? value)
 		{
-			return value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture): NullValue;
+			return value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(): NullValue;
 		}
 		public static string IdOrNull(string? value)
 		{
-			return Int32.TryParse(value, out int id) && id > 0 ? id.ToString(CultureInfo.InvariantCulture): NullValue;
+			return Int32.TryParse(value, out int id) && id > 0 ? id.ToString(): NullValue;
 		}
 		public static string DateValue(DateTime? value)
 		{
@@ -539,7 +539,7 @@ namespace Lexxys.Data
 		}
 		public static string Value(int value)
 		{
-			return value.ToString(CultureInfo.InvariantCulture);
+			return value.ToString();
 		}
 		public static string Value(long? value)
 		{
@@ -547,11 +547,11 @@ namespace Lexxys.Data
 		}
 		public static string Value(long value)
 		{
-			return value.ToString(CultureInfo.InvariantCulture);
+			return value.ToString();
 		}
 		public static string Value(ulong value)
 		{
-			return value.ToString(CultureInfo.InvariantCulture);
+			return value.ToString();
 		}
 		public static string Value(double? value)
 		{

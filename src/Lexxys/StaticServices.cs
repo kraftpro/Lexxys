@@ -409,7 +409,7 @@ namespace Lexxys
 				{
 				}
 
-				public string Source => "Dummy";
+				public string Source { get => "Dummy"; set { } }
 
 				public IDisposable BeginScope<TState>(TState state) => default!;
 

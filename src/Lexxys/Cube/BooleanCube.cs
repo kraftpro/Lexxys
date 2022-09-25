@@ -39,7 +39,6 @@ namespace Lexxys.Cube
 			}
 		}
 
-
 		class Table: HashSet<BooleanCubeNode>
 		{
 			public ReadOnlyCollection<BooleanCubeNode> Neighbors(BooleanCubeNode node, int width)

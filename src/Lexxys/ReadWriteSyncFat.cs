@@ -139,7 +139,7 @@ namespace Lexxys
 
 			public void Dispose()
 			{
-				ReaderWriterLock tmp = Interlocked.Exchange(ref _locker, null);
+				ReaderWriterLock? tmp = Interlocked.Exchange(ref _locker, null);
 				if (tmp != null)
 					tmp.ReleaseReaderLock();
 			}
@@ -147,7 +147,7 @@ namespace Lexxys
 
 		private class NewWriter: IDisposable
 		{
-			ReaderWriterLock _locker;
+			ReaderWriterLock? _locker;
 
 			public NewWriter(ReaderWriterLock locker, int timeout)
 			{
@@ -157,7 +157,7 @@ namespace Lexxys
 
 			public void Dispose()
 			{
-				ReaderWriterLock tmp = Interlocked.Exchange(ref _locker, null);
+				ReaderWriterLock? tmp = Interlocked.Exchange(ref _locker, null);
 				if (tmp != null)
 					tmp.ReleaseWriterLock();
 			}
@@ -165,7 +165,7 @@ namespace Lexxys
 
 		private class UpgradeToWriter: IDisposable
 		{
-			ReaderWriterLock _locker;
+			ReaderWriterLock? _locker;
 			LockCookie _cookie;
 
 			public UpgradeToWriter(ReaderWriterLock locker, int timeout)
@@ -176,7 +176,7 @@ namespace Lexxys
 
 			public void Dispose()
 			{
-				ReaderWriterLock tmp = Interlocked.Exchange(ref _locker, null);
+				ReaderWriterLock? tmp = Interlocked.Exchange(ref _locker, null);
 				if (tmp != null)
 					tmp.DowngradeFromWriterLock(ref _cookie);
 			}

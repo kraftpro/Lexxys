@@ -125,7 +125,7 @@ namespace Lexxys
 			if (WeekPeriod != 1)
 				builder.Item("week", WeekPeriod);
 			if (!Object.ReferenceEquals(DayList, FridayOnly))
-				builder.Item("days", String.Join(",", DayList.Select(o => ((int)o).ToString(CultureInfo.InvariantCulture))));
+				builder.Item("days", String.Join(",", DayList.Select(o => ((int)o).ToString())));
 			if (!Reminder.IsEmpty)
 				builder.Element("reminder").Value(Reminder).End();
 			return builder;
