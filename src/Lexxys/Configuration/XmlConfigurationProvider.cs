@@ -63,7 +63,7 @@ namespace Lexxys.Configuration
 			return ReadOnly.WrapCopy(nodes
 				.Select(o => ParseValue(o, typeof(T)))
 				.Where(o => o != null)
-				.Select(o => (T)o!));
+				.Select(o => (T)o!))!;
 		}
 
 		public static XmlConfigurationProvider? Create(Uri location, IReadOnlyCollection<string>? parameters)

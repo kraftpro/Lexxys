@@ -19,8 +19,8 @@ namespace Lexxys
 
 	public static class EX
 	{
-		private static ILogging? Log => __loger ??= StaticServices.TryCreate<ILogging>("Lexxys.EX");
-		private static ILogging? __loger;
+		private static ILogger? Log => __loger ??= Statics.TryGetLogger("Lexxys.EX");
+		private static ILogger? __loger;
 #if DEBUG
 		private static int _debugLogging;
 #endif

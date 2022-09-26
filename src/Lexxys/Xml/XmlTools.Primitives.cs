@@ -2,6 +2,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.ConstrainedExecution;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Lexxys.Xml
 {
@@ -884,10 +888,10 @@ namespace Lexxys.Xml
 		{
 			if (String.IsNullOrWhiteSpace(value))
 			{
-				result = null;
+				result = null!;
 				return false;
 			}
-			result = Factory.GetType(value);
+			result = Factory.GetType(value)!;
 			return result != null;
 		}
 
@@ -965,80 +969,83 @@ namespace Lexxys.Xml
 
 		public static bool TryGetEnum<T>(string? value, out T result) where T : struct
 		{
-			if (value == null || value.Length == 0 || !IsEnum(typeof(T)))
-			{
-				result = default;
-				return false;
-			}
-			if (Enum.TryParse(value.Trim(), true, out result))
-				return true;
-
-			if (Int64.TryParse(value, out long x))
-			{
-				object y = Enum.ToObject(typeof(T), x);
-				foreach (var item in Enum.GetValues(typeof(T)))
-				{
-					if (Object.Equals(y, item))
-					{
-						result = (T)y;
-						return true;
-					}
-				}
-			}
-			return false;
+			return Enum.TryParse(value, true, out result);
 		}
 
 		public static object GetEnum(string value, Type enumType)
 		{
 			if (value is null || value.Length <= 0)
 				throw new ArgumentNullException(nameof(value));
-			return TryGetEnum(value, enumType, out object? result) ? result : throw new FormatException(SR.FormatException(value));
+			return TryGetEnum(value, enumType, out object result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
 		[return: NotNullIfNotNull("defaultValue")]
 		public static object? GetEnum(string? value, Type enumType, object? defaultValue)
 		{
-			return TryGetEnum(value, enumType, out object? result) ? result : defaultValue;
+			return TryGetEnum(value, enumType, out object result) ? result : defaultValue;
 		}
 
-		public static bool TryGetEnum(string? value, Type enumType, [MaybeNullWhen(false)] out object result)
+		public static bool TryGetEnum(string? value, Type enumType, out object result)
 		{
 			if (enumType is null)
 				throw new ArgumentNullException(nameof(enumType));
 
-			if (!IsEnum(enumType))
+#if NETCOREAPP2_0_OR_GREATER
+			if (Enum.TryParse(enumType, value, true, out result!))
 			{
-				result = null;
-				return false;
+				var s = result.ToString()!;
+				if (!(s.Length == 0 || s[0] is >= '0' and <= '9' or '-' or '+'))
+					return true;
 			}
 			result = Enum.ToObject(enumType, 0);
-			if (value == null || (value = value.Trim()).Length == 0)
-				return false;
-
-			string[] names = Enum.GetNames(enumType);
-			for (int i = 0; i < names.Length; ++i)
-			{
-				if (String.Equals(names[i], value, StringComparison.OrdinalIgnoreCase))
-				{
-					result = Enum.ToObject(enumType, Enum.GetValues(enumType).GetValue(i)!);
-					return true;
-				}
-			}
-
-			if (!Int64.TryParse(value, out long x))
-				return false;
-
-			object y = Enum.ToObject(enumType, x);
-			foreach (var item in Enum.GetValues(enumType))
-			{
-				if (Object.Equals(y, item))
-				{
-					result = y;
-					return true;
-				}
-			}
 			return false;
+#else
+			if (!enumType.IsEnum)
+				throw new ArgumentException("The type of parameter must be Enum type", nameof(enumType));
+
+			if (value == null || (value = value.Trim()).Length == 0)
+			{
+				result = Enum.ToObject(enumType, 0);
+				return false;
+			}
+
+			if (value[0] is >= '0' and <= '9' or '-' or '+')
+			{
+				if (long.TryParse(value, out var lv))
+				{
+					result = Enum.ToObject(enumType, lv);
+					var s = result.ToString();
+					if (!(s.Length == 0 || s[0] is >= '0' and <= '9' or '-' or '+'))
+						return true;
+				}
+				result = Enum.ToObject(enumType, 0);
+				return false;
+			}
+
+			var parts = value.Split(__enumSeparators, StringSplitOptions.RemoveEmptyEntries);
+
+			ulong sum = 0;
+			bool found = false;
+			foreach (var item in enumType.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Select(o => (Name: o.Name, Value: o.GetRawConstantValue())))
+			{
+				for (int i = 0; i < parts.Length; ++i)
+				{
+					if (String.Equals(parts[i], item.Name, StringComparison.OrdinalIgnoreCase))
+					{
+						found = true;
+						sum |= (ulong)item.Value;
+						break;
+					}
+				}
+			}
+
+			result = Enum.ToObject(enumType, sum);
+			return found;
+#endif
 		}
+#if !NETCOREAPP2_0_OR_GREATER
+		private static readonly char[] __enumSeparators = new[] { ',' };
+#endif
 
 		[return: NotNullIfNotNull("defaultValue")]
 		public static string? GetString(string? value, string? defaultValue)

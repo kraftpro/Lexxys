@@ -232,7 +232,7 @@ namespace Lexxys
 			Obj();
 			foreach (DictionaryEntry item in value)
 			{
-				Item(Strings.ToNamingRule(item.Key.ToString() ?? "", NamingRule)).Val(item.Value);
+				Item(Strings.ToNamingRule(item.Key.ToString() ?? "", NamingRule)!).Val(item.Value);
 			}
 			return End();
 		}
@@ -240,7 +240,7 @@ namespace Lexxys
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private string ForceName(string name)
 		{
-			return (NamingRule & NamingCaseRule.Force) == 0 ? name: Strings.ToNamingRule(name, NamingRule);
+			return (NamingRule & NamingCaseRule.Force) == 0 ? name: Strings.ToNamingRule(name, NamingRule)!;
 		}
 
 		/// <summary>
@@ -592,7 +592,7 @@ namespace Lexxys
 			Type type = value.GetType();
 			foreach (var item in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetField))
 			{
-				Item(Strings.ToNamingRule(item.Name, NamingRule)).Val(item.GetValue(value));
+				Item(Strings.ToNamingRule(item.Name, NamingRule)!).Val(item.GetValue(value));
 			}
 			foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
 			{
@@ -606,7 +606,7 @@ namespace Lexxys
 					try
 					{
 						object? v = item.GetValue(value);
-						Item(Strings.ToNamingRule(item.Name, NamingRule)).Val(v);
+						Item(Strings.ToNamingRule(item.Name, NamingRule)!).Val(v);
 					}
 					catch
 					{

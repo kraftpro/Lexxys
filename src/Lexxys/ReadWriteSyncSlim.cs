@@ -8,12 +8,14 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
+using Microsoft.Extensions.Logging;
+
 namespace Lexxys
 {
 	public sealed class ReadWriteSyncSlim: IReadWriteSync
 	{
-		private static ILogging Log => _log ??= StaticServices.Create<ILogging>("Lexxys.ReadWriteSyncSlim");
-		private static ILogging? _log;
+		private static ILogger Log => _log ??= Statics.GetLogger<ReadWriteSyncSlim>();
+		private static ILogger? _log;
 		#pragma warning disable CA2213 // Disposable fields should be disposed
 		private ReaderWriterLockSlim? _locker;
 		public const int DefaultTimingThreshold = 100;

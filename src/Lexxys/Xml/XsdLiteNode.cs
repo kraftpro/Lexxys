@@ -126,7 +126,7 @@ namespace Lexxys.Xml
 				{
 					foreach (var attr in item.Elements)
 					{
-						string s = attr["name"] ?? attr.Name;
+						var s = attr["name"] ?? attr.Name;
 						var v = XsdLiteValue.FromXml(attr);
 						if (s != null && v != null)
 							attribs.Add(new KeyValuePair<string, XsdLiteValue>(s, v));
@@ -134,7 +134,7 @@ namespace Lexxys.Xml
 				}
 				else if (item.Name == "attribute" && item["name"] != null)
 				{
-					string s = item["name"].AsString(String.Empty);
+					var s = item["name"].AsString(String.Empty);
 					var v = XsdLiteValue.FromXml(item);
 					if (s != null && v != null)
 						attribs.Add(new KeyValuePair<string, XsdLiteValue>(s, v));

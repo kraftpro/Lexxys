@@ -34,30 +34,7 @@ public class FileLogWriter: LogWriter
 	/// <summary>
 	/// Creates a new <see cref="LogWriter"/> to write logs to the text file.
 	/// </summary>
-	/// <param name="name">Name of the <see cref="LogWriter"/> for future reference.</param>
-	/// <param name="config">
-	///	Initialization XML containing 'parameters' element with attributes:
-	///		format setting <see cref="TextFormatSetting.Join(XmlLiteNode)"/>
-	///		file		- mask of file name. default: %TEMP%\Logs\{YMD}-LL.log
-	///		timeout		- timeout while opening file in milliseconds. default: 2000
-	/// </param>
-	/// <param name="formatter"></param>
-	/// 
-	/// 
-	public FileLogWriter(string name, XmlLiteNode? config, ILogRecordFormatter? formatter):
-		base(name, config, formatter)
-	{
-		config ??= XmlLiteNode.Empty;
-		_file = XmlTools.GetString(config["file"], DefaultLogFileMask)!;
-		_timeout = XmlTools.GetTimeSpan(config["timeout"], DefaultTimeout, MinTimeout, MaxTimeout);
-		XmlLiteNode? overwrite = config.FirstOrDefault("overwrite");
-		_truncate = overwrite != null && overwrite.Value.AsBoolean(true);
-	}
-
-	public FileLogWriter(string name, XmlLiteNode? config): this(name, config, null)
-	{
-	}
-
+	/// <param name="parameters"></param>
 	public FileLogWriter(LoggingFileParameters parameters): base(parameters)
 	{
 		_file = parameters.Path ?? DefaultLogFileMask;
@@ -255,38 +232,42 @@ public class FileLogWriter: LogWriter
 	}
 }
 
-public class TextFileLogWriter: FileLogWriter
-{
-	public TextFileLogWriter(string name, XmlLiteNode config): base(name, config, formatter: new LogRecordTextFormatter(TextFormatDefaults.Join(config)))
-	{
-	}
-}
-
-public class JsonFileLogWriter: FileLogWriter
-{
-	public JsonFileLogWriter(string name, XmlLiteNode config): base(name, config, formatter: new LogRecordJsonFormatter(config))
-	{
-	}
-}
-
 
 public class NullLogWriter: LogWriter
 {
+	private static NullLogWriter Instance = new NullLogWriter();
 
 	public override string Target => "Null";
 
-	public NullLogWriter(string name, XmlLiteNode? config): base(name, config, NullLogRecordFormatter.Instance)
+	public NullLogWriter(): base(Parameters.Instance)
 	{
 	}
 
 	public override void Write(IEnumerable<LogRecord> records)
 	{
 	}
+
 	class NullLogRecordFormatter: ILogRecordFormatter
 	{
 		public static readonly ILogRecordFormatter Instance = new NullLogRecordFormatter();
 
 		public void Format(TextWriter writer, LogRecord record) { }
+	}
+
+	private class Parameters: ILogWriterParameters
+	{
+		public static readonly ILogWriterParameters Instance = new Parameters();
+
+		public string? Name { get => "Null"; set { } }
+		public string? Include { get => null; set { } }
+		public string? Exclude { get => null; set { } }
+		public LogType? LogLevel { get => LogType.Output; set { } }
+		public int? MaxQueueSize { get => null; set { } }
+		public TimeSpan? FlushTimeout { get => null; set { } }
+		public ILogRecordFormatterParameters? Formatter { get => null; set { } }
+		public ICollection<LogWriterFilter>? Rules { get => null; set { } }
+
+		public ILogWriter CreateWriter() => NullLogWriter.Instance;
 	}
 }
 
@@ -299,11 +280,6 @@ public class ConsoleLogWriter: LogWriter
 		". ");
 
 	private readonly bool _isEnabled;
-
-	public ConsoleLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
-	{
-		_isEnabled = IsEnabled();
-	}
 
 	public ConsoleLogWriter(LoggingConsoleParameters parameters): base(parameters)
 	{
@@ -373,10 +349,6 @@ public class TraceLogWriter: LogWriter
 	{
 	}
 
-	public TraceLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
-	{
-	}
-
 	public override string Target => "Trace";
 
 	public override void Write(IEnumerable<LogRecord> records)
@@ -410,11 +382,6 @@ public class DebuggerLogWriter: LogWriter
 		_isLogging = Debugger.IsLogging();
 	}
 
-	public DebuggerLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
-	{
-		_isLogging = Debugger.IsLogging();
-	}
-
 	public override string Target => "Debugger";
 
 	public override void Write(IEnumerable<LogRecord> records)
@@ -444,12 +411,6 @@ public class EventLogLogWriter: LogWriter
 	public EventLogLogWriter(LoggingEventParameters parameters) : base(parameters)
 	{
 		_eventSource = GetEventSource(parameters.EventSource, parameters.LogName);
-	}
-
-	public EventLogLogWriter(string name, XmlLiteNode? config): base(name, config, new LogRecordTextFormatter(Defaults))
-	{
-		config ??= XmlLiteNode.Empty;
-		_eventSource = GetEventSource(config["eventSource"], config["logName"]);
 	}
 
 	private string? GetEventSource(string? eventSource, string? logName)

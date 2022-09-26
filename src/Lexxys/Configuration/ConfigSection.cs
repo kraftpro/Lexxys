@@ -28,7 +28,7 @@ namespace Lexxys.Configuration
 			_disposable = configSource is IDisposable;
 		}
 
-		private ConfigSection(IConfigSource configSource, string path)
+		private ConfigSection(IConfigSource configSource, string? path)
 		{
 			if (configSource is null)
 				throw new ArgumentNullException(nameof(configSource));

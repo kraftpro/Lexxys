@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -446,7 +447,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			var result = new List<LogRecordFormatItem>();
 			MatchCollection mc = __formatRe.Matches(format);
 			int last = 0;
-			foreach (Match m in mc)
+			foreach (var m in mc.Cast<Match>())
 			{
 				if (NamesMap.TryGetValue(m.Groups[1].Value.ToUpperInvariant(), out FormatItemType id))
 				{
@@ -508,8 +509,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		{
 			if (Left == 0)
 				return this;
-			if (text == null)
-				text = NullValue;
+			text ??= NullValue;
 			ReadOnlySpan<char> value;
 			int length = text.Length;
 			value = Left < length ? text.AsSpan(0, Left) : text.AsSpan();

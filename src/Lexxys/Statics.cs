@@ -2,83 +2,88 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceProcess;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Lexxys;
+using Lexxys.Configuration;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Lexxys
 {
-	public sealed class Statics
+	public static class Statics
 	{
-		public static readonly Statics Instance = new Statics();
-
-		private readonly IServiceCollection _collection = new ServiceCollection();
-		private ServiceProvider? _provider;
-
-		public IServiceProvider ServiceProvider => _provider ??= _collection.BuildServiceProvider();
-
-		public void AppendServices(IEnumerable<ServiceDescriptor> services)
-		{
-			if (_provider != null)
-				throw new InvalidOperationException();
-
-			foreach (var item in services)
-			{
-				if (item.Lifetime != ServiceLifetime.Scoped)
-					_collection.Add(item);
-			}
-		}
+		public static readonly IStaticServices Instance = new StaticServices();
 
 		public static IServiceProvider Services => Instance.ServiceProvider;
 
-		public static object? GetService(Type serviceType) => Instance.ServiceProvider.GetService(serviceType);
-
-		public static T? GetService<T>() => Instance.ServiceProvider.GetService<T>();
-
-		public static void AddServices(IEnumerable<ServiceDescriptor> services) => Instance.AppendServices(services);
-
-		public static ILogger? GetLogger(string source)
+		public static object? TryGetService(Type serviceType)
 		{
-			var logger = GetService<ILogger>();
+			if (serviceType is null)
+				throw new ArgumentNullException(nameof(serviceType));
+
+			return Instance.ServiceProvider.GetService(serviceType);
+		}
+
+		public static object GetService(Type serviceType)
+		{
+			if (serviceType is null)
+				throw new ArgumentNullException(nameof(serviceType));
+
+			return Instance.ServiceProvider.GetService(serviceType) ?? throw new InvalidOperationException($"Cannot create service of type {serviceType.FullName}.");
+		}
+
+		public static T? TryGetService<T>() where T : class => Instance.ServiceProvider.GetService<T>();
+
+		public static T GetService<T>() where T : class => Instance.ServiceProvider.GetService<T>() ?? throw new InvalidOperationException($"Cannot create service of type {typeof(T).FullName}.");
+
+		public static void AddServices(IEnumerable<ServiceDescriptor> services, bool safe = false) => Instance.AppendServices(services, safe);
+
+		public static void Register(Func<IServiceCollection, IServiceCollection>? settings = null)
+		{
+			IServiceCollection sc = new ServiceCollection();
+			sc = settings?.Invoke(sc) ?? sc;
+			Instance.AppendServices(sc, true);
+		}
+
+		#region Configuration
+
+		public static IConfigSection Congif => _config ??= Statics.GetService<IConfigSection>();
+		private static IConfigSection? _config;
+
+		#endregion
+
+		#region ILogger
+
+		public static ILogger? TryGetLogger(string source)
+		{
+			var logger = TryGetService<ILogger>();
 			if (logger is ILogging logging)
 				logging.Source = source;
 			return logger;
 		}
 
-		public static ILogger? GetLogger<T>()
-		{
-			return GetService<ILogger<T>>();
-		}
+		public static ILogger? TryGetLogger<T>() => TryGetService<ILogger<T>>();
 
-		//private class NullLogger: ILogging
-		//{
-		//	public static readonly ILogging Instance = new NullLogger();
+		public static ILogger GetLogger(string source) => TryGetLogger(source) ?? throw new InvalidOperationException($"Cannot create logger for {source}.");
 
-		//	protected NullLogger()
-		//	{
-		//	}
+		public static ILogger GetLogger<T>() => TryGetLogger<T>() ?? throw new InvalidOperationException($"Cannot create logger for {typeof(T).GetTypeName()}.");
 
-		//	public string Source { get => "Null"; set { } }
-
-		//	public IDisposable BeginScope<TState>(TState state) => default!;
-
-		//	public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => default;
-
-		//	public bool IsEnabled(LogType logType) => false;
-
-		//	public bool IsEnabled(LogLevel logLevel) => false;
-
-		//	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
-
-		//	public void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IDictionary? args)
-		//	{
-		//	}
-
-		//	public IDisposable? Timing(LogType logType, string? description, TimeSpan threshold) => default;
-		//}
-
+		#endregion
 	}
+
+	public static class StaticServicesExtensions
+	{
+		public static void RegisterStatics(this IServiceCollection services)
+		{
+			if (services is null)
+				throw new ArgumentNullException(nameof(services));
+			Statics.AddServices(services);
+		}
+	}
+
 }

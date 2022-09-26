@@ -16,10 +16,6 @@ public class Logger<T>: Logger, ILogging<T>
 {
 	public new static readonly ILogging<T> Empty = new EmptyLogger();
 
-	//public Logger(): base(typeof(T).GetTypeName())
-	//{
-	//}
-
 	public Logger(ILoggingService service): base(service, typeof(T).GetTypeName())
 	{
 	}
@@ -56,10 +52,6 @@ public class Logger: ILogging
 	private string _source;
 	private ILogRecordWriter? _writer;
 	private LogTypeFilter _levels;
-
-	//public Logger(): this("Logger")
-	//{
-	//}
 
 	public Logger(ILoggingService service): this(service, "Logger")
 	{

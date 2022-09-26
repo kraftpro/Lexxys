@@ -1076,9 +1076,7 @@ namespace Lexxys.Xml
 				if (name is null)
 					throw new ArgumentNullException(nameof(name));
 
-				if (_node == null)
-					_node = new Stack<Node>();
-				_node.Push(_top);
+				(_node ??= new Stack<Node>()).Push(_top);
 				var d = new Node(name, _comparer);
 				_top.AddChildNode(d);
 				_top = d;
@@ -1153,17 +1151,13 @@ namespace Lexxys.Xml
 				public void AddChildNode(Node child)
 				{
 					Debug.Assert(child != null);
-					if (_nodeDescendants == null)
-						_nodeDescendants = new List<Node>();
-					_nodeDescendants.Add(child);
+					(_nodeDescendants ??= new List<Node>()).Add(child);
 				}
 
 				public void AddChildNode(XmlLiteNode child)
 				{
 					Debug.Assert(child != null && !child.IsEmpty);
-					if (_xmlDescendants == null)
-						_xmlDescendants = new List<XmlLiteNode>();
-					_xmlDescendants.Add(child);
+					(_xmlDescendants ??= new List<XmlLiteNode>()).Add(child);
 				}
 
 				public XmlLiteNode Convert()

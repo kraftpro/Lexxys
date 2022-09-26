@@ -49,9 +49,9 @@ namespace Lexxys
 			if (monthList == null)
 				return AllMonths;
 			var ss = new SortedSet<int>(monthList.Where(o => o >= 1 && o <= 12)).ToList();
-			return ss.Count == 0 || ss.Count == 12 ? AllMonths : ReadOnly.Wrap(ss);
+			return ss.Count == 0 || ss.Count == 12 ? AllMonths : ReadOnly.Wrap(ss)!;
 		}
-		private static readonly IReadOnlyList<int> AllMonths = ReadOnly.Wrap(new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 });
+		private static readonly IReadOnlyList<int> AllMonths = ReadOnly.Wrap(new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 })!;
 
 		public int Day { get; }
 		public ScheduleWeekType Week { get; }

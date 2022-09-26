@@ -60,7 +60,7 @@ namespace Lexxys.Configuration
 					}
 				}
 				if (result.Count > 0)
-					return ReadOnly.Wrap(result);
+					return ReadOnly.Wrap(result)!;
 			}
 			if (key.StartsWith("connection.", StringComparison.OrdinalIgnoreCase))
 			{
@@ -74,7 +74,7 @@ namespace Lexxys.Configuration
 						{
 							result.Add(Tools.Cast<T>(cc[i].ConnectionString));
 						}
-						return ReadOnly.Wrap(result);
+						return ReadOnly.Wrap(result)!;
 					}
 					if (typeof(T) == typeof(ConnectionStringSettings))
 					{
@@ -83,7 +83,7 @@ namespace Lexxys.Configuration
 						{
 							result.Add(Tools.Cast<T>(cc[i]));
 						}
-						return ReadOnly.Wrap(result);
+						return ReadOnly.Wrap(result)!;
 					}
 					if (typeof(T) == typeof(Data.ConnectionStringInfo))
 					{
@@ -92,15 +92,15 @@ namespace Lexxys.Configuration
 						{
 							result.Add(Tools.Cast<T>(new Data.ConnectionStringInfo(cc[i].ConnectionString)));
 						}
-						return ReadOnly.Wrap(result);
+						return ReadOnly.Wrap(result)!;
 					}
 					return Array.Empty<T>();
 				}
 			}
 			if (ConfigurationManager.GetSection(key) is List<T> list)
-				return ReadOnly.Wrap(list);
+				return ReadOnly.Wrap(list)!;
 			if (ConfigurationManager.GetSection(key) is IEnumerable<T> ienum)
-				return ReadOnly.WrapCopy(ienum);
+				return ReadOnly.WrapCopy(ienum)!;
 			return Array.Empty<T>();
 		}
 

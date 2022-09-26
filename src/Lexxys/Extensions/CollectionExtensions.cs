@@ -148,7 +148,7 @@ namespace Lexxys
 				if (match(list[i]))
 					return list[i];
 			}
-			return default;
+			return default!;
 		}
 
 		[return: MaybeNull]
@@ -164,7 +164,7 @@ namespace Lexxys
 				if (match(list[i]))
 					return list[i];
 			}
-			return default;
+			return default!;
 		}
 
 		/// <summary>

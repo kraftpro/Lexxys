@@ -46,8 +46,6 @@ internal class LoggingRule
 		_rules = rules ?? Array.Empty<Rule>();
 	}
 
-	public static string? GlobalExclude { get; set; }
-
 	public bool IsEmpty => _rules.Length == 0;
 
 	public bool Contains(string? source, LogType type)
@@ -75,30 +73,14 @@ internal class LoggingRule
 		return logTypes;
 	}
 
-	public static LoggingRule Create(XmlLiteNode? config)
-	{
-		if (config == null || config.IsEmpty)
-			return Empty;
-
-		var rr = config.Where("rule").Select(Rule.Create).Where(o=> !o.IsEmpty).ToList();
-		return rr.Count == 0 ? Empty: new LoggingRule(rr.ToArray());
-	}
-
-	public static LoggingRule Create(LogWriterRuleConfig[]? rules)
-	{
-		if (rules == null || rules.Length == 0)
-			return Empty;
-		return new LoggingRule(Array.ConvertAll(rules, r => Rule.Create(r.LogLevel, r.Include, r.Exclude)));
-	}
-
-	public static LoggingRule Create(ICollection<LogWriterFilter>? rules)
+	public static LoggingRule Create(ICollection<LogWriterFilter>? rules, string? include, string? exclude, LogType? logLevel)
 	{
 		if (rules == null || rules.Count == 0)
 			return Empty;
 
 		Rule[] rr = rules
-			.Select(Rule.TryCreate)
-			.Where(o => o != null)
+			.Select(o => Rule.TryCreate(o, include, exclude, logLevel))
+			.Where(o => o != null && !o.IsEmpty)
 			.ToArray()!;
 		return rr.Length == 0 ? Empty: new LoggingRule(rr);
 	}
@@ -106,17 +88,19 @@ internal class LoggingRule
 
 	class Rule
 	{
-		public static readonly Rule Empty = new Rule(LogTypeFilter.None, null, null);
+		public static readonly Rule Empty = new Rule(LogTypeFilter.None, null, null, null);
 
 		private readonly Regex? _include;
 		private readonly Regex? _exclude;
 		private readonly LogTypeFilter _types;
 
-		public Rule(LogTypeFilter types, string? include, string? exclude)
+		public Rule(LogTypeFilter? types, string? include, string? exclude, LogType? minLogLevel)
 		{
-			_types = types;
+			_types = types.GetValueOrDefault() | (minLogLevel == null ? 0: (LogTypeFilter)~(~1 << (int)minLogLevel.GetValueOrDefault()));
 			_include = ParseRule(include, true);
-			_exclude = ParseRule(GlobalExclude == null ? exclude: exclude == null ? GlobalExclude: exclude + "," + GlobalExclude, false);
+			_exclude = ParseRule(exclude, false);
+			if (_include == null && _exclude == __allSources)
+				_types = LogTypeFilter.None;
 		}
 
 		public LogTypeFilter LogTypes => _types;
@@ -124,34 +108,14 @@ internal class LoggingRule
 		public bool IsEmpty => _types == LogTypeFilter.None;
 
 		public bool Contains(string? source)
-		{
-			if (_types == LogTypeFilter.None)
-				return false;
-			if (source == null)
-				return false;
-			if (_include != null)
-				return _include.IsMatch(source);
-			return _exclude == null || !_exclude.IsMatch(source);
-		}
+			=> _types != LogTypeFilter.None && source != null && (_include?.IsMatch(source) ?? !_exclude?.IsMatch(source) ?? true);
 
 		public bool Contains(LogType type) => (_types & (LogTypeFilter)(1 << (int)type)) != 0;
 
-		public static Rule Create(string? type, string? include, string? exclude)
+		public static Rule? TryCreate(LogWriterFilter? filter, string? include, string? exclude, LogType? minLogLevel)
 		{
-			LogTypeFilter types = ParseLogType(type, LogTypeFilter.All);
-			return types == LogTypeFilter.None ? Empty: new Rule(types, include, exclude);
-		}
-
-		public static Rule? TryCreate(LogWriterFilter? filter)
-		{
-			return filter == null || filter.LogType == LogTypeFilter.None ? null: new Rule(filter.LogType, filter.Include, filter.Exclude);
-		}
-
-		public static Rule Create(XmlLiteNode config)
-		{
-			if (config == null)
-				throw new ArgumentNullException(nameof(config));
-			return Create(config["level"], config["include"], config["exclude"]);
+			return filter == null || filter.LogType == LogTypeFilter.None ? null: new Rule(filter.LogType, Join(filter.Include, include), Join(filter.Exclude, exclude), minLogLevel);
+			string? Join(string? one, string? two) => one == null ? two: two == null ? one: one + "," + two;
 		}
 
 		/// <summary>
@@ -187,33 +151,34 @@ internal class LoggingRule
 				bool exclude = m.Groups[1].Value == "-";
 				switch (m.Groups[2].Value)
 				{
+					case "CRITICAL":
 					case "WRITE":
 						x = LogTypeFilter.OutputOnly;
-						y = LogTypeFilter.OutputOnly;
+						y = LogTypeFilter.Output;
 						break;
 					case "ERROR":
 						x = LogTypeFilter.ErrorOnly;
-						y = LogTypeFilter.OutputOnly | LogTypeFilter.ErrorOnly;
+						y = LogTypeFilter.Error;
 						break;
 					case "WARNING":
 						x = LogTypeFilter.WarningOnly;
-						y = LogTypeFilter.OutputOnly | LogTypeFilter.ErrorOnly | LogTypeFilter.WarningOnly;
+						y = LogTypeFilter.Warning;
 						break;
 					case "INFO":
 					case "INFORMATION":
 						x = LogTypeFilter.InformationOnly;
-						y = LogTypeFilter.OutputOnly | LogTypeFilter.ErrorOnly | LogTypeFilter.WarningOnly | LogTypeFilter.InformationOnly;
+						y = LogTypeFilter.Information;
 						break;
 					case "TRACE":
 						x = LogTypeFilter.TraceOnly;
-						y = LogTypeFilter.OutputOnly | LogTypeFilter.ErrorOnly | LogTypeFilter.WarningOnly | LogTypeFilter.InformationOnly | LogTypeFilter.TraceOnly;
+						y = LogTypeFilter.Trace;
 						break;
 					case "VERBOSE":
 					case "DEBUG":
 					case "ALL":
 					case "*":
 						x = LogTypeFilter.DebugOnly;
-						y = LogTypeFilter.OutputOnly | LogTypeFilter.ErrorOnly | LogTypeFilter.WarningOnly | LogTypeFilter.InformationOnly | LogTypeFilter.TraceOnly | LogTypeFilter.DebugOnly;
+						y = LogTypeFilter.Debug;
 						break;
 					case "ONLY":
 						onlyFlag = true;
@@ -231,22 +196,50 @@ internal class LoggingRule
 			}
 			return all == 0 ? defaultValue: onlyFlag ? only: all;
 		}
-		private static readonly Regex __configRex = new Regex(@"[,;\|\+\s]*(-)?\s*\b(WRITE|ERROR|WARNING|INFO|INFORMATION|DEBUG|TRACE|VERBOSE|\*|ALL|ONLY)\b", RegexOptions.Compiled);
+		private static readonly Regex __configRex = new Regex(@"[,;\|\+\s]*(-)?\s*\b(WRITE|CRITICAL|ERROR|WARNING|INFO|INFORMATION|DEBUG|TRACE|VERBOSE|\*|ALL|ONLY)\b", RegexOptions.Compiled);
 
+		/// <summary>
+		/// Converts wildcard rule to regular expression.
+		/// <code>
+		/// wildcard := item [ item ]*
+		/// item     := text
+		///          | '[' wildcard ']' -- iptional
+		///          | '(' wildcard ')' -- group
+		///          | '*'              -- any char
+		///          | ';' | ','        -- OR separator
+		/// </code>
+		/// </summary>
+		/// <param name="rule">The wildcard rule to parse.</param>
+		/// <param name="excludeAll">Indicates that function should return null instead on ".*" expression.</param>
+		/// <returns></returns>
 		private static Regex? ParseRule(string? rule, bool excludeAll)
 		{
 			if (rule == null)
 				return null;
-			string pattern = Regex.Escape(__stars.Replace(__separators.Replace(rule, "|"), "*")).Replace("\\*", ".*").Trim('|');
+			string pattern = Regex.Escape(__stars.Replace(__separators.Replace(rule, ","), "*").Trim(','))
+				.Replace(@"\*", ".*")
+				.Replace(@"\(", "(")
+				.Replace(@"\)", ")")
+				.Replace(@"\[", "(")
+				.Replace(@"]", ")?");
 			if (pattern.Length == 0)
 				return null;
-			if (pattern == ".*" || pattern.Equals("all", StringComparison.OrdinalIgnoreCase))
-				return excludeAll ? null: __allSources;
+			var chunks = pattern.Split(',').Distinct().ToList();
+			if (chunks.Any(o => o == ".*" || o.Equals("all", StringComparison.OrdinalIgnoreCase)))
+				return excludeAll ? null : __allSources;
 
-			return new Regex("\\A(" + pattern + ")\\z", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+			try
+			{
+				return new Regex(@"\A(" + String.Join("|", chunks) + @")\z", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+			}
+			catch (Exception flaw)
+			{
+				flaw.Add(nameof(rule), rule);
+				throw;
+			}
 		}
 		private static readonly Regex __allSources = new Regex(".*", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-		private static readonly Regex __separators = new Regex(@"[\s,;]+");
+		private static readonly Regex __separators = new Regex(@"[\s,;|]+");
 		private static readonly Regex __stars = new Regex(@"\*\*+");
 	}
 }

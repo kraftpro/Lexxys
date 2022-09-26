@@ -17,6 +17,8 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+
 namespace Lexxys.Data
 {
 
@@ -25,11 +27,11 @@ namespace Lexxys.Data
 		public const IsolationLevel DefaultIsolationLevel = IsolationLevel.ReadCommitted;
 		public const string ConfigSection = "database.connection";
 
-		public static ILogging Log => __log ??= StaticServices.Create<ILogging>("Dc");
-		private static ILogging? __log;
+		public static ILogger Log => __log ??= Statics.GetLogger("Dc");
+		private static ILogger? __log;
 
-		public static ILogging Timing => __logTrace ??= StaticServices.Create<ILogging>("Dc-Timing");
-		private static ILogging? __logTrace;
+		public static ILogger Timing => __logTrace ??= Statics.GetLogger("Dc-Timing");
+		private static ILogger? __logTrace;
 
 		private static readonly IValue<ConnectionStringInfo> __connectionInfo = Config.Current.GetValue<ConnectionStringInfo>(ConfigSection);
 		private static IDataContextFactory __staticDataFactory = new SimpleDataFactory();
@@ -771,7 +773,7 @@ namespace Lexxys.Data
 							if (!await reader.IsDBNullAsync(i).ConfigureAwait(false))
 							{
 								var rdr = reader.GetTextReader(i);
-								text.Write(reader.GetString(i));
+								await text.WriteAsync(reader.GetString(i)).ConfigureAwait(false);
 								here = true;
 							}
 						}

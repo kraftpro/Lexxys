@@ -58,8 +58,8 @@ namespace Lexxys.Configuration
 
 		public int Version => _version;
 
-		private IReadOnlyList<string> ConfigurationDirectories => __configDirectories.Value;
-		private Lazy<IReadOnlyList<string>> __configDirectories = new Lazy<IReadOnlyList<string>>(GetConfigurationDerectories, true);
+		private IReadOnlyList<string>? ConfigurationDirectories => __configDirectories.Value;
+		private Lazy<IReadOnlyList<string>?> __configDirectories = new Lazy<IReadOnlyList<string>?>(GetConfigurationDerectories, true);
 
 		internal bool IsInitialized => _initialized;
 
@@ -68,7 +68,7 @@ namespace Lexxys.Configuration
 		public void SetLogger(ILogger? logger = null)
 		{
 			if (logger == null)
-				logger = StaticServices.TryCreate<ILogger>(LogSource);
+				logger = Statics.TryGetLogger(LogSource);
 			if (_log == logger || logger == null)
 				return;
 			_log = logger;
@@ -190,7 +190,7 @@ namespace Lexxys.Configuration
 			}
 			IReadOnlyList<T> result =
 				temp == null ? Array.Empty<T>() :
-				list == null ? temp : ReadOnly.Wrap(list);
+				list == null ? temp : ReadOnly.Wrap(list)!;
 			_cache[cacheKey] = result;
 			return result;
 		}
@@ -457,7 +457,7 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private static IReadOnlyList<string> GetConfigurationDerectories()
+		private static IReadOnlyList<string>? GetConfigurationDerectories()
 		{
 			var configurationDirectory = new List<string> { Lxx.HomeDirectory };
 #if NETFRAMEWORK

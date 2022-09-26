@@ -21,8 +21,13 @@ namespace Lexxys.Tests.Configuration
 		private IValue<System.Xml.XmlNode[]> SharedConfiguration => __config ??= Config.Current.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
 		private IValue<System.Xml.XmlNode[]> __config;
 
+		//static ConfiguraitionTest()
+		//{
+
+		//}
+
 		[TestInitialize]
-		public void Initializw()
+		public void Initialize()
 		{
 			string configFile = "test.config.txt";
 			if (!File.Exists(configFile))
@@ -51,7 +56,7 @@ namespace Lexxys.Tests.Configuration
 		[TestMethod]
 		public void GetListCollectsItemsFromAllConfigs()
 		{
-			var service = StaticServices.Create<IConfigService>();
+			var service = Statics.TryGetService<IConfigService>();
 			service.AddConfiguration(new Uri(@"string:[txt]?
 GetListCollectsItemsFromAllConfigs
 	list
@@ -65,7 +70,7 @@ GetListCollectsItemsFromAllConfigs
 		item	4
 		item	5
 "));
-			var list = StaticServices.Config().GetCollection<int>("GetListCollectsItemsFromAllConfigs.list.item");
+			var list = Statics.TryGetService<IConfigSection>().GetCollection<int>("GetListCollectsItemsFromAllConfigs.list.item");
 			Assert.IsNotNull(list);
 			Assert.IsNotNull(list.Value);
 			Assert.AreEqual(5, list.Value.Count);
@@ -87,9 +92,9 @@ GetValueReflectsConfigChanges
 		item	4
 		item	5
 ");
-			var service = StaticServices.Create<IConfigService>();
+			var service = Statics.TryGetService<IConfigService>();
 			service.AddConfiguration(config1);
-			var list = StaticServices.Config().GetValue<List<int>>("GetValueReflectsConfigChanges.list");
+			var list = Statics.TryGetService<IConfigSection>().GetValue<List<int>>("GetValueReflectsConfigChanges.list");
 			Assert.IsNotNull(list);
 			Assert.IsNotNull(list.Value);
 			Assert.AreEqual(3, list.Value.Count);
@@ -114,9 +119,9 @@ GetListReflectsConfigChanges
 		item	4
 		item	5
 ");
-			var service = StaticServices.Create<IConfigService>();
+			var service = Statics.TryGetService<IConfigService>();
 			service.AddConfiguration(config1);
-			var list = StaticServices.Config().GetCollection<int>("GetListReflectsConfigChanges.list.item");
+			var list = Statics.TryGetService<IConfigSection>().GetCollection<int>("GetListReflectsConfigChanges.list.item");
 			Assert.IsNotNull(list);
 			Assert.IsNotNull(list.Value);
 			Assert.AreEqual(3, list.Value.Count);

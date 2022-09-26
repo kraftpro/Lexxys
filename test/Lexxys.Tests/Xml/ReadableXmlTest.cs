@@ -12,6 +12,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Xml
 {
+	using System;
+
 	using Lexxys.Xml;
 
 	/// <summary>
@@ -302,7 +304,7 @@ configuration
 				string actual = TextToXmlConverter.Convert(tests[i + 1]).Trim();
 				string expected = tests[i].Trim();
 
-				Assert.AreEqual(TrimXml(expected), TrimXml(actual), "Lexxys.Security.AccessConfiguration.ParseNode did not return the expected value. (test #{0})", i);
+				Assert.AreEqual(TrimXml(expected), TrimXml(actual), $"Lexxys.Security.AccessConfiguration.ParseNode did not return the expected value. (test #{i})");
 			}
 		}
 

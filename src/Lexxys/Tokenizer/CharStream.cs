@@ -128,7 +128,7 @@ namespace Lexxys.Tokenizer
 			fixed (char* pvalue = value)
 			{
 				char* q = pvalue;
-				Buffer.MemoryCopy(q, p, index, index * sizeof(char));
+				Buffer.MemoryCopy(q, p, index * sizeof(char), index * sizeof(char));
 				p += index;
 				q += index;
 				for (; index <= length; ++index)

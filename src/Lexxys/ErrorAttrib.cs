@@ -21,7 +21,7 @@ namespace Lexxys
 
 		public bool Equals(ErrorAttrib other)
 		{
-			return Name == other.Name && EqualityComparer<object>.Default.Equals(Value, other.Value);
+			return Name == other.Name && EqualityComparer<object?>.Default.Equals(Value, other.Value);
 		}
 
 		public override int GetHashCode()

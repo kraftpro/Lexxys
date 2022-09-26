@@ -40,7 +40,7 @@ namespace Lexxys.Configuration
 			if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
 				reference = reference.Substring(5);
 			if (XmlTools.TryGetValue<T>(Environment.GetEnvironmentVariable(reference), out var value))
-				return ReadOnly.Wrap(new T[] { value });
+				return ReadOnly.Wrap(new T[] { value! })!;
 			return Array.Empty<T>();
 		}
 

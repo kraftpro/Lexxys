@@ -20,7 +20,7 @@ namespace Lexxys.Logging;
 using Xml;
 using Data;
 
-public class DatabaseLogWriter: ILogWriter, IDisposable
+public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 {
 	public const int MaxInsertRowsCount = 1000;
 	public const string DefaultSchema = "log";
@@ -37,33 +37,27 @@ public class DatabaseLogWriter: ILogWriter, IDisposable
 	private IDataContext? _dataContext;
 	private int _errorsCount;
 
-	public DatabaseLogWriter(string name, XmlLiteNode? config)
+	public DatabaseLogWriter(LoggingDatabaseParameters parameters)
 	{
-		Name = name;
-		config ??= XmlLiteNode.Empty;
-
-		ConnectionStringInfo? connectionInfo = ConnectionStringInfo.Create(config.FirstOrDefault("connection")) ??
-			Config.Current.GetValue<ConnectionStringInfo>(XmlTools.GetString(config["connection"], ConfigSection)).Value;
-
-		if (connectionInfo == null)
+		Name = parameters.Name ?? "Database";
+		if (parameters.Connection == null)
 		{
 			_connectionString = _server = _database = _schema = _table = "?";
 			_rule = LoggingRule.Empty;
 			SystemLog.WriteErrorMessage(LogSource, SR.ConnectionStringIsEmpty(), null);
 			return;
 		}
-
-		_dataContext = new DataContext(connectionInfo);
-		_connectionString = connectionInfo.ToString();
-		_server = connectionInfo.Server ?? "?";
-		_database = connectionInfo.Database ?? "?";
-		_schema = Clean(config["schema"], DefaultSchema);
-		_table = Clean(config["table"], DefaultTable);
-		_rule = LoggingRule.Create(config);
+		var connection = new ConnectionStringInfo(parameters.Connection);
+		_connectionString = connection.ToString();
+		_server = connection.Server ?? "?";
+		_database = connection.Database ?? "?";
+		_schema = Clean(parameters.Schema, DefaultSchema);
+		_table = parameters.Table is null ? DefaultTable: Clean(parameters.Table, "");
+		_rule = LoggingRule.Create(parameters.Rules, parameters.Include, parameters.Exclude, parameters.LogLevel);
 
 		static string Clean(string? val, string def) => (val = __cleanRex.Replace(val ?? "", "")).Length > 0 ? val : def;
 	}
-	private static readonly Regex __cleanRex = new(@"[\x00- '""\]\[\x7F\*/]");
+	private static readonly Regex __cleanRex = new Regex(@"[\x00- '""\]\[\x7F\*/]");
 
 	public string Name { get; }
 

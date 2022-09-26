@@ -18,7 +18,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         // bind everything
         private const BindingFlags BindToEveryThing = BindingFlags.Default | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public;
 
-        private static BindingFlags constructorFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance | BindingFlags.NonPublic;
+        private static readonly BindingFlags constructorFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance | BindingFlags.NonPublic;
 
         private object target;     // automatically initialized to null
         private Type originalType; // automatically initialized to null
@@ -35,8 +35,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         {
             ValidateAccessString(memberToAccess);
 
-            PrivateObject temp = obj as PrivateObject;
-            if (temp == null)
+            if (obj is not PrivateObject temp)
             {
                 temp = new PrivateObject(obj);
             }
@@ -729,13 +728,12 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
             this.methodCache = new Dictionary<string, LinkedList<MethodInfo>>();
 
             MethodInfo[] members = t.GetMethods(BindToEveryThing);
-            LinkedList<MethodInfo> listByName; // automatically initialized to null
 
             foreach (MethodInfo member in members)
             {
                 if (member.IsGenericMethod || member.IsGenericMethodDefinition)
                 {
-                    if (!this.GenericMethodCache.TryGetValue(member.Name, out listByName))
+                    if (!this.GenericMethodCache.TryGetValue(member.Name, out LinkedList<MethodInfo> listByName))
                     {
                         listByName = new LinkedList<MethodInfo>();
                         this.GenericMethodCache.Add(member.Name, listByName);
@@ -795,10 +793,9 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
             Debug.Assert(parameterTypes != null, "parameterTypes should not be null.");
             Debug.Assert(typeArguments != null, "typeArguments should not be null.");
 
-            LinkedList<MethodInfo> methodCandidates = new LinkedList<MethodInfo>();
-            LinkedList<MethodInfo> methods = null;
+            var methodCandidates = new LinkedList<MethodInfo>();
 
-            if (!this.GenericMethodCache.TryGetValue(methodName, out methods))
+            if (!this.GenericMethodCache.TryGetValue(methodName, out LinkedList<MethodInfo> methods))
             {
                 return methodCandidates;
             }
@@ -808,10 +805,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
             foreach (MethodInfo candidate in methods)
             {
                 bool paramMatch = true;
-                ParameterInfo[] candidateParams = null;
                 Type[] genericArgs = candidate.GetGenericArguments();
-                Type sourceParameterType = null;
-
                 if (genericArgs.Length != typeArguments.Length)
                 {
                     continue;
@@ -820,7 +814,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
                 // Since we can't just get the correct MethodInfo from Reflection,
                 // we will just match the number of parameters, their order, and their type
                 var methodCandidate = candidate;
-                candidateParams = methodCandidate.GetParameters();
+                ParameterInfo[] candidateParams = methodCandidate.GetParameters();
 
                 if (candidateParams.Length != parameterTypes.Length)
                 {
@@ -834,8 +828,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
 
                     foreach (ParameterInfo candidateParam in candidateParams)
                     {
-                        sourceParameterType = parameterTypes[i++];
-
+                        Type sourceParameterType = parameterTypes[i++];
                         if (candidateParam.ParameterType.ContainsGenericParameters)
                         {
                             // Since we have a generic parameter here, just make sure the IsArray matches.
@@ -886,7 +879,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         /// <summary>
         /// The wrapped type.
         /// </summary>
-        private Type type;
+        private readonly Type type;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PrivateType"/> class that contains the private type.
@@ -907,12 +900,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         /// <param name="type">The wrapped Type to create.</param>
         public PrivateType(Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException("type");
-            }
-
-            this.type = type;
+            this.type = type ?? throw new ArgumentNullException(nameof(type));
         }
 
         /// <summary>
@@ -1478,7 +1466,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             int i;
@@ -1578,7 +1566,6 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
                 {
                     if (newMin == 2)
                     {
-                        currentMin = i;
                         ambig = false;
                         currentMin = i;
                     }

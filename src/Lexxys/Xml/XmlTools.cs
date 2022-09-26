@@ -5,12 +5,14 @@
 // You may use this code under the terms of the MIT license
 //
 
+using Microsoft.Extensions.Logging;
+
 namespace Lexxys.Xml
 {
 	public static partial class XmlTools
 	{
-		private static ILogging Log => __logger ??= StaticServices.Create<ILogging>("XmlTools");
-		private static ILogging? __logger;
+		private static ILogger? Log => __logger ??= Statics.TryGetLogger("Lexxys.XmlTools");
+		private static ILogger? __logger;
 
 		public const string OptionIgnoreCase = "opt:ignoreCase";
 		public const string OptionForceAttributes = "opt:forceAttributes";

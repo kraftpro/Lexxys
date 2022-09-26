@@ -721,7 +721,7 @@ namespace Lexxys
 
 		public const string ApplicationOctetStream = "application/octet-stream";
 
-		public static string GetMimeType(string extension, string defaultMimeType = ApplicationOctetStream)
+		public static string GetMimeType(string extension, string? defaultMimeType = null)
 		{
 			if (extension == null)
 				throw new ArgumentNullException(nameof(extension));
@@ -729,7 +729,7 @@ namespace Lexxys
 				return extension.ToLowerInvariant();
 			if (!extension.StartsWith(".", StringComparison.Ordinal))
 				extension = "." + extension;
-			return Mappings.TryGetValue(extension, out var mime) ? mime: defaultMimeType;
+			return Mappings.TryGetValue(extension, out var mime) ? mime: defaultMimeType ?? ApplicationOctetStream;
 		}
 
 		[return: NotNullIfNotNull("defaultExtension")]

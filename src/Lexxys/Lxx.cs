@@ -10,6 +10,8 @@ using System.Reflection;
 using System.Threading;
 using System.Configuration;
 
+using Microsoft.Extensions.Logging;
+
 namespace Lexxys
 {
 	using Configuration;
@@ -22,16 +24,16 @@ namespace Lexxys
 		public static event EventHandler<ConfigurationEventArgs>? ConfigurationInitialized;
 		public static event EventHandler<ThreadExceptionEventArgs>? UnhandledException;
 
-		public static ILogging? Log
+		public static ILogger? Log
 		{
 			get
 			{
 				if (_log == null)
-					Interlocked.CompareExchange(ref _log, StaticServices.TryCreate<ILogging>("Lexxys.Lxx"), null);
+					Interlocked.CompareExchange(ref _log, Statics.TryGetLogger("Lexxys.Lxx"), null);
 				return _log;
 			}
 		}
-		private static ILogging? _log;
+		private static ILogger? _log;
 
 		public static string AnonymousConfigurationFile => "application";
 

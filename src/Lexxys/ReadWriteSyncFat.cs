@@ -9,12 +9,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
+using Microsoft.Extensions.Logging;
+
 namespace Lexxys
 {
 	public sealed class ReadWriteSyncFat: IReadWriteSync
 	{
-		private static ILogging Log => _log ??= StaticServices.Create<ILogging>("Lexxys.ReadWriteSyncFat");
-		private static ILogging? _log;
+		private static ILogger Log => _log ??= Statics.GetLogger<ReadWriteSyncFat>();
+		private static ILogger? _log;
 		private readonly ReaderWriterLock? _locker;
 		public const int DefaultTimingThreshold = 100;
 		public const int DefaultLockTimeout = 5 * 60 * 1000;

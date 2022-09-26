@@ -21,29 +21,11 @@ public abstract class LogWriter: ILogWriter
 
 	private readonly LoggingRule _rule;
 
-	public LogWriter(string name, XmlLiteNode? config, ILogRecordFormatter? formatter = null)
-	{
-		if (config == null)
-			config = XmlLiteNode.Empty;
-
-		Name = name ?? this.GetType().Name;
-		Formatter = CreateFormatter(config["formatter"], config) ?? formatter ?? new LogRecordTextFormatter(TextFormatDefaults.Join(config));
-		_rule = LoggingRule.Create(config);
-	}
-
 	public LogWriter(ILogWriterParameters parameters)
 	{
 		Name = parameters.Name ?? this.GetType().Name;
 		Formatter = (parameters.Formatter ?? new LogRecordTextParameters()).CreateFormatter();
-		_rule = LoggingRule.Create(parameters.Rules);
-	}
-
-	public void Initialize(LogWriterConfig? config)
-	{
-		if (config is null)
-			return;
-		if (config.Formatter != null)
-			Formatter = config.Formatter;
+		_rule = LoggingRule.Create(parameters.Rules, parameters.Include, parameters.Exclude, parameters.LogLevel);
 	}
 
 	public void Configure(LogWriterParameters? parameters)
@@ -52,8 +34,6 @@ public abstract class LogWriter: ILogWriter
 			return;
 		if (parameters.Name is not null)
 			Name = parameters.Name;
-		//if (parameters.LogoffTimeout is not null)
-			
 	}
 
 	/// <summary>
@@ -97,28 +77,6 @@ public abstract class LogWriter: ILogWriter
 			SystemLog.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className, e));
 		}
 		return writer;
-	}
-
-	private static ILogRecordFormatter? CreateFormatter(string? className, XmlLiteNode node)
-	{
-		if (className is null || className.Length <= 0)
-			return null;
-		ILogRecordFormatter? formatter = null;
-		try
-		{
-			Type? type = Factory.GetType(className) ??
-				(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
-			if (type != null)
-				formatter = Factory.TryGetConstructor(type, new[] { typeof(XmlLiteNode) })?
-					.Invoke(new object[] { node }) as ILogRecordFormatter;
-			if (formatter == null)
-				SystemLog.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogFormatter(className));
-		}
-		catch (Exception e)
-		{
-			SystemLog.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogFormatter(className, e));
-		}
-		return formatter;
 	}
 
 	/// <summary>

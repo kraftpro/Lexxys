@@ -121,6 +121,6 @@ namespace Lexxys
 		}
 		private bool _disposed;
 
-		private static ILogger? Log => __log ??= StaticServices.TryCreate<ILogger>(LogSource);
+		private static ILogger? Log => __log ??= Statics.TryGetLogger(LogSource);
 	}
 }

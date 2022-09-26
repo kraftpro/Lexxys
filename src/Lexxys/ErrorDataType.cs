@@ -137,7 +137,6 @@ namespace Lexxys
 				code = default;
 				return false;
 			}
-#pragma warning disable CA1307 // Specify StringComparison for clarity
 			value = value.Replace(" ", "").Replace("-", "").Replace("_", "");
 			if (Int32.TryParse(value, out var i))
 			{

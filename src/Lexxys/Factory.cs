@@ -17,12 +17,13 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'
-
 namespace Lexxys
 {
 
 	using Configuration;
+
+	using Lexxys;
+
 	using Tokenizer;
 
 	public static class Factory
@@ -78,7 +79,7 @@ namespace Lexxys
 
 		private static string[] SystemAssemblyNames()
 		{
-			var systemNamesConfig = StaticServices.TryCreate<IConfigSection>()?.GetCollection<string>(ConfigurationSkip);
+			var systemNamesConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<string>(ConfigurationSkip);
 			var systemNames = systemNamesConfig?.Value;
 			if (systemNames == null || systemNames.Count == 0)
 				return DefaultSystemAssemblyNames;
@@ -118,7 +119,6 @@ namespace Lexxys
 			{
 				lock (SyncRoot)
 				{
-					#pragma warning disable CA1508 // Avoid dead conditional code
 					if (__assemblies == null)
 					{
 						CollectAssembliesInternal();
@@ -204,7 +204,7 @@ namespace Lexxys
 
 		private static void ImportRestAssemblies()
 		{
-			var importConfig = StaticServices.TryCreate<IConfigSection>()?.GetCollection<string>(ConfigurationImport);
+			var importConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<string>(ConfigurationImport);
 			var assemblies = importConfig?.Value;
 			if (assemblies == null)
 				return;
@@ -254,7 +254,7 @@ namespace Lexxys
 
 		public static IEnumerable<Type> Types(Func<Type, bool> predicate)
 		{
-			return __foundTypesP.GetOrAdd(predicate, p => ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(p))));
+			return __foundTypesP.GetOrAdd(predicate, p => ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(p)))!);
 		}
 
 		public static IEnumerable<Type> Types(Type type, bool cacheResults = false)
@@ -265,10 +265,10 @@ namespace Lexxys
 			return cacheResults ?
 				type.IsInterface ?
 					__foundTypesA.GetOrAdd(type, key =>
-						ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && Array.IndexOf(t.GetInterfaces(), key) >= 0)))
+						ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && Array.IndexOf(t.GetInterfaces(), key) >= 0)))!
 						):
 					__foundTypesA.GetOrAdd(type, key =>
-						ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && key.IsAssignableFrom(t))))
+						ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && key.IsAssignableFrom(t))))!
 						):
 
 				type.IsInterface ?
@@ -296,7 +296,7 @@ namespace Lexxys
 				throw new ArgumentNullException(nameof(type));
 
 			return cacheResults ?
-				__foundTypesC.GetOrAdd(type, key => ReadOnly.WrapCopy(Classes(key, DomainAssemblies))):
+				__foundTypesC.GetOrAdd(type, key => ReadOnly.WrapCopy(Classes(key, DomainAssemblies))!):
 				Classes(type, DomainAssemblies);
 		}
 
@@ -317,7 +317,7 @@ namespace Lexxys
 				assemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && !t.IsAbstract && type.IsAssignableFrom(t)));
 		}
 
-		public static List<MethodInfo> Constructors(Type type, string? methodName, params Type[]? types)
+		public static IEnumerable<MethodInfo> Constructors(Type type, string? methodName, params Type[]? types)
 		{
 			if (type == null)
 				throw new ArgumentNullException(nameof(type));
@@ -328,20 +328,16 @@ namespace Lexxys
 			return String.IsNullOrEmpty(methodName) ?
 				Factory.Types(type)
 					.SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => ConstructorPredicate(m, type, types)))
-					.Where(m => m != null)
-					.ToList():
+					.Where(m => m != null):
 				Factory.Types(type)
-					.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null))
-					.Where(m => m != null && type.IsAssignableFrom(m.ReturnType))
-					.ToList()!;
+					.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null)!)
+					.Where(m => m != null && type.IsAssignableFrom(m.ReturnType));
 
-			static bool ConstructorPredicate(MethodInfo method, Type returnType, Type[]? parameterType)
+			static bool ConstructorPredicate(MethodInfo method, Type returnType, Type[] parameterType)
 			{
 				if (!returnType.IsAssignableFrom(method.ReturnType))
 					return false;
 				ParameterInfo[] pp = method.GetParameters();
-				if (parameterType == null)
-					return pp.Length == 0;
 				if (pp.Length != parameterType.Length)
 					return false;
 				for (int i = 0; i < pp.Length; ++i)
@@ -366,7 +362,7 @@ namespace Lexxys
 		public static void SetSynonym(string? name, Type? type)
 		{
 			string? key = name?.Replace(" ", "");
-			if (String.IsNullOrEmpty(key))
+			if (key is null || key.Length <= 0)
 				return;
 			lock (SyncRoot)
 			{
@@ -393,7 +389,7 @@ namespace Lexxys
 					if (!__synonymsLoading)
 					{
 						__synonymsLoading = true;
-						var synonymsConfig = StaticServices.TryCreate<IConfigSection>()?.GetCollection<KeyValuePair<string?, string?>>(ConfigurationSynonyms);
+						var synonymsConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<KeyValuePair<string?, string?>>(ConfigurationSynonyms);
 						var synonyms = synonymsConfig?.Value;
 						if (synonyms != null)
 						{
@@ -902,7 +898,7 @@ namespace Lexxys
 
 		public static Type? GetType(string? typeName, IEnumerable<Assembly>? assemblies)
 		{
-			if (String.IsNullOrEmpty(typeName))
+			if (typeName is null || typeName.Length <= 0)
 				return null;
 
 			var type = Type.GetType(typeName, false, true);
@@ -953,8 +949,7 @@ namespace Lexxys
 			object? value = __defaults[type];
 			if (value != null)
 				return value;
-			Func<object>? constructor = TryGetConstructor(type);
-			return constructor?.Invoke();
+			return Activator.CreateInstance(type);
 		}
 		private static readonly Hashtable __defaults = new Hashtable
 		{
@@ -1041,14 +1036,16 @@ namespace Lexxys
 		}
 		#endregion
 
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static object Construct(Type type)
 		{
 			if (type is null)
 				throw new ArgumentNullException(nameof(type));
-
-			return TryConstruct(type) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, 0));
+			return Activator.CreateInstance(type, true)!;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Func<object> GetConstructor(Type type)
 		{
 			if (type is null)
@@ -1057,6 +1054,7 @@ namespace Lexxys
 			return TryGetConstructor(type) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, 0));
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static object Construct(Type type, params object?[] args)
 		{
 			if (type is null)
@@ -1065,6 +1063,7 @@ namespace Lexxys
 			return TryConstruct(type, args) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Func<object?[], object> GetConstructor(Type type, params Type?[] args)
 		{
 			if (type is null)
@@ -1073,6 +1072,7 @@ namespace Lexxys
 			return TryGetConstructor(type, args) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static object? TryConstruct(Type type)
 		{
 			if (type == null)
@@ -1110,6 +1110,7 @@ namespace Lexxys
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Func<object>? TryGetConstructor(Type type)
 		{
 			if (type is null)
@@ -1119,6 +1120,7 @@ namespace Lexxys
 		}
 		private static readonly ConcurrentDictionary<Type, Func<object>?> __constructors0 = new ConcurrentDictionary<Type, Func<object>?>();
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Func<object>? TryCreateConstructor(Type type)
 		{
 			if (type.IsValueType)
@@ -1144,6 +1146,7 @@ namespace Lexxys
 #endif
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Func<object?, object>? TryGetConstructor(Type type, Type argType)
 		{
 			if (type == null)

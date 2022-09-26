@@ -17,33 +17,26 @@ namespace Lexxys.Tests.Xml
 	[TestClass]
 	public class XmlLiteSelectorTest
 	{
-		#region Data Tables
-		private static string[] Xml = new string[] 
-		{
-@"
-<root>
-	Root Value1
-	<node1 a='a1' b='b1'>
-		Node1 Value
-	</node1>
-	Root Value2
-	<node2 c='c2' d='d2' e='' />
-	Root Value3
-</root>"
-		};
-		#endregion
-
 		[TestMethod]
 		public void XmlLiteNodeSelectTest()
 		{
-			string[][] tests = new[]
-				{
-					new[] { "",					"" },
-				};
-			string text = RandomXml(15, 10, 3);
+			string text = "<root>" + RandomXml(15, 10, 3) + "</root>";
+			var source = "source: " + text;
 			XmlLiteNode xml = XmlLiteNode.FromXml(text);
-			var xx = XmlLiteNode.Select("**", xml);
+			var xx = XmlLiteNode.Select("*", xml);
 			var aa = xx.ToArray();
+			Assert.AreEqual(1, aa.Length, source);
+			Assert.AreEqual(xml.ToString(), aa[0].ToString(), source);
+			xx = XmlLiteNode.Select("*.node1", xml);
+			aa = xx.ToArray();
+			Assert.IsTrue(aa.All(o => o.Name == "node1"), source);
+			xx = XmlLiteNode.Select("**.node1", xml);
+			var bb = xx.ToArray();
+			Assert.IsTrue(bb.All(o => o.Name == "node1"), source);
+			Assert.IsTrue(aa.Length <= bb.Length);
+			xx = XmlLiteNode.Select("**.node1.**.node2", xml);
+			aa = xx.ToArray();
+			Assert.IsTrue(aa.All(o => o.Name == "node2"), source);
 		}
 
 		private string RandomXml(int depth, int nodes, int attribs)

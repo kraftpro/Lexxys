@@ -13,6 +13,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+
 namespace Lexxys.Data
 {
 	class DataContextImplementation: IDisposable
@@ -482,9 +484,9 @@ namespace Lexxys.Data
 		private long _commandAudit;
 		private long _batchAudit;
 
-		private ILogging _log;
+		private ILogger _log;
 
-		public DataAudit(TimeSpan connectionAudit, TimeSpan commandAudit, TimeSpan batchAudit, ILogging? log = null): this(
+		public DataAudit(TimeSpan connectionAudit, TimeSpan commandAudit, TimeSpan batchAudit, ILogger? log = null): this(
 			Math.Max(0, connectionAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
 			Math.Max(0, commandAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
 			Math.Max(0, batchAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
@@ -492,7 +494,7 @@ namespace Lexxys.Data
 		{
 		}
 
-		private DataAudit(long connectionAudit, long commandAudit, long batchAudit, ILogging log)
+		private DataAudit(long connectionAudit, long commandAudit, long batchAudit, ILogger log)
 		{
 			_connectionAudit = connectionAudit;
 			_commandAudit = commandAudit;

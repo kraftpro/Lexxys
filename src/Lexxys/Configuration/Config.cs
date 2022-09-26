@@ -12,6 +12,8 @@ using System.Text.RegularExpressions;
 
 namespace Lexxys
 {
+	using System.Diagnostics.CodeAnalysis;
+
 	using Configuration;
 
 	public class ConfigurationEventArgs: EventArgs
@@ -21,45 +23,53 @@ namespace Lexxys
 
 	public static class Config
 	{
-		public static IConfigSection Current => StaticServices.Create<IConfigSection>();
+		public static IConfigSection Current => _current ??= Statics.GetService<IConfigSection>();
+		private static IConfigSection? _current;
 
-		public static T? GetValue<T>(string key)
+		public static IValue<T>? GetValue<T>(string key)
 		{
 			if (key == null || key.Length <= 0)
 				throw new ArgumentNullException(nameof(key));
-			return Current.GetValue<T?>(key).Value;
+			return Current.GetValue<T>(key);
 		}
 
-		public static T GetValue<T>(string key, T defaultValue)
+		public static IValue<T> GetValue<T>(string key, T defaultValue)
 		{
 			if (key == null || key.Length <= 0)
 				throw new ArgumentNullException(nameof(key));
-			return Current.GetValue<T>(key, defaultValue).Value;
+			return Current.GetValue<T>(key, defaultValue);
 		}
 
-		public static T GetValue<T>(string key, Func<T> defaultValue)
+		public static IValue<T> GetValue<T>(string key, Func<T> defaultValue)
 		{
 			if (key == null || key.Length <= 0)
 				throw new ArgumentNullException(nameof(key));
 			if (defaultValue == null)
 				throw new ArgumentNullException(nameof(defaultValue));
-			return Current.GetValue<T>(key, defaultValue).Value;
+			return Current.GetValue<T>(key, defaultValue);
+		}
+
+		public static IValue<IReadOnlyList<T>> GetCollection<T>(string key)
+		{
+			if (key == null || key.Length <= 0)
+				throw new ArgumentNullException(nameof(key));
+			return Current.GetCollection<T>(key);
 		}
 
 		public static bool AddConfiguration(string location, bool tail = false)
 		{
 			var p = SplitOptions(location);
-			return StaticServices.Create<IConfigService>().AddConfiguration(new Uri(p.Location, UriKind.RelativeOrAbsolute), p.Parameters, tail);
+			return Statics.TryGetService<IConfigService>()?.AddConfiguration(new Uri(p.Location, UriKind.RelativeOrAbsolute), p.Parameters, tail) ?? false;
 		}
 
-		public static bool AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null)
-			=> StaticServices.Create<IConfigService>().AddConfiguration(location, parameters);
+		public static bool AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null, bool tail = false)
+			=> Statics.TryGetService<IConfigService>()?.AddConfiguration(location, parameters, tail) ?? false;
 
 		public static void LogConfigurationError(string logSource, Exception exception)
-			=> StaticServices.Create<IConfigLogger>().LogConfigurationError(logSource, exception);
+			=> Statics.TryGetService<IConfigLogger>()?.LogConfigurationError(logSource, exception);
 
 		public static void LogConfigurationEvent(string logSource, string message)
-			=> StaticServices.Create<IConfigLogger>().LogConfigurationEvent(logSource, message);
+			=> Statics.TryGetService<IConfigLogger>()?.LogConfigurationEvent(logSource, message);
 
 		internal static Uri[] GetLocalFiles(string path, IEnumerable<string>? directories)
 		{

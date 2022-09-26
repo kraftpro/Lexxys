@@ -10,7 +10,7 @@ using Xml;
 
 public class LogRecordJsonFormatter: ILogRecordFormatter
 {
-	private NamingCaseRule _namingRule;
+	private readonly NamingCaseRule _namingRule;
 
 	public LogRecordJsonFormatter(): this(NamingCaseRule.None)
 	{
@@ -27,6 +27,6 @@ public class LogRecordJsonFormatter: ILogRecordFormatter
 
 	public void Format(TextWriter writer, LogRecord record)
 	{
-		record.ToJson(JsonBuilder.Create(writer));
+		record.ToJson(JsonBuilder.Create(writer).WithNamingRule(_namingRule));
 	}
 }
