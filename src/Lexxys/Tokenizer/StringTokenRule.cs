@@ -13,7 +13,7 @@ namespace Lexxys.Tokenizer
 {
 	public class StringTokenRule: LexicalTokenRule
 	{
-		public const char NoEscape = '\0';
+		public const char NoEscape = Char.MaxValue;
 
 		public StringTokenRule(char escapeChar = '\0', LexicalTokenType tokenType = default)
 		{
@@ -25,15 +25,13 @@ namespace Lexxys.Tokenizer
 		public LexicalTokenType TokenType { get; }
 		public override string? BeginningChars => "\"'";
 
-		public override bool TestBeginning(char value) => value == '"' || value == '\'';
+		public override bool TestBeginning(char value) => value is '"' or '\'';
 
 		public override LexicalToken? TryParse(CharStream stream)
 		{
 			if (stream is null)
 				throw new ArgumentNullException(nameof(stream));
-			if (stream[0] != '"' && stream[0] != '\'')
-				return null;
-			return ParseString(TokenType, stream, EscapeChar);
+			return stream[0] is '"' or '\'' ? ParseString(TokenType, stream, EscapeChar): null;
 		}
 
 		public static LexicalToken ParseString(LexicalTokenType tokenType, CharStream stream, char escapeChar)
@@ -75,7 +73,7 @@ namespace Lexxys.Tokenizer
 			}
 		}
 
-		public static char ParseEscape(CharStream stream, int position, out int next)
+		private static char ParseEscape(CharStream stream, int position, out int next)
 		{
 			if (stream is null)
 				throw new ArgumentNullException(nameof(stream));
@@ -126,10 +124,9 @@ namespace Lexxys.Tokenizer
 				// Ctrl+CHAR symbol: \c[A-Z]
 				case 'c':
 					c = stream[++i];
-					if (c >= 'A' && c <= 'Z')
-						c = (char)(c - 'A' + 1);
-					else
-						c = stream[--i];
+					if (c is < 'A' or > 'Z')
+						throw stream.SyntaxException(SR.UnrecognizedEscapeSequence(c));
+					c = (char)(c - 'A' + 1);
 					break;
 
 				// Octal value: \0[0-7]?[0-7]?[0-7]?
@@ -138,7 +135,7 @@ namespace Lexxys.Tokenizer
 					for (j = 0; j < 3; ++j)
 					{
 						c = stream[++i];
-						if (!(c >= '0' && c <= '7'))
+						if (c is not (>= '0' and <= '7'))
 						{
 							--i;
 							break;
@@ -156,14 +153,14 @@ namespace Lexxys.Tokenizer
 					{
 						c = stream[++i];
 						int l;
-						if (c >= '0' && c <= '9')
+						if (c is >= '0' and <= '9')
 						{
 							l = (c - '0');
 						}
 						else
 						{
 							c |= ' ';
-							if (c >= 'a' && c <= 'f')
+							if (c is >= 'a' and <= 'f')
 							{
 								l = (c - 'a' + 10);
 							}
@@ -175,10 +172,9 @@ namespace Lexxys.Tokenizer
 						}
 						k = k * 16 + l;
 					}
-					if (j > 0)
-						c = (char)k;
-					else
-						c = stream[i];
+					if (j == 0)
+						throw stream.SyntaxException(SR.UnrecognizedEscapeSequence(stream.Substring(0, 2)));
+					c = (char)k;
 					break;
 
 				default:
@@ -190,5 +186,3 @@ namespace Lexxys.Tokenizer
 		}
 	}
 }
-
-

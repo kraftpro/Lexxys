@@ -15,7 +15,7 @@ namespace Lexxys.Xml
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
-			if (rootName is null || rootName.Length <= 0)
+			if (rootName is not { Length: > 0 })
 				throw new ArgumentNullException(nameof(rootName));
 
 			return JsonParser.Parse(text, sourceName)

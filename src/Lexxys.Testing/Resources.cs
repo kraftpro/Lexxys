@@ -4,13 +4,19 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
+#pragma warning disable CA1308 // Normalize strings to uppercase
+#pragma warning disable CA1724
+
 namespace Lexxys.Testing;
 
 public static partial class Resources
 {
 	public static IDictionary<string, RandItem<string>> Resource { get; } = LoadResources("resource*.json");
 
-	public static RandItem<string> Phone { get; } = R.Concat(R.Pic("###-###-####", "(###) ###-####", "1-###-###-####", "###.###.####") | R.Pic(R.P(5, ""), R.P(" x ###"), R.P(" x ####")));
+	public static RandItem<string> Phone { get; } = R.Concat(
+		R.Pic("###-###-####", "(###) ###-####", "1-###-###-####", "###.###.####") |
+		R.Pic(R.P(5, ""), R.P(" x ###"), R.P(" x ####"))
+		);
 	public static RandItem<string> PhoneType { get; } = R.V(2, "").Or(4, "mobile").Or(3, "work").Or("home").Or("fax");
 	public static RandItem<string> FirstName { get; } = Resource["FirstName"];
 	public static RandItem<string> MiddleName { get; } = Resource["MiddleName"];
@@ -31,7 +37,7 @@ public static partial class Resources
 	public static RandItem<string> TitleLevel { get; } = Resource["TitleLevel"];
 	public static RandItem<string> TitleJob { get; } = Resource["TitleJob"];
 	public static RandItem<string> OperationSystem { get; } = Resource["OperationSystem"];
-	public static RandItem<string> EMail { get; } = R.Concat(o => o?.ToLowerInvariant(),
+	public static RandItem<string> EMail { get; } = R.Concat(o => o?.ToLowerInvariant() ?? String.Empty,
 		R.V(10, "") + R.Concat(R.Lower(1) + FirstName, R.Any("", "", "", ".", "", "-", "_")),
 		LastName + FirstName,
 		R.V("@"),

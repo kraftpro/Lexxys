@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -10,26 +10,24 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Configuration
 {
-
 	internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 	{
-		public readonly static IConfigService Instance = new ConfigProvidersCollection();
+		public static readonly IConfigService Instance = new ConfigProvidersCollection();
 
 		private const string LogSource = "Lexxys.Configuration";
 #if NETFRAMEWORK
 		private const string InitialLocationKey = "configuration";
-		private const string ConfigurationDerectoryKey = "configurationDirectory";
+		private const string ConfigurationDirectoryKey = "configurationDirectory";
 #endif
 
 		private bool _initializing;
 		private bool _initialized;
 		private ILogger? _log;
-		private ConcurrentQueue<EventEntry>? __messages;
+		private ConcurrentQueue<EventEntry>? _messages;
 		private volatile int _version;
 		private int _top;
 		private volatile List<IConfigProvider> _providers = new List<IConfigProvider>();
-		private readonly ConcurrentDictionary<string, object?> _cache = new ConcurrentDictionary<string, object?>();
-		private object SyncObj = new Object();
+		private readonly object SyncObj = new Object();
 
 		public ConfigProvidersCollection()
 		{
@@ -42,7 +40,7 @@ namespace Lexxys.Configuration
 					return;
 				var location = GetConfigurationLocation(assembly);
 				if (location != null)
-					AddConfiguration(location, null);
+					AddConfiguration(location);
 			}
 		}
 
@@ -56,52 +54,60 @@ namespace Lexxys.Configuration
 			}
 		}
 
+		private IReadOnlyList<string>? ConfigurationDirectories => _configDirectories.Value;
+		private readonly Lazy<IReadOnlyList<string>?> _configDirectories = new Lazy<IReadOnlyList<string>?>(GetConfigurationDirectories, true);
+
+		#region IConfigService
+
 		public int Version => _version;
-
-		private IReadOnlyList<string>? ConfigurationDirectories => __configDirectories.Value;
-		private Lazy<IReadOnlyList<string>?> __configDirectories = new Lazy<IReadOnlyList<string>?>(GetConfigurationDerectories, true);
-
-		internal bool IsInitialized => _initialized;
 
 		public event EventHandler<ConfigurationEventArgs>? Changed;
 
-		public void SetLogger(ILogger? logger = null)
+		public object? GetValue(string key, Type objectType)
 		{
-			if (logger == null)
-				logger = Statics.TryGetLogger(LogSource);
-			if (_log == logger || logger == null)
-				return;
-			_log = logger;
+			if (objectType is null)
+				throw new ArgumentNullException(nameof(objectType));
+			if (key is null || key.Length <= 0)
+				throw new ArgumentNullException(nameof(key));
 
-			if (__messages == null)
-				return;
-			var messages = Interlocked.Exchange(ref __messages, null);
-			if (messages == null)
-				return;
+			if (!_initialized)
+				Initialize();
 
-			while (!messages.IsEmpty)
+			object? value = null;
+			var providers = _providers;
+			for (int i = 0; i < providers.Count; ++i)
 			{
-				if (messages.TryDequeue(out var message))
-					LogEventEntry(logger, message);
+				value = providers[i].GetValue(key, objectType);
+				if (value != null)
+					break;
 			}
+			return value;
 		}
 
-		public void LogConfigurationError(string logSource, Exception exception)
+		public IReadOnlyList<T> GetList<T>(string key)
 		{
-			if (logSource is null)
-				throw new ArgumentNullException(nameof(logSource));
-			if (exception is null)
-				throw new ArgumentNullException(nameof(exception));
-			LogConfigurationItem(new EventEntry(exception, logSource));
-		}
+			if (key is null || key.Length <= 0)
+				throw new ArgumentNullException(nameof(key));
 
-		public void LogConfigurationEvent(string logSource, string message)
-		{
-			if (logSource is null)
-				throw new ArgumentNullException(nameof(logSource));
-			if (message is null)
-				throw new ArgumentNullException(nameof(message));
-			LogConfigurationItem(new EventEntry(message, logSource));
+			if (!_initialized)
+				Initialize();
+
+			IReadOnlyList<T>? temp = null;
+			List<T>? list = null;
+			var providers = _providers;
+			for (int i = 0; i < providers.Count; ++i)
+			{
+				IReadOnlyList<T> x = providers[i].GetList<T>(key);
+				if (x.Count <= 0) continue;
+				if (temp == null)
+					temp = x;
+				else
+					(list ??= new List<T>(temp)).AddRange(x);
+			}
+			IReadOnlyList<T> result =
+				temp == null ? Array.Empty<T>() :
+				list == null ? temp : ReadOnly.Wrap(list)!;
+			return result;
 		}
 
 		public bool AddConfiguration(Uri location, IReadOnlyCollection<string>? parameters = null, bool tail = false)
@@ -129,72 +135,49 @@ namespace Lexxys.Configuration
 			return AddConfiguration(provider, tail ? int.MaxValue : _top) >= 0;
 		}
 
-		public object? GetValue(string key, Type objectType)
+		#endregion
+
+		#region IConfigLogger
+
+		public void LogConfigurationError(string logSource, Exception exception)
 		{
-			if (objectType is null)
-				throw EX.ArgumentNull(nameof(objectType));
-			if (key is null || key.Length <= 0)
-				throw EX.ArgumentNull(nameof(key));
-
-			if (!_initialized)
-				Initialize();
-
-			string cacheKey = key.ToUpperInvariant() + "$" + objectType.ToString();
-			if (_cache.TryGetValue(cacheKey, out object? value))
-				return value;
-
-			var providers = _providers;
-			for (int i = 0; i < providers.Count; ++i)
-			{
-				value = providers[i].GetValue(key, objectType);
-				if (value != null)
-					break;
-			}
-			_cache[cacheKey] = value;
-			return value;
+			if (logSource is null)
+				throw new ArgumentNullException(nameof(logSource));
+			if (exception is null)
+				throw new ArgumentNullException(nameof(exception));
+			LogConfigurationItem(new EventEntry(exception, logSource));
 		}
 
-		public IReadOnlyList<T> GetList<T>(string key)
+		public void LogConfigurationEvent(string logSource, string message)
 		{
-			if (key is null || key.Length <= 0)
-				throw new ArgumentNullException(nameof(key));
-
-			if (!_initialized)
-				Initialize();
-
-			string cacheKey = key.ToUpperInvariant() + "$(" + typeof(T).ToString();
-			if (_cache.TryGetValue(cacheKey, out var value))
-				return value as IReadOnlyList<T> ?? Array.Empty<T>();
-
-			IReadOnlyList<T>? temp = null;
-			List<T>? list = null;
-			var providers = _providers;
-			for (int i = 0; i < providers.Count; ++i)
-			{
-				IReadOnlyList<T> x = providers[i].GetList<T>(key);
-				if (x != null && x.Count > 0)
-				{
-					if (temp == null)
-					{
-						temp = x;
-					}
-					else
-					{
-						if (list == null)
-						{
-							list = new List<T>(temp);
-						}
-						list.AddRange(x);
-					}
-				}
-			}
-			IReadOnlyList<T> result =
-				temp == null ? Array.Empty<T>() :
-				list == null ? temp : ReadOnly.Wrap(list)!;
-			_cache[cacheKey] = result;
-			return result;
+			if (logSource is null)
+				throw new ArgumentNullException(nameof(logSource));
+			if (message is null)
+				throw new ArgumentNullException(nameof(message));
+			LogConfigurationItem(new EventEntry(message, logSource));
 		}
 
+		public void SetLogger(ILogger? logger = null)
+		{
+			logger ??= Statics.TryGetLogger(LogSource);
+			if (_log == logger || logger == null)
+				return;
+			_log = logger;
+
+			if (_messages == null)
+				return;
+			var messages = Interlocked.Exchange(ref _messages, null);
+			if (messages == null)
+				return;
+
+			while (!messages.IsEmpty)
+			{
+				if (messages.TryDequeue(out var message))
+					LogEventEntry(logger, message);
+			}
+		}
+
+		#endregion
 
 		private void OnChanged() => OnChanged(null, new ConfigurationEventArgs());
 
@@ -207,7 +190,7 @@ namespace Lexxys.Configuration
 			if (i >= 0)
 			{
 				LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(provider.Location, i));
-				ScanConfigurationFile(provider, provider.Location, i);
+				ScanConfigurationFile(provider, i);
 				provider.Changed += OnChanged;
 				OnChanged();
 			}
@@ -249,7 +232,7 @@ namespace Lexxys.Configuration
 				if (parameters != null)
 					flaw.Add(nameof(parameters), parameters.ToArray());
 				if (_log == null)
-					SystemLog.WriteErrorMessage($"ERROR: Cannot load configuration {location.ToString() ?? "(null)"}.", flaw);
+					SystemLog.WriteErrorMessage($"ERROR: Cannot load configuration {location}.", flaw);
 				else
 					_log.Error(nameof(AddConfiguration), flaw);
 				return Found.None;
@@ -276,7 +259,7 @@ namespace Lexxys.Configuration
 						result.Add(null);
 						continue;
 					}
-					var provider = ConfigurationFactory.TryCreateProvider(file, parameters);
+					var provider = TryCreateProvider(file, parameters);
 					if (provider == null)
 						continue;
 					i = _providers.FindIndex(o => o.Location == provider.Location);
@@ -299,6 +282,32 @@ namespace Lexxys.Configuration
 			}
 			return result;
 		}
+
+		private static IConfigProvider? TryCreateProvider(Uri location, IReadOnlyCollection<string>? parameters)
+		{
+			if (location == null)
+				throw new ArgumentNullException(nameof(location));
+
+			var arguments = new object?[] { location, parameters };
+
+			foreach (var constructor in Factory.Constructors(typeof(IConfigProvider), "TryCreate", __locationType2))
+			{
+				try
+				{
+					var obj = constructor.Invoke(null, arguments);
+					if (obj is IConfigProvider source)
+						return source;
+				}
+#pragma warning disable CA1031 // Ignore all the errors.
+				catch (Exception flaw)
+				{
+					Config.LogConfigurationError($"{nameof(TryCreateProvider)} from {location}", flaw);
+				}
+#pragma warning restore CA1031 // Do not catch general exception types
+			}
+			return null;
+		}
+		private static readonly Type[] __locationType2 = { typeof(Uri), typeof(IReadOnlyCollection<string>) };
 
 		private int AddProvider(IConfigProvider provider, int position)
 		{
@@ -326,7 +335,7 @@ namespace Lexxys.Configuration
 			return inserted;
 		}
 
-		private void ScanConfigurationFile(IConfigProvider provider, Uri location, int position)
+		private void ScanConfigurationFile(IConfigProvider provider, int position)
 		{
 			if (provider.GetValue("applicationDirectory", typeof(string)) is string home)
 			{
@@ -335,30 +344,26 @@ namespace Lexxys.Configuration
 					Lxx.HomeDirectory = dir;
 			}
 
-			var ss = provider.GetList<string>("include");
-			if (ss == null)
-				return;
-
-			foreach (string s in ss)
+			foreach (string s in provider.GetList<string>("include"))
 			{
 				int k = _providers.Count;
 				var (value, parameters) = SplitOptions(s);
 				AddConfiguration(new Uri(value, UriKind.RelativeOrAbsolute), parameters, position);
 				position += _providers.Count - k;
 			}
-		}
 
-		private static (string Location, IReadOnlyCollection<string>? Parameters) SplitOptions(string value)
-		{
-			if (value is null)
-				throw new ArgumentNullException(nameof(value));
-			value = value.Trim();
-			var xx = value.Split(SpaceSeparator, StringSplitOptions.RemoveEmptyEntries);
-			if (xx.Length == 1)
-				return (value, null);
-			if (xx.Length == 2)
-				return (xx[0], new[] { xx[1] });
-			return (xx[0], xx.Skip(1).ToList());
+			static (string Location, IReadOnlyCollection<string>? Parameters) SplitOptions(string value)
+			{
+				if (value is null)
+					throw new ArgumentNullException(nameof(value));
+				value = value.Trim();
+				var xx = value.Split(SpaceSeparator, StringSplitOptions.RemoveEmptyEntries);
+				if (xx.Length == 1)
+					return (value, null);
+				if (xx.Length == 2)
+					return (xx[0], new[] { xx[1] });
+				return (xx[0], xx.Skip(1).ToList());
+			}
 		}
 		private static readonly char[] SpaceSeparator = new[] { ' ' };
 
@@ -373,16 +378,15 @@ namespace Lexxys.Configuration
 				if (cs != null)
 					LogConfigurationEvent(LogSource, SR.ConfigurationChanged(cs));
 			}
-			_cache.Clear();
 			Changed?.Invoke(sender, e);
 			_log = null;
 		}
 
 		private class EventEntry
 		{
-			public Exception? Exception;
-			public string? Message;
-			public string Source;
+			public readonly Exception? Exception;
+			public readonly string? Message;
+			public readonly string Source;
 
 			public EventEntry(Exception exception, string source)
 			{
@@ -401,13 +405,13 @@ namespace Lexxys.Configuration
 		{
 			if (item.Exception != null)
 			{
-				if (logger!.IsEnabled(LogType.Error))
-					logger!.Error(item.Source, item.Exception);
+				if (logger.IsEnabled(LogType.Error))
+					logger.Error(item.Source, item.Exception);
 			}
 			else if (item.Message != null)
 			{
-				if (logger!.IsEnabled(LogType.Trace))
-					logger!.Error(item.Source, item.Message, null, null);
+				if (logger.IsEnabled(LogType.Trace))
+					logger.Error(item.Source, item.Message, null, null);
 			}
 		}
 
@@ -417,7 +421,7 @@ namespace Lexxys.Configuration
 			if (logger != null)
 				LogEventEntry(logger, item);
 			else
-				(__messages ??= new ConcurrentQueue<EventEntry>()).Enqueue(item);
+				(_messages ??= new ConcurrentQueue<EventEntry>()).Enqueue(item);
 		}
 
 		private void Initialize()
@@ -435,6 +439,10 @@ namespace Lexxys.Configuration
 #if NETFRAMEWORK
 				AddSystem(new Uri("system:configuration"), new SystemConfigurationProvider(), _top);
 #endif
+				foreach (var item in Directory.EnumerateFiles(".", "Lexxys.config.*"))
+				{
+					AddConfiguration(new Uri("file:///" + Path.GetFullPath(item)), null, true);
+				}
 				IEnumerable<Uri> cc0 = GetInitialConfigurationsLocations();
 				foreach (var c in cc0)
 				{
@@ -450,34 +458,33 @@ namespace Lexxys.Configuration
 		private void AddSystem(Uri locator, IConfigProvider provider, int position)
 		{
 			position = AddProvider(provider, position);
-			if (position >= 0)
-			{
-				LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(locator, position));
-				ScanConfigurationFile(provider, locator, position);
-			}
+			if (position < 0)
+				return;
+			LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(locator, position));
+			ScanConfigurationFile(provider, position);
 		}
 
-		private static IReadOnlyList<string>? GetConfigurationDerectories()
+		private static IReadOnlyList<string> GetConfigurationDirectories()
 		{
-			var configurationDirectory = new List<string> { Lxx.HomeDirectory };
 #if NETFRAMEWORK
-			string[] directories = System.Configuration.ConfigurationManager.AppSettings.GetValues(ConfigurationDerectoryKey);
-			if (directories != null)
+			string[]? directories = System.Configuration.ConfigurationManager.AppSettings.GetValues(ConfigurationDirectoryKey);
+			if (directories == null)
+				return new [] { Lxx.HomeDirectory };
+			
+			var configurationDirectory = new List<string> { Lxx.HomeDirectory };
+			foreach (var entry in directories)
 			{
-				foreach (var entry in directories)
+				foreach (var item in entry.Split(__separators, StringSplitOptions.RemoveEmptyEntries))
 				{
-					foreach (var item in entry.Split(__separators, StringSplitOptions.RemoveEmptyEntries))
-					{
-						string value = item.Trim().TrimEnd(Path.DirectorySeparatorChar);
-						if (value.Length > 0 && configurationDirectory.FindIndex(o => String.Equals(o, value, StringComparison.OrdinalIgnoreCase)) < 0)
-							configurationDirectory.Add(value);
-					}
+					var value = item.Trim().TrimEnd(Path.DirectorySeparatorChar);
+					if (value.Length > 0 && configurationDirectory.FindIndex(o => String.Equals(o, value, StringComparison.OrdinalIgnoreCase)) < 0)
+						configurationDirectory.Add(value);
 				}
 			}
+			return configurationDirectory;
+#else
+			return new [] { Lxx.HomeDirectory };
 #endif
-			if (configurationDirectory.FindIndex(o => String.Equals(o, Lxx.GlobalConfigurationDirectory, StringComparison.OrdinalIgnoreCase)) < 0)
-				configurationDirectory.Add(Lxx.GlobalConfigurationDirectory);
-			return ReadOnly.Wrap(configurationDirectory);
 		}
 #if NETFRAMEWORK
 		private static readonly char[] __separators = { ',', ';', ' ', '\t', '\n', '\r' };
@@ -495,7 +502,7 @@ namespace Lexxys.Configuration
 		{
 			var cc = new OrderedSet<Uri>();
 #if NETFRAMEWORK
-			string[] ss = System.Configuration.ConfigurationManager.AppSettings.GetValues(InitialLocationKey);
+			string[]? ss = System.Configuration.ConfigurationManager.AppSettings.GetValues(InitialLocationKey);
 			if (ss != null)
 			{
 				foreach (string s in ss)
@@ -509,8 +516,6 @@ namespace Lexxys.Configuration
 			cc.AddRange(Factory.DomainAssemblies.Select(GetConfigurationLocation).Where(o => o != null)!);
 
 			var locator = new Uri("file:///" + Lxx.HomeDirectory + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile);
-			cc.Add(locator);
-			locator = new Uri("file:///" + Lxx.GlobalConfigurationDirectory + Path.DirectorySeparatorChar + Lxx.GlobalConfigurationFile);
 			cc.Add(locator);
 			return cc;
 		}

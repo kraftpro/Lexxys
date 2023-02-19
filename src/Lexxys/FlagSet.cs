@@ -5,11 +5,9 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Text;
 
 #pragma warning disable CA2225 // Operator overloads have named alternates
@@ -18,8 +16,10 @@ namespace Lexxys
 {
 	public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<FlagSet>
 	{
-		private static readonly char[] ItemDelimiter = { ';' };
-		private const char VariantDelimiter = ':';
+		private const char NameDelimiter = ':';
+		private const char GroupDelimiter = ';';
+		private const string NameDelimiterStr = ":";
+		private const string GroupDelimiterStr = ";";
 
 		private readonly SortedSet<string> _set;
 
@@ -39,103 +39,109 @@ namespace Lexxys
 		{
 			_set = value is null ?
 				new SortedSet<string>(comparer ?? StringComparer.OrdinalIgnoreCase):
-				new SortedSet<string>(Collect(value.Split(ItemDelimiter)), comparer ?? StringComparer.OrdinalIgnoreCase);
+				new SortedSet<string>(Split(value), comparer ?? StringComparer.OrdinalIgnoreCase);
 		}
 
-		public static unsafe string? Clean(string? item)
+		public static string? Clean(string? item)
 		{
-			if (item == null)
-				return null;
-			fixed (char* str = item)
+			if (string.IsNullOrEmpty(item))
+				return default;
+			
+			var s = item.AsSpan();
+			int i = 0;
+			while (IsBlankOrDelimiter(s[i]))
 			{
-				char* p = str;
-				char* t = str + item.Length;
-				char c;
-				do
-				{
-					if (p == t)
-						return null;
-					c = *p++;
-				} while (!((c > '\u0020' && c < '\u007F' && c != ':' && c != ';') || (c > '\u00A0' && c < '\uD800')));
-				--p;
-				do
-				{
-					c = *--t;
-				} while (!((c > '\u0020' && c < '\u007F' && c != ':' && c != ';') || (c > '\u00A0' && c < '\uD800')));
-				++t;
-
-				int w = Math.Min((int)(t - p), Tools.MaxStackAllocSize);
-				char* buffer = stackalloc char[w];
-				char* q = buffer;
-				int n = 0;
-				bool colon = false;
-				do
-				{
-					c = *p++;
-					if (!((c > '\u0020' && c < '\u007F' && c != ';') || (c > '\u00A0' && c < '\uD800')))
-						continue;
-					if (c != ':')
-						colon = false;
-					else if (!colon)
-						colon = true;
-					else
-						continue;
-					++n;
-					*q++ = c;
-					if (n == w)
-						break;
-				} while (p != t);
-
-				if (n == 0)
-					return null;
-				do
-				{
-					--q;
-					if (*q != ':' && *q != ';')
-						break;
-					--n;
-				} while (n > 0);
-				return n == item.Length ? item : new string(buffer, 0, n);
+				if (++i == s.Length)
+					return default;
 			}
-		}
-
-		private static List<string> Collect(IEnumerable<string?>? values)
-		{
-			var bag = new List<string>();
-			if (values == null)
-				return bag;
-			foreach (var item in values)
+			s = s.Slice(i);
+			i = s.Length - 1;
+			if (IsBlankOrDelimiter(s[i]))
 			{
-				string? value = Clean(item);
-				if (value == null)
-					continue;
-				int k = value.IndexOf(VariantDelimiter);
-				if (k < 0)
+				while (IsBlankOrDelimiter(s[--i])) { }
+				s = s.Slice(0, i + 1);
+			}
+			static bool IsBlankOrDelimiter(char c)
+				=> IsBlank(c) || c is NameDelimiter or GroupDelimiter;
+			static bool IsBlank(char c)
+				=> c is <= '\u0020' or >= '\u007F' and <= '\u00A0' or >= '\uD800';
+
+			using var mem = MemoryPool<char>.Shared.Rent(s.Length);
+			var buf = mem.Memory.Span;
+			int n = 0;
+			bool colon = false;
+			bool group = false;
+			foreach(var c in s)
+			{
+				if (IsBlank(c)) continue;
+
+				if (c == GroupDelimiter)
 				{
-					bag.Add(value);
-					continue;
+					group = true;
+					colon = false;
 				}
-				int j = 0;
-				string vv = "";
-				do
+				else if (c == NameDelimiter)
 				{
-					string v = value.Substring(j, k - j).Trim();
-					if (v.Length > 0)
+					colon = !group;
+				}
+				else
+				{
+					if (group)
 					{
-						vv += v;
-						bag.Add(vv);
-						vv += ":";
+						group = false;
+						buf[n++] = GroupDelimiter;
 					}
-					j = k + 1;
-					k = value.IndexOf(VariantDelimiter, j);
-				} while (k > 0);
-				string rest = value.Substring(j).Trim();
-				if (rest.Length > 0)
-					bag.Add(vv + rest);
+					else if (colon)
+					{
+						colon = false;
+						buf[n++] = NameDelimiter;
+					}
+					buf[n++] = c;
+				}
 			}
-			return bag;
+
+			return buf.Slice(0, n).ToString();
 		}
 
+		private static IEnumerable<string> Split(string? value)
+		{
+			var s = Clean(value);
+			if (s is null)
+				yield break;
+
+			int k = s.IndexOf(GroupDelimiter);
+			if (k < 0)
+			{
+				int i = s.IndexOf(NameDelimiter);
+				while (i > 0)
+				{
+					yield return s.Substring(0, i);
+					i = s.IndexOf(NameDelimiter, i + 1);
+				}
+				yield return s;
+				yield break;
+			}
+
+			int l = 0;
+			for (;;)
+			{
+				int i = s.IndexOf(NameDelimiter, l);
+				while (i > 0 && i < k)
+				{
+					yield return s.Substring(l, i - l);
+					i = s.IndexOf(NameDelimiter, i + 1);
+				}
+
+				yield return s.Substring(l, k - l);
+				if (k == s.Length)
+					yield break;
+				l = k + 1;
+				k = s.IndexOf(GroupDelimiter, l);
+				if (k < 0)
+					k = s.Length;
+			}
+		}
+		
 		public static FlagSet? operator +(FlagSet? left, FlagSet? right)
 		{
 			if (right is null || right.Count == 0)
@@ -150,7 +156,7 @@ namespace Lexxys
 		public static FlagSet? operator +(FlagSet? left, string? right)
 		{
 			if (String.IsNullOrEmpty(right))
-				return left is null && right == null ? null: new FlagSet(left);
+				return left is null ? null: new FlagSet(left);
 			return left is null || left.Count == 0 ?
 				new FlagSet(right):
 				new FlagSet(left) { right };
@@ -178,17 +184,17 @@ namespace Lexxys
 			return result;
 		}
 
-		public static FlagSet? FromString(string? value) => value == null ? null : new FlagSet(value);
+		public static FlagSet? Parse(string? value) => value == null ? null : new FlagSet(value);
 
 		public static explicit operator FlagSet?(string? value) => value == null ? null : new FlagSet(value);
 
 		public static explicit operator string?(FlagSet? value) => value?.ToString();
 
-		public static bool operator ==(FlagSet? left, FlagSet? right) => right is null ? left is null : right.Equals(left);
+		public static bool operator ==(FlagSet? left, FlagSet? right) => right?.Equals(left) ?? left is null;
 
-		public static bool operator !=(FlagSet? left, FlagSet? right) => right is null ? left is not null : !right.Equals(left);
+		public static bool operator !=(FlagSet? left, FlagSet? right) => !right?.Equals(left) ?? left is not null;
 
-		public override int GetHashCode() => HashCode.Join(18775, _set);
+		public override int GetHashCode() => HashCode.Join(_set.Count * 18775, _set);
 
 		public override bool Equals(object? obj) => obj is FlagSet other && Equals(other);
 
@@ -196,6 +202,8 @@ namespace Lexxys
 		{
 			if (other is null)
 				return false;
+			if (ReferenceEquals(this, other))
+				return true;
 
 			if (_set.Count != other._set.Count)
 				return false;
@@ -212,45 +220,41 @@ namespace Lexxys
 			return true;
 		}
 
-		public override string ToString() => ToString(true);
+		public override string ToString() => ToString(false);
 
-		public string ToString(bool compact)
+		public string ToString(bool fast)
 		{
 			if (Count == 0)
 				return "";
-			if (!compact)
-				return ";" + String.Join(";", _set) + ";";
+
 			var text = new StringBuilder();
-			string last = "";
-			foreach (var item in _set.Reverse())
+			text.Append(";");
+			string? last = null;
+			foreach (var item in _set)
 			{
-				if (!last.StartsWith(item + ":", StringComparison.Ordinal))
-					text.Insert(0, ";" + item);
-				last = item;
+				if (last is not null && !item.StartsWith(last, StringComparison.Ordinal))
+					text.Append(last).Append(";");
+				last = item + NameDelimiterStr;
 			}
-			return text.Append(';').ToString();
+			return text.Append(last).Append(";").ToString();
 		}
 
 		#region ISet<string>
 
-		public bool Add(string item)
+		public bool Add(string? item)
 		{
-			if (item == null)
-				return false;
 			int k = _set.Count;
-			foreach (var s in Collect(item.Split(ItemDelimiter)))
+			foreach (var s in Split(item))
 			{
 				_set.Add(s);
 			}
 			return k < _set.Count;
 		}
 
-		public bool Remove(string item)
+		public bool Remove(string? item)
 		{
-			if (item == null)
-				return false;
 			int k = _set.Count;
-			foreach (var s in Collect(item.Split(ItemDelimiter)))
+			foreach (var s in Split(item))
 			{
 				_set.Remove(s);
 			}
@@ -285,15 +289,9 @@ namespace Lexxys
 
 		public void CopyTo(string[] array, int arrayIndex) => _set.CopyTo(array, arrayIndex);
 
-		public int Count
-		{
-			get { return _set.Count; }
-		}
+		public int Count => _set.Count;
 
-		public bool IsReadOnly
-		{
-			get { return false; }
-		}
+		public bool IsReadOnly => false;
 
 		public IEnumerator<string> GetEnumerator() => _set.GetEnumerator();
 

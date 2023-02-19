@@ -9,7 +9,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -45,7 +44,7 @@ namespace Lexxys
 		/// <summary>
 		/// Initializes a new instance of the <see cref="DumpWriter"/> class.
 		/// </summary>
-		/// <param name="maxCapacity">Maximum numer of characters to write.</param>
+		/// <param name="maxCapacity">Maximum number of characters to write.</param>
 		/// <param name="maxDepth">Maximum depth of traversing of the dumping objects</param>
 		/// <param name="stringLimit">Maximum length of string to dump</param>
 		/// <param name="blobLimit">Maximum length of byte array to dump</param>
@@ -115,7 +114,7 @@ namespace Lexxys
 		/// Creates a new <see cref="DumpWriter"/> using the specified <see cref="TextWriter"/>.
 		/// </summary>
 		/// <param name="writer">The <see cref="TextWriter"/> to write as dump.</param>
-		/// <param name="maxCapacity">Maximum numer of characters to write.</param>
+		/// <param name="maxCapacity">Maximum number of characters to write.</param>
 		/// <param name="maxDepth">Maximum depth of traversing of the dumping objects</param>
 		/// <param name="stringLimit">Maximum length of string portion to dump</param>
 		/// <param name="blobLimit">Maximum length of byte array portion to dump</param>
@@ -132,7 +131,7 @@ namespace Lexxys
 		/// Creates a new <see cref="DumpWriter"/> using the specified <see cref="StringBuilder"/>.
 		/// </summary>
 		/// <param name="writer">The <see cref="StringBuilder"/> to write as dump.</param>
-		/// <param name="maxCapacity">Maximum numer of characters to write.</param>
+		/// <param name="maxCapacity">Maximum number of characters to write.</param>
 		/// <param name="maxDepth">Maximum depth of traversing of the dumping objects</param>
 		/// <param name="stringLimit">Maximum length of string portion to dump</param>
 		/// <param name="blobLimit">Maximum length of byte array portion to dump</param>
@@ -148,7 +147,7 @@ namespace Lexxys
 		/// <summary>
 		/// Creates a new <see cref="DumpWriter"/> using a new <see cref="StringBuilder"/>.
 		/// </summary>
-		/// <param name="maxCapacity">Maximum numer of characters to write.</param>
+		/// <param name="maxCapacity">Maximum number of characters to write.</param>
 		/// <param name="maxDepth">Maximum depth of traversing of the dumping objects</param>
 		/// <param name="stringLimit">Maximum length of string portion to dump</param>
 		/// <param name="blobLimit">Maximum length of byte array portion to dump</param>
@@ -1144,7 +1143,7 @@ namespace Lexxys
 		{
 			if (count == 0)
 				return "";
-			if (String.IsNullOrEmpty(value))
+			if (value is not { Length: >0 })
 				return new string('\t', count);
 			if (count == 1)
 				return value;
@@ -1193,7 +1192,7 @@ namespace Lexxys
 		/// Initializes a new instance of the <see cref="DumpStreamWriter"/> class.
 		/// </summary>
 		/// <param name="writer">The <see cref="TextWriter"/> to write a dump.</param>
-		/// <param name="maxCapacity">Maximum numer of characters to write.</param>
+		/// <param name="maxCapacity">Maximum number of characters to write.</param>
 		/// <param name="maxDepth">Maximum depth of traversing of the dumping objects</param>
 		/// <param name="stringLimit">Maximum length of string portion to dump</param>
 		/// <param name="blobLimit">Maximum length of byte array portion to dump</param>
@@ -1207,8 +1206,7 @@ namespace Lexxys
 		/// <inheritdoc />
 		public override DumpWriter Text(string? text)
 		{
-			if (text == null)
-				text = NullValue;
+			text ??= NullValue;
 			int length = text.Length;
 			if (Left < length)
 			{
@@ -1246,7 +1244,7 @@ namespace Lexxys
 		/// <summary>
 		/// Initializes a new instance of the <see cref="DumpStringWriter"/> class.
 		/// </summary>
-		/// <param name="maxCapacity">Maximum numer of characters to write.</param>
+		/// <param name="maxCapacity">Maximum number of characters to write.</param>
 		/// <param name="maxDepth">Maximum depth of traversing of the dumping objects</param>
 		/// <param name="stringLimit">Maximum length of string portion to dump</param>
 		/// <param name="blobLimit">Maximum length of byte array portion to dump</param>
@@ -1261,7 +1259,7 @@ namespace Lexxys
 		/// Initializes a new instance of the <see cref="DumpStreamWriter"/> class.
 		/// </summary>
 		/// <param name="writer">The <see cref="StringWriter"/> to write a dump.</param>
-		/// <param name="maxCapacity">Maximum numer of characters to write.</param>
+		/// <param name="maxCapacity">Maximum number of characters to write.</param>
 		/// <param name="maxDepth">Maximum depth of traversing of the dumping objects</param>
 		/// <param name="stringLimit">Maximum length of string portion to dump</param>
 		/// <param name="blobLimit">Maximum length of byte array portion to dump</param>
@@ -1269,16 +1267,13 @@ namespace Lexxys
 		public DumpStringWriter(StringBuilder writer, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0)
 			: base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
 		{
-			if (writer is null)
-				throw new ArgumentNullException(nameof(writer));
-			_w = writer;
+			_w = writer ?? throw new ArgumentNullException(nameof(writer));
 		}
 
 		/// <inheritdoc />
 		public override DumpWriter Text(string? text)
 		{
-			if (text == null)
-				text = NullValue;
+			text ??= NullValue;
 			int length = text.Length;
 			if (Left < length)
 			{

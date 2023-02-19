@@ -18,7 +18,6 @@ namespace Lexxys.Xml
 {
 	public static partial class XmlTools
 	{
-		[return: MaybeNull]
 		public static T GetValue<T>(XmlLiteNode node)
 		{
 			if (node is null)
@@ -27,7 +26,6 @@ namespace Lexxys.Xml
 			return TryGetValue<T>(node, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString().Left(1024), typeof(T)));
 		}
 
-		[return: MaybeNull]
 		public static T GetValue<T>(XmlLiteNode node, T defaultValue)
 		{
 			if (node is null)
@@ -36,7 +34,7 @@ namespace Lexxys.Xml
 			return TryGetValue<T>(node, out var result) ? result : defaultValue;
 		}
 
-		public static bool TryGetValue<T>(XmlLiteNode? node, [MaybeNull] out T result)
+		public static bool TryGetValue<T>(XmlLiteNode? node, [MaybeNullWhen(false)] out T result)
 		{
 			if (TryGetValue(node, typeof(T), out var temp))
 			{
@@ -55,7 +53,7 @@ namespace Lexxys.Xml
 			return TryGetValue(node, returnType, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString().Left(1024), returnType));
 		}
 
-		public static bool TryGetValue(XmlLiteNode? node, Type returnType, out object? result)
+		public static bool TryGetValue(XmlLiteNode? node, Type returnType, [NotNullWhen(true)] out object? result)
 		{
 			if (returnType is null)
 				throw new ArgumentNullException(nameof(returnType));
@@ -205,7 +203,7 @@ namespace Lexxys.Xml
 				{
 					if (type == Factory.NullableTypeBase(method.ReturnType))
 					{
-						if (method.Name == "Create" || method.Name == "FromXml")
+						if (method.Name is "Create" or "TryCreate" or "FromXml")
 						{
 							ParameterInfo[] parameters = method.GetParameters();
 							if (parameters.Length == 1)
@@ -234,7 +232,7 @@ namespace Lexxys.Xml
 			result = null;
 			if (!returnType.IsPublic)
 				return false;
-			if (returnType.GetCustomAttributes(typeof(XmlRootAttribute), true).Length == 0 && returnType.GetCustomAttributes(typeof(XmlTypeAttribute), true).Length == 0)
+			if (returnType.IsInterface || !returnType.IsAbstract && returnType.GetCustomAttributes(typeof(XmlRootAttribute), true).Length == 0 && returnType.GetCustomAttributes(typeof(XmlTypeAttribute), true).Length == 0)
 				return false;
 			try
 			{
@@ -276,7 +274,7 @@ namespace Lexxys.Xml
 
 		#region Try Reflection
 
-		private static bool TryReflection(XmlLiteNode node, Type returnType, out object? result)
+		private static bool TryReflection(XmlLiteNode node, Type returnType, [MaybeNullWhen(false)] out object? result)
 		{
 			result = null;
 			if (node == null)
@@ -588,7 +586,7 @@ namespace Lexxys.Xml
 				{
 					if (!type.IsValueType)
 					{
-						Log?.Trace($"{nameof(AttributedConstructor)}.{nameof(Create)}: Cannot find a counstructor for {type.Name} and arguments: {String.Join(", ", arguments.Keys)}");
+						Log?.Trace($"{nameof(AttributedConstructor)}.{nameof(Create)}: Cannot find a constructor for {type.Name} and arguments: {String.Join(", ", arguments.Keys)}");
 						return null;
 					}
 					parameters = Array.Empty<ParameterInfo>();
@@ -644,7 +642,10 @@ namespace Lexxys.Xml
 			}
 		}
 
-		private static (Type? Entity, Type Collection, Type Item) GetCollectionType(Type type)
+		private static (Type? Entity, Type Collection, Type Item) GetCollectionType(Type type) => __collectionType.GetOrAdd(type, t => GetCollectionType_(t));
+		private static ConcurrentDictionary<Type, (Type? Entity, Type Collection, Type Item)> __collectionType = new ConcurrentDictionary<Type, (Type? Entity, Type Collection, Type Item)>();
+
+		private static (Type? Entity, Type Collection, Type Item) GetCollectionType_(Type type)
 		{
 			if (type.IsArray)
 				return (type, type, type.GetElementType()!);

@@ -22,7 +22,7 @@ namespace Lexxys.Tests.Usage
 			l1?.Info("L1");
 			l2?.Info("L2");
 			var c1 = Statics.TryGetService<IConfigSection>();
-			var v1 = c1?.GetValue<List<string>>(listNode);
+			var v1 = c1?.GetValue<List<string>>(listNode, () => null);
 			var v1v = v1?.Value;
 			var v2 = c1?.GetCollection<string>(listNode);
 			var v2v = v2?.Value;
@@ -34,7 +34,7 @@ namespace Lexxys.Tests.Usage
 			var c1a = Statics.TryGetService<IConfigSection>();
 			var c1b = Statics.TryGetService<IConfigSection>()?.GetSection(listNode);
 
-			var c2a = Statics.TryGetService<IConfigSection>()?.GetValue<TimeSpan>(timeoutNode);
+			var c2a = Statics.TryGetService<IConfigSection>()?.GetValue<TimeSpan>(timeoutNode, () => default);
 			var c2b = Statics.TryGetService<IConfigSection>()?.GetSection(settingsNode)?.GetCollection<string>("proxy");
 
 			var cf = Statics.TryGetService<IConfigService>();

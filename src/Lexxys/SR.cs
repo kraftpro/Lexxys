@@ -507,11 +507,6 @@ namespace Lexxys
 			return "Collection is empty.";
 		}
 
-		internal static string EndOfCollection()
-		{
-			return "End of Collection.";
-		}
-
 		internal static string ParserFirst()
 		{
 			return "Method Parse should be called first.";
@@ -525,6 +520,11 @@ namespace Lexxys
 		internal static string UnrecognizedEscapeSequence(char c)
 		{
 			return String.Format(Culture, "Unrecognized Escape sequence \"\\c{0}\".", c);
+		}
+
+		internal static string UnrecognizedEscapeSequence(string s)
+		{
+			return String.Format(Culture, "Unrecognized Escape sequence \"\\{0}\".", s);
 		}
 
 		internal static string EofInStringConstant()

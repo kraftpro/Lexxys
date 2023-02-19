@@ -11,13 +11,11 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lexxys.Logging;
-using Xml;
 using Data;
 
 public sealed class DatabaseLogWriter: ILogWriter, IDisposable
@@ -25,8 +23,9 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 	public const int MaxInsertRowsCount = 1000;
 	public const string DefaultSchema = "log";
 	public const string DefaultTable = "App";
-	private const string LogSource = "Lexxys.Logging.DatabaseLogWriter";
 	public const string ConfigSection = "database.connection";
+
+	private const string LogSource = "Lexxys.Logging.DatabaseLogWriter";
 
 	private readonly string _server;
 	private readonly string _database;
@@ -101,7 +100,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 		catch (Exception exception)
 		{
 			++_errorsCount;
-			SystemLog.WriteErrorMessage("DatabaseLogWriter", exception);
+			SystemLog.WriteErrorMessage(LogSource, exception);
 #if TRACE_CONSOLE
 			Console.WriteLine($"err[{xyz}] {_errorsCount} {exception.Message}");
 #endif
@@ -126,7 +125,6 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 				.Append(Dc.Value(instanceId)).Append(',')
 				.Append(Dc.Value(record.Source)).Append(',')
 				.Append(Dc.Value(record.Context.ThreadId)).Append(',')
-				.Append(Dc.Value(record.Context.ThreadSysId)).Append(',')
 				.Append(Dc.Value((int)record.LogType)).Append(',')
 				.Append(Dc.Value((int)record.RecordType)).Append(',')
 				.Append(Dc.Value(record.Indent)).Append(',')
@@ -167,7 +165,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 	{
 		if (_dataContext == null)
 		{
-			SystemLog.WriteErrorMessage("DatabaseLogWriter", SR.ConnectionStringIsEmpty(), null);
+			SystemLog.WriteErrorMessage(LogSource, SR.ConnectionStringIsEmpty(), null);
 			return;
 		}
 		try
@@ -181,7 +179,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 			flaw.Add("ConnectionString", _connectionString)
 				.Add("Schema", _schema)
 				.Add("Table", _table);
-			SystemLog.WriteErrorMessage("DatabaseLogWriter", flaw);
+			SystemLog.WriteErrorMessage(LogSource, flaw);
 			Close();
 		}
 	}
@@ -199,7 +197,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 	private void PrepareTemplates()
 	{
 		const string InsertInstanceTemplate = "insert into [{S}].[{T}LogInstances] (LocalTime,ComputerName,DomainName,ProcessId) values ";
-		const string InstertEntryTemplate = "\ninsert into[{S}].[{T}LogEntries] (SeqNumber,LocalTime,InstanceId,Source,ThreadId,ThreadSysId,LogType,RecordType,Indentlevel,Message) values";
+		const string InstertEntryTemplate = "\ninsert into[{S}].[{T}LogEntries] (SeqNumber,LocalTime,InstanceId,Source,ThreadId,LogType,RecordType,Indentlevel,Message) values";
 		const string InstertArgTemplate = "\n declare @id int=scope_identity();\n insert into [{S}].[{T}LogArguments] (Entry,ArgName,ArgValue) values";
 
 		_insertInstanceTemplate = InsertInstanceTemplate.Replace("{S}", _schema).Replace("{T}", _table);
@@ -246,7 +244,6 @@ create table [{S}].[{T}LogEntries]
 		-- foreign key references [{S}].[{T}LogInstances] (ID),
 	Source varchar(250) null,
 	ThreadId int not null,
-	ThreadSysId int not null,
 	LogType tinyint not null,
 	RecordType tinyint not null,
 	Indentlevel int not null,

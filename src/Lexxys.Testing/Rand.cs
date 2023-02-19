@@ -8,6 +8,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
+#pragma warning disable CA1720 // Identifier contains type name
+
 namespace Lexxys.Testing;
 
 public static class Rand
@@ -27,6 +29,9 @@ public static class Rand
 
 	public static T[] Array<T>(int count, Func<T> constructor)
 	{
+		if (constructor is null)
+			throw new ArgumentNullException(nameof(constructor));
+
 		var values = new T[count];
 		for (int i = 0; i < values.Length; ++i)
 		{
@@ -37,6 +42,9 @@ public static class Rand
 
 	public static T[] Array<T>(int minCount, int maxCount, Func<T> constructor)
 	{
+		if (constructor is null)
+			throw new ArgumentNullException(nameof(constructor));
+
 		var values = new T[Int(minCount, maxCount + 1)];
 		for (int i = 0; i < values.Length; ++i)
 		{
@@ -47,6 +55,9 @@ public static class Rand
 
 	public static T[] Array<T>(int minCount, int maxCount, Func<int, T> constructor)
 	{
+		if (constructor is null)
+			throw new ArgumentNullException(nameof(constructor));
+
 		var values = new T[Int(minCount, maxCount + 1)];
 		for (int i = 0; i < values.Length; ++i)
 		{
@@ -135,19 +146,19 @@ public static class Rand
 		return __rnd.NextDecimal(minValue, maxValue);
 	}
 
-	public static T Case<T>(double bound, T trueValue, T falseValue = default)
+	public static T Case<T>(double bound, T trueValue, T falseValue)
 	{
 		return Bool(bound) ? trueValue: falseValue;
 	}
 
-	public static T Case<T>(double bound1, T case1, double bound2, T case2, T falseValue = default)
+	public static T Case<T>(double bound1, T case1, double bound2, T case2, T falseValue)
 	{
 		return
 			Bool(bound1) ? case1:
 			Bool(bound2) ? case2: falseValue;
 	}
 
-	public static T Case<T>(double bound1, T case1, double bound2, T case2, double bound3, T case3, T falseValue = default)
+	public static T Case<T>(double bound1, T case1, double bound2, T case2, double bound3, T case3, T falseValue)
 	{
 		return
 			Bool(bound1) ? case1:
@@ -155,7 +166,7 @@ public static class Rand
 			Bool(bound3) ? case3: falseValue;
 	}
 
-	public static T Case<T>(double bound1, T case1, double bound2, T case2, double bound3, T case3, double bound4, T case4, T falseValue = default)
+	public static T Case<T>(double bound1, T case1, double bound2, T case2, double bound3, T case3, double bound4, T case4, T falseValue)
 	{
 		return
 			Bool(bound1) ? case1:
@@ -166,27 +177,34 @@ public static class Rand
 
 	public static T Item<T>(params T[] values)
 	{
-		return values == null || values.Length == 0 ? default: values[Int(values.Length)];
+		if (values is not { Length: >0 })
+			throw new ArgumentNullException(nameof(values));
+
+		return values[Int(values.Length)];
 	}
 
 	public static T Item<T>(IReadOnlyList<T> values)
 	{
-		return values == null || values.Count == 0 ? default: values[Int(values.Count)];
+		if (values is not { Count: >0 })
+			throw new ArgumentNullException(nameof(values));
+
+		return values[Int(values.Count)];
 	}
 
 	public static T Item<T>(IList<T> values)
 	{
-		return values == null || values.Count == 0 ? default : values[Int(values.Count)];
+		if (values is not { Count: >0 })
+			throw new ArgumentNullException(nameof(values));
+
+		return values[Int(values.Count)];
 	}
 
 	public static T Item<T>(List<T> values)
 	{
-		return values == null || values.Count == 0 ? default : values[Int(values.Count)];
-	}
+		if (values is not { Count: >0 })
+			throw new ArgumentNullException(nameof(values));
 
-	public static T Item<T>(double p, IReadOnlyList<T> values)
-	{
-		return values == null || values.Count == 0 || !Bool(p)  ? default: values[Int(values.Count)];
+		return values[Int(values.Count)];
 	}
 
 	public static T[] Items<T>(int count, IReadOnlyList<T> values)

@@ -166,11 +166,11 @@ namespace Lexxys.Tests
 			actual = Strings.CutIndents(lines, 4);
 			Assert.AreEqual(expected, actual);
 		}
-		private static readonly char[] Nls = { '\r', '\n' };
 
 		[TestMethod]
 		public void EncodeUrlTest()
 		{
+			//Strings.EncodeUrl
 			Assert.Inconclusive();
 		}
 

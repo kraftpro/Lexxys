@@ -21,9 +21,9 @@ namespace Lexxys.Crypting
 		public Hasher(IHasherAlgorythm algorithm)
 		{
 			if (algorithm == null)
-				throw EX.ArgumentNull(nameof(algorithm));
+				throw new ArgumentNullException(nameof(algorithm));
 			if (!algorithm.SupportsStream || !algorithm.SupportsBlock)
-				throw EX.ArgumentOutOfRange(nameof(algorithm), algorithm);
+				throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null);
 			_algorithm = algorithm;
 		}
 
@@ -35,39 +35,39 @@ namespace Lexxys.Crypting
 		public byte[] Hash(Stream text)
 		{
 			if (text == null)
-				throw EX.ArgumentNull(nameof(text));
+				throw new ArgumentNullException(nameof(text));
 			return _algorithm.HashStream(text);
 		}
 		public byte[] Hash(byte[] text)
 		{
 			if (text == null)
-				throw EX.ArgumentNull(nameof(text));
+				throw new ArgumentNullException(nameof(text));
 			return _algorithm.Hash(text, 0, text.Length);
 		}
 		public byte[] Hash(String text)
 		{
 			if (text == null)
-				throw EX.ArgumentNull(nameof(text));
+				throw new ArgumentNullException(nameof(text));
 			byte[] bytes = Encoding.Unicode.GetBytes(text);
 			return _algorithm.Hash(bytes, 0, bytes.Length);
 		}
 		public byte[] Hash(byte[] text, int offset, int length)
 		{
 			if (text == null)
-				throw EX.ArgumentNull(nameof(text));
-			if (offset < 0 || offset >= text.Length)
-				throw EX.ArgumentOutOfRange(nameof(offset), offset);
-			if (length > text.Length - offset)
-				throw EX.ArgumentOutOfRange(nameof(length), length);
+				throw new ArgumentNullException(nameof(text));
+			if ((uint)offset >= text.Length)
+				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
+			if ((uint)length > text.Length - offset)
+				throw new ArgumentOutOfRangeException(nameof(length), length, null);
 			return _algorithm.Hash(text, offset, length);
 		}
 
-		public bool Equal(byte[] hash, Stream text)
+		public bool Verify(byte[] hash, Stream text)
 		{
 			if (hash == null)
-				throw EX.ArgumentNull(nameof(hash));
+				throw new ArgumentNullException(nameof(hash));
 			if (text == null)
-				throw EX.ArgumentNull(nameof(text));
+				throw new ArgumentNullException(nameof(text));
 			byte[] hash2 = _algorithm.HashStream(text);
 			if (hash.Length != hash2.Length)
 				return false;
@@ -76,12 +76,13 @@ namespace Lexxys.Crypting
 					return false;
 			return true;
 		}
-		public bool Equal(byte[] hash, byte[] text)
+		
+		public bool Verify(byte[] hash, byte[] text)
 		{
 			if (hash == null)
-				throw EX.ArgumentNull(nameof(hash));
+				throw new ArgumentNullException(nameof(hash));
 			if (text == null)
-				throw EX.ArgumentNull(nameof(text));
+				throw new ArgumentNullException(nameof(text));
 			byte[] hash2 = _algorithm.Hash(text, 0, text.Length);
 			if (hash.Length != hash2.Length)
 				return false;
@@ -90,12 +91,13 @@ namespace Lexxys.Crypting
 					return false;
 			return true;
 		}
-		public bool Equal(byte[] hash, string text)
+		
+		public bool Verify(byte[] hash, string text)
 		{
 			if (hash == null)
-				throw EX.ArgumentNull(nameof(hash));
+				throw new ArgumentNullException(nameof(hash));
 			if (text == null)
-				throw EX.ArgumentNull(nameof(text));
+				throw new ArgumentNullException(nameof(text));
 			byte[] bytes = Encoding.Unicode.GetBytes(text);
 			byte[] hash2 = _algorithm.Hash(bytes, 0, bytes.Length);
 			if (hash.Length != hash2.Length)

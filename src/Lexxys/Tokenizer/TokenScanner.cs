@@ -9,6 +9,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
+using Lexxys;
+
 namespace Lexxys.Tokenizer
 {
 	/// <summary>
@@ -19,8 +21,7 @@ namespace Lexxys.Tokenizer
 		private const int LowAscii = 0;
 		private const int HighAscii = 127;
 
-		private readonly List<LexicalTokenRule> _rules;
-		private readonly List<LexicalTokenRule>[] _asciiRules;
+		private readonly List<LexicalTokenRule>?[] _asciiRules;
 		private readonly List<LexicalTokenRule> _extraRules;
 		private Func<LexicalToken> _getter;
 
@@ -33,21 +34,15 @@ namespace Lexxys.Tokenizer
 		{
 			if (stream is null)
 				throw new ArgumentNullException(nameof(stream));
+			if (rules is not { Length: > 0 })
+				throw new ArgumentNullException(nameof(rules));
 
-			_rules = new List<LexicalTokenRule>(32);
-			_extraRules = new List<LexicalTokenRule>(32);
+			_extraRules = new List<LexicalTokenRule>(rules.Length);
 			_asciiRules = new List<LexicalTokenRule>[HighAscii - LowAscii + 1];
+			SetRules(rules);
 			_getter = GetNextToken;
 			Stream = stream;
 			Current = LexicalToken.Empty;
-			if (rules != null)
-			{
-				foreach (var rule in rules)
-				{
-					if (rule != null)
-						AddRule(rule);
-				}
-			}
 		}
 
 		/// <summary>
@@ -64,7 +59,6 @@ namespace Lexxys.Tokenizer
 				throw new ArgumentNullException(nameof(scanner));
 
 			Stream = stream;
-			_rules = scanner._rules;
 			_asciiRules = scanner._asciiRules;
 			_extraRules = scanner._extraRules;
 			_getter = copyFilters ? scanner._getter: GetNextToken;
@@ -79,12 +73,12 @@ namespace Lexxys.Tokenizer
 		/// <summary>
 		/// The latest parsed <see cref="LexicalToken"/>.
 		/// </summary>
-		public virtual LexicalToken Current { get; protected set; }
+		public LexicalToken Current { get; protected set; }
 
 		/// <summary>
 		/// The <see cref="CultureInfo"/> of the <see cref="Stream"/>
 		/// </summary>
-		public CultureInfo CultureInfo => Stream.CultureInfo;
+		public CultureInfo CultureInfo => Stream.Culture;
 
 		/// <summary>
 		/// It indicates that the end of the stream has been encountered.
@@ -94,7 +88,7 @@ namespace Lexxys.Tokenizer
 		/// <summary>
 		/// Gets the <see cref="CharPosition"/> of the current token.
 		/// </summary>
-		public int At => Current?.Position ?? default;
+		public int At => Current.Position;
 
 		/// <summary>
 		/// Rewinds the <see cref="Stream"/> and reset current token.
@@ -115,7 +109,8 @@ namespace Lexxys.Tokenizer
 			if (filter == null)
 				throw new ArgumentNullException(nameof(filter));
 			var getter = _getter;
-			_getter = () => filter.GetNextToken(Stream, getter);
+			var stream = Stream;
+			_getter = () => filter.GetNextToken(stream, getter);
 			return this;
 		}
 
@@ -144,47 +139,21 @@ namespace Lexxys.Tokenizer
 		/// <summary>
 		/// Removes all filters from the filter chain.
 		/// </summary>
-		public void ResetFilter()
-		{
-			_getter = GetNextToken;
-		}
+		public void ResetFilter() => _getter = GetNextToken;
 
 		/// <summary>
 		/// Parses the next token and sets the value of <see cref="Current"/> to the parsed token.
 		/// </summary>
 		/// <returns>The parsed token value</returns>
-		public LexicalToken Next()
-		{
-			LexicalToken token = _getter();
-			if (token != null)
-			{
-				Current = token;
-			}
-			else if (Current == null || !Current.Is(LexicalTokenType.EOF))
-			{
-				int at = Stream.Position;
-				Current = new LexicalToken(LexicalTokenType.EOF, "", at, Stream.CultureInfo);
-			}
-			return Current;
-		}
+		public LexicalToken Next() => Current = _getter();
 
-		/// <summary>
-		/// Parses the next token and sets the value of <see cref="Current"/> to the parsed token.
-		/// </summary>
-		/// <returns>Returns false if end of the <see cref="Stream"/> found.</returns>
-		public virtual bool MoveNext()
-		{
-			return !Next().Is(LexicalTokenType.EOF);
-		}
+		public virtual bool MoveNext() => Next().TokenType != LexicalTokenType.EOF;
 
 		/// <summary>
 		/// Creates a new <see cref="T:SyntaxException"/>
 		/// </summary>
 		/// <returns></returns>
-		public SyntaxException SyntaxException()
-		{
-			return SyntaxException(null);
-		}
+		public SyntaxException SyntaxException() => SyntaxException(null);
 
 		/// <summary>
 		/// Creates a new <see cref="T:SyntaxException"/> with the specified <paramref name="message"/> and the position.
@@ -193,11 +162,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="at"></param>
 		/// <returns></returns>
 		public SyntaxException SyntaxException(string? message, int at = default)
-		{
-			if (at == default && Current != null)
-				at = Current.Position;
-			return Stream.SyntaxException(message, null, at);
-		}
+			=> Stream.SyntaxException(message, null, at == default ? Current.Position: at);
 
 		/// <summary>
 		/// Creates a new <see cref="T:SyntaxException"/> with the specified <paramref name="message"/>, position and <paramref name="fileName"/>.
@@ -207,11 +172,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="at"></param>
 		/// <returns></returns>
 		public SyntaxException SyntaxException(string? message, string? fileName, int at = default)
-		{
-			if (at == default && Current != null)
-				at = Current.Position;
-			return Stream.SyntaxException(message, fileName, at);
-		}
+			=> Stream.SyntaxException(message, fileName, at == default ? Current.Position: at);
 
 		/// <summary>
 		/// Parses the next token without affecting <see cref="Current"/> property.
@@ -241,75 +202,43 @@ namespace Lexxys.Tokenizer
 		}
 
 		private List<LexicalTokenRule> GetRules(char startingWith)
-		{
-			if (!IsAscii(startingWith))
-				return _extraRules;
-
-			List<LexicalTokenRule> rr = _asciiRules[startingWith];
-			return rr ?? EmptyList;
-		}
+			=> IsAscii(startingWith) ? _asciiRules[startingWith] ?? EmptyList: _extraRules;
 		private static readonly List<LexicalTokenRule> EmptyList = new List<LexicalTokenRule>();
 
-		private void AddRule(LexicalTokenRule rule)
+		private void SetRules(LexicalTokenRule[] rules)
 		{
-			if (_rules.Contains(rule))
-				return;
-
-			_rules.Add(rule);
-			bool extra = rule.HasExtraBeginning;
-
-			if (rule.BeginningChars != null)
+			foreach (var rule in rules)
 			{
-				foreach (char ch in rule.BeginningChars)
+				bool extra = rule.HasExtraBeginning;
+
+				if (rule.BeginningChars != null)
 				{
-					if (!IsAscii(ch))
+					foreach (char c in rule.BeginningChars)
 					{
-						extra = true;
-					}
-					else
-					{
-						List<LexicalTokenRule> r = _asciiRules[ch];
-						if (r == null)
-						{
-							r = new List<LexicalTokenRule>();
-							_asciiRules[ch] = r;
-						}
-						if (!r.Contains(rule))
-							r.Add(rule);
+						if (!IsAscii(c))
+							extra = true;
+						else
+							(_asciiRules[c] ??= new List<LexicalTokenRule>(4)).Add(rule);
 					}
 				}
-			}
-			else
-			{
-				extra = true;
-				for (int i = LowAscii; i <= HighAscii; ++i)
+				else
 				{
-					if (rule.TestBeginning((char)i))
+					extra = true;
+					for (char c = (char)LowAscii; c <= (char)HighAscii; ++c)
 					{
-						List<LexicalTokenRule> r = _asciiRules[i];
-						if (r == null)
-						{
-							r = new List<LexicalTokenRule>();
-							_asciiRules[i] = r;
-						}
-						if (!r.Contains(rule))
-							r.Add(rule);
+						if (rule.TestBeginning(c))
+							(_asciiRules[c] ??= new List<LexicalTokenRule>(4)).Add(rule);
 					}
 				}
+				if (extra)
+					_extraRules.Add(rule);
 			}
-			if (extra)
-				_extraRules.Add(rule);
 		}
 
-		private static bool IsAscii(char ch)
-		{
-			return ch <= '\x007F';
-		}
+		private static bool IsAscii(char ch) => ch <= HighAscii;
 
 		public override string ToString()
-		{
-			return String.Format(CultureInfo.InvariantCulture, "{0}; current: {1}", Stream.Position, Current);
-		}
+			=> String.Format(CultureInfo.InvariantCulture, "{0}; current: {1}", Stream.Position, Current);
 
 		#region IEnumerable Members
 

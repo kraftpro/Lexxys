@@ -25,11 +25,21 @@ namespace Lexxys
 			}
 			else
 			{
-				var ss = new SortedSet<DayOfWeek>(dayList.Where(o => o >= DayOfWeek.Sunday && o <= DayOfWeek.Saturday)).ToList();
-				DayList = ss.Count == 0 || ss.Count == 1 && ss[0] == DayOfWeek.Friday ? FridayOnly : ReadOnly.Wrap(ss);
+				List<DayOfWeek> ss = new SortedSet<DayOfWeek>(dayList.Where(o => o >= DayOfWeek.Sunday && o <= DayOfWeek.Saturday)).ToList();
+				DayList = ss.Count == 0 ? FridayOnly: ss.Count == 1 ? OneDayOnly[(int)ss[0]]: ReadOnly.Wrap(ss)!;
 			}
 		}
-		private static readonly IReadOnlyList<DayOfWeek> FridayOnly = ReadOnly.Wrap(new[] { DayOfWeek.Friday });
+		private static readonly IReadOnlyList<DayOfWeek>[] OneDayOnly = new[]
+		{
+			ReadOnly.Wrap(new[] { DayOfWeek.Sunday })!,
+			ReadOnly.Wrap(new[] { DayOfWeek.Monday })!,
+			ReadOnly.Wrap(new[] { DayOfWeek.Tuesday })!,
+			ReadOnly.Wrap(new[] { DayOfWeek.Wednesday })!,
+			ReadOnly.Wrap(new[] { DayOfWeek.Thursday })!,
+			ReadOnly.Wrap(new[] { DayOfWeek.Friday })!,
+			ReadOnly.Wrap(new[] { DayOfWeek.Saturday })!,
+		};
+		private static readonly IReadOnlyList<DayOfWeek> FridayOnly = OneDayOnly[(int)DayOfWeek.Friday];
 
 		public int WeekPeriod { get; }
 		public IReadOnlyList<DayOfWeek> DayList { get; }
@@ -163,7 +173,7 @@ namespace Lexxys
 
 		public new static WeeklySchedule FromJson(string json)
 		{
-			if (json is null || json.Length <= 0)
+			if (json is not { Length: > 0 })
 				throw new ArgumentNullException(nameof(json));
 
 			return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));

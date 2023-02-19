@@ -1,7 +1,12 @@
 ﻿using System;
 
+using Lexxys;
+
 namespace Lexxys.Testing;
 
+/// <summary>
+/// Implementation of pseudo-random numbers generator by DEK.
+/// </summary>
 public class RndKnuth: IRand
 {
 	/*    This program by D E Knuth is in the public domain and freely copyable
@@ -43,18 +48,18 @@ public class RndKnuth: IRand
 	int _seed;
 	readonly double[] ranf_arr_buf = new double[QUALITY];
 	int ranf_arr_ptr = ran_arr_started;								/* the next random fraction, or -1 */
-	public double[] ran_u = new double[KK];							/* the generator state */
+	private readonly double[] ran_u = new double[KK];				/* the generator state */
 
 	private readonly object syncObj = new object();
 
-	public RndKnuth(int seed = -1)
+	public RndKnuth(int seed = 0)
 	{
 		ran_arr_buf[KK] = -1;
 		ranf_arr_buf[KK] = -1;
 		Reset(seed);
 	}
 
-	public void InitLongArray(int[] aa, int n)						/* put n new random numbers in aa */
+	private void InitLongArray(int[] aa, int n)						/* put n new random numbers in aa */
 	{
 		int i, j;
 		for (j = 0; j < KK; j++)
@@ -106,16 +111,16 @@ public class RndKnuth: IRand
 
 	#endregion
 
-	public void Reset(int seed)
+	public void Reset(int seed = 0)
 	{
-		_seed = seed < 0 ? (int)(DateTime.Now.Ticks & 0x3FFFFFFF) : seed == 0 ? 314159 : (seed  & 0x3FFFFFFF);
+		_seed = seed <= 0 ? (int)(DateTime.Now.Ticks & 0x3FFFFFFF): (seed  & 0x3FFFFFFF);
 		ran_arr_ptr = ran_arr_started;
 		ranf_arr_ptr = ran_arr_started;
 		_integerInitialized = false;
 		_doubleInitialized = false;
 	}
 
-	public void StartInt(int seed)   /* do this before using ran_array */
+	private void StartInt(int seed)   /* do this before using ran_array */
 								//		  long seed;            /* selector for different streams */
 	{
 		_integerInitialized = true;
@@ -164,6 +169,7 @@ public class RndKnuth: IRand
 		ran_arr_ptr = ran_arr_started;
 	}
 
+	/// <inheritdoc/>
 	public int NextInt()
 	{
 		var x = ran_arr_buf[ran_arr_ptr++];
@@ -184,7 +190,7 @@ public class RndKnuth: IRand
 		return ran_arr_buf[0];
 	}
 
-	public void InitDoubleArray(double[] aa, int n) /* put n new random fractions in aa */
+	private void InitDoubleArray(double[] aa, int n) /* put n new random fractions in aa */
 	{
 	  int i, j;
 	  for (j=0;j<KK;j++)
@@ -197,7 +203,7 @@ public class RndKnuth: IRand
 			ran_u[i]=ModSum(aa[j-KK], ran_u[i-LL]);
 	}
 
-	public void StartDouble(int seed)
+	private void StartDouble(int seed)
 	{
 		_doubleInitialized = true;
 		int t, s, j;
@@ -245,6 +251,7 @@ public class RndKnuth: IRand
 		ranf_arr_ptr = ran_arr_started;
 	}
 
+	/// <inheritdoc/>
 	public double NextDouble()
 	{
 		var x = ranf_arr_buf[ranf_arr_ptr];
@@ -255,7 +262,7 @@ public class RndKnuth: IRand
 		return x;
 	}
 
-	double CycleDouble()
+	private double CycleDouble()
 	{
 		if (!_doubleInitialized)
 			StartDouble(_seed);
@@ -265,8 +272,12 @@ public class RndKnuth: IRand
 		return ranf_arr_buf[0];
 	}
 
+	/// <inheritdoc/>
 	public unsafe void NextBytes(byte[] buffer)
 	{
+		if (buffer is null)
+			throw new ArgumentNullException(nameof(buffer));
+
 		fixed (byte* b = buffer)
 		{
 			byte* p = b;

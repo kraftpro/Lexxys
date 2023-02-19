@@ -6,17 +6,14 @@
 //
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Text;
 using System.Threading;
 
 namespace Lexxys.Configuration
 {
-using System.Text;
-using Xml;
+	using Xml;
 
-	using static System.Net.Mime.MediaTypeNames;
-
-	class StringConfigurationSource : IXmlConfigurationSource
+	internal class StringConfigurationSource : IXmlConfigurationSource
 	{
 		private const string LogSource = "Lexxys.Configuration.StringConfigurationSource";
 		private List<string>? _includes;
@@ -103,7 +100,7 @@ using Xml;
 #pragma warning restore CA1031 // Do not catch general exception types
 		}
 
-		private IEnumerable<XmlLiteNode>? OptionHandler(string option, IReadOnlyCollection<string> parameters)
+		private IEnumerable<XmlLiteNode>? OptionHandler(TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters)
 		{
 			if (option != "include")
 			{
@@ -114,13 +111,11 @@ using Xml;
 		}
 
 		// string://name/txt?configuration_text
-		public static StringConfigurationSource? Create(Uri location, IReadOnlyCollection<string> parameters)
+		public static StringConfigurationSource? TryCreate(Uri? location, IReadOnlyCollection<string> parameters)
 		{
 			if (location == null || !location.IsAbsoluteUri || location.Scheme != "string")
 				return null;
-			if (location.Query.Length <= 1)
-				return null;
-			return new StringConfigurationSource(location, parameters);
+			return location.Query.Length <= 1 ? null: new StringConfigurationSource(location, parameters);
 		}
 	}
 }

@@ -7,9 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,7 +16,7 @@ namespace Lexxys
 	public class LocalFileStorageProvider: IBlobStorageProvider
 	{
 		private const int DefaultBufferSize = 81920;
-		private static readonly IReadOnlyCollection<string> _schemes = ReadOnly.Wrap(new[] { Uri.UriSchemeFile });
+		private static readonly IReadOnlyCollection<string> _schemes = ReadOnly.Wrap(new[] { Uri.UriSchemeFile })!;
 		public IReadOnlyCollection<string> SupportedSchemes => _schemes;
 
 		/// <inheritdoc />
@@ -76,7 +73,6 @@ namespace Lexxys
 
 			CreateDirectory(location);
 			using var file = File.Open(location, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.Write);
-
 			int bufferSize = stream.CanSeek ? (int)Math.Min(DefaultBufferSize, stream.Length): DefaultBufferSize;
 			await stream.CopyToAsync(file, bufferSize, cancellationToken).ConfigureAwait(false);
 		}
@@ -111,12 +107,10 @@ namespace Lexxys
 
 			CreateDirectory(destination);
 
-			using (var sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan))
-			using (var destinationStream = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan))
-			{
-				int bufferSize = sourceStream.CanSeek ? (int)Math.Min(DefaultBufferSize, sourceStream.Length): DefaultBufferSize;
-				await sourceStream.CopyToAsync(destinationStream, bufferSize, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-			}
+			using var sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan);
+			using var destinationStream = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan);
+			int bufferSize = sourceStream.CanSeek ? (int)Math.Min(DefaultBufferSize, sourceStream.Length): DefaultBufferSize;
+			await sourceStream.CopyToAsync(destinationStream, bufferSize, cancellationToken).ConfigureAwait(false);
 		}
 
 		private static void CreateDirectory(string location)

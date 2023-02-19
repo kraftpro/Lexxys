@@ -9,10 +9,18 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 
+using Microsoft.Extensions.Logging;
+
 namespace Lexxys
 {
 	public static class ExceptionExtensions
 	{
+		public static T LogError<T>(this T exception) where T: Exception
+		{
+			Lxx.Log?.Error(null, exception);
+			return exception;
+		}
+
 		public static T Add<T>(this T exception, string name, object? value) where T: Exception
 		{
 			if (exception == null)
@@ -36,8 +44,7 @@ namespace Lexxys
 			return exception;
 		}
 
-		public static T Add<T>(this T exception, IEnumerable<(string Name, object Value)>items)
-			where T: Exception
+		public static T Add<T>(this T exception, IEnumerable<(string Name, object Value)>items) where T: Exception
 		{
 			if (items != null)
 			{
@@ -49,7 +56,7 @@ namespace Lexxys
 			return exception;
 		}
 
-		public static bool IsCriticalException(this Exception exception)
+		public static bool IsCriticalException(this Exception? exception)
 		{
 			if (exception == null)
 				return false;
@@ -68,10 +75,11 @@ namespace Lexxys
 			if (exception == null)
 				return exception!;
 
-			while (exception.InnerException != null && (exception is TypeInitializationException || exception is TargetInvocationException || (exception as AggregateException)?.InnerExceptions.Count == 1))
+			while (exception.InnerException != null && (exception is TypeInitializationException or TargetInvocationException or AggregateException { InnerExceptions.Count: 1 }))
 			{
 				exception = exception.InnerException;
 			}
+
 			return exception;
 		}
 	}

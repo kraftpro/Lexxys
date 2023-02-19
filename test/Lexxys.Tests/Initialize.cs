@@ -16,7 +16,7 @@ namespace Lexxys.Tests
 		[AssemblyInitialize]
 		public static void AssemblyInitialize(TestContext context)
 		{
-			Statics.Register(o => o
+			Statics.AddServices(o => o
 				.AddConfigService());
 		}
 	}

@@ -50,7 +50,7 @@ namespace Lexxys.Xml
 		{
 		}
 
-		public XmlLiteNode(string name, string? value, IEqualityComparer<string>? comparer, IEnumerable<KeyValuePair<string, string>>? attributes, IEnumerable<XmlLiteNode>? descendants)
+		public XmlLiteNode(string name, string? value, IEqualityComparer<string?>? comparer, IEnumerable<KeyValuePair<string, string>>? attributes, IEnumerable<XmlLiteNode>? descendants)
 		{
 			if (String.IsNullOrEmpty(name))
 				throw new ArgumentNullException(nameof(name));
@@ -108,7 +108,21 @@ namespace Lexxys.Xml
 			}
 		}
 
-		private XmlLiteNode(XmlReader reader, IEqualityComparer<string>? comparer)
+		private XmlLiteNode(string name, string? value, IEqualityComparer<string?>? comparer, KeyValuePair<string, string>[]? attributes, XmlLiteNode[]? descendants)
+		{
+			if (name is not { Length: >0 })
+				throw new ArgumentNullException(nameof(name));
+
+			Name = name;
+			Value = value ?? String.Empty;
+			Comparer = comparer ?? StringComparer.Ordinal;
+			_attributes = attributes ?? Array.Empty<KeyValuePair<string, string>>();
+			Attributes = ReadOnly.ValueWrap(_attributes);
+			_elements = descendants ?? Array.Empty<XmlLiteNode>();
+			Elements = ReadOnly.ValueWrap(_elements);
+		}
+
+		private XmlLiteNode(XmlReader reader, IEqualityComparer<string?>? comparer)
 		{
 			if (reader is null)
 				throw new ArgumentNullException(nameof(reader));
@@ -232,7 +246,7 @@ namespace Lexxys.Xml
 		}
 
 #if USE_XML_DOC
-		public XmlLiteNode(XPathNavigator node, IEqualityComparer<string>? comparer = null)
+		public XmlLiteNode(XPathNavigator node, IEqualityComparer<string?>? comparer = null)
 		{
 			if (node == null)
 				throw new ArgumentNullException(nameof(node));
@@ -355,7 +369,7 @@ namespace Lexxys.Xml
 			}
 		}
 
-		public XmlLiteNode(XmlNode node, IEqualityComparer<string>? comparer = null)
+		public XmlLiteNode(XmlNode node, IEqualityComparer<string?>? comparer = null)
 		{
 			if (node == null)
 				throw new ArgumentNullException(nameof(node));
@@ -484,7 +498,7 @@ namespace Lexxys.Xml
 		/// </summary>
 		/// <param name="name">Name of subnode</param>
 		/// <param name="comparer">Equality comparer to compare nodes names</param>
-		public IEnumerable<XmlLiteNode> Where(string? name, IEqualityComparer<string> comparer) => _elements.Where(o => comparer.Equals(o.Name, name));
+		public IEnumerable<XmlLiteNode> Where(string? name, IEqualityComparer<string?> comparer) => _elements.Where(o => comparer.Equals(o.Name, name));
 
 		/// <summary>
 		/// Filters node node elements based on a <paramref name="predicate"/>.
@@ -505,7 +519,7 @@ namespace Lexxys.Xml
 		/// <param name="name">Name of subnode</param>
 		/// <param name="comparer">Equality comparer to compare nodes names</param>
 		/// <returns></returns>
-		public XmlLiteNode Element(string? name, IEqualityComparer<string> comparer) => FirstOrDefault(name, comparer) ?? Empty;
+		public XmlLiteNode Element(string? name, IEqualityComparer<string?> comparer) => FirstOrDefault(name, comparer) ?? Empty;
 
 		/// <summary>
 		/// Returns the first node element that satisfies a condition or or <see cref="Empty"/>.
@@ -527,7 +541,7 @@ namespace Lexxys.Xml
 		/// <param name="name">Name of subnode</param>
 		/// <param name="comparer">Equality comparer to compare nodes names</param>
 		/// <returns></returns>
-		public XmlLiteNode? FirstOrDefault(string? name, IEqualityComparer<string> comparer)
+		public XmlLiteNode? FirstOrDefault(string? name, IEqualityComparer<string?> comparer)
 		{
 			if (comparer == null)
 				throw new ArgumentNullException(nameof(comparer));
@@ -561,7 +575,7 @@ namespace Lexxys.Xml
 		/// <summary>
 		/// String comparer used when finding a node.
 		/// </summary>
-		public IEqualityComparer<string> Comparer { get; }
+		public IEqualityComparer<string?> Comparer { get; }
 
 		/// <summary>
 		/// Convert this node to the specified value type.
@@ -585,7 +599,7 @@ namespace Lexxys.Xml
 		/// <param name="returnType"></param>
 		/// <exception cref="FormatException"></exception>
 		/// <returns></returns>
-		public object AsObject(Type returnType) => XmlTools.GetValue(this, returnType);
+		public object? AsObject(Type returnType) => XmlTools.GetValue(this, returnType);
 
 		/// <summary>
 		/// Eveluates the specified <paramref name="action"/> over this <see cref="XmlLiteNode"/> node.
@@ -698,18 +712,18 @@ namespace Lexxys.Xml
 
 		IEnumerable<IXmlReadOnlyNode> IXmlReadOnlyNode.Where(string? name) => Where(name);
 
-		IEnumerable<IXmlReadOnlyNode> IXmlReadOnlyNode.Where(string? name, IEqualityComparer<string> comparer) => Where(name, comparer);
+		IEnumerable<IXmlReadOnlyNode> IXmlReadOnlyNode.Where(string? name, IEqualityComparer<string?> comparer) => Where(name, comparer);
 		IEnumerable<IXmlReadOnlyNode> IXmlReadOnlyNode.Where(Func<IXmlReadOnlyNode, bool> predicate) => Where(predicate);
 
 		IXmlReadOnlyNode IXmlReadOnlyNode.Element(string? name) => Element(name);
 
-		IXmlReadOnlyNode IXmlReadOnlyNode.Element(string? name, IEqualityComparer<string> comparer) => Element(name, comparer);
+		IXmlReadOnlyNode IXmlReadOnlyNode.Element(string? name, IEqualityComparer<string?> comparer) => Element(name, comparer);
 
 		IXmlReadOnlyNode IXmlReadOnlyNode.Element(Func<IXmlReadOnlyNode, bool> predicate) => Element(predicate);
 
 		IXmlReadOnlyNode? IXmlReadOnlyNode.FirstOrDefault(string? name) => FirstOrDefault(name);
 
-		IXmlReadOnlyNode? IXmlReadOnlyNode.FirstOrDefault(string? name, IEqualityComparer<string> comparer) => FirstOrDefault(name, comparer);
+		IXmlReadOnlyNode? IXmlReadOnlyNode.FirstOrDefault(string? name, IEqualityComparer<string?> comparer) => FirstOrDefault(name, comparer);
 
 		IXmlReadOnlyNode? IXmlReadOnlyNode.FirstOrDefault(Func<IXmlReadOnlyNode, bool> predicate) => FirstOrDefault(predicate);
 
@@ -767,7 +781,7 @@ namespace Lexxys.Xml
 		public override bool Equals(object? obj) => obj is XmlLiteNode that && Equals(this, that);
 
 #if USE_XML_DOC
-		public static XmlLiteNode FromXml(XPathNavigator node, IEqualityComparer<string>? comparer = null)
+		public static XmlLiteNode FromXml(XPathNavigator node, IEqualityComparer<string?>? comparer = null)
 		{
 			if (node is null)
 				throw new ArgumentNullException(nameof(node));
@@ -776,7 +790,7 @@ namespace Lexxys.Xml
 			return new XmlLiteNode(node, comparer);
 		}
 
-		public static XmlLiteNode FromXml(XmlNode node, IEqualityComparer<string>? comparer = null)
+		public static XmlLiteNode FromXml(XmlNode node, IEqualityComparer<string?>? comparer = null)
 		{
 			if (node is null)
 				throw new ArgumentNullException(nameof(node));
@@ -786,7 +800,7 @@ namespace Lexxys.Xml
 		}
 #endif
 
-		public static List<XmlLiteNode> FromXmlFragment(XmlReader reader, IEqualityComparer<string>? comparer = null)
+		public static List<XmlLiteNode> FromXmlFragment(XmlReader reader, IEqualityComparer<string?>? comparer = null)
 		{
 			if (reader is null)
 				throw new ArgumentNullException(nameof(reader));
@@ -802,7 +816,7 @@ namespace Lexxys.Xml
 
 		public static List<XmlLiteNode> FromXmlFragment(XmlReader reader, bool ignoreCase = false) => FromXmlFragment(reader, ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal);
 
-		public static List<XmlLiteNode> FromXmlFragment(string value, IEqualityComparer<string>? comparer = null)
+		public static List<XmlLiteNode> FromXmlFragment(string value, IEqualityComparer<string?>? comparer = null)
 		{
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
@@ -814,7 +828,7 @@ namespace Lexxys.Xml
 
 		public static List<XmlLiteNode> FromXmlFragment(string value, bool ignoreCase) => FromXmlFragment(value, ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal);
 
-		public static XmlLiteNode FromXml(XmlReader reader, IEqualityComparer<string>? comparer = null)
+		public static XmlLiteNode FromXml(XmlReader reader, IEqualityComparer<string?>? comparer = null)
 		{
 			if (reader is null)
 				throw new ArgumentNullException(nameof(reader));
@@ -823,7 +837,7 @@ namespace Lexxys.Xml
 
 		public static XmlLiteNode FromXml(XmlReader reader, bool ignoreCase = false) => FromXml(reader, ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal);
 
-		public static XmlLiteNode FromXml(string value, IEqualityComparer<string> comparer)
+		public static XmlLiteNode FromXml(string value, IEqualityComparer<string?> comparer)
 		{
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));

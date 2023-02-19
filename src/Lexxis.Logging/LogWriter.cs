@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 
 namespace Lexxys.Logging;
-using Microsoft.Extensions.DependencyInjection;
 
 using Xml;
 
@@ -18,6 +17,7 @@ public abstract class LogWriter: ILogWriter
 		"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}: {Message}",
 		"  ",
 		". ");
+	private const string LogSource = "Lexxys.Logging.LogWriter";
 
 	private readonly LoggingRule _rule;
 
@@ -55,7 +55,7 @@ public abstract class LogWriter: ILogWriter
 		if (className != null && className.Length > 0)
 			return CreateLogWriter(className, name, node);
 
-		SystemLog.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className));
+		SystemLog.WriteErrorMessage(LogSource, SR.LOG_CannotCreateLogWriter(name, className));
 		return null;
 	}
 
@@ -70,11 +70,11 @@ public abstract class LogWriter: ILogWriter
 				writer = Factory.TryGetConstructor(type, new[] { typeof(string), typeof(XmlLiteNode) })?
 					.Invoke(new object?[] { name, node }) as LogWriter;
 			if (writer == null)
-				SystemLog.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className));
+				SystemLog.WriteErrorMessage(LogSource, SR.LOG_CannotCreateLogWriter(name, className));
 		}
 		catch (Exception e)
 		{
-			SystemLog.WriteErrorMessage("Lexxys.Logging.LoggingContext", SR.LOG_CannotCreateLogWriter(name, className, e));
+			SystemLog.WriteErrorMessage(LogSource, SR.LOG_CannotCreateLogWriter(name, className, e));
 		}
 		return writer;
 	}

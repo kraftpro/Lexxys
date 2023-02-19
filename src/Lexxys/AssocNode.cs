@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml;
-using System.Globalization;
 
 namespace Lexxys
 {
@@ -89,8 +88,7 @@ namespace Lexxys
 			else if (_forwards.Contains(node))
 				return false;
 			_forwards.Add(node);
-			if (node._backwards == null)
-				node._backwards = new List<AssocNode>();
+			node._backwards ??= new List<AssocNode>();
 			node._backwards.Add(this);
 			return true;
 		}
@@ -105,8 +103,7 @@ namespace Lexxys
 			else if (_backwards.Contains(node))
 				return false;
 			_backwards.Add(node);
-			if (node._forwards == null)
-				node._forwards = new List<AssocNode>();
+			node._forwards ??= new List<AssocNode>();
 			node._forwards.Add(this);
 			return true;
 		}
@@ -163,12 +160,7 @@ namespace Lexxys
 			_backwardsBuilt = false;
 		}
 
-		public void Detach()
-		{
-			Detach(false);
-		}
-
-		public void Detach(bool temporary)
+		public void Detach(bool temporary = false)
 		{
 			if (_forwards != null)
 			{

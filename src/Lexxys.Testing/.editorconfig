@@ -5,3 +5,12 @@ dotnet_diagnostic.CS1591.severity = suggestion
 
 # IDE0090: Use 'new(...)'
 dotnet_diagnostic.IDE0090.severity = none
+
+# CA1002: Do not expose generic lists
+dotnet_diagnostic.CA1002.severity = suggestion
+
+# Default severity for analyzer diagnostics with category 'Usage'
+dotnet_analyzer_diagnostic.category-Usage.severity = suggestion
+
+# CA2225: Operator overloads have named alternates
+dotnet_diagnostic.CA2225.severity = suggestion

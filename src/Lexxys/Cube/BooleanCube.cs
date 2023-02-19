@@ -26,10 +26,10 @@ namespace Lexxys.Cube
 		public BooleanCube(BitArray bits, int dimension)
 		{
 			if (bits == null)
-				throw EX.ArgumentNull(nameof(bits));
+				throw new ArgumentNullException(nameof(bits));
 			int n = 1 << dimension;
 			if (n == 0)
-				throw EX.ArgumentOutOfRange(nameof(dimension), dimension);
+				throw new ArgumentOutOfRangeException(nameof(dimension), dimension, null);
 			_table = new Table();
 			_dimension = dimension;
 			for (int i = 0; i < n; ++i)
@@ -82,10 +82,11 @@ namespace Lexxys.Cube
 		{
 			if (arguments is null)
 				throw new ArgumentNullException(nameof(arguments));
+			if (arguments.Length != Dimension)
+				throw new ArgumentOutOfRangeException(nameof(arguments), arguments.Length, null);
 
 			var sb = new StringBuilder();
-			if (arguments.Length != Dimension)
-				throw EX.ArgumentOutOfRange("arguments.Length", arguments.Length, Dimension);
+
 			foreach (BooleanCubeNode x in _table)
 			{
 				char delimiter = '|';
@@ -111,7 +112,7 @@ namespace Lexxys.Cube
 			if (arguments is null)
 				throw new ArgumentNullException(nameof(arguments));
 			if (arguments.Length != Dimension)
-				throw EX.ArgumentOutOfRange("arguments.Length", arguments.Length, Dimension);
+				throw new ArgumentOutOfRangeException(nameof(arguments), arguments.Length, null);
 			if (Count == (1 << Dimension))
 				return "TRUE";
 			if (Count == 0)

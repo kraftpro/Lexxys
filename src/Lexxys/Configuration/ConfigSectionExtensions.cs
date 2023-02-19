@@ -11,16 +11,15 @@ namespace Lexxys
 {
 	using Configuration;
 
-	public static class IConfigSectionExtenstions
+	using Microsoft.Extensions.Options;
+
+	public static class ConfigSectionExtensions
 	{
 		public static IValue<T> GetValue<T>(this IConfigSection section)
-			=> (section ?? throw new ArgumentNullException(nameof(section))).GetValue<T>(null, null);
+			=> (section ?? throw new ArgumentNullException(nameof(section))).GetValue<T>(null);
 
 		public static IValue<T> GetValue<T>(this IConfigSection section, Func<T> defaultValue)
-			=> (section ?? throw new ArgumentNullException(nameof(section))).GetValue<T>(null, defaultValue);
-
-		public static IValue<IReadOnlyList<T>> GetCollection<T>(this IConfigSection section)
-			=> (section ?? throw new ArgumentNullException(nameof(section))).GetCollection<T>(null);
+			=> (section ?? throw new ArgumentNullException(nameof(section))).GetValue(null, defaultValue);
 
 		public static IValue<T> GetValue<T>(this IConfigSection config, string key, T defaultValue)
 		{
@@ -39,6 +38,51 @@ namespace Lexxys
 			return def || value is null ? defaultValue :
 				value.CompareTo(minValue) <= 0 ? minValue :
 				value.CompareTo(maxValue) >= 0 ? maxValue : value;
+		}
+
+		public static IValue<IReadOnlyList<T>> GetCollection<T>(this IConfigSection section)
+			=> (section ?? throw new ArgumentNullException(nameof(section))).GetCollection<T>(null);
+
+		public static IOptions<T> GetOptions<T>(this IConfigSection config, string key, Func<T>? defaultValue = null) where T: class
+		{
+			if (config == null)
+				throw new ArgumentNullException(nameof(config));
+			return new OptOut<T>(() => config.GetValue(key, defaultValue).Value);
+		}
+
+		public static IOptions<T> GetOptions<T>(this IConfigSection config) where T : class
+		{
+			if (config == null)
+				throw new ArgumentNullException(nameof(config));
+			return new OptOut<T>(() => config.GetValue<T>(null).Value);
+		}
+
+		public static IOptions<T> GetOptions<T>(this IConfigSection config, Func<T>? defaultValue) where T : class
+		{
+			if (config == null)
+				throw new ArgumentNullException(nameof(config));
+			return new OptOut<T>(() => config.GetValue(null, defaultValue).Value);
+		}
+
+		public static IOptions<T> GetOptions<T>(this IConfigSection config, string key, T defaultValue) where T : class
+		{
+			if (config == null)
+				throw new ArgumentNullException(nameof(config));
+			return new OptOut<T>(() => config.GetValue(key, () => defaultValue).Value);
+		}
+
+		public static IOptions<IReadOnlyList<T>> GetOptionCollections<T>(this IConfigSection config, string key) where T : class
+		{
+			if (config == null)
+				throw new ArgumentNullException(nameof(config));
+			return new OptOut<IReadOnlyList<T>>(() => config.GetCollection<T>(key).Value);
+		}
+
+		public static IOptions<IReadOnlyList<T>> GetOptionCollections<T>(this IConfigSection config) where T : class
+		{
+			if (config == null)
+				throw new ArgumentNullException(nameof(config));
+			return new OptOut<IReadOnlyList<T>>(() => config.GetCollection<T>(null).Value);
 		}
 	}
 }

@@ -21,9 +21,9 @@ namespace Lexxys.Crypting
 		public Decryptor(IDecryptorAlgorythm algorithm)
 		{
 			if (algorithm == null)
-				throw EX.ArgumentNull(nameof(algorithm));
+				throw new ArgumentNullException(nameof(algorithm));
 			if (!algorithm.SupportsStream && !algorithm.SupportsBlock)
-				throw EX.ArgumentOutOfRange(nameof(algorithm), algorithm);
+				throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null);
 			_da = algorithm;
 		}
 
@@ -35,9 +35,9 @@ namespace Lexxys.Crypting
 		public void Decrypt(Stream text, Stream bits)
 		{
 			if (text == null)
-				throw EX.ArgumentNull(nameof(text));
+				throw new ArgumentNullException(nameof(text));
 			if (bits == null)
-				throw EX.ArgumentNull(nameof(bits));
+				throw new ArgumentNullException(nameof(bits));
 			if (_da.SupportsStream)
 			{
 				_da.DecryptStream(text, bits);
@@ -80,7 +80,7 @@ namespace Lexxys.Crypting
 		public byte[] Decrypt(Stream bits)
 		{
 			if (bits == null)
-				throw EX.ArgumentNull(nameof(bits));
+				throw new ArgumentNullException(nameof(bits));
 			using var text = new MemoryStream();
 			_da.DecryptStream(text, bits);
 			return text.GetBuffer();
@@ -88,19 +88,19 @@ namespace Lexxys.Crypting
 		public byte[] Decrypt(byte[] bits)
 		{
 			if (bits == null)
-				throw EX.ArgumentNull(nameof(bits));
+				throw new ArgumentNullException(nameof(bits));
 			return Decrypt(bits, 0, bits.Length);
 		}
 		public string DecryptString(byte[] bits)
 		{
 			if (bits == null)
-				throw EX.ArgumentNull(nameof(bits));
+				throw new ArgumentNullException(nameof(bits));
 			return Encoding.Unicode.GetString(Decrypt(bits));
 		}
 		public string DecryptString(byte[] bits, Encoding encoding)
 		{
 			if (bits == null)
-				throw EX.ArgumentNull(nameof(bits));
+				throw new ArgumentNullException(nameof(bits));
 			if (encoding is null)
 				throw new ArgumentNullException(nameof(encoding));
 			return encoding.GetString(Decrypt(bits));
@@ -108,11 +108,11 @@ namespace Lexxys.Crypting
 		public byte[] Decrypt(byte[] bits, int offset, int length)
 		{
 			if (bits == null)
-				throw EX.ArgumentNull(nameof(bits));
+				throw new ArgumentNullException(nameof(bits));
 			if (offset < 0 || offset >= bits.Length)
-				throw EX.ArgumentOutOfRange(nameof(offset), offset);
+				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 			if (length > bits.Length - offset)
-				throw EX.ArgumentOutOfRange(nameof(length), length);
+				throw new ArgumentOutOfRangeException(nameof(length), length, null);
 
 			if (_da.SupportsBlock && (_da.BlockSize >= length || _da.BlockSize == 0))
 				return _da.Decrypt(bits, offset, length);

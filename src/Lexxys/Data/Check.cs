@@ -234,9 +234,9 @@ namespace Lexxys.Data
 		public static bool UniqueField(IDataContext dc, string value, string table, string field, string? keyField = null, int keyValue = 0)
 		{
 			if (table == null || table.Length == 0)
-				throw EX.ArgumentNull(nameof(table));
+				throw new ArgumentNullException(nameof(table));
 			if (field == null || field.Length == 0)
-				throw EX.ArgumentNull(nameof(field));
+				throw new ArgumentNullException(nameof(field));
 
 			string query = "select top 1 1 from " + Dc.Name(table) + " where " + Dc.Name(field) + Dc.Equal(value);
 			if (keyField != null)
@@ -248,9 +248,9 @@ namespace Lexxys.Data
 		public static bool UniqueField(IDataContext dc, int value, string table, string field, string? keyField = null, int keyValue = 0)
 		{
 			if (table == null || table.Length == 0)
-				throw EX.ArgumentNull(nameof(table));
+				throw new ArgumentNullException(nameof(table));
 			if (field == null || field.Length == 0)
-				throw EX.ArgumentNull(nameof(field));
+				throw new ArgumentNullException(nameof(field));
 
 			string query = "select top 1 1 from " + Dc.Name(table) + " where " + Dc.Name(field) + Dc.Equal(value);
 			if (keyField != null)

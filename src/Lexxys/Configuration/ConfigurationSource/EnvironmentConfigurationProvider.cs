@@ -6,9 +6,6 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Lexxys.Configuration
 {
@@ -27,7 +24,7 @@ namespace Lexxys.Configuration
 		public object? GetValue(string reference, Type returnType)
 		{
 			if (reference == null)
-				return null;
+				throw new ArgumentNullException(nameof(reference));
 			if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
 				reference = reference.Substring(5);
 			return XmlTools.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out var result) ? result: null;
@@ -36,7 +33,8 @@ namespace Lexxys.Configuration
 		public IReadOnlyList<T> GetList<T>(string reference)
 		{
 			if (reference == null)
-				return Array.Empty<T>();
+				throw new ArgumentNullException(nameof(reference));
+
 			if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
 				reference = reference.Substring(5);
 			if (XmlTools.TryGetValue<T>(Environment.GetEnvironmentVariable(reference), out var value))

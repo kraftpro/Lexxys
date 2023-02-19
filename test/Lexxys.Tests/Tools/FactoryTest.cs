@@ -25,10 +25,12 @@ namespace Lexxys.Tests.Tools
 		{
 		}
 
-		public FactoryTest()
+		static FactoryTest()
 		{
 			var x = Config.AddConfiguration("application.config.txt");
-			Assert.IsNotNull(x);
+			if (!x)
+				Debugger.Break();
+			Assert.IsTrue(x);
 			var y = Config.Current.GetCollection<Lexxys.Xml.XmlLiteNode>(Lexxys.Factory.ConfigurationSynonyms);
 			if (y.Value is null || y.Value.Count == 0)
 				Debugger.Break();

@@ -108,22 +108,6 @@ namespace Lexxys.Tests.Tokenizer
 		}
 
 		/// <summary>
-		///A test for CalculateForward
-		///</summary>
-		[TestMethod()]
-		public void CalculateForwardTest()
-		{
-			//PrivateObject param0 = null; // TODO: Initialize to an appropriate value
-			//CharStream_Accessor target = new CharStream_Accessor(param0); // TODO: Initialize to an appropriate value
-			//int offset = 0; // TODO: Initialize to an appropriate value
-			//CharPosition expected = new CharPosition(); // TODO: Initialize to an appropriate value
-			//CharPosition actual;
-			//actual = target.CalculateForward(offset);
-			//Assert.AreEqual(expected, actual);
-			Assert.Inconclusive("Verify the correctness of this test method.");
-		}
-
-		/// <summary>
 		///A test for Clone
 		///</summary>
 		[TestMethod()]
@@ -309,22 +293,22 @@ namespace Lexxys.Tests.Tokenizer
 			}
 		}
 
-		/// <summary>
-		///A test for Match
-		///</summary>
-		[TestMethod()]
-		public void MatchTest()
-		{
-			//CharStream charStream = null; // TODO: Initialize to an appropriate value
-			//CharStream target = new CharStream(charStream); // TODO: Initialize to an appropriate value
-			//Regex regex = null; // TODO: Initialize to an appropriate value
-			//int offset = 0; // TODO: Initialize to an appropriate value
-			//Match expected = null; // TODO: Initialize to an appropriate value
-			//Match actual;
-			//actual = target.Match(regex, offset);
-			//Assert.AreEqual(expected, actual);
-			Assert.Inconclusive("Verify the correctness of this test method.");
-		}
+		///// <summary>
+		/////A test for Match
+		/////</summary>
+		//[TestMethod()]
+		//public void MatchTest()
+		//{
+		//	//CharStream charStream = null; // TODO: Initialize to an appropriate value
+		//	//CharStream target = new CharStream(charStream); // TODO: Initialize to an appropriate value
+		//	//Regex regex = null; // TODO: Initialize to an appropriate value
+		//	//int offset = 0; // TODO: Initialize to an appropriate value
+		//	//Match expected = null; // TODO: Initialize to an appropriate value
+		//	//Match actual;
+		//	//actual = target.Match(regex, offset);
+		//	//Assert.AreEqual(expected, actual);
+		//	Assert.Inconclusive("Verify the correctness of this test method.");
+		//}
 
 		/// <summary>
 		///A test for Rewind
@@ -356,24 +340,6 @@ namespace Lexxys.Tests.Tokenizer
 				cs.Move(expected.Position);
 				Assert.AreEqual(expected, cs.GetCharPosition());
 			}
-		}
-
-		/// <summary>
-		///A test for StartsWidth
-		///</summary>
-		[TestMethod()]
-		public void StartsWidthTest()
-		{
-			//CharStream charStream = null; // TODO: Initialize to an appropriate value
-			//CharStream target = new CharStream(charStream); // TODO: Initialize to an appropriate value
-			//string value = string.Empty; // TODO: Initialize to an appropriate value
-			//int offset = 0; // TODO: Initialize to an appropriate value
-			//StringComparison comparision = new StringComparison(); // TODO: Initialize to an appropriate value
-			//bool expected = false; // TODO: Initialize to an appropriate value
-			//bool actual;
-			//actual = target.StartsWidth(value, offset, comparision);
-			//Assert.AreEqual(expected, actual);
-			Assert.Inconclusive("Verify the correctness of this test method.");
 		}
 
 		/// <summary>

@@ -8,7 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -20,6 +20,8 @@ using System.Xml;
 
 namespace Lexxys
 {
+	using System.Xml.Linq;
+
 	using Xml;
 
 	/// <summary>
@@ -94,7 +96,7 @@ namespace Lexxys
 		private string ForceName(string name)
 		{
 			if (((int)NamingRule & 8) != 0)
-				name = Rename(name);
+				name = Rename(name)!;
 			return XmlConvert.EncodeName(name);
 		}
 
@@ -108,7 +110,8 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">The name to rename</param>
 		/// <returns>Renamed value</returns>
-		public string Rename(string value)
+		[return: NotNullIfNotNull(nameof(value))]
+		public string? Rename(string? value)
 		{
 			return Strings.ToNamingRule(value, NamingRule);
 		}
@@ -125,7 +128,7 @@ namespace Lexxys
 		/// <returns><see cref="XmlBuilder"/></returns>
 		public XmlBuilder Element(string name)
 		{
-			if (name == null || name.Length == 0)
+			if (name is not { Length: >0 })
 				throw new ArgumentNullException(nameof(name));
 			if (_state == State.Attribute)
 				Text("\"\">");
@@ -162,7 +165,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public XmlBuilder Attrib(string name)
 		{
-			if (name == null || name.Length <= 0)
+			if (name is not { Length: >0 })
 				throw new ArgumentNullException(nameof(name));
 			if (_state == State.Value)
 				throw new InvalidOperationException("Trying to add attribute without element.");
@@ -177,7 +180,7 @@ namespace Lexxys
 
 		private XmlBuilder AppendItem(string name, string? value)
 		{
-			if (name == null || name.Length == 0)
+			if (name is not { Length: >0 })
 				throw new ArgumentNullException(nameof(name));
 			var s = ForceName(name);
 			if (_state == State.Value)
@@ -1079,11 +1082,11 @@ namespace Lexxys
 
 			if (value is IEnumerable enumerable)
 			{
-				string itemName = Rename("Item");
+				var itemName = Rename("Item")!;
 				foreach (var item in enumerable)
 				{
 					if (item is IDumpXml dumpXml)
-						Element(dumpXml.XmlElementName ?? itemName).Value(dumpXml).End();
+						Element(dumpXml.XmlElementName).Value(dumpXml).End();
 					else
 						Element(itemName).Value(item, elements).End();
 				}
@@ -1191,7 +1194,7 @@ namespace Lexxys
 				try
 				{
 					object? v = item.GetValue(value);
-					items.Add(KeyValue.Create(item.Name, v));
+					items.Add(new KeyValuePair<string, object?>(item.Name, v));
 				}
 				catch
 				{
@@ -1209,7 +1212,7 @@ namespace Lexxys
 					try
 					{
 						object? v = item.GetValue(value);
-						items.Add(KeyValue.Create(item.Name, v));
+						items.Add(new KeyValuePair<string, object?>(item.Name, v));
 					}
 					catch
 					{
@@ -1222,8 +1225,6 @@ namespace Lexxys
 				for (int i = 0; i < items.Count; ++i)
 				{
 					var item = items[i];
-					if (item.Key == null)
-						continue;
 					AppendElement(PreferName(item.Key), item.Value, elements);
 				}
 			}
@@ -1246,8 +1247,7 @@ namespace Lexxys
 				}
 				foreach (var item in rest)
 				{
-					if (item.Key != null)
-						AppendElement(PreferName(item.Key), item.Value, false);
+					AppendElement(PreferName(item.Key), item.Value, false);
 				}
 			}
 		}
@@ -1265,7 +1265,7 @@ namespace Lexxys
 	/// <summary>
 	/// Represents <see cref="XmlBuilder"/> that uses <see cref="StringBuilder"/> to write an XML stream.
 	/// </summary>
-	[DebuggerDisplay("{" + nameof(_buffer) + "}")]
+	[DebuggerDisplay($"{{{nameof(_buffer)}}}")]
 	public class XmlStringBuilder: XmlBuilder
 	{
 		private readonly StringBuilder _buffer;

@@ -84,7 +84,7 @@ namespace Lexxys
 			return new ValidationResults(ReadOnly.ValueWrap(new[] { value }));
 		}
 
-		public static ValidationResults Create(params ValidationResults[]? value)
+		public static ValidationResults Create(params ValidationResults?[]? value)
 		{
 			if (value == null || value.Length == 0)
 				return Empty;
@@ -93,20 +93,18 @@ namespace Lexxys
 			for (int i = 0; i < value.Length; ++i)
 			{
 				var item = value[i];
-				if (item != null && !item.Success)
-				{
-					if (items == null)
-						items = new List<ValidationResultsItem>(item._items);
-					else
-						items.AddRange(item._items);
-				}
+				if (item == null || item.Success) continue;
+				if (items == null)
+					items = new List<ValidationResultsItem>(item._items);
+				else
+					items.AddRange(item._items);
 			}
 
 			return items == null ? Empty:
 				new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
-		public static ValidationResults Create(IEnumerable<ValidationResults>? value)
+		public static ValidationResults Create(IEnumerable<ValidationResults?>? value)
 		{
 			if (value == null)
 				return Empty;
@@ -114,13 +112,11 @@ namespace Lexxys
 			List<ValidationResultsItem>? items = null;
 			foreach (var item in value)
 			{
-				if (item != null && !item.Success)
-				{
-					if (items == null)
-						items = new List<ValidationResultsItem>(item._items);
-					else
-						items.AddRange(item._items);
-				}
+				if (item == null || item.Success) continue;
+				if (items == null)
+					items = new List<ValidationResultsItem>(item._items);
+				else
+					items.AddRange(item._items);
 			}
 			return items == null ? Empty: new ValidationResults(ReadOnly.ValueWrap(items));
 		}
@@ -180,17 +176,13 @@ namespace Lexxys
 				return value;
 
 			var items = new ValidationResultsItem[_items.Count + value._items.Count];
-			for (int i = 0; i < _items.Count; ++i)
-			{
-
-			}
 			_items.CopyTo(items, 0);
 			value._items.CopyTo(items, _items.Count);
 
 			return new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
-		public ValidationResults Add(ValidationResultsItem value)
+		public ValidationResults Add(ValidationResultsItem? value)
 		{
 			if (value == null)
 				return this;
@@ -241,8 +233,7 @@ namespace Lexxys
 
 			for (int i = 0; i < items.Length; ++i)
 			{
-				if (items[i].Field != null)
-					items[i] = items[i].WithField(value + items[i].Field);
+				items[i] = items[i].WithField(value + items[i].Field);
 			}
 			return new ValidationResults(ReadOnly.ValueWrap(items));
 		}
@@ -312,7 +303,7 @@ namespace Lexxys
 				items.Count == 0 ? Empty: new ValidationResults(ReadOnly.ValueWrap(items));
 		}
 
-		public ValidationResults Remove(ValidationResultsItem value)
+		public ValidationResults Remove(ValidationResultsItem? value)
 		{
 			if (Success || value == null)
 				return this;
@@ -551,44 +542,44 @@ namespace Lexxys
 			return Create(value);
 		}
 
-		public static ValidationResults operator +(ValidationResults left, ValidationResults right)
+		public static ValidationResults operator +(ValidationResults? left, ValidationResults? right)
 		{
 			return left != null ? left.Add(right): right ?? Empty;
 		}
 
-		public static ValidationResults operator +(ValidationResults left, ValidationResultsItem right)
+		public static ValidationResults operator +(ValidationResults? left, ValidationResultsItem? right)
 		{
 			return left != null ? left.Add(right):
 				right != null ? Create(right): Empty;
 		}
 
-		public static ValidationResults operator +(ValidationResults left, string right)
+		public static ValidationResults operator +(ValidationResults? left, string? right)
 		{
 			return left != null ? left.Add(right):
 				right != null ? Parse(right): Empty;
 		}
 
-		public static ValidationResults operator -(ValidationResults left, string right)
+		public static ValidationResults operator -(ValidationResults? left, string? right)
 		{
 			return left == null ? Empty: left.Remove(right);
 		}
 
-		public static ValidationResults operator -(ValidationResults left, ValidationResults right)
+		public static ValidationResults operator -(ValidationResults? left, ValidationResults? right)
 		{
 			return left == null ? Empty: left.Remove(right);
 		}
 
-		public static ValidationResults operator &(ValidationResults left, ValidationResults right)
+		public static ValidationResults operator &(ValidationResults? left, ValidationResults? right)
 		{
 			return left != null ? left.Add(right) : right ?? Empty;
 		}
 
-		public static bool operator true(ValidationResults value)
+		public static bool operator true(ValidationResults? value)
 		{
 			return value == null || value.Success;
 		}
 
-		public static bool operator false(ValidationResults value)
+		public static bool operator false(ValidationResults? value)
 		{
 			return value != null && !value.Success;
 		}
@@ -640,7 +631,7 @@ namespace Lexxys
 			var result = new List<ValidationResultsItem>();
 			int i = 0;
 			string? fld = null;
-			while (value != null && i < value.Length)
+			while (i < value!.Length)
 			{
 				while (value[i] == ErrorSeparator || Char.IsWhiteSpace(value, i))
 				{

@@ -11,58 +11,52 @@ namespace Lexxys.Logging;
 
 public class SystemContext: IDumpJson
 {
-	private readonly string _machineName;
-	private readonly string _domainName;
-	private readonly int _processId;
+	private readonly StaticContext _context;
 	private readonly int _threadId;
-	private readonly int _threadSysId;
 	private readonly int _sequentialNumber;
 	private readonly DateTime _timestamp;
 
-	private static readonly string __staticMachineName = Tools.MachineName;
-	private static readonly string __staticDomainName = Tools.DomainName;
-	private static readonly int __staticProcessId = Tools.ProcessId;
-	private static readonly TimeSpan __localUtcOffset = TimeSpan.FromTicks((DateTime.Now.Ticks - DateTime.UtcNow.Ticks) / (TimeSpan.TicksPerSecond * 60) * (TimeSpan.TicksPerSecond * 60));
-	private static int _lastSequenceNumber;
+	private static readonly StaticContext __static = new StaticContext();
+	private static volatile int _lastSequenceNumber;
+
+	private class StaticContext
+	{
+		public string MachineName { get; } = Tools.MachineName;
+		public string DomainName { get; } = Tools.DomainName;
+		public int ProcessId { get; } = Tools.ProcessId;
+		public TimeSpan LocalUtcOffset { get; } = TimeSpan.FromTicks((DateTime.Now.Ticks - DateTime.UtcNow.Ticks) / (TimeSpan.TicksPerSecond * 60) * (TimeSpan.TicksPerSecond * 60));
+	}
 
 	/// <summary>
 	/// Initialize new system context object
 	/// </summary>
 	internal SystemContext()
 	{
+		_context = __static;
 		_timestamp = DateTime.UtcNow;
 		_sequentialNumber = Interlocked.Increment(ref _lastSequenceNumber);
-		_machineName = __staticMachineName;
-		_domainName = __staticDomainName;
-		_processId = __staticProcessId;
 		_threadId = Thread.CurrentThread.ManagedThreadId;
-		_threadSysId = Tools.ThreadId;
 	}
 
 	/// <summary>
 	/// Get Current Machine name
 	/// </summary>
-	public string MachineName => _machineName;
+	public string MachineName => _context.MachineName;
 
 	/// <summary>
 	/// Get .NET Domain Name (name of executable file)
 	/// </summary>
-	public string DomainName => _domainName;
+	public string DomainName => _context.DomainName;
 
 	/// <summary>
 	/// Get system process ID
 	/// </summary>
-	public int ProcessId => _processId;
+	public int ProcessId => _context.ProcessId;
 
 	/// <summary>
 	/// Get managed thread ID
 	/// </summary>
 	public int ThreadId => _threadId;
-
-	/// <summary>
-	/// Get system thread ID
-	/// </summary>
-	public int ThreadSysId => _threadSysId;
 
 	/// <summary>
 	/// Sequential number of the object
@@ -72,7 +66,7 @@ public class SystemContext: IDumpJson
 	/// <summary>
 	/// Local time when the object was created
 	/// </summary>
-	public DateTime Timestamp => _timestamp + __localUtcOffset;
+	public DateTime Timestamp => _timestamp + _context.LocalUtcOffset;
 
 	/// <summary>
 	/// UTC time when the object was created
@@ -87,7 +81,7 @@ public class SystemContext: IDumpJson
 			.Item("processId", ProcessId)
 			.Item("threadId", ThreadId)
 			.Item("seqNumber", SequentialNumber)
-			.Item("utcTimestamp", UtcTimestamp);
+			.Item("timestamp", UtcTimestamp);
 	}
 }
 

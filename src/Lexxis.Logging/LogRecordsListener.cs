@@ -6,13 +6,9 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Drawing.Printing;
 using System.Linq;
-using System.Runtime.Caching;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,6 +21,8 @@ class LogRecordService: ILoggingService
 	internal const int DefaultMaxQueueSize = 256 * 1024;
 	internal static readonly TimeSpan DefaultFlushTimeout = TimeSpan.FromSeconds(5);
 	internal const int LogWatcherSleep = 500;
+
+	private const string LogSource = "Lexxys.Logging.LogRecordService";
 
 	private volatile ILogRecordQueueListener[] _listeners;
 	private volatile int _lockDepth;
@@ -135,7 +133,7 @@ class LogRecordService: ILoggingService
 		{
 			foreach (var itm in wrtrs)
 			{
-				SystemLog.WriteDebugMessage("Lexxys.LogRecordService", "Writer: " + itm.Name + " -> " + itm.Target);
+				SystemLog.WriteDebugMessage(LogSource, "Writer: " + itm.Name + " -> " + itm.Target);
 			}
 		}
 		return wrtrs;
@@ -264,7 +262,7 @@ class LogRecordQueueListener: ILogRecordQueueListener
 {
 	internal const int ListenerTurnSleep = 0;
 	internal const int ListenerPulseInterval = 5000;
-	private const string Source = "Lexxys.Logging.LogRecordsListenner";
+	private const string LogSource = "Lexxys.Logging.LogRecordsListener";
 
 	private readonly ILogWriter _writer;
 	private LogRecordQueue _queue;
@@ -349,8 +347,8 @@ class LogRecordQueueListener: ILogRecordQueueListener
 			Thread.Sleep(0);
 			if ((_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0)
 				_thread!.Join(100);
-			SystemLog.WriteEventLogMessage(Source, "Terminating '{_writer.Name}'...", LogRecord.Args("ThreadName", _thread!.Name));
-			_writer.Write(new[] { new LogRecord(LogType.Warning, Source, "Terminating '{_writer.Name}'...", null) });
+			SystemLog.WriteEventLogMessage(LogSource, "Terminating '{_writer.Name}'...", LogRecord.Args("ThreadName", _thread!.Name));
+			_writer.Write(new[] { new LogRecord(LogType.Warning, LogSource, "Terminating '{_writer.Name}'...", null) });
 #if !NETCOREAPP
 			if ((_thread.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) == 0)
 				_thread.Abort();
@@ -367,7 +365,7 @@ class LogRecordQueueListener: ILogRecordQueueListener
 				var stopped = (_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0 || _thread!.Join(FlushTimeout);
 				if (!stopped)
 				{
-					SystemLog.WriteErrorMessage(Source, "Thread join operation for '{_writer.Name}' has been timed out", LogRecord.Args("time-out"));
+					SystemLog.WriteErrorMessage(LogSource, "Thread join operation for '{_writer.Name}' has been timed out", LogRecord.Args("time-out"));
 #if !NETCOREAPP
 					Interlocked.Exchange(ref _queue, new LogRecordQueue());
 #else
@@ -381,7 +379,7 @@ class LogRecordQueueListener: ILogRecordQueueListener
 				if ((_thread!.ThreadState & (ThreadState.Stopped | ThreadState.Unstarted | ThreadState.Aborted)) != 0)
 					_thread.Abort();
 #endif
-				_writer.Write(new[] { new LogRecord(LogType.Trace, Source, "Exiting...", null) });
+				_writer.Write(new[] { new LogRecord(LogType.Trace, LogSource, "Exiting...", null) });
 			}
 			catch (Exception flaw)
 			{
@@ -438,7 +436,7 @@ class LogRecordQueueListener: ILogRecordQueueListener
 				}
 				catch (Exception e)
 				{
-					SystemLog.WriteErrorMessage(String.Format("Internal error in Log Writer '{0}'", Writer.Name), e);
+					SystemLog.WriteErrorMessage($"{LogSource}`{Writer.Name}", e);
 				}
 				Thread.Sleep(ListenerTurnSleep);
 			}

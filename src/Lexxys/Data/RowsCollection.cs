@@ -118,7 +118,7 @@ namespace Lexxys.Data
 
 			public FieldsCollection(DataTableField[] fields)
 			{
-				_fields = fields ?? throw EX.ArgumentNull(nameof(fields));
+				_fields = fields ?? throw new ArgumentNullException(nameof(fields));
 				_fildsDict = fields.ToDictionary(f => f.Name, StringComparer.OrdinalIgnoreCase);
 			}
 
@@ -151,10 +151,10 @@ namespace Lexxys.Data
 			public DataTableField(string name, Type type, RowsCollection records, int columnIndex)
 			{
 				if (type == null)
-					throw EX.ArgumentNull(nameof(type));
+					throw new ArgumentNullException(nameof(type));
 
-				_name = name ?? throw EX.ArgumentNull(nameof(name));
-				_records = records ?? throw EX.ArgumentNull(nameof(records));
+				_name = name ?? throw new ArgumentNullException(nameof(name));
+				_records = records ?? throw new ArgumentNullException(nameof(records));
 
 				int c = (int)System.Type.GetTypeCode(type);
 				if (c > 2 && c < _typeCodeMap.Length)

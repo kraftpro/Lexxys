@@ -76,7 +76,7 @@ namespace Lexxys.Cube
 		{
 			var scanner = new TokenScanner(new Lexxys.Tokenizer.CharStream(expression),
 				new WhiteSpaceTokenRule(),
-				new CommentsTokenRule(LexicalTokenType.IGNORE, "/*", "*/"),
+				new CommentsTokenRule(LexicalTokenType.IGNORE, ("/*", "*/")),
 				new SequenceTokenRule(LexicalTokenType.SEQUENCE, "|", "^", "&", "~", "(", ")")
 					.Add(NOT, "!"),
 				new IdentifierTokenRule(LexicalTokenType.IDENTIFIER, LexicalTokenType.SEQUENCE, true, "OR", "XOR", "AND", "NOT")
@@ -317,7 +317,7 @@ namespace Lexxys.Cube
 		{
 			int width = Dictionary.Count;
 			if (width < 0 || width > 16)
-				throw EX.ArgumentOutOfRange("Dictionary.Count", width);
+				throw new ArgumentOutOfRangeException(nameof(Dictionary.Count), width, null);
 			int n = (1 << width);
 			var result = new BitArray(n);
 			for (int bits = 0; bits < n; ++bits)
@@ -336,7 +336,7 @@ namespace Lexxys.Cube
 				throw new ArgumentNullException(nameof(args));
 			int width = Math.Max(_dictionary.Count, args.Length);
 			if (width < 0 || width > 16)
-				throw EX.ArgumentOutOfRange("Math.Min(_dictionary.Count, args.Count)", width);
+				throw new ArgumentOutOfRangeException(nameof(args), width, null);
 			int height = (1 << width);
 			var result = new BitArray(height);
 			int[] map = new int[_dictionary.Count];
@@ -388,7 +388,7 @@ namespace Lexxys.Cube
 		public static string ConvertBitsToDnf(BitArray result, string[] names)
 		{
 			if (result == null)
-				throw EX.ArgumentNull(nameof(result));
+				throw new ArgumentNullException(nameof(result));
 			if (names is null)
 				throw new ArgumentNullException(nameof(names));
 
@@ -487,9 +487,9 @@ namespace Lexxys.Cube
 		public static string CombineDnfByAnd(string exp1, string exp2)
 		{
 			if (exp1 == null)
-				throw EX.ArgumentNull(nameof(exp1));
+				throw new ArgumentNullException(nameof(exp1));
 			if (exp2 == null)
-				throw EX.ArgumentNull(nameof(exp2));
+				throw new ArgumentNullException(nameof(exp2));
 
 			if (exp1.Length == 0)
 				return exp2.Length == 0 ? "TRUE": exp2;
@@ -535,9 +535,9 @@ namespace Lexxys.Cube
 		public static string CombineDnfByOr(string exp1, string exp2)
 		{
 			if (exp1 == null)
-				throw EX.ArgumentNull(nameof(exp1));
+				throw new ArgumentNullException(nameof(exp1));
 			if (exp2 == null)
-				throw EX.ArgumentNull(nameof(exp2));
+				throw new ArgumentNullException(nameof(exp2));
 
 			if (exp1.Length == 0)
 				return exp2.Length == 0 ? "TRUE": exp2;

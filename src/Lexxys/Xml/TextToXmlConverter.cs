@@ -18,7 +18,7 @@ namespace Lexxys.Xml
 {
 	using Tokenizer;
 
-	public delegate IEnumerable<XmlLiteNode>? TextToXmlOptionHandler(string option, IReadOnlyCollection<string> parameters);
+	public delegate IEnumerable<XmlLiteNode>? TextToXmlOptionHandler(TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters);
 	public delegate string MacroSubstitution(string value);
 
 
@@ -104,6 +104,8 @@ namespace Lexxys.Xml
 		private readonly StringBuilder _currentNodePath;
 		private readonly SyntaxRuleCollection _syntaxRules;
 		private readonly TextToXmlOptionHandler? _optionHandler;
+		private readonly Stack<Node> _nodesStack;
+
 
 		private TextToXmlConverter(CharStream stream, string? sourceName, TextToXmlOptionHandler? optionHandler, MacroSubstitution? macro = null)
 		{
@@ -168,8 +170,9 @@ namespace Lexxys.Xml
 			_currentNodePath = new StringBuilder(128);
 			_syntaxRules = new SyntaxRuleCollection();
 			_optionHandler = optionHandler;
+			_nodesStack = new Stack<Node>();
 		}
-		private static readonly string[] Comments = new[] { "//", "\n", "/*", "*/", "<#", "#>", "#", "\n" };
+		private static readonly (string, string)[] Comments = new[] { ("//", "\n"), ("/*", "*/"), ("<#", "#>"), ("#", "\n") };
 
 		class TokenScanner5: TokenScanner
 		{
@@ -188,6 +191,9 @@ namespace Lexxys.Xml
 			}
 		}
 
+		public string? SourceName => _sourceName;
+
+		public string CurrentNodePath => _currentNodePath.ToString();
 
 		public static string Convert(string text, string? sourceName = null)
 			=> Convert(text, null, sourceName);
@@ -219,21 +225,6 @@ namespace Lexxys.Xml
 			writer.Flush();
 		}
 
-		//public static string Convert(TextReader reader, string fileName = null)
-		//{
-		//    return Convert(reader.ReadToEnd(), null, fileName);
-		//}
-
-		//public static string Convert(TextReader reader, TextToXmlOptionHandler optionHandler, string fileName = null)
-		//{
-		//    return Convert(reader.ReadToEnd(), optionHandler, fileName);
-		//}
-
-		//public static void Convert(TextReader reader, XmlWriter writer, TextToXmlOptionHandler optionHandler, string fileName = null)
-		//{
-		//    Convert(reader.ReadToEnd(), writer, optionHandler, fileName);
-		//}
-
 		public static List<XmlLiteNode> ConvertLite(string text, string? sourceName = null, bool ignoreCase = false)
 			=> ConvertLite(text, null, sourceName, ignoreCase);
 
@@ -263,12 +254,14 @@ namespace Lexxys.Xml
 
 		private static string SubstituteMacro(string value)
 		{
-			int i = 0;
-			while (i < value.Length)
+			int i = value.IndexOf("${{", StringComparison.Ordinal);
+			if (i < 0)
+				return value;
+			var config = Statics.TryGetService<Configuration.IConfigSection>();
+			if (config == null)
+				return value;
+			while (i >= 0)
 			{
-				i = value.IndexOf("${{", i, StringComparison.Ordinal);
-				if (i < 0)
-					break;
 				int j = value.IndexOf("}}", i + 3, StringComparison.Ordinal);
 				if (j < 0)
 					break;
@@ -280,10 +273,10 @@ namespace Lexxys.Xml
 					defaultValue = macro.Substring(k + 1).Trim();
 					macro = macro.Substring(0, k);
 				}
-				string? subst = string.IsNullOrWhiteSpace(macro) ? defaultValue: Config.Current?.GetValue<string?>(macro, defaultValue).Value;
+				string? subst = string.IsNullOrWhiteSpace(macro) ? defaultValue : config.GetValue(macro, defaultValue).Value;
 				if (subst != null)
 					value = value.Substring(0, i) + subst + value.Substring(j + 2);
-				i = j + 2;
+				i = value.IndexOf("${{", j + 2, StringComparison.Ordinal);
 			}
 			return value;
 		}
@@ -291,43 +284,49 @@ namespace Lexxys.Xml
 		private static XmlLiteNode ConvertToXmlLite(Node node, bool ignoreCase)
 		{
 			XmlLiteNode[]? child = null;
-			if (node.Child.Count > 0)
+			if (node.HasChildren)
 			{
-				child = new XmlLiteNode[node.Child.Count];
+				var cc = node.Children!;
+				child = new XmlLiteNode[cc.Count];
 				for (int i = 0; i < child.Length; ++i)
 				{
-					child[i] = ConvertToXmlLite(node.Child[i], ignoreCase);
+					child[i] = ConvertToXmlLite(cc[i], ignoreCase);
 				}
 			}
-			return new XmlLiteNode(node.Name, SubstituteMacro(node.Value.ToString()), ignoreCase || node.IgnoreCase, node.Attrib.Select(o => KeyValue.Create(o.Key, SubstituteMacro(o.Value))), child);
+
+			KeyValuePair<string, string>[]? attrib = null;
+			if (node.HasAttributes)
+			{
+				attrib = node.Attributes!.ToArray();
+				for (int i = 0; i < attrib.Length; ++i)
+				{
+					attrib[i] = KeyValue.Create(attrib[i].Key, SubstituteMacro(attrib[i].Value));
+				}
+			}
+			return new XmlLiteNode(node.Name, String.IsNullOrEmpty(node.Value) ? null: SubstituteMacro(node.Value!), ignoreCase || node.IgnoreCase, attrib, child);
 		}
 
 		private static void ConvertToXml(XmlWriter writer, Node node)
 		{
 			writer.WriteStartElement(XmlConvert.EncodeName(node.Name));
-			foreach (var item in node.Attrib)
+			if (node.HasAttributes)
 			{
-				writer.WriteAttributeString(XmlConvert.EncodeName(item.Key), SubstituteMacro(item.Value));
+				foreach (var item in node.Attributes!)
+				{
+					writer.WriteAttributeString(XmlConvert.EncodeName(item.Key), SubstituteMacro(item.Value));
+				}
 			}
-			if (node.Value != null && node.Value.Length > 0)
-				writer.WriteValue(SubstituteMacro(node.Value.ToString()));
-			foreach (var item in node.Child)
+			if (!String.IsNullOrEmpty(node.Value))
+				writer.WriteValue(SubstituteMacro(node.Value!));
+			if (node.HasChildren)
 			{
-				ConvertToXml(writer, item);
+				foreach (var item in node.Children!)
+				{
+					ConvertToXml(writer, item);
+				}
 			}
 			writer.WriteEndElement();
 		}
-
-
-		//public static string IncludeOptionHandler(string option, params string[] parameters)
-		//{
-		//    if (option != "include" || parameters == null || parameters.Length == 0 || parameters[0] == null || parameters[0].Length == 0)
-		//        return null;
-		//    FileInfo f = Tools.FindFile(parameters[0], null);
-		//    if (!f.Exists)
-		//        return null;
-		//    return File.ReadAllText(f.FullName);
-		//}
 
 
 		#region Lexical Parser
@@ -344,6 +343,8 @@ namespace Lexxys.Xml
 		private const int PARAMETER = 8;
 		private const int ARRAY = 9;
 
+		private static readonly char[] CrLf = { '\r', '\n' };
+		
 		private class UniversalTokenRule: LexicalTokenRule
 		{
 			private readonly char[] _asep;
@@ -355,10 +356,7 @@ namespace Lexxys.Xml
 
 			public LexicalTokenType TokenType { get; private set; }
 
-			public override bool TestBeginning(char ch)
-			{
-				return Array.IndexOf(_asep, ch) < 0;
-			}
+			public override bool TestBeginning(char ch) => Array.IndexOf(_asep, ch) < 0;
 
 			public override LexicalToken? TryParse(CharStream stream)
 			{
@@ -377,21 +375,15 @@ namespace Lexxys.Xml
 				TokenType = TEXT;
 			}
 
-			public override bool HasExtraBeginning
-			{
-				get { return true; }
-			}
+			public override bool HasExtraBeginning => true;
 
-			public LexicalTokenType TokenType { get; private set; }
+			public LexicalTokenType TokenType { get; }
 
-			public override bool TestBeginning(char ch)
-			{
-				return ch != '\n';
-			}
+			public override bool TestBeginning(char ch) => ch is not ('\r' or '\n');
 
 			public override LexicalToken? TryParse(CharStream stream)
 			{
-				int n = stream.IndexOf('\n', 0);
+				int n = stream.IndexOfAny(CrLf);
 				if (n < 0)
 					n = stream.Length;
 				if (n == 0)
@@ -555,7 +547,7 @@ namespace Lexxys.Xml
 					return null;
 				stream.Forward(i);
 				string text = lines.Count == 0 ? String.Empty: Strings.CutIndents(lines.ToArray(), stream.TabSize);
-				return new LexicalToken(TokenType, text, at, stream.CultureInfo);
+				return new LexicalToken(TokenType, text, at, stream.Culture);
 			}
 		}
 		#endregion
@@ -564,8 +556,6 @@ namespace Lexxys.Xml
 		{
 			return scanner.SyntaxException(message, _sourceName);
 		}
-
-		readonly Stack<Node> _nodesStack = new Stack<Node>(4);
 
 		private void PushNode(Node value)
 		{
@@ -579,11 +569,6 @@ namespace Lexxys.Xml
 		{
 			Node node = _nodesStack.Pop();
 			_currentNodePath.Length -= node.Name.Length + 1;
-		}
-
-		private string CurrentNodePath
-		{
-			get { return _currentNodePath.ToString(); }
 		}
 
 		private void CheckOptions()
@@ -659,13 +644,11 @@ namespace Lexxys.Xml
 					_nodeScanner.Back();
 					Node? child = ScanNode();
 					if (child != null)
-						node.Child.Add(child);
+						node.AddChild(child);
 				}
 				else if (token.TokenType.Is(TEXT))
 				{
-					if (node.Value.Length > 0)
-						node.Value.Append('\n');
-					node.Value.Append(token.Text);
+					node.AppendNlValue(token.Text);
 				}
 				else if (!token.TokenType.Is(LexicalTokenType.NEWLINE))
 				{
@@ -739,8 +722,7 @@ namespace Lexxys.Xml
 					break;
 
 				case LINE:
-					if (node.Value.Length > 0)
-						node.Value.Append('\n');
+					node.AppendNlValue();
 					ScanNodeValue(node);
 					break;
 
@@ -748,7 +730,7 @@ namespace Lexxys.Xml
 					_nodeScanner.Back();
 					Node? child = ScanNode();
 					if (child != null)
-						node.Child.Add(child);
+						node.AddChild(child);
 					break;
 
 				case ARRAY:
@@ -788,7 +770,7 @@ namespace Lexxys.Xml
 			else if (token.Is(TOKEN, ARRAY))
 				ScanArray(node);
 			else
-				node.Value.Append(token.Text);
+				node.AppendValue(token.Text);
 			if (!_nodeValueScanner.Next().TokenType.Is(LexicalTokenType.NEWLINE) && !_nodeValueScanner.EOF)
 				throw SyntaxException(_nodeValueScanner, SR.ExpectedEndOfLine());
 		}
@@ -805,7 +787,7 @@ namespace Lexxys.Xml
 				if (!_parametersScanner.Next().Is(TEXT))
 					throw SyntaxException(_parametersScanner, "Argument value is expected");
 				var value = _parametersScanner.Current.Text;
-				node.Attrib[name] = value;
+				node.AddAttrib(name, value);
 			}
 		}
 
@@ -814,8 +796,8 @@ namespace Lexxys.Xml
 			while (!_arrayScanner.Next().TokenType.Is(TOKEN, ARRAY) && !_arrayScanner.EOF)
 			{
 				var n = new Node("item", _options.IgnoreCase);
-				n.Value.Append(_arrayScanner.Current.Text);
-				node.Child.Add(n);
+				n.AppendValue(_arrayScanner.Current.Text);
+				node.AddChild(n);
 			}
 		}
 
@@ -861,7 +843,7 @@ namespace Lexxys.Xml
 					value.Append(text);
 				}
 			}
-			node.Attrib.Add(name, value.ToString());
+			node.AddAttrib(name, value.ToString());
 		}
 
 		/// <summary>
@@ -917,9 +899,9 @@ namespace Lexxys.Xml
 					var top = _nodesStack.Peek();
 					if (_options.IgnoreCase)
 						items.Add(XmlTools.OptionIgnoreCase);
-					var xx = _optionHandler?.Invoke(pattern, items);
+					var xx = _optionHandler?.Invoke(this, pattern, items);
 					if (xx != null)
-						top.Child.AddRange(xx.Select(o => Node.FromXml(o)));
+						top.AddChild(xx.Select(o => Node.FromXml(o)));
 
 					// string text = _optionHandler?.Invoke(pattern, items.ToArray());
 					// if (text == null)
@@ -962,9 +944,9 @@ namespace Lexxys.Xml
 				else
 				{
 					if (rule.Attrib[i] == "*")
-						node.Value.Append(_nodeArgumentsScanner.Current.Text);
+						node.AppendValue(_nodeArgumentsScanner.Current.Text);
 					else
-						node.Attrib.Add(rule.Attrib[i], _nodeArgumentsScanner.Current.Text);
+						node.AddAttrib(rule.Attrib[i], _nodeArgumentsScanner.Current.Text);
 					comma = true;
 				}
 			}
@@ -977,38 +959,74 @@ namespace Lexxys.Xml
 				if (i >= rule.Attrib.Length || rule.Attrib[i] == "*")
 					ScanNodeValue(node);
 				else
-					node.Attrib.Add(rule.Attrib[i], ScanAttribValue());
+					node.AddAttrib(rule.Attrib[i], ScanAttribValue());
 			}
 		}
 
-		class Node
+		private class Node
 		{
-			public readonly string Name;
-			public readonly Dictionary<string, string> Attrib = new Dictionary<string, string>();
-			public readonly List<Node> Child = new List<Node>();
-			public readonly StringBuilder Value = new StringBuilder();
-			public readonly bool IgnoreCase;
+			private List<KeyValuePair<string, string>>? _attribs;
+			private List<Node>? _child;
+			private string? _value;
 
 			public Node(string name, bool ignoreCase)
 			{
-				Name = name;
+				Name = name ?? throw new ArgumentNullException(nameof(name));
 				IgnoreCase = ignoreCase;
+			}
+
+			public string Name { get; }
+
+			public bool IgnoreCase { get; }
+
+			public string? Value => _value;
+
+			public List<KeyValuePair<string, string>>? Attributes => _attribs;
+
+			public void AddAttrib(string name, string value) => (_attribs ??= new()).Add(KeyValue.Create(name, value));
+
+			public bool HasAttributes => _attribs?.Count > 0;
+			public bool HasChildren => _child?.Count > 0;
+
+			public List<Node>? Children => _child;
+
+			public void AddChild(Node value) => (_child ??= new()).Add(value);
+
+			public void AddChild(IEnumerable<Node> value) => (_child ??= new()).AddRange(value);
+
+			public void AppendValue(string value)
+			{
+				if (String.IsNullOrEmpty(_value))
+					_value = value;
+				else
+					_value += value;
+			}
+
+			public void AppendNlValue(string value)
+			{
+				if (String.IsNullOrEmpty(_value))
+					_value = value;
+				else
+					_value += "\n" + value;
+			}
+
+			public void AppendNlValue()
+			{
+				if (!String.IsNullOrEmpty(_value))
+					_value += "\n";
 			}
 
 			public static Node FromXml(XmlLiteNode xml)
 			{
 				if (xml is null)
 					throw new ArgumentNullException(nameof(xml));
-				var x = new Node(xml.Name, xml.Comparer.Equals("x", "X"));
-				x.Value.Append(xml.Value);
+				var x = new Node(xml.Name, xml.Comparer.Equals("x", "X")) { _value = xml.Value };
 				foreach (var item in xml.Attributes)
 				{
-					x.Attrib[item.Key] = item.Value;
+					x.AddAttrib(item.Key, item.Value);
 				}
-				foreach (var item in xml.Elements)
-				{
-					x.Child.Add(FromXml(item));
-				}
+				if (xml.Elements.Count > 0)
+					x.AddChild(xml.Elements.Select(FromXml));
 				return x;
 			}
 		}
@@ -1051,9 +1069,7 @@ namespace Lexxys.Xml
 				{
 					if (rule.IsApplicatble(root))
 					{
-						if (colletion == null)
-							colletion = new SyntaxRuleCollection();
-						colletion._rule.Add(rule);
+						(colletion ??= new())._rule.Add(rule);
 					}
 				}
 				return colletion;
@@ -1145,7 +1161,7 @@ namespace Lexxys.Xml
 				else
 					path += "/" + node;
 
-				int i = path.LastIndexOfAny(StarsAndSlash);
+				int i = path.LastIndexOfAny(StarOrSlash);
 				if (i < 0)
 				{
 					name = path;
@@ -1164,7 +1180,7 @@ namespace Lexxys.Xml
 				string start;
 				Regex? pattern;
 				bool permanent = false;
-				if (path.IndexOfAny(Stars) < 0)
+				if (path.IndexOf('*') < 0)
 				{
 					pattern = null;
 					start = path;
@@ -1203,8 +1219,7 @@ namespace Lexxys.Xml
 					permanent: permanent
 				);
 			}
-			private static readonly char[] Stars = { '*' };
-			private static readonly char[] StarsAndSlash = { '*', '/' };
+			private static readonly char[] StarOrSlash = { '*', '/' };
 			private static readonly char[] TrimedChars = { '/', ' ', '\t' };
 			private static readonly Regex NameRex = new Regex(@"^[a-zA-Z0-9~!@$&+=_-]+:");
 			private static readonly Regex PrepareRex = new Regex(@"(\\\*)+|\\\((\\\*)+\\\)");

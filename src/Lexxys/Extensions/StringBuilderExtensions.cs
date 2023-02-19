@@ -44,6 +44,18 @@ namespace Lexxys
 			}
 			return text;
 		}
+
+		public static unsafe StringBuilder Append(this StringBuilder text, ReadOnlySpan<char> value)
+		{
+			if (text is null)
+				throw new ArgumentNullException(nameof(text));
+
+			fixed (char* p = value)
+			{
+				text.Append(p, value.Length);
+			}
+			return text;
+		}
 	}
 }
 

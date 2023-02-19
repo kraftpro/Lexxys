@@ -149,7 +149,7 @@ namespace Lexxys.Tokenizer
 			{
 				if (id <= 0 || id > Int16.MaxValue)
 					throw new ArgumentOutOfRangeException(nameof(id), id, null);
-				if (text == null || text.Length <= 0)
+				if (text is not { Length: >0 })
 					throw new ArgumentNullException(nameof(text));
 
 				Id = id;
@@ -162,7 +162,7 @@ namespace Lexxys.Tokenizer
 			{
 				if (id <= 0 || id > Int16.MaxValue)
 					throw new ArgumentOutOfRangeException(nameof(id), id, null);
-				if (text == null || text.Length <= 0)
+				if (text is not { Length: >0 })
 					throw new ArgumentNullException(nameof(text));
 				if (match == null)
 					throw new ArgumentNullException(nameof(match));

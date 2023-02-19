@@ -43,7 +43,7 @@ namespace Lexxys
 		public void Add(FieldError? item)
 		{
 			if (IsReadOnly)
-				throw EX.NotSupported("Add");
+				throw new NotSupportedException(SR.OperationNotSupported("Add"));
 			if (item is not null && !_errors.Contains(item))
 				_errors.Add(item);
 		}
@@ -59,7 +59,7 @@ namespace Lexxys
 		public void Clear()
 		{
 			if (IsReadOnly)
-				throw EX.NotSupported("Clear");
+				throw new NotSupportedException(SR.OperationNotSupported("Clear"));
 			_errors.Clear();
 		}
 

@@ -10,7 +10,7 @@ using System.Xml;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml.XPath;
-﻿using Lexxys.Xml;
+using Lexxys.Xml;
 
 namespace Lexxys.Tests.Xml
 {

@@ -33,30 +33,10 @@ namespace Lexxys
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static LogType ToLogType(LogLevel logLevel) => logLevel switch
-		{
-			LogLevel.Trace => LogType.Trace,
-			LogLevel.Debug => LogType.Debug,
-			LogLevel.Information => LogType.Information,
-			LogLevel.Warning => LogType.Warning,
-			LogLevel.Error => LogType.Error,
-			LogLevel.Critical => LogType.Output,
-			_ => LogType.MaxValue
-		};
+		public static LogType ToLogType(LogLevel logLevel) => (LogType)(LogLevel.Critical - ((uint)logLevel > (uint)LogLevel.Critical ? LogLevel.Critical : logLevel));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static LogLevel ToLogLevel(LogType logType) => logType switch
-		{
-			LogType.Trace => LogLevel.Trace,
-			LogType.Debug => LogLevel.Debug,
-			LogType.Information => LogLevel.Information,
-			LogType.Warning => LogLevel.Warning,
-			LogType.Error => LogLevel.Error,
-			LogType.Output => LogLevel.Critical,
-			_ => LogLevel.None
-		};
-
-		public static IDisposable Disposable => NullDisposable.Value;
+		public static LogLevel ToLogLevel(LogType logType) => (LogLevel)(LogType.MaxValue - ((uint)logType > (uint)LogType.MaxValue ? LogType.MaxValue: logType));
 
 		sealed class NullDisposable: IDisposable
 		{

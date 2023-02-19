@@ -11,6 +11,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Xml;
 
+using Lexxys;
+
 namespace Lexxys.Xml
 {
 	public class XmlLiteBuilder
@@ -49,7 +51,7 @@ namespace Lexxys.Xml
 		public IReadOnlyList<XmlLiteNode> GetNodes()
 		{
 			Flush();
-			return _nodes == null ? Array.Empty<XmlLiteNode>(): (IReadOnlyList<XmlLiteNode>)ReadOnly.Wrap(_nodes);
+			return ReadOnly.Wrap(_nodes) ?? ReadOnly.Empty<XmlLiteNode>();
 		}
 
 		public XmlLiteNode GetFirstNode()
@@ -60,7 +62,7 @@ namespace Lexxys.Xml
 
 		public XmlLiteBuilder Element(string name)
 		{
-			if (name is null || name.Length <= 0)
+			if (name is not { Length: > 0 })
 				throw new ArgumentNullException(nameof(name));
 
 			if (_next == null)
@@ -1124,7 +1126,7 @@ namespace Lexxys.Xml
 			private class Node
 			{
 				private readonly string _name;
-				private readonly IEqualityComparer<string> _comparer;
+				private readonly IEqualityComparer<string?> _comparer;
 				private OrderedBag<string, string>? _attrib;
 				private List<Node>? _nodeDescendants;
 				private List<XmlLiteNode>? _xmlDescendants;
@@ -1150,13 +1152,17 @@ namespace Lexxys.Xml
 
 				public void AddChildNode(Node child)
 				{
-					Debug.Assert(child != null);
+					if (child is null)
+						throw new ArgumentNullException(nameof(child));
 					(_nodeDescendants ??= new List<Node>()).Add(child);
 				}
 
 				public void AddChildNode(XmlLiteNode child)
 				{
-					Debug.Assert(child != null && !child.IsEmpty);
+					if (child is null)
+						throw new ArgumentNullException(nameof(child));
+					if (child.IsEmpty)
+						throw new ArgumentOutOfRangeException(nameof(child), child, null);
 					(_xmlDescendants ??= new List<XmlLiteNode>()).Add(child);
 				}
 

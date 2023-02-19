@@ -33,7 +33,7 @@ namespace Lexxys.Cube
 		public override int Priority => MinPriority - 2;
 		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
-			throw EX.NotSupported("OpenBraceToken.Evaluate");
+			throw new NotSupportedException(SR.OperationNotSupported("OpenBraceToken.Evaluate"));
 		}
 	}
 
@@ -44,7 +44,7 @@ namespace Lexxys.Cube
 		public override int Priority => MinPriority - 1;
 		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
-			throw EX.NotSupported("ClosedBraceToken.Evaluate");
+			throw new NotSupportedException(SR.OperationNotSupported("ClosedBraceToken.Evaluate"));
 		}
 	}
 

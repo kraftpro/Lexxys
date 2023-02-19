@@ -13,7 +13,7 @@ namespace Lexxys
 	{
 		public static bool IsEnabled(this ILogger logger, LogType logType)
 		{
-			return logger is ILogging log ? log.IsEnabled(logType) : logger.IsEnabled(Type2Level(logType));
+			return logger is ILogging log ? log.IsEnabled(logType) : logger.IsEnabled(LoggingTools.ToLogLevel(logType));
 		}
 
 		public static void Log(this ILogger logger, LogType logType, string source, string message, Exception exception, IDictionary args)
@@ -21,7 +21,7 @@ namespace Lexxys
 			if (logger is ILogging log)
 				log.Log(logType, source, message, exception, args);
 			else
-				logger.Log(Type2Level(logType), 0, new TState(source, message, args), exception, TState.Formatter);
+				logger.Log(LoggingTools.ToLogLevel(logType), 0, new TState(source, message, args), exception, TState.Formatter);
 		}
 
 		public static IDisposable? Enter(this ILogger logger, LogType logType, string sectionName, IDictionary? args = null)
@@ -653,18 +653,6 @@ namespace Lexxys
 				return text.ToString();
 			}
 		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static LogLevel Type2Level(LogType logLevel) =>
-			logLevel switch
-			{
-				LogType.Trace => LogLevel.Trace,
-				LogType.Debug => LogLevel.Debug,
-				LogType.Information => LogLevel.Information,
-				LogType.Warning => LogLevel.Warning,
-				LogType.Error => LogLevel.Error,
-				_ => LogLevel.Critical
-			};
 
 		#endregion
 

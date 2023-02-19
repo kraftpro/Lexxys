@@ -6,11 +6,10 @@
 //
 using System;
 using System.Collections.Generic;
-﻿using System.Linq;
-﻿using System.Text.RegularExpressions;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Lexxys.Logging;
-using Xml;
 
 [Flags]
 public enum LogTypeFilter
@@ -21,18 +20,18 @@ public enum LogTypeFilter
 	ErrorOnly = 2,
 	WarningOnly = 4,
 	InformationOnly = 8,
-	TraceOnly = 16,
-	DebugOnly = 32,
+	DebugOnly = 16,
+	TraceOnly = 32,
 
 	Output = 1,
 	Critical = 1,
 	Error = Output + ErrorOnly,
 	Warning = Error + WarningOnly,
 	Information = Warning + InformationOnly,
-	Trace = Information + TraceOnly,
-	Debug = Trace + DebugOnly,
+	Debug = Information + DebugOnly,
+	Trace = Debug + TraceOnly,
 
-	All = Debug,
+	All = Trace,
 }
 
 internal class LoggingRule
@@ -169,16 +168,19 @@ internal class LoggingRule
 						x = LogTypeFilter.InformationOnly;
 						y = LogTypeFilter.Information;
 						break;
+					case "DEBUG":
+						x = LogTypeFilter.DebugOnly;
+						y = LogTypeFilter.Debug;
+						break;
 					case "TRACE":
 						x = LogTypeFilter.TraceOnly;
 						y = LogTypeFilter.Trace;
 						break;
 					case "VERBOSE":
-					case "DEBUG":
 					case "ALL":
 					case "*":
-						x = LogTypeFilter.DebugOnly;
-						y = LogTypeFilter.Debug;
+						x = LogTypeFilter.TraceOnly;
+						y = LogTypeFilter.Trace;
 						break;
 					case "ONLY":
 						onlyFlag = true;

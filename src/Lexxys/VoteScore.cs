@@ -5,10 +5,6 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
 
 #pragma warning disable CA2225 // Operator overloads have named alternates
 
@@ -33,7 +29,7 @@ namespace Lexxys
 		public double Value => (double) _value / MaxScoreValue;
 
 		public VoteScore AndMore()
-			=> _value + ScoreValueEpsilon >= MaxScoreValue ? this : new VoteScore(_value + ScoreValueEpsilon);
+			=> _value >= MaxScoreValue + ScoreValueEpsilon ? this : new VoteScore(_value + ScoreValueEpsilon);
 
 		public VoteScore AndMore(int multiplier)
 			=> multiplier <= 0 ? this : new VoteScore(_value + multiplier * ScoreValueEpsilon > MaxScoreValue ? MaxScoreValue - ScoreValueEpsilon : _value + multiplier * ScoreValueEpsilon);

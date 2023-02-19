@@ -10,12 +10,13 @@ namespace Lexxys
 		public const string EventSource = "Lexxys";
 		public const int MaxEventLogMessage = 30000;
 
-		private static readonly bool UseSystemEventLog = TestEventLog(EventSource, "Application");
+		private static readonly bool _eventLogSupported = TestEventLog(EventSource, "Application");
+		private static bool _useEventLog = true;
 
-
-		//private static readonly LogRecordTextFormatter __eventLogFormatter = new LogRecordTextFormatter(EventLogLogWriter.Defaults);
+		public static bool UseSystemEventLog { get => _eventLogSupported && _useEventLog; set => _useEventLog = value; }
 
 #pragma warning disable CA1416 // Validate platform compatibility
+#pragma warning disable CA1031 // Ignore the error
 
 		internal static bool TestEventLog(string eventSource, string logName)
 		{
@@ -24,20 +25,13 @@ namespace Lexxys
 				if (EventLog.SourceExists(eventSource))
 					return true;
 			}
-			#pragma warning disable CA1031 // Ignore the error
-			catch
-			{
-				// ignored
-			}
+			catch { /*ignored*/ }
 			try
 			{
 				EventLog.CreateEventSource(eventSource, logName);
 				return EventLog.SourceExists(eventSource);
 			}
-			catch
-			{
-				// ignored
-			}
+			catch { /*ignored*/ }
 			return false;
 		}
 
@@ -45,11 +39,14 @@ namespace Lexxys
 		{
 			return !UseSystemEventLog ? 0 : logType switch
 			{
-				LogType.Output or LogType.Error => EventLogEntryType.Error,
+				LogType.Output or
+				LogType.Error or
 				LogType.Warning => EventLogEntryType.Warning,
 				_ => EventLogEntryType.Information,
 			};
 		}
+
+		private static int DebuggetLogLevel(LogType logType) => (LogType.MaxValue - logType);
 
 		/// <summary>
 		/// Write a message to the Debugger console
@@ -60,7 +57,7 @@ namespace Lexxys
 		public static void WriteDebugMessage(string source, string message, IDictionary? arguments = null)
 		{
 			if (Debugger.IsLogging())
-				Debugger.Log(5, EventSource, Format(LogType.Debug, source, message, arguments));
+				Debugger.Log(1, EventSource, Format(LogType.Debug, source, message, arguments));
 		}
 
 		/// <summary>
@@ -97,19 +94,17 @@ namespace Lexxys
 		/// <param name="arguments">Optional arguments</param>
 		public static void WriteEventLogMessage(string? source, string? message, IDictionary? arguments = null)
 		{
+			if (!UseSystemEventLog && !Debugger.IsLogging())
+				return;
 			WriteMessage(LogType.Information, Format(LogType.Information, source, message, arguments));
 		}
 
 		private static void WriteMessage(LogType type, string message)
 		{
-			if (!UseSystemEventLog && !Debugger.IsLogging())
-				return;
 			if (Debugger.IsLogging())
-				Debugger.Log(5, EventSource, message);
-			if (message.Length > MaxEventLogMessage)
-				message = message.Substring(0, MaxEventLogMessage);
+				Debugger.Log(DebuggetLogLevel(type), EventSource, message);
 			if (UseSystemEventLog)
-				EventLog.WriteEntry(EventSource, message, LogEntryType(type));
+				EventLog.WriteEntry(EventSource, message.Length > MaxEventLogMessage ? message.Substring(0, MaxEventLogMessage): message, LogEntryType(type));
 		}
 
 		private static string Format(LogType type, string? source, string? message, IDictionary? arguments)

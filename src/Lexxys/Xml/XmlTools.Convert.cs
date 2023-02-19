@@ -288,7 +288,7 @@ namespace Lexxys.Xml
 		{
 			if (text == null)
 				throw new ArgumentNullException(nameof(text));
-			if (value == null || length <= 0 || value.Length <= start || start < 0)
+			if (value == null || start < 0 || value.Length <= start)
 				return text;
 			if (length > value.Length - start)
 				length = value.Length - start;
@@ -329,7 +329,7 @@ namespace Lexxys.Xml
 
 		public static unsafe string Encode(string? value, int start, int length, bool encodeQuote = false)
 		{
-			if (value == null || length <= 0 || value.Length <= start || start < 0)
+			if (value == null || start < 0 || value.Length <= start)
 				return "";
 			if (length > value.Length - start)
 				length = value.Length - start;
@@ -352,7 +352,7 @@ namespace Lexxys.Xml
 
 		public static unsafe string Encode(char[]? value, int start, int length, bool encodeQuote = false)
 		{
-			if (value == null || length <= 0 || value.Length <= start || start < 0)
+			if (value == null || start < 0 || value.Length <= start)
 				return "";
 			if (length > value.Length - start)
 				length = value.Length - start;

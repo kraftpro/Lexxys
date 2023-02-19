@@ -18,6 +18,8 @@ using Xml;
 
 public class FileLogWriter: LogWriter
 {
+	private const string LogSource = "Lexxys.Logging.FileLogWriter";
+
 	private readonly TimeSpan _timeout = DefaultTimeout;
 	private readonly string _file;
 	private bool _truncate;
@@ -70,7 +72,7 @@ public class FileLogWriter: LogWriter
 
 		if (!_errorLogged)
 		{
-			SystemLog.WriteErrorMessage("TextFileLogWriter", SR.LOG_CannotOpenLogFile(_file), null);
+			SystemLog.WriteErrorMessage(LogSource, SR.LOG_CannotOpenLogFile(_file), null);
 			_errorLogged = true;
 		}
 		foreach (var record in records)

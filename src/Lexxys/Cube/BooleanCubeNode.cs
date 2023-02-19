@@ -80,11 +80,11 @@ namespace Lexxys.Cube
 		public void AppendDisjunctant(StringBuilder sb, string delimiter, string[] arguments)
 		{
 			if (sb is null)
-				throw EX.ArgumentNull(nameof(sb));
+				throw new ArgumentNullException(nameof(sb));
 			if (arguments is null)
 				throw new ArgumentNullException(nameof(arguments));
 			if (arguments.Length >= 32)
-				throw EX.ArgumentOutOfRange("arguments.Length", arguments.Length);
+				throw new ArgumentOutOfRangeException(nameof(arguments), arguments.Length, null);
 			uint m = 1;
 			for (int i = 0; i < arguments.Length; ++i)
 			{

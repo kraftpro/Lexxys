@@ -84,9 +84,18 @@ namespace Lexxys
 		/// <param name="mode">Directory generation mode (see <see cref="DirectoryGenerationMode"/>)</param>
 		public DirectoryStorageConfig(int directoryCount = default, int fileCount = default, string? directoryFormat = default, string? fileFormat = default, char pathSeparator = default, string? temporaryFolder = default, DirectoryGenerationMode mode = default)
 		{
-			DirectoryCount = directoryCount == 0 ? 100: directoryCount;
-			DirectoryFormat = directoryFormat ?? new String('0', (directoryCount - 1).ToString().Length);
-			FileCount = fileCount == 0 ? 1000: fileCount;
+			if (directoryCount == default)
+				directoryCount = 100;
+			if (directoryCount < 0)
+				throw new ArgumentOutOfRangeException(nameof(directoryCount), directoryCount, null);
+			if (fileCount == default)
+				fileCount = 1000;
+			if (fileCount < 10)
+				throw new ArgumentOutOfRangeException(nameof(fileCount), fileCount, null);
+
+			DirectoryCount = directoryCount;
+			DirectoryFormat = directoryFormat ?? new string('0', Tools.DigitsNumber(directoryCount - 1));
+			FileCount = fileCount;
 			FileFormat = fileFormat ?? "{index:0000000}-{salt}{ext}";
 			PathSeparator = pathSeparator  == default ? Path.DirectorySeparatorChar: pathSeparator;
 			TemporaryFolder = temporaryFolder?.Replace("\\", "").Replace("/", "").TrimToNull() ?? ".t";
@@ -110,7 +119,7 @@ namespace Lexxys
 		/// <exception cref="ArgumentNullException"></exception>
 		public IBlobStorageProvider? GetProvider(string location)
 		{
-			if (location is null || location.Length <= 0)
+			if (location is not { Length: >0 })
 				throw new ArgumentNullException(nameof(location));
 
 			var (scheme, _) = SplitSchemeAndPath(location);
@@ -200,29 +209,38 @@ namespace Lexxys
 		{
 			int i = uri.IndexOf(':');
 			if (i < 0 || i == 1 && Char.IsLetter(uri, 0))
-				return ("", uri);
-			var s = uri.Substring(0, i).Trim();
-			var p = uri.Substring(i + 1);
-			if (String.Equals(s, Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase) && p.StartsWith("///", StringComparison.Ordinal))
-				p = p.Substring(3);
-			else if (p.StartsWith("//", StringComparison.Ordinal))
-				p = p.Substring(2);
-			return (s, p.Trim().ToLowerInvariant());
+				return (Uri.UriSchemeFile, uri);
+
+			var s = uri.AsSpan(0, i).Trim().ToString().ToLowerInvariant();
+			var p = uri.AsSpan(i + 1);
+			if (p.Length > 2 && p[0] == '/' && p[1] == '/')
+			{
+				p = p.Slice(2);
+				if (p[0] == '/' && s == Uri.UriSchemeFile)
+					p = p.Slice(1);
+			}
+			return (s, p.Trim().ToString());
 		}
 		
-		private static string GetDirectory(int index, int directoryCount, string directoryFormat, int fileCount, char pathSeparator, DirectoryGenerationMode mode)
+		private static unsafe string GetDirectory(int index, int directoryCount, string directoryFormat, int fileCount, char pathSeparator, DirectoryGenerationMode mode)
 		{
 			if (directoryCount < 0 || directoryCount > 1296)
 				throw new ArgumentOutOfRangeException(nameof(directoryCount), directoryCount, null);
 			var dir = new StringBuilder();
 			if (mode == DirectoryGenerationMode.BigEndian)
 			{
+				var stack = stackalloc int[32];
 				// 1234567 -> "/12/34"
-				int i = index / fileCount;
+				int k = index / fileCount;
+				int i = 0;
+				while (k > 0)
+				{
+					stack[i++] = k % directoryCount;
+					k /= directoryCount;
+				}
 				while (i > 0)
 				{
-					dir.Insert(0, pathSeparator.ToString() + (i % directoryCount).ToString(directoryFormat, CultureInfo.InvariantCulture));
-					i /= directoryCount;
+					dir.Append(pathSeparator).Append(stack[--i].ToString(directoryFormat, CultureInfo.InvariantCulture));
 				}
 			}
 			else if (mode == DirectoryGenerationMode.LittleEndian)

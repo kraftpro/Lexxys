@@ -87,6 +87,8 @@ namespace Lexxys.Tokenizer
 
 		public bool IsEmpty => TokenType.Is(LexicalTokenType.EMPTY);
 
+		public bool IsEof => TokenType == LexicalTokenType.EOF;
+
 		/// <summary>
 		/// Gets type of the token.
 		/// </summary>

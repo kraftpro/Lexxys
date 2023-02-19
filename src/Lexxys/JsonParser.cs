@@ -111,19 +111,18 @@ namespace Lexxys
 		private JsonScalar ParseScalar(List<JsonPair>? args)
 		{
 			var token = Scanner.Current;
-			if (token.Is(LexicalTokenType.NUMERIC))
-				return new JsonScalar(token.Value, token.Text, args);
-			if (token.Is(LexicalTokenType.STRING))
-				return new JsonScalar(token.Value, token.Text, args);
+			if (token.Is(LexicalTokenType.NUMERIC) || token.Is(LexicalTokenType.STRING))
+				return new JsonScalar(token.Value, args);
 			if (token.Is(LexicalTokenType.IDENTIFIER))
-				return new JsonScalar(
-					token.Text == "null" ? null:
-					token.Text == "true" ? true:
-					token.Text == "false" ? false: (object)token.Text,
-					token.Text, args
-					);
+				return (token.Text) switch
+				{
+					"null" => args?.Count > 0 ? new JsonScalar(null, args): JsonScalar.Null,
+					"true" => args?.Count > 0 ? new JsonScalar(true, args): JsonScalar.True,
+					"false" => args?.Count > 0 ? new JsonScalar(false, args): JsonScalar.False,
+					_ => new JsonScalar(token.Value, args)
+				};
 			Scanner.Back();
-			return new JsonScalar(null, args);
+			return args?.Count > 0 ? new JsonScalar(null, args): JsonScalar.Null;
 		}
 
 		private JsonMap ParseMap(List<JsonPair>? args)
@@ -146,7 +145,7 @@ namespace Lexxys
 					throw SyntaxException("Expected name of the element.");
 
 				string name = token.Text;
-				JsonItem value = JsonItem.Empty;
+				JsonItem? value = null;
 				if (Scanner.Next().Is(LexicalTokenType.SEQUENCE, COLON, PRMBEG))
 				{
 					bool colon = Scanner.Current.Is(LexicalTokenType.SEQUENCE, COLON);
@@ -154,7 +153,7 @@ namespace Lexxys
 						Scanner.Next();
 					value = ParseItem(!colon);
 				}
-				result.Add(new JsonPair(name, value));
+				result.Add(new JsonPair(name, value ?? JsonScalar.True));
 
 				if (Scanner.Next().Is(LexicalTokenType.SEQUENCE, OBJEND))
 					return new JsonMap(result, args);

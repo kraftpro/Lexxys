@@ -12,6 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Microsoft.Extensions.Primitives;
 
 namespace Lexxys
 {
@@ -19,22 +20,44 @@ namespace Lexxys
 
 	public abstract class JsonItem
 	{
-		public static readonly JsonItem Empty = new EmptyItem();
+		protected const string NullValue = "null";
+		protected const string TrueValue = "true";
+		protected const string FalseValue = "false";
+		protected static readonly byte[] NullBytes = new[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
+		protected static readonly byte[] TrueBytes = new[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
+		protected static readonly byte[] FalseBytes = new[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
+
 
 		public IReadOnlyList<JsonPair> Attributes { get; }
 		public virtual object? Value => null;
-		public virtual string? Text => null;
-		public virtual JsonItem this[string item] => Empty;
-		public virtual JsonItem this[int index] => Empty;
+		public virtual JsonItem? this[string item] => null;
+		public virtual JsonItem? this[int index] => null;
 		public virtual bool IsArray => false;
 		public virtual bool IsObject => false;
 		public virtual bool IsScalar => false;
-		public virtual bool IsEmpty => false;
 		public virtual int Count => 0;
-
-		protected JsonItem(IReadOnlyList<JsonPair>? attribues = null)
+		public string Text => Value switch
 		{
-			Attributes = attribues ?? Array.Empty<JsonPair>();
+			null => NullValue,
+			string s => s,
+			bool b => b ? TrueValue : FalseValue,
+			DateTime d => XmlTools.Convert(d),
+			DateTimeOffset x => XmlTools.Convert(x),
+			TimeSpan t => XmlTools.Convert(t),
+			byte[] y => Convert.ToBase64String(y, Base64FormattingOptions.None),
+			IConvertible c => c.ToString(null),
+			_ => Value.ToString() ?? String.Empty
+		};
+
+		protected JsonItem()
+		{
+			Attributes = _noAttributes;
+		}
+		private static readonly IReadOnlyList<JsonPair> _noAttributes = Array.Empty<JsonPair>();
+
+		protected JsonItem(IReadOnlyList<JsonPair>? attributes)
+		{
+			Attributes = attributes ?? _noAttributes;
 		}
 
 		public abstract XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false);
@@ -44,7 +67,9 @@ namespace Lexxys
 			if (name is null)
 				throw new ArgumentNullException(nameof(name));
 
-			return new XmlLiteNode(name, value, ignoreCase,
+			return Attributes.Count == 0 ?
+				new XmlLiteNode(name, value, ignoreCase, null, properties?.ToList()):
+				new XmlLiteNode(name, value, ignoreCase,
 				Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")).ToList(),
 				properties?.ToList());
 		}
@@ -53,9 +78,9 @@ namespace Lexxys
 		{
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
-
 			if (Attributes.Count == 0)
 				return text;
+
 			string separator = indent == null ? "," : ", ";
 			string comma = "(";
 			foreach (var attrib in Attributes)
@@ -64,24 +89,26 @@ namespace Lexxys
 				attrib.ToString(text, indent, stringLimit, arrayLimit);
 				comma = separator;
 			}
-			if (comma != "(")
-				text.Append(')');
+			text.Append(')');
 			return text;
 		}
 
 		public virtual void Write(Stream stream)
 		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
 			if (Attributes.Count == 0)
 				return;
+
 			stream.Write((byte)'(');
 			bool next = false;
-			foreach (var attrib in Attributes)
+			foreach (var attribute in Attributes)
 			{
 				if (next)
 					stream.Write((byte)',');
 				else
 					next = true;
-				attrib.Write(stream);
+				attribute.Write(stream);
 			}
 			stream.Write((byte)')');
 		}
@@ -120,61 +147,25 @@ namespace Lexxys
 		//}
 
 		public string ToString(bool format, int stringLimit = 0, int arrayLimit = 0)
-		{
-			return ToString(new StringBuilder(), format ? "": null, stringLimit, arrayLimit).ToString();
-		}
+			=> ToString(new StringBuilder(), format ? "" : null, stringLimit, arrayLimit).ToString();
 
-		public override string ToString()
-		{
-			return ToString(new StringBuilder()).ToString();
-		}
-
-		private class EmptyItem: JsonItem
-		{
-			public EmptyItem()
-			{
-			}
-
-			public override bool IsEmpty => true;
-
-			public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
-			{
-				return text;
-			}
-
-			public override void Write(Stream stream)
-			{
-			}
-
-			public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
-			{
-				return XmlLiteNode.Empty;
-			}
-		}
+		public override string ToString() => ToString(new StringBuilder()).ToString();
 	}
 
 	public readonly struct JsonPair: IEquatable<JsonPair>
 	{
-		public static readonly JsonPair Empty;
-
 		public string Name { get; }
 		public JsonItem Item { get; }
 
 		public JsonPair(string name, JsonItem item)
 		{
-			if (name is null || name.Length <= 0)
+			if (name is not { Length: >0})
 				throw new ArgumentNullException(nameof(name));
 			if (item is null)
 				throw new ArgumentNullException(nameof(item));
 
 			Name = name;
 			Item = item;
-		}
-
-		public JsonPair()
-		{
-			Name = String.Empty;
-			Item = JsonItem.Empty;
 		}
 
 		public void Deconstruct(out string name, out JsonItem item)
@@ -211,25 +202,11 @@ namespace Lexxys
 			stream.Write(Encoding.UTF8.GetBytes(Strings.EscapeCsString(Name)));
 			stream.Write((byte)':');
 			if (Item is null)
-				stream.Write(Null);
+				stream.Write(NullBytes);
 			else
 				Item.Write(stream);
 		}
-		private static readonly byte[] Null = new[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
-
-		//public bool TryWrite(Span<byte> buffer, out int length)
-		//{
-		//	var s = Strings.EscapeCsString(Name).AsSpan();
-		//	Encoding.UTF8.
-
-
-		//	stream.Write(Encoding.UTF8.GetBytes(Strings.EscapeCsString(Name)));
-		//	stream.Write((byte)':');
-		//	if (Item is null)
-		//		stream.Write(Null);
-		//	else
-		//		Item.Write(stream);
-		//}
+		private static readonly byte[] NullBytes = new[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
 
 		public string ToString(bool format, bool pair = false)
 		{
@@ -260,20 +237,21 @@ namespace Lexxys
 
 	public class JsonScalar: JsonItem
 	{
+		public static readonly JsonScalar Null = new JsonScalar(null);
+		public static readonly JsonScalar True = new JsonScalar(true);
+		public static readonly JsonScalar False = new JsonScalar(false);
+
 		public override object? Value { get; }
-		public override string Text { get; }
 		public override bool IsScalar => true;
 
-		public JsonScalar(object? value, IReadOnlyList<JsonPair>? attribues = null) : base(attribues)
+		public JsonScalar(object? value)
 		{
 			Value = value;
-			Text = String.Empty;
 		}
 
-		public JsonScalar(object? value, string text, IReadOnlyList<JsonPair>? attribues = null) : base(attribues)
+		public JsonScalar(object? value, IReadOnlyList<JsonPair>? attributes): base(attributes)
 		{
 			Value = value;
-			Text = text;
 		}
 
 		public string StringValue => Text;
@@ -352,12 +330,25 @@ namespace Lexxys
 				throw new ArgumentNullException(nameof(text));
 
 			base.ToString(text, indent, stringLimit, arrayLimit);
-			if (Value == null)
+			return Value switch
 			{
-				if (Attributes.Count == 0)
-					text.Append("null");
-			}
-			else if (Value is string s)
+				null => text.Append("null"),
+				string s => Escape(s),
+				bool b => text.Append(b ? "true" : "false"),
+				DateTime d => text.Append('"').Append(XmlTools.Convert(d)).Append('"'),
+				DateTimeOffset x => text.Append('"').Append(XmlTools.Convert(x)).Append('"'),
+				TimeSpan t => text.Append('"').Append(XmlTools.Convert(t)).Append('"'),
+				byte[] y => text.Append('"').Append(Convert.ToBase64String(y, Base64FormattingOptions.None)).Append('"'),
+				byte or sbyte or
+				short or ushort or
+				int or uint or
+				long or ulong or
+				float or double or
+				decimal => text.Append(Value),
+				_ => Escape(Value.ToString() ?? String.Empty)
+			};
+
+			StringBuilder Escape(string s)
 			{
 				if (stringLimit > 0 && s.Length > stringLimit)
 				{
@@ -369,32 +360,8 @@ namespace Lexxys
 				{
 					Strings.EscapeCsString(text, s);
 				}
+				return text;
 			}
-			else if (Text != null)
-			{
-				text.Append(Text);
-			}
-			else if (Value is bool b)
-			{
-				text.Append(b ? "true" : "false");
-			}
-			else if (Value is DateTime d)
-			{
-				text.Append('"').Append(XmlTools.Convert(d)).Append('"');
-			}
-			else if (Value is DateTimeOffset x)
-			{
-				text.Append('"').Append(XmlTools.Convert(x)).Append('"');
-			}
-			else if (Value is byte[] y)
-			{
-				text.Append('"').Append(Convert.ToBase64String(y, Base64FormattingOptions.None)).Append('"');
-			}
-			else
-			{
-				text.Append(Value.ToString());
-			}
-			return text;
 		}
 
 		public override void Write(Stream stream)
@@ -406,44 +373,46 @@ namespace Lexxys
 			if (Value == null)
 			{
 				if (Attributes.Count == 0)
-					stream.Write(Null);
+					stream.Write(NullBytes);
 			}
 			else if (Value is string s)
 			{
-				stream.Write(Encoding.UTF8.GetBytes(Strings.EscapeCsString(s)));
-			}
-			else if (Text != null)
-			{
-				stream.Write(Encoding.UTF8.GetBytes(Text));
+				Strings.EscapeUtf8CsString(stream, s.AsSpan());
 			}
 			else if (Value is bool b)
 			{
-				stream.Write(b ? True: False);
+				stream.Write(b ? TrueBytes: FalseBytes);
 			}
 			else if (Value is DateTime d)
 			{
-				stream.Write(Quot);
-				stream.Write(Encoding.UTF8.GetBytes(XmlTools.Convert(d)));
-				stream.Write(Quot);
+				stream.Write(Quote);
+				WriteDateTime(d, stream);
+				stream.Write(Quote);
 			}
 			else if (Value is DateTimeOffset x)
 			{
-				stream.Write(Quot);
-				stream.Write(Encoding.UTF8.GetBytes(XmlTools.Convert(x)));
-				stream.Write(Quot);
+				stream.Write(Quote);
+				WriteDateTimeOffset(x, stream);
+				stream.Write(Quote);
+			}
+			else if (Value is TimeSpan p)
+			{
+				stream.Write(Quote);
+				WriteTimeSpan(p, stream);
+				stream.Write(Quote);
 			}
 			else if (Value is byte[] y)
 			{
-				stream.Write(Quot);
+				stream.Write(Quote);
 				ToBase64(y, stream);
-				stream.Write(Quot);
+				stream.Write(Quote);
 			}
 			else
 			{
-				stream.Write(Encoding.UTF8.GetBytes(Value.ToString() ?? ""));
+				Strings.EscapeUtf8CsString(stream, (Value.ToString() ?? String.Empty).AsSpan());
 			}
 
-			static unsafe void ToBase64(byte[] data, Stream stream)
+			static void ToBase64(byte[] data, Stream stream)
 			{
 				const int BufferSize = 4096;
 				var base64 = new byte[BufferSize];
@@ -458,29 +427,187 @@ namespace Lexxys
 					stream.Write(base64, 0, writen);
 				}
 			}
+
+			static void WriteTimeSpan(TimeSpan value, Stream stream)
+			{
+				const int TicksPerSecond = 100000;
+				var ticks = value.Ticks >= long.MaxValue / TimeSpan.TicksPerSecond ? long.MaxValue / (TimeSpan.TicksPerSecond * TicksPerSecond): (value.Ticks / (TimeSpan.TicksPerSecond / TicksPerSecond * 10) + 5) / 10;
+				
+				if (ticks == 0)
+				{
+					stream.Write(ZeroTime);
+					return;
+				}
+				Span<byte> mem = stackalloc byte[50];
+				int index = 50;
+
+				int z = (int)(ticks % (60 * TicksPerSecond));
+				ticks /= 60 * TicksPerSecond;
+				if (z > 0)
+				{
+					mem[--index] = (byte)'S';
+					var c = z % TicksPerSecond;
+					if (c > 0)
+					{
+						index = Digits(mem, index, c);
+						mem[--index] = (byte)'.';
+					}
+					index = Digits(mem, index, z / TicksPerSecond);
+				}
+				z = (int)(ticks % 60);
+				ticks /= 60;
+				if (z > 0)
+					index = TimePart(mem, index, z, 'M');
+
+				z = (int)(ticks % 24);
+				ticks /= 24;
+				if (z > 0)
+					index = TimePart(mem, index, z, 'H');
+				if (ticks > 0)
+					index = TimePart(mem, index, (int)ticks, 'D');
+				mem[--index] = (byte)'P';
+				mem[--index] = (byte)'T';
+				stream.Write(mem.Slice(index));
+			}
+
+			static int TimePart(Span<byte> mem, int index, int value, char sign)
+			{
+				if (value <= 0)
+					return index;
+				mem[index--] = (byte)sign;
+				return Digits(mem, index, value);
+			}
+
+			static int Digits(Span<byte> mem, int index, int value)
+			{
+				do
+				{
+					mem[index--] = (byte)(value % 10 + '0');
+					value /= 10;
+				} while (value > 0);
+				return index;
+			}
+
+			static void WriteDateTime(DateTime value, Stream stream)
+			{
+				Span<byte> mem = stackalloc byte[50];
+				int index = PutDateTime(mem, 50, value);
+				stream.Write(mem.Slice(index));
+			}
+
+			static int PutDateTime(Span<byte> mem, int index, DateTime value)
+			{
+				const int TicksPerSecond = 100000;
+
+				long time = (value.TimeOfDay.Ticks / (TimeSpan.TicksPerSecond * TicksPerSecond * 10) + 5) / 10;
+				if (time > 0)
+				{
+					int z = (int)(time % (60 * TicksPerSecond));
+					int fract = z % TicksPerSecond;
+					if (fract > 0)
+					{
+						index = Digits(mem, index, fract);
+						mem[--index] = (byte)'.';
+					}
+					index = Digits2(mem, index, z / TicksPerSecond);
+					int minutes = (int)(time / 60 * TicksPerSecond);
+					mem[--index] = Colon;
+					index = Digits2(mem, index, minutes % 60);
+					mem[--index] = Colon;
+					index = Digits2(mem, index, minutes / 60);
+					mem[--index] = (byte)'T';
+				}
+				index = Digits2(mem, index, value.Day);
+				mem[--index] = Colon;
+				index = Digits2(mem, index, value.Month);
+				mem[--index] = Colon;
+				index = Digits4(mem, index, value.Year);
+				return index;
+			}
+
+			static void WriteDateTimeOffset(DateTimeOffset value, Stream stream)
+			{
+				Span<byte> mem = stackalloc byte[50];
+				int index = 50;
+
+				int offset = (int)(value.Offset.Ticks / TimeSpan.TicksPerMinute);
+				if (offset != 0)
+				{
+					if (offset % 60 > 0)
+					{
+						index = Digits2(mem, index, offset % 60);
+						mem[--index] = Colon;
+					}
+					index = Digits2(mem, index, offset / 60);
+					mem[--index] = offset < 0 ? (byte)'-' : (byte)'+';
+				}
+				else
+				{
+					mem[--index] = (byte)'Z';
+				}
+				index = PutDateTime(mem, index, value.DateTime);
+				stream.Write(mem.Slice(index));
+			}
+
+			static int Digits4(Span<byte> mem, int index, int value)
+			{
+				mem[--index] = (byte)(value % 10 + '0');
+				value /= 10;
+				mem[--index] = (byte)(value % 10 + '0');
+				value /= 10;
+				mem[--index] = (byte)(value % 10 + '0');
+				value /= 10;
+				mem[--index] = (byte)(value % 10 + '0');
+				return index;
+			}
+
+			static int Digits2(Span<byte> mem, int index, int value)
+			{
+				mem[--index] = (byte)(value % 10 + '0');
+				value /= 10;
+				mem[--index] = (byte)(value % 10 + '0');
+				return index;
+			}
 		}
-		private static readonly byte[] Null = new[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
-		private static readonly byte[] True = new[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
-		private static readonly byte[] False = new[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
-		private const byte Quot = (byte)'"';
+		private const byte Colon = (byte)':';
+		private const byte Quote = (byte)'"';
+		private static readonly byte[] ZeroTime = { (byte)'P', (byte)'T', (byte)'0', (byte)'S' };
 	}
 
 	public class JsonMap: JsonItem, IEnumerable<JsonPair>
 	{
 		public IReadOnlyList<JsonPair> Properties { get; }
 
-		public override JsonItem this[string name] => Properties.FirstOrDefault(o => o.Name == name).Item ?? base[name];
-		public override JsonItem this[int index] => index >= 0 && index < Properties.Count ? Properties[index].Item: base[index];
+		public override JsonItem? this[string name] => Properties.FirstOrDefault(o => o.Name == name).Item;
+		public override JsonItem? this[int index] => index >= 0 && index < Properties.Count ? Properties[index].Item: null;
 		public override int Count => Properties.Count;
 		public override bool IsObject => true;
 
-		public JsonMap(IReadOnlyList<JsonPair> properties, IReadOnlyList<JsonPair>? attribues = null): base(attribues)
+		public JsonMap(IReadOnlyList<JsonPair> properties)
 		{
-			Properties = ReadOnly.ReWrap(properties);
+			if (properties is null)
+				throw new ArgumentNullException(nameof(properties));
+			Properties = ReadOnly.ReWrap(properties)!;
 		}
 
-		public JsonMap(IWrappedList<JsonPair> properties, IReadOnlyList<JsonPair>? attribues = null): base(attribues)
+		public JsonMap(IWrappedList<JsonPair> properties)
 		{
+			if (properties is null)
+				throw new ArgumentNullException(nameof(properties));
+			Properties = properties;
+		}
+
+		public JsonMap(IReadOnlyList<JsonPair> properties, IReadOnlyList<JsonPair>? attributes): base(attributes)
+		{
+			if (properties is null)
+				throw new ArgumentNullException(nameof(properties));
+			Properties = ReadOnly.ReWrap(properties)!;
+		}
+
+		public JsonMap(IWrappedList<JsonPair> properties, IReadOnlyList<JsonPair>? attributes): base(attributes)
+		{
+			if (properties is null)
+				throw new ArgumentNullException(nameof(properties));
 			Properties = properties;
 		}
 
@@ -488,7 +615,7 @@ namespace Lexxys
 		{
 			var attribs = Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")).ToList();
 			var properties = new List<XmlLiteNode>();
-			if (Properties != null)
+			if (Properties.Count > 0)
 			{
 				foreach (var prop in Properties)
 				{
@@ -523,7 +650,7 @@ namespace Lexxys
 
 			base.ToString(text, indent, stringLimit, arrayLimit);
 			text.Append('{');
-			if (Properties != null)
+			if (Properties.Count > 0)
 			{
 				string? indent2 = indent == null ? null : indent + "  ";
 				string comma = "";
@@ -549,7 +676,7 @@ namespace Lexxys
 		{
 			base.Write(stream);
 			stream.Write((byte)'{');
-			if (Properties != null)
+			if (Properties.Count > 0)
 			{
 				bool next = false;
 				foreach (var item in Properties)
@@ -575,23 +702,41 @@ namespace Lexxys
 	{
 		private const string XmlItemName = "item";
 		public IReadOnlyList<JsonItem> Items { get; }
-		public override JsonItem this[int index] => index < 0 || index >= Items.Count ? base[index] : Items[index];
+		public override JsonItem? this[int index] => index >= 0 && index < Items.Count ? Items[index]: null;
 		public override int Count => Items.Count;
 		public override bool IsArray => true;
 
-		public JsonArray(IReadOnlyList<JsonItem> items, IReadOnlyList<JsonPair>? attribues = null): base(attribues)
+		public JsonArray(IReadOnlyList<JsonItem> items)
 		{
-			Items = ReadOnly.ReWrap(items);
+			if (items is null)
+				throw new ArgumentNullException(nameof(items));
+			Items = ReadOnly.ReWrap(items)!;
 		}
 
-		public JsonArray(IWrappedList<JsonItem> items, IReadOnlyList<JsonPair>? attribues = null): base(attribues)
+		public JsonArray(IWrappedList<JsonItem> items)
 		{
+			if (items is null)
+				throw new ArgumentNullException(nameof(items));
+			Items = items;
+		}
+
+		public JsonArray(IReadOnlyList<JsonItem> items, IReadOnlyList<JsonPair>? attributes): base(attributes)
+		{
+			if (items is null)
+				throw new ArgumentNullException(nameof(items));
+			Items = ReadOnly.ReWrap(items)!;
+		}
+
+		public JsonArray(IWrappedList<JsonItem> items, IReadOnlyList<JsonPair>? attributes): base(attributes)
+		{
+			if (items is null)
+				throw new ArgumentNullException(nameof(items));
 			Items = items;
 		}
 
 		public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
 		{
-			return ToXml(name, null, ignoreCase, Items?.Where(o => o != null && !o.IsEmpty).Select(o => o.ToXml(XmlItemName, ignoreCase, attributes)));
+			return ToXml(name, null, ignoreCase, Items.Select(o => (o ?? JsonScalar.Null).ToXml(XmlItemName, ignoreCase, attributes)));
 		}
 
 		public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
@@ -601,30 +746,28 @@ namespace Lexxys
 
 			base.ToString(text, indent, stringLimit, arrayLimit);
 			text.Append('[');
-			if (Items != null)
+			string? indent2 = indent == null ? null : indent + "  ";
+			string comma = "";
+			int i = 0;
+			foreach (var item in Items)
 			{
-				string? indent2 = indent == null ? null : indent + "  ";
-				string comma = "";
-				int i = 0;
-				foreach (var item in Items)
+				if (indent == null)
+					text.Append(comma);
+				else
+					text.AppendLine(comma).Append(indent2);
+				if (arrayLimit > 0 && ++i >= arrayLimit)
 				{
-					if (item == null || item.IsEmpty)
-						continue;
-					if (indent == null)
-						text.Append(comma);
-					else
-						text.AppendLine(comma).Append(indent2);
-					if (arrayLimit > 0 && ++i >= arrayLimit)
-					{
-						text.Append("...");
-						break;
-					}
-					item.ToString(text, indent2, stringLimit, arrayLimit);
-					comma = ",";
+					text.Append("...");
+					break;
 				}
-				if (comma.Length > 0 && indent != null)
-					text.AppendLine().Append(indent);
+				if (item == null)
+					JsonScalar.Null.ToString(text, indent2, stringLimit, arrayLimit);
+				else
+					item.ToString(text, indent2, stringLimit, arrayLimit);
+				comma = ",";
 			}
+			if (comma.Length > 0 && indent != null)
+				text.AppendLine().Append(indent);
 			text.Append(']');
 			return text;
 		}
@@ -633,19 +776,17 @@ namespace Lexxys
 		{
 			base.Write(stream);
 			stream.Write((byte)'[');
-			if (Items != null)
+			bool next = false;
+			foreach (var item in Items)
 			{
-				bool next = false;
-				foreach (var item in Items)
-				{
-					if (item == null || item.IsEmpty)
-						continue;
-					if (next)
-						stream.Write((byte)',');
-					else
-						next = true;
+				if (next)
+					stream.Write((byte)',');
+				else
+					next = true;
+				if (item is null)
+					stream.Write(NullBytes);
+				else
 					item.Write(stream);
-				}
 			}
 			stream.Write((byte)']');
 		}
@@ -770,18 +911,18 @@ namespace Lexxys
 		public static JsonMap J(JsonPair pair) => new JsonMap(new[] { pair });
 		public static JsonMap J(params JsonPair[] pair) => new JsonMap(pair);
 		public static JsonMap J(List<JsonPair> pair) => new JsonMap(pair);
-		public static JsonMap J(IList<JsonPair> pair) => new JsonMap(ReadOnly.Wrap(pair));
+		public static JsonMap J(IList<JsonPair> pair) => new JsonMap(ReadOnly.Wrap(pair)!);
 		public static JsonMap J(IReadOnlyList<JsonPair> pair) => new JsonMap(pair);
-		public static JsonMap J(IEnumerable<JsonPair> pair) => new JsonMap(ReadOnly.WrapCopy(pair));
+		public static JsonMap J(IEnumerable<JsonPair> pair) => new JsonMap(ReadOnly.WrapCopy(pair)!);
 
 		// JsonArray
 
 		public static JsonArray J(JsonItem pair) => new JsonArray(new[] { pair });
 		public static JsonArray J(params JsonItem[] pair) => new JsonArray(pair);
 		public static JsonArray J(List<JsonItem> pair) => new JsonArray(pair);
-		public static JsonArray J(IList<JsonItem> pair) => new JsonArray(ReadOnly.Wrap(pair));
+		public static JsonArray J(IList<JsonItem> pair) => new JsonArray(ReadOnly.Wrap(pair)!);
 		public static JsonArray J(IReadOnlyList<JsonItem> pair) => new JsonArray(pair);
-		public static JsonArray J(IEnumerable<JsonItem> pair) => new JsonArray(ReadOnly.WrapCopy(pair));
+		public static JsonArray J(IEnumerable<JsonItem> pair) => new JsonArray(ReadOnly.WrapCopy(pair)!);
 
 		// JsonPair
 
@@ -789,15 +930,15 @@ namespace Lexxys
 		public static JsonPair J(string name, object value) => new JsonPair(name, new JsonScalar(value));
 
 		public static JsonPair J(string name, params JsonPair[] value) => new JsonPair(name, new JsonMap(value));
-		public static JsonPair J(string name, List<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)));
-		public static JsonPair J(string name, IList<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)));
+		public static JsonPair J(string name, List<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)!));
+		public static JsonPair J(string name, IList<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)!));
 		public static JsonPair J(string name, IReadOnlyList<JsonPair> value) => new JsonPair(name, new JsonMap(value));
-		public static JsonPair J(string name, IEnumerable<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.WrapCopy(value)));
+		public static JsonPair J(string name, IEnumerable<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.WrapCopy(value)!));
 
 		public static JsonPair J(string name, params JsonItem[] value) => new JsonPair(name, new JsonArray(value));
 		public static JsonPair J(string name, List<JsonItem> value) => new JsonPair(name, new JsonArray(value));
-		public static JsonPair J(string name, IList<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.Wrap(value)));
+		public static JsonPair J(string name, IList<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.Wrap(value)!));
 		public static JsonPair J(string name, IReadOnlyList<JsonItem> value) => new JsonPair(name, new JsonArray(value));
-		public static JsonPair J(string name, IEnumerable<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.WrapCopy(value)));
+		public static JsonPair J(string name, IEnumerable<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.WrapCopy(value)!));
 	}
 }

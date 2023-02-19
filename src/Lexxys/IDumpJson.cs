@@ -5,12 +5,8 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Lexxys
 {
@@ -32,7 +28,6 @@ namespace Lexxys
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static StringBuilder ToJson(this IDumpJson? obj, StringBuilder text)
 		{
-			Contract.Ensures(Contract.Result<StringBuilder>() != null);
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
 			if (obj == null)
@@ -44,7 +39,6 @@ namespace Lexxys
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string ToJson(this IDumpJson? obj)
 		{
-			Contract.Ensures(Contract.Result<string>() != null);
 			return obj?.ToJson(new JsonStringBuilder()).ToString() ?? String.Empty;
 		}
 	}

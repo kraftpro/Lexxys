@@ -8,7 +8,6 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
-using System.Configuration;
 
 using Microsoft.Extensions.Logging;
 
@@ -29,7 +28,7 @@ namespace Lexxys
 			get
 			{
 				if (_log == null)
-					Interlocked.CompareExchange(ref _log, Statics.TryGetLogger("Lexxys.Lxx"), null);
+					Interlocked.CompareExchange(ref _log, Statics.TryGetLogger("Lexxys"), null);
 				return _log;
 			}
 		}
@@ -38,37 +37,6 @@ namespace Lexxys
 		public static string AnonymousConfigurationFile => "application";
 
 		public static string GlobalConfigurationFile => "global";
-
-#if NETCOREAPP
-		public static string GlobalConfigurationDirectory => @"C:\Application\Config";
-#else
-		public static string GlobalConfigurationDirectory => ConfigurationManager.AppSettings["ConfigurationDirectory"] ?? @"C:\Application\Config";
-#endif
-
-		public static string ConfigurationFile => __configurationFile.Value;
-		private static readonly Lazy<string> __configurationFile = new Lazy<string>(GetConfigurationFile, true);
-
-		private static string GetConfigurationFile()
-		{
-			string configFile = AssemblyLocation;
-			if (configFile.Length == 0)
-			{
-				configFile = AnonymousConfigurationFile;
-			}
-			else
-			{
-				int i = configFile.LastIndexOf('\\');
-				int j = configFile.LastIndexOf('/');
-				if (i < j)
-					i = j;
-				if (i >= 0)
-					configFile = configFile.Substring(i + 1);
-				i = configFile.LastIndexOf('.');
-				if (i > 0)
-					configFile = configFile.Substring(0, i);
-			}
-			return configFile;
-		}
 
 		public static string? ProductName => __productName.Value;
 		private static readonly Lazy<string?> __productName = new Lazy<string?>(() => FileVersionInfo.GetVersionInfo(AssemblyLocation).ProductName, true);

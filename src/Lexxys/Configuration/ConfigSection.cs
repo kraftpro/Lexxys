@@ -16,26 +16,17 @@ namespace Lexxys.Configuration
 	{
 		private readonly string _path;
 		private readonly IConfigSource _configSource;
-		private bool _disposable;
 
 		public ConfigSection(IConfigSource configSource)
 		{
-			if (configSource is null)
-				throw new ArgumentNullException(nameof(configSource));
-
 			_path = String.Empty;
-			_configSource = configSource;
-			_disposable = configSource is IDisposable;
+			_configSource = configSource ?? throw new ArgumentNullException(nameof(configSource));
 		}
 
 		private ConfigSection(IConfigSource configSource, string? path)
 		{
-			if (configSource is null)
-				throw new ArgumentNullException(nameof(configSource));
-
 			_path = path?.Trim(Dots) ?? String.Empty;
-			_configSource = configSource;
-			_disposable = configSource is IDisposable;
+			_configSource = configSource ?? throw new ArgumentNullException(nameof(configSource));
 		}
 
 		#region IConfigSection
@@ -57,13 +48,13 @@ namespace Lexxys.Configuration
 				throw new ArgumentNullException(nameof(key));
 			if (path == null)
 				throw new ArgumentNullException(nameof(path));
-			key = key.Trim(Dots);
+			key = key.Trim(Dots).Replace(':', '.');
 			if (key == path)
 				_pathMap.TryRemove(key, out _);
 			else
 				_pathMap[key] = path;
 		}
-		private ConcurrentDictionary<string, string> _pathMap = new();
+		private readonly ConcurrentDictionary<string, string> _pathMap = new();
 
 		void IConfigSection.SetCollection<T>(string? path, IReadOnlyList<T> value)
 			=> Lists<T>.Add(Key(path), value);
@@ -84,10 +75,10 @@ namespace Lexxys.Configuration
 		{
 			return new ConfigValue<T>(GetConfigValue(Key(key), defaultValue), GetConfigVersion);
 
-			Func<T> GetConfigValue(string key, Func<T>? defaultValue)
-				=> defaultValue == null ?
-					() => Values<T>.TryGet(key, out var value) ? value : _configSource.GetValue(key, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(key, typeof(T)) :
-					() => Values<T>.TryGet(key, out var value) ? value : _configSource.GetValue(key, typeof(T)) is T value2 ? value2 : defaultValue();
+			Func<T> GetConfigValue(string k, Func<T>? dv)
+				=> dv == null ?
+					() => Values<T>.TryGet(k, out var value) ? value : _configSource.GetValue(k, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(k, typeof(T)) :
+					() => Values<T>.TryGet(k, out var value) ? value : _configSource.GetValue(k, typeof(T)) is T value2 ? value2 : dv();
 		}
 
 		private int GetConfigVersion() => _configSource.Version;
@@ -99,8 +90,8 @@ namespace Lexxys.Configuration
 			if (key == null)
 				return _path;
 			if (key.StartsWith("::", StringComparison.Ordinal))
-				return key.Trim(Dots);
-			var k = key.Trim(Dots);
+				return key.Trim(Dots).Replace(':', '.');
+			var k = key.Trim(Dots).Replace(':', '.');
 			if (k.Length == 0)
 				return _path;
 			if (_pathMap.TryGetValue(k, out var value))
@@ -191,12 +182,12 @@ namespace Lexxys.Configuration
 		}
 	}
 
-	public sealed class DisposibleConfigSection: IConfigSection, IDisposable
+	public sealed class DisposableConfigSection: IConfigSection, IDisposable
 	{
 		private readonly IConfigSection _configSection;
 		private readonly IDisposable _disposable;
 
-		public DisposibleConfigSection(IDisposableConfigSource configSource)
+		public DisposableConfigSection(IDisposableConfigSource configSource)
 		{
 			_configSection = new ConfigSection(configSource);
 			_disposable = configSource;

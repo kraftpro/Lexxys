@@ -314,7 +314,7 @@ Setting
 
 		public static IConfigProvider CreateConfig(string value, IReadOnlyCollection<string> parameters = null)
 		{
-			return XmlConfigurationProvider.Create(new Uri(value), parameters) ?? throw new InvalidOperationException("Cannot create configuration");
+			return XmlConfigurationProvider.TryCreate(new Uri(value), parameters) ?? throw new InvalidOperationException("Cannot create configuration");
 		}
 
 

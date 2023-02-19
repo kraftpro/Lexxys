@@ -5,6 +5,8 @@
 // You may use this code under the terms of the MIT license
 //
 
+using System;
+
 #pragma warning disable CA2225 // Operator overloads have named alternates
 
 namespace Lexxys
@@ -17,18 +19,18 @@ namespace Lexxys
 
 		internal ValidationResultsItem(string field)
 		{
-			Field = field;
+			Field = field ?? throw new ArgumentNullException(nameof(field));
 			ErrorInfo = ErrorInfo.Empty;
 		}
 		internal ValidationResultsItem(string field, string? message)
 		{
-			Field = field;
+			Field = field ?? throw new ArgumentNullException(nameof(field));
 			Message = message;
 			ErrorInfo = ErrorInfo.Empty;
 		}
 		internal ValidationResultsItem(string field, string? message, ErrorInfo? errorInfo)
 		{
-			Field = field;
+			Field = field ?? throw new ArgumentNullException(nameof(field));
 			Message = message;
 			ErrorInfo = errorInfo ?? ErrorInfo.Empty;
 		}

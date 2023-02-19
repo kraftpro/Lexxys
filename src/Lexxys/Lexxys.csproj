@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;netstandard2.0;net471</TargetFrameworks>
+    <TargetFrameworks>net7.0;net6.0;netstandard2.0;net472</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <!--<EnablePreviewFeatures>true</EnablePreviewFeatures>-->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -17,13 +17,8 @@
     <RootNamespace>Lexxys</RootNamespace>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <AnalysisLevel>6.0-all</AnalysisLevel>
-    <LangVersion>preview</LangVersion>
+    <AnalysisLevel>9999</AnalysisLevel>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net471'">
-    <NoWarn></NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -34,24 +29,21 @@
     <PackageProjectUrl>https://github.com/kraftpro/Lexxys</PackageProjectUrl>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
-    <NoWarn />
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
-    <NoWarn />
-  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Data\RowsCollection.cs" />
+  </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
-    <PackageReference Include="System.Diagnostics.EventLog" Version="6.0.0" />
-    <PackageReference Include="System.Runtime.Caching" Version="6.0.0" />
-    <PackageReference Include="System.Security.Permissions" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="7.0.0" />
+    <PackageReference Include="System.Runtime.Caching" Version="7.0.0" />
+    <PackageReference Include="System.Security.Permissions" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>

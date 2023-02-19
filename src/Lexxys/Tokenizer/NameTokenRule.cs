@@ -115,7 +115,7 @@ namespace Lexxys.Tokenizer
 				if (text == null || text.Length == 0)
 					return null;
 			}
-			return stream.Token(TokenType, text.Length, text);
+			return stream.Token(TokenType, i, text);
 		}
 
 		private static bool IsNameStartCharacter(char value) => (Char.IsLetter(value) || value == '_');

@@ -1,42 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Lexxys.Testing;
 
-class RndSys: IRand
+/// <summary>
+/// Implementation of <see cref="IRand"/> using regular pseudo-random number generator.
+/// </summary>
+public class RndSys: IRand
 {
-	private Random _r;
+	private Random _r = new Random();
 
-	public RndSys()
-	{
-		_r = new Random();
-	}
+	/// <inheritdoc/>
+	public void Reset(int seed = 0) => _r = seed <= 0 ? new Random(): new Random(seed);
 
-	public RndSys(int seed)
-	{
-		_r = new Random(seed);
-	}
+	/// <inheritdoc/>
+	public int NextInt() => _r.Next();
 
-	public void Reset(int seed)
-	{
-		_r = seed < 0 ? new Random(): new Random(seed == 0 ? 314159: seed);
-	}
+	/// <inheritdoc/>
+	public double NextDouble() => _r.NextDouble();
 
-	public int NextInt()
-	{
-		return _r.Next();
-	}
-
-	public double NextDouble()
-	{
-		return _r.NextDouble();
-	}
-
-	public void NextBytes(byte[] buffer)
-	{
-		_r.NextBytes(buffer);
-	}
+	/// <inheritdoc/>
+	public void NextBytes(byte[] buffer) => _r.NextBytes(buffer);
 }

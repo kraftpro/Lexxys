@@ -54,7 +54,7 @@ namespace Lexxys
 		public IDisposable? Read(int timeout, string? source, int timingThreshold)
 		{
 			if (timingThreshold < 0)
-				throw EX.ArgumentOutOfRange("logTiming", timingThreshold);
+				throw new ArgumentOutOfRangeException(nameof(timingThreshold), timingThreshold, null);
 
 			ReaderWriterLockSlim? locker = _locker;
 			if (locker == null || locker.IsReadLockHeld || locker.IsWriteLockHeld)
@@ -92,7 +92,7 @@ namespace Lexxys
 		public IDisposable? Write(int timeout, string? source, int timingThreshold)
 		{
 			if (timingThreshold < 0)
-				throw EX.ArgumentOutOfRange("logTiming", timingThreshold);
+				throw new ArgumentOutOfRangeException(nameof(timingThreshold), timingThreshold, null);
 
 			ReaderWriterLockSlim? locker = _locker;
 			if (locker == null || locker.IsWriteLockHeld)

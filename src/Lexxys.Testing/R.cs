@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
+#pragma warning disable CA1720 // Identifier contains type name
+
 namespace Lexxys.Testing;
 
 public static class R
 {
-	public static RandItem<T> Any<T>(T first, T second, params T[] rest)
+	public static RandItem<T> Any<T>(T first, T second, params T[]? rest)
 	{
 		if (rest == null || rest.Length == 0)
 		{
@@ -33,7 +36,7 @@ public static class R
 				return RandItem<T>.Empty;
 			if (col.Count == 1)
 			{
-				var v = col.FirstOrDefault();
+				var v = col.FirstOrDefault()!;
 				return new RandItem<T>(1, v);
 			}
 			var vv = new T[col.Count];
@@ -75,14 +78,14 @@ public static class R
 	/// <typeparam name="T">Type of item value</typeparam>
 	/// <param name="pairs">Collection of values</param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(params IWeightValuePair<T>[] pairs) => new RandItem<T>(pairs);
+	public static RandItem<T> I<T>(params WeightValuePair<T>[] pairs) => new RandItem<T>(pairs);
 	/// <summary>
 	/// Create new <see cref="RandItem{T}"/> randomly returning item from provided collection <paramref name="pairs"/>
 	/// </summary>
 	/// <typeparam name="T">Type of item value</typeparam>
 	/// <param name="pairs">Collection of values</param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(IEnumerable<IWeightValuePair<T>> pairs) => new RandItem<T>(pairs);
+	public static RandItem<T> I<T>(IEnumerable<WeightValuePair<T>> pairs) => new RandItem<T>(pairs);
 
 	private const int MaxTries = 9999;
 
@@ -92,27 +95,9 @@ public static class R
 	/// <typeparam name="T">Type of item value</typeparam>
 	/// <param name="generator">Item value generator</param>
 	/// <param name="filter">Predicate on item value</param>
+	/// <param name="maxTries"></param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(Func<T> generator, Func<T, bool> filter)
-	{
-		if (generator == null)
-			throw new ArgumentNullException(nameof(generator));
-		if (filter == null)
-			throw new ArgumentNullException(nameof(filter));
-
-		return new RandItem<T>(() =>
-		{
-			T t;
-			int i = 0;
-			while (++i <= MaxTries)
-			{
-				t = generator();
-				if (filter(t))
-					return t;
-			}
-			return default;
-		});
-	}
+	public static RandItem<T> I<T>(Func<T> generator, Func<T, bool> filter, int maxTries = 0) => I<T>(1, generator, filter, maxTries);
 
 	/// <summary>
 	/// Creates a new <see cref="RandItem{T}"/>
@@ -121,25 +106,27 @@ public static class R
 	/// <param name="weight">Weight of the item</param>
 	/// <param name="generator">Item value generator</param>
 	/// <param name="filter">Predicate on item value</param>
+	/// <param name="maxTries"></param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(float weight, Func<T> generator, Func<T, bool> filter)
+	public static RandItem<T> I<T>(float weight, Func<T> generator, Func<T, bool> filter, int maxTries = 0)
 	{
 		if (generator == null)
 			throw new ArgumentNullException(nameof(generator));
 		if (filter == null)
 			throw new ArgumentNullException(nameof(filter));
+		if (maxTries <= 0)
+			maxTries = MaxTries;
 
 		return new RandItem<T>(weight, () =>
 		{
-			T t;
-			int i = 0;
-			while (++i <= MaxTries)
+			for (int i = 0; i < maxTries; ++i)
 			{
+				var t = generator();
 				t = generator();
 				if (filter(t))
 					return t;
 			}
-			return default;
+			throw new InvalidOperationException($"Cannot find an appropriate value in {maxTries} tries.");
 		});
 	}
 
@@ -149,24 +136,16 @@ public static class R
 	/// <typeparam name="T">Type of item value</typeparam>
 	/// <param name="generator">Item value generator</param>
 	/// <param name="filter">Predicate on item value</param>
+	/// <param name="maxTries"></param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(RandItem<T> generator, Func<T, bool> filter) => new RandItem<T>(() =>
+	public static RandItem<T> I<T>(RandItem<T> generator, Func<T, bool> filter, int maxTries = 0)
 	{
 		if (generator == null)
 			throw new ArgumentNullException(nameof(generator));
 		if (filter == null)
 			throw new ArgumentNullException(nameof(filter));
-
-		T t;
-		int i = 0;
-		while (++i <= MaxTries)
-		{
-			t = generator.NextValue();
-			if (filter(t))
-				return t;
-		}
-		return default;
-	});
+		return I<T>(1, () => generator.NextValue(), filter, maxTries);
+	}
 
 	/// <summary>
 	/// Creates a new <see cref="RandItem{T}"/>
@@ -175,26 +154,16 @@ public static class R
 	/// <param name="weight">Weight of the item</param>
 	/// <param name="generator">Item value generator</param>
 	/// <param name="filter">Predicate on item value</param>
+	/// <param name="maxTries"></param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(float weight, RandItem<T> generator, Func<T, bool> filter)
+	public static RandItem<T> I<T>(float weight, RandItem<T> generator, Func<T, bool> filter, int maxTries = 0)
 	{
 		if (generator == null)
 			throw new ArgumentNullException(nameof(generator));
 		if (filter == null)
 			throw new ArgumentNullException(nameof(filter));
 
-		return new RandItem<T>(weight, () =>
-		{
-			T t;
-			int i = 0;
-			while (++i <= MaxTries)
-			{
-				t = generator.NextValue();
-				if (filter(t))
-					return t;
-			}
-			return default;
-		});
+		return I<T>(weight, () => generator.NextValue(), filter, maxTries);
 	}
 
 	/// <summary>
@@ -215,23 +184,23 @@ public static class R
 
 	public static RandItem<int> Int(int min, int max) => new RandItem<int>(() => Rand.Int(min, max));
 	public static RandItem<int> Int(int max) => new RandItem<int>(() => Rand.Int(max));
-	public static RandItem<string> Int(int min, int max, string format) => new RandItem<string>(() => Rand.Int(min, max).ToString(format));
-	public static RandItem<string> Int(int min, int max, RandItem<string> format) => new RandItem<string>(() => Rand.Int(min, max).ToString(format));
+	public static RandItem<string> Int(int min, int max, string format) => new RandItem<string>(() => Rand.Int(min, max).ToString(format, CultureInfo.InvariantCulture));
+	public static RandItem<string> Int(int min, int max, RandItem<string> format) => new RandItem<string>(() => Rand.Int(min, max).ToString(format, CultureInfo.InvariantCulture));
 
 	public static RandItem<long> Int(long min, long max) => new RandItem<long>(() => Rand.Long(min, max));
 	public static RandItem<long> Int(long max) => new RandItem<long>(() => Rand.Long(max));
-	public static RandItem<string> Int(long min, long max, string format) => new RandItem<string>(() => Rand.Long(min, max).ToString(format));
-	public static RandItem<string> Int(long min, long max, RandItem<string> format) => new RandItem<string>(() => Rand.Long(min, max).ToString(format));
+	public static RandItem<string> Int(long min, long max, string format) => new RandItem<string>(() => Rand.Long(min, max).ToString(format, CultureInfo.InvariantCulture));
+	public static RandItem<string> Int(long min, long max, RandItem<string> format) => new RandItem<string>(() => Rand.Long(min, max).ToString(format, CultureInfo.InvariantCulture));
 
 	public static RandItem<decimal> Dec(decimal min, decimal max) => new RandItem<decimal>(() => Rand.Dec(min, max));
 	public static RandItem<decimal> Dec(decimal max) => new RandItem<decimal>(() => Rand.Dec(max));
-	public static RandItem<string> Dec(decimal min, decimal max, string format) => new RandItem<string>(() => Rand.Dec(min, max).ToString(format));
-	public static RandItem<string> Dec(decimal min, decimal max, RandItem<string> format) => new RandItem<string>(() => Rand.Dec(min, max).ToString(format));
+	public static RandItem<string> Dec(decimal min, decimal max, string format) => new RandItem<string>(() => Rand.Dec(min, max).ToString(format, CultureInfo.InvariantCulture));
+	public static RandItem<string> Dec(decimal min, decimal max, RandItem<string> format) => new RandItem<string>(() => Rand.Dec(min, max).ToString(format, CultureInfo.InvariantCulture));
 
 	public static RandItem<double> Dbl(double min, double max) => new RandItem<double>(() => Rand.Dbl(min, max));
 	public static RandItem<double> Dbl(double max) => new RandItem<double>(() => Rand.Dbl(max));
-	public static RandItem<string> Dbl(double min, double max, string format) => new RandItem<string>(() => Rand.Dbl(min, max).ToString(format));
-	public static RandItem<string> Dbl(double min, double max, RandItem<string> format) => new RandItem<string>(() => Rand.Dbl(min, max).ToString(format));
+	public static RandItem<string> Dbl(double min, double max, string format) => new RandItem<string>(() => Rand.Dbl(min, max).ToString(format, CultureInfo.InvariantCulture));
+	public static RandItem<string> Dbl(double min, double max, RandItem<string> format) => new RandItem<string>(() => Rand.Dbl(min, max).ToString(format, CultureInfo.InvariantCulture));
 
 	public static RandItem<string> Concat(params RandItem<string>[] items) => new RandItem<string>(() => String.Join("", items.Select(o => o.NextValue())));
 	public static RandItem<string> Concat(IEnumerable<RandItem<string>> items) => new RandItem<string>(() => String.Join("", items.Select(o => o.NextValue())));
@@ -239,8 +208,8 @@ public static class R
 	public static RandItem<string> Concat<T>(params RandItem<T>[] items) => new RandItem<string>(() => String.Join("", items.Select(o => o.ToString())));
 	public static RandItem<string> Concat<T>(IEnumerable<RandItem<T>> items) => new RandItem<string>(() => String.Join("", items.Select(o => o.ToString())));
 
-	public static RandItem<string> Concat<T>(Func<T, string> convert, params RandItem<T>[] items) => new RandItem<string>(() => String.Join("", items.Select(o => convert(o))));
-	public static RandItem<string> Concat<T>(Func<T, string> convert, IEnumerable<RandItem<T>> items) => new RandItem<string>(() => String.Join("", items.Select(o => convert(o))));
+	public static RandItem<string> Concat<T>(Func<T, string> convert, params RandItem<T>[] items) => new RandItem<string>(() => String.Join("", items.Select(o => convert(o!))));
+	public static RandItem<string> Concat<T>(Func<T, string> convert, IEnumerable<RandItem<T>> items) => new RandItem<string>(() => String.Join("", items.Select(o => convert(o!))));
 
 	public static RandItem<char> DigitChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, 10) + '0'));
 	public static RandItem<char> LowerChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, 'z' - 'a' + 1) + 'a'));
@@ -259,7 +228,7 @@ public static class R
 	public static RandItem<string> LetterOrDigit(int length) => new RandItem<string>(() => new String(LetterOrDigitChar.Collect(length)));
 	public static RandItem<string> Str(RandItem<char> ci, int length) => new RandItem<string>(() => new String(ci.Collect(length)));
 
-	public static List<string> LoadFile(string path, Func<string, string> filter = null)
+	public static List<string> LoadFile(string path, Func<string, string?>? filter = null)
 	{
 		var lines = new List<string>();
 		int blanks = 0;
@@ -295,38 +264,38 @@ public static class R
 
 	public static RandSeq<T> Sequance<T>(params RandItem<T>[] items) => new RandSeq<T>(items);
 
-	public static RandItem<string> Pic(double weight, string picture) => new RandItem<string>(Picture(weight, picture));
+	public static RandItem<string> Pic(double weight, string picture) => new RandItem<string>(Picture(weight, picture ?? throw new ArgumentNullException(nameof(picture))));
 	public static RandItem<string> Pic(params string[] picture) => Pic((IEnumerable<string>)picture);
 	public static RandItem<string> Pic(IEnumerable<string> picture) => new RandItem<string>(picture.Select(o => Picture(1, o)));
-	public static RandItem<string> Pic(params IWeightValuePair<string>[] picture) => Pic((IEnumerable<IWeightValuePair<string>>)picture);
-	public static RandItem<string> Pic(IEnumerable<IWeightValuePair<string>> picture) => new RandItem<string>(picture.Select(o => Picture(o.Weight, o.Value)));
+	public static RandItem<string> Pic(params WeightValuePair<string>[] picture) => Pic((IEnumerable<WeightValuePair<string>>)picture);
+	public static RandItem<string> Pic(IEnumerable<WeightValuePair<string>> picture) => new RandItem<string>(picture.Select(o => Picture(o.Weight, o.Value)));
 
-	public static IWeightValuePair<T> P<T>(double weight, T value) => WeightValuePair.Create(weight, value);
-	public static IWeightValuePair<T> P<T>(T value) => WeightValuePair.Create(value);
-	public static IWeightValuePair<T> P<T>(double weight, Func<T> value) => WeightValuePair.Create(weight, value);
-	public static IWeightValuePair<T> P<T>(Func<T> value) => WeightValuePair.Create(value);
-	public static IWeightValuePair<T> P<T>(double weight, RandItem<T> value) => WeightValuePair.Create(weight, () => value.NextValue());
-	public static IWeightValuePair<T> P<T>(RandItem<T> value) => WeightValuePair.Create(() => value.NextValue());
+	public static WeightValuePair<T> P<T>(double weight, T value) => WeightValuePair.Create(weight, value);
+	public static WeightValuePair<T> P<T>(T value) => WeightValuePair.Create(value);
+	public static WeightValuePair<T> P<T>(double weight, Func<T> value) => WeightValuePair.Create(weight, value);
+	public static WeightValuePair<T> P<T>(Func<T> value) => WeightValuePair.Create(value);
+	public static WeightValuePair<T> P<T>(double weight, RandItem<T> value) => WeightValuePair.Create(weight, () => value.NextValue());
+	public static WeightValuePair<T> P<T>(RandItem<T> value) => WeightValuePair.Create(() => value.NextValue());
 
-	private static IWeightValuePair<string> Picture(double weight, string picture)
+	private static WeightValuePair<string> Picture(double weight, string picture)
 	{
 		var r = RandSeq<string>.Empty;
 		int l = 0;
 		var rs = __pic.Replace(picture, Evaluator);
 		var result = r;
 		if (rs == picture)
-			return new WeightValuePair<string>(weight, rs);
+			return WeightValuePair.Create(weight, rs);
 		if (l < picture.Length)
 			result |= V(picture.Substring(l));
-		return new WeightFunctionPair<string>(weight, () => result.ToString());
+		return WeightValuePair.Create(weight, () => result.ToString());
 
 		string Evaluator(Match m)
 		{
-			string pad = null;
+			string pad = String.Empty;
 			if (m.Index > l)
 			{
 				string txt = picture.Substring(l, m.Index - l);
-				if (txt.EndsWith(" "))
+				if (txt.EndsWith(" ", StringComparison.InvariantCulture))
 				{
 					pad = " ";
 					txt = txt.Substring(0, txt.Length - 1);
@@ -338,7 +307,7 @@ public static class R
 			string value = m.Value;
 			string s = value;
 			RandItem<string> item;
-			if (!s.StartsWith("{"))
+			if (!s.StartsWith("{", StringComparison.InvariantCulture))
 			{
 				int len = s.Length;
 				item = I(() => pad + new String(R.DigitChar.Collect(len)));
@@ -347,7 +316,7 @@ public static class R
 			{
 				s = s.Substring(1, s.Length - 2);
 				int i = s.IndexOf(':');
-				string f = null;
+				string? f = null;
 				double p = 1.0;
 				if (i >= 0)
 				{
@@ -365,12 +334,12 @@ public static class R
 	}
 	private static readonly Regex __pic = new Regex("#+|{[^}]*}");
 
-	private static string GetResourceItem(double probability, string name, string format)
+	private static string GetResourceItem(double probability, string name, string? format)
 	{
 		return Rand.Dbl() >= probability ? "":
-			!Resources.Resource.TryGetValue(name, out var val) || val == null ? "":
+			!Resources.Resource.TryGetValue(name, out var val) ? "":
 			format == null ? val.ToString():
-			(val as IFormattable)?.ToString(format, null) ?? val.ToString();
+			val.ToString(format, null);
 	}
 
 	private static string Pad(string pad, string value)
@@ -388,8 +357,6 @@ public static class R
 
 	private static string GetLorem(int minLength, int maxLength, RandItem<string> words)
 	{
-		if (words == null)
-			throw new ArgumentNullException(nameof(words));
 		if (minLength < 0)
 			throw new ArgumentOutOfRangeException(nameof(minLength), minLength, null);
 		if (maxLength < MinLoremLength)
@@ -422,7 +389,7 @@ public static class R
 				text.Append(' ');
 			}
 			if (ucase)
-				text.Append(Char.ToUpperInvariant(s[0])).Append(s.Substring(1));
+				text.Append(Char.ToUpperInvariant(s[0])).Append(s.AsSpan(1));
 			else
 				text.Append(s);
 			ucase = false;

@@ -68,7 +68,7 @@ namespace Lexxys
 		new bool SetEquals(IEnumerable<T> items);
 	}
 
-	public interface IWrappedDictionary<TKey, TValue>: IReadOnlyDictionary<TKey, TValue>, ISafeDictionary<TKey, TValue>, IDictionary<TKey, TValue>, IDictionary, IWrappedCollection<KeyValuePair<TKey, TValue>> where TKey: notnull
+	public interface IWrappedDictionary<TKey, TValue>: ISafeDictionary<TKey, TValue>, IDictionary, IWrappedCollection<KeyValuePair<TKey, TValue>> where TKey: notnull
 	{
 		new void Clear();
 		new bool IsReadOnly { get; }
@@ -88,15 +88,9 @@ namespace Lexxys
 
 		public static IWrappedDictionary<TKey, TValue> Empty<TKey, TValue>() where TKey: notnull => EmptyDictionaryInstance<TKey, TValue>.DictionaryValue;
 
-		public static IWrappedList<T> Empty<T>(IEnumerable<T> _) => EmptyCollectionInstance<T>.ListValue;
+		public static IWrappedSafeList<T> EmptySafe<T>() => EmptyCollectionInstance<T>.SafeListValue;
 
-		public static IWrappedSet<T> Empty<T>(ISet<T> _) => EmptyCollectionInstance<T>.SetValue;
-
-		public static IWrappedSafeList<T> Empty<T>(ISafeList<T> _) => EmptyCollectionInstance<T>.SafeListValue;
-
-		public static IDictionary<TKey, TValue> Empty<TKey, TValue>(IDictionary<TKey, TValue> _) where TKey: notnull => EmptyDictionaryInstance<TKey, TValue>.DictionaryValue;
-
-		public static IWrappedSafeList<T> EmptySafeCollection<T>() => EmptyCollectionInstance<T>.SafeListValue;
+		public static ISafeDictionary<TKey, TValue> EmptySafe<TKey, TValue>() where TKey: notnull => EmptyDictionaryInstance<TKey, TValue>.SafeDictionaryValue;
 
 		public static IWrappedSet<T> EmptySet<T>() => EmptyCollectionInstance<T>.SetValue;
 
@@ -117,11 +111,11 @@ namespace Lexxys
 
 		#endregion
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedDictionary<TKey, TValue>? Wrap<TKey, TValue>(IDictionary<TKey, TValue>? value) where TKey: notnull
 			=> value == null ? null: new ReadOnlyDictionaryWrap<TKey, TValue>(value);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedDictionary<TKey, TValue>? WrapCopy<TKey, TValue>(IDictionary<TKey, TValue>? value) where TKey: notnull
 			=> value == null ? null:
 				value.Count == 0 ? Empty<TKey, TValue>(): new ReadOnlyDictionaryWrap<TKey, TValue>(new Dictionary<TKey, TValue>(value));
@@ -129,35 +123,35 @@ namespace Lexxys
 		public static IWrappedList<T> WrapValue<T>(params T[]? value)
 			=> value == null || value.Length == 0 ? Empty<T>(): new ReadOnlyArrayWrap<T>(value);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedList<T>? Wrap<T>(T[]? value)
 			=> value == null ? null: value.Length == 0 ? Empty<T>(): new ReadOnlyArrayWrap<T>(value);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedList<T>? Wrap<T>(T[]? value, int offset, int count = -1)
 			=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyArrayFragmentWrap<T>(value, offset, count);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedList<T>? Wrap<T>(IList<T>? value)
 			=> value == null ? null: new ReadOnlyListWrap<T>(value);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedList<T>? Wrap<T>(IList<T>? value, int offset, int count = -1)
 			=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyListFragmentWrap<T>(value, offset, count);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedSafeList<T>? Wrap<T>(ISafeList<T>? value)
 			=> value == null ? null: new ReadOnlySafeListWrap<T>(value);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedSafeList<T>? Wrap<T>(ISafeList<T>? value, int offset, int count = -1)
-			=> value == null ? null: count == 0 ? EmptySafeCollection<T>(): new ReadOnlySafeListFragmentWrap<T>(value, offset, count);
+			=> value == null ? null: count == 0 ? EmptySafe<T>(): new ReadOnlySafeListFragmentWrap<T>(value, offset, count);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedCollection<T>? Wrap<T>(ICollection<T>? value)
 			=> value == null ? null: (IWrappedCollection<T>)new ReadOnlyCollectionWrap<T>(value);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedList<T>? WrapCopy<T>(ICollection<T>? value)
 		{
 			if (value == null)
@@ -169,11 +163,11 @@ namespace Lexxys
 			return new ReadOnlyArrayWrap<T>(items);
 		}
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IEnumerable<T>? Wrap<T>(IEnumerable<T>? value)
 			=> value == null ? null: (IEnumerable<T>)new ReadOnlyEnumerableWrap<T>(value);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedList<T>? WrapCopy<T>(IEnumerable<T>? value)
 		{
 			if (value == null)
@@ -183,29 +177,29 @@ namespace Lexxys
 			return new ReadOnlyListWrap<T>(new List<T>(value));
 		}
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedSet<T>? Wrap<T>(ISet<T>? value)
 			=> value == null ? null: new ReadOnlySetWrap<T>(value);
 
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IWrappedSet<T>? WrapCopy<T>(ISet<T>? value)
 			=> value == null ? null: value.Count == 0 ? EmptySet<T>(): new ReadOnlySetWrap<T>(new HashSet<T>(value));
 
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IReadOnlyList<T>? ReWrap<T>(IReadOnlyList<T>? value)
 			=> value == null ? null: new ReadOnlyListReWrap<T>(value);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IReadOnlyList<T>? ReWrap<T>(IReadOnlyList<T>? value, int offset, int count = -1)
 			=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyListFragmentReWrap<T>(value, offset, count);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IReadOnlyCollection<T>? ReWrap<T>(IReadOnlyCollection<T>? value)
 			=> value == null ? null: new ReadOnlyCollectionReWrap<T>(value);
 
-		[return: NotNullIfNotNull("value")]
+		[return: NotNullIfNotNull(nameof(value))]
 		public static IReadOnlyDictionary<TKey, TValue>? ReWrap<TKey, TValue>(IReadOnlyDictionary<TKey, TValue>? value)
 			=> value == null ? null: new ReadOnlyDictionaryReWrap<TKey, TValue>(value);
 
@@ -219,7 +213,7 @@ namespace Lexxys
 		public static CollectionValueWrap<T> ValueWrap<T>(IReadOnlyCollection<T>? value)
 			=> value == null ? CollectionValueWrap<T>.Empty: new CollectionValueWrap<T>(value);
 
-		public static DictionaryValueWrap<TKey, TValue> ValueWrap<TKey, TValue>(IReadOnlyDictionary<TKey, TValue> value) where TKey: notnull
+		public static DictionaryValueWrap<TKey, TValue> ValueWrap<TKey, TValue>(IReadOnlyDictionary<TKey, TValue>? value) where TKey: notnull
 			=> value == null ? DictionaryValueWrap<TKey, TValue>.Empty: new DictionaryValueWrap<TKey, TValue>(value);
 
 		#region Implementation
@@ -334,7 +328,7 @@ namespace Lexxys
 
 			public bool ContainsKey(TKey key) => _dictionary.ContainsKey(key);
 
-			public TValue this[TKey key] { get => _dictionary[key]; }
+			public TValue this[TKey key] => _dictionary[key];
 
 			public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _dictionary.TryGetValue(key, out value);
 
@@ -363,7 +357,7 @@ namespace Lexxys
 
 			public bool ContainsKey(TKey key) => _dictionary.ContainsKey(key);
 
-			public TValue this[TKey key] { get => _dictionary[key]; }
+			public TValue this[TKey key] => _dictionary[key];
 
 			public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _dictionary.TryGetValue(key, out value);
 
@@ -481,13 +475,13 @@ namespace Lexxys
 			public T this[int index]
 			{
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
-				get { return _list[index]; }
+				get => _list[index];
 			}
 
 			public int Count
 			{
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
-				get { return _list.Count; }
+				get => _list.Count;
 			}
 
 			public void CopyTo(T[] array, int index)
@@ -712,7 +706,7 @@ namespace Lexxys
 		{
 			public T this[int index]
 			{
-				get { return default!; }
+				get => default!;
 				set { }
 			}
 
@@ -849,7 +843,7 @@ namespace Lexxys
 		{
 			private readonly IEnumerable<T> _enumerable;
 
-			public ReadOnlyEnumerableWrap(IEnumerable<T> enumerable) => _enumerable = enumerable?.AsEnumerable() ?? throw new ArgumentNullException(nameof(enumerable));
+			public ReadOnlyEnumerableWrap(IEnumerable<T> enumerable) => _enumerable = (enumerable?? throw new ArgumentNullException(nameof(enumerable))).AsEnumerable();
 
 			public IEnumerator<T> GetEnumerator() => _enumerable.GetEnumerator();
 

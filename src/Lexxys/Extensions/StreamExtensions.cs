@@ -30,6 +30,17 @@ namespace Lexxys
 				return;
 			stream.Write(value, 0, value.Length);
 		}
+
+#if !NET5_0_OR_GREATER
+		public static void Write(this Stream stream, ReadOnlySpan<byte> value)
+		{
+			if (stream is null)
+				throw new ArgumentNullException(nameof(stream));
+			if (value == null)
+				return;
+			stream.Write(value.ToArray(), 0, value.Length);
+		}
+#endif
 	}
 }
 

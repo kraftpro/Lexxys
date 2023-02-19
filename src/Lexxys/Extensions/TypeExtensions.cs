@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Microsoft.Extensions.Primitives;
-
 namespace Lexxys
 {
 	public static class TypeExtensions
@@ -55,32 +53,6 @@ namespace Lexxys
 
 			text.Append(SimpleName(type));
 			return;
-			//var name = type.Name;
-			//int i = name.IndexOf('`');
-			//if (i < 0)
-			//{
-			//	text.Append(SimpleName(type));
-			//	return;
-			//}
-
-			//char c;
-			//bool valueType = name.StartsWith("ValueTuple`", StringComparison.Ordinal);
-			//if (valueType)
-			//{
-			//	c = '(';
-			//}
-			//else
-			//{
-			//	c = '<';
-			//	text.Append(name, 0, i);
-			//}
-			//foreach (var item in type.GetGenericArguments())
-			//{
-			//	text.Append(c);
-			//	BuildTypeName(text, item);
-			//	c = ',';
-			//}
-			//text.Append(valueType ? ')' : '>');
 		}
 
 		private static void BuildArrayTypeName(StringBuilder text, Type type)

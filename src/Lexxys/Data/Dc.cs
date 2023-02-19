@@ -471,7 +471,7 @@ namespace Lexxys.Data
 			return String.Join("", m.Groups[1].Captures.Cast<Capture>().Select(o => NamePart(o.Value) + ".")) + NamePart(m.Groups[2].Value);
 		}
 		private static readonly Regex __objectPartsRex = new Regex(@"\A(?:(?<a>\[(?:[^\]]|]])*\]|[^\.\[]*)\.){0,3}(?<b>.*)?\z", RegexOptions.IgnoreCase);
-		[return: NotNullIfNotNull("name")]
+		[return: NotNullIfNotNull(nameof(name))]
 		private static string NamePart(string? name)
 		{
 			return name == null ? String.Empty: name.Length == 0 || (name[0] == '[' && name[name.Length - 1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
@@ -742,7 +742,6 @@ namespace Lexxys.Data
 						{
 							if (!reader.IsDBNull(i))
 							{
-								var rdr = reader.GetTextReader(i);
 								text.Write(reader.GetString(i));
 								here = true;
 							}
@@ -772,7 +771,6 @@ namespace Lexxys.Data
 						{
 							if (!await reader.IsDBNullAsync(i).ConfigureAwait(false))
 							{
-								var rdr = reader.GetTextReader(i);
 								await text.WriteAsync(reader.GetString(i)).ConfigureAwait(false);
 								here = true;
 							}
@@ -827,19 +825,6 @@ namespace Lexxys.Data
 						}
 					}
 				} while (await reader.NextResultAsync().ConfigureAwait(false));
-			}
-			return result;
-		}
-
-		internal static List<RowsCollection> RecordsMapper(DbCommand cmd)
-		{
-			var result = new List<RowsCollection>();
-			using (var reader = cmd.ExecuteReader())
-			{
-				do
-				{
-					result.Add(new RowsCollection(reader));
-				} while (reader.NextResult());
 			}
 			return result;
 		}

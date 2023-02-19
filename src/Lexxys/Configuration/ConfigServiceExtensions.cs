@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lexxys
 {
 	using Configuration;
 
-	public static class IConfigServiceExtensions
+	using Lexxys;
+
+	public static class ConfigServiceExtensions
 	{
-		public static IServiceCollection AddConfigService(this IServiceCollection services)
+		public static IServiceCollection AddConfigService(this IServiceCollection services, Action<IConfigService>? config = default)
 		{
 			if (services is null)
 				throw new ArgumentNullException(nameof(services));
@@ -26,8 +24,20 @@ namespace Lexxys
 			services.AddSingleton<IConfigLogger>(provider);
 			services.AddSingleton(typeof(IConfigSection), typeof(ConfigSection));
 
+			config?.Invoke(provider);
+
 			return services;
 		}
 
+		public static IConfigService AddConfiguration(this IConfigService service, string path, IReadOnlyCollection<string>? parameters = null, bool tail = false)
+		{
+			if (service is null)
+				throw new ArgumentNullException(nameof(service));
+			if (path is null or { Length: 0 })
+				throw new ArgumentNullException(nameof(path));
+
+			service.AddConfiguration(new Uri(path, UriKind.RelativeOrAbsolute), parameters, tail);
+			return service;
+		}
 	}
 }

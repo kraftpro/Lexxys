@@ -8,17 +8,18 @@ using System;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Numerics;
 using System.Runtime.Serialization;
 using System.Threading;
+
+#if NET7_0_OR_GREATER
+using System.Numerics;
+#endif
 
 #pragma warning disable CA2225 // Operator overloads have named alternates
 #pragma warning disable CA1051 // Do not declare visible instance fields
 
 namespace Lexxys
 {
-	using System.Security.Claims;
-
 	using Xml;
 
 	/// <summary>
@@ -31,8 +32,10 @@ namespace Lexxys
 #endif
 #if NET6_0_OR_GREATER
 		ISpanFormattable,
+#else
+		IFormattable,
 #endif
-		IComparable, IComparable<Money>, IConvertible, IEquatable<Money>, IFormattable, ISerializable, IDumpValue, IDumpXml, IDumpJson
+		IComparable, IComparable<Money>, IConvertible, IEquatable<Money>, ISerializable, IDumpValue, IDumpXml, IDumpJson
 	{
 		private readonly long _value;
 		private readonly Currency _currency;
@@ -41,7 +44,7 @@ namespace Lexxys
 		/// Creates a new instance of <see cref="Money"/> for specified <paramref name="value"/> and <paramref name="currency"/>.
 		/// </summary>
 		/// <param name="value">Amount value</param>
-		/// <param name="currency">The money currency (when ommited <see cref="Currency"/>.ApplicationDefault will be used).</param>
+		/// <param name="currency">The money currency (when omitted <see cref="Currency"/>.ApplicationDefault will be used).</param>
 		public Money(int value, Currency? currency = null)
 		{
 			_currency = currency ?? Currency.ApplicationDefault;
@@ -52,7 +55,7 @@ namespace Lexxys
 		/// Creates a new instance of <see cref="Money"/> for specified <paramref name="value"/> and <paramref name="currency"/>.
 		/// </summary>
 		/// <param name="value">Amount value</param>
-		/// <param name="currency">The money currency (when ommited <see cref="Currency"/>.ApplicationDefault will be used).</param>
+		/// <param name="currency">The money currency (when omitted <see cref="Currency"/>.ApplicationDefault will be used).</param>
 		public Money(long value, Currency? currency = null)
 		{
 			_currency = currency ?? Currency.ApplicationDefault;
@@ -63,12 +66,12 @@ namespace Lexxys
 		/// Creates a new instance of <see cref="Money"/> for specified <paramref name="value"/> and <paramref name="currency"/>.
 		/// </summary>
 		/// <param name="value">Amount value</param>
-		/// <param name="currency">The money currency (when ommited <see cref="Currency"/>.ApplicationDefault will be used).</param>
+		/// <param name="currency">The money currency (when omitted <see cref="Currency"/>.ApplicationDefault will be used).</param>
 		public Money(decimal value, Currency? currency = null)
 		{
 			_currency = currency ?? Currency.ApplicationDefault;
 			var v = value * _currency.Multiplier;
-			if (v < long.MinValue || v > long.MaxValue)
+			if (v is < long.MinValue or > long.MaxValue)
 				throw new OverflowException($"The computed value {v} overflows of the valid range.")
 					.Add(nameof(value), value);
 			_value = (long)v;
@@ -78,7 +81,7 @@ namespace Lexxys
 		/// Creates a new instance of <see cref="Money"/> for specified <paramref name="value"/> and <paramref name="currency"/>.
 		/// </summary>
 		/// <param name="value">Amount value</param>
-		/// <param name="currency">The money currency (when ommited <see cref="Currency"/>.ApplicationDefault will be used).</param>
+		/// <param name="currency">The money currency (when omitted <see cref="Currency"/>.ApplicationDefault will be used).</param>
 		public Money(double value, Currency? currency = null)
 		{
 			_currency = currency ?? Currency.ApplicationDefault;
@@ -109,7 +112,7 @@ namespace Lexxys
 			else
 			{
 				int i = __internalCurrencies.FindIndex(o => o.Code == code);
-				_currency = i >= 0 ? __internalCurrencies[i]: Currency.Create(code, info.GetByte("prec"), info.GetString("sym"));
+				_currency = i >= 0 ? __internalCurrencies[i]: Currency.Create(code, info.GetByte("prc"), info.GetString("sym"));
 			}
 		}
 
@@ -117,7 +120,7 @@ namespace Lexxys
 		/// Creates a new instance of <see cref="Money"/> for specified amount in cents and currency.
 		/// </summary>
 		/// <param name="minorValue">The amount value in cents.</param>
-		/// <param name="currency">The money currency (when ommited <see cref="Currency"/>.ApplicationDefault will be used).</param>
+		/// <param name="currency">The money currency (when omitted <see cref="Currency"/>.ApplicationDefault will be used).</param>
 		/// <returns></returns>
 		public static Money Create(long minorValue, Currency? currency = null)
 		{
@@ -132,13 +135,19 @@ namespace Lexxys
 		/// Amount in cents.
 		/// </summary>
 		public long MinorAmount => _value;
+		/// <summary>
+		/// Amount value.
+		/// </summary>
 		public decimal Amount => (decimal)_value / Currency.Multiplier;
+		/// <summary>
+		/// Used currency.
+		/// </summary>
 		public Currency Currency => _currency ?? Currency.ApplicationDefault;
 
 		/// <summary>
 		/// Splits the <see cref="Money"/> value into two baskets according to the the specified <paramref name="ratio"/>.
 		/// </summary>
-		/// <param name="ratio">The ratio osed to splint the <see cref="Money"/> value.</param>
+		/// <param name="ratio">The ratio is used to splint the <see cref="Money"/> value.</param>
 		/// <returns></returns>
 		public (Money, Money) Split(double ratio)
 		{
@@ -163,7 +172,7 @@ namespace Lexxys
 				throw new ArgumentOutOfRangeException(nameof(denominator), denominator, null);
 
 			var value = (decimal)_value * numerator / denominator;
-			if (value < long.MinValue || value > long.MaxValue)
+			if (value is < long.MinValue or > long.MaxValue)
 				throw new OverflowException($"The computed value {value} overflows of the valid range.")
 					.Add(nameof(_value), _value)
 					.Add(nameof(numerator), numerator)
@@ -269,15 +278,15 @@ namespace Lexxys
 		/// <summary>
 		/// Distributes the money value evenly by specified <paramref name="count"/> of baskets.
 		/// </summary>
-		/// <param name="count">Number of buskets.</param>
+		/// <param name="count">Number of baskets.</param>
 		public Money[] Distribute(int count)
 		{
-			if (count < 0)
-				throw new ArgumentOutOfRangeException(nameof(count), count, null);
-			if (count == 0)
-				return Array.Empty<Money>();
-			if (count == 1)
-				return new[] { this };
+			switch (count)
+			{
+				case < 0: throw new ArgumentOutOfRangeException(nameof(count), count, null);
+				case 0: return Array.Empty<Money>();
+				case 1: return new[] { this };
+			}
 
 			var result = new Money[count];
 			long rest = _value;
@@ -292,30 +301,35 @@ namespace Lexxys
 			return result;
 		}
 
-		private static bool IsInRange(double value) => !double.IsNaN(value) && value >= long.MinValue && value <= long.MaxValue;
+		private static bool IsInRange(double value) => !double.IsNaN(value) && value is >= long.MinValue and <= long.MaxValue;
 
 		#region Object, IFormattable, IComparable, IComparable<Money>, IEquatable<Money>
 
+		/// <inheritdoc />
 		public override bool Equals(object? obj)
 		{
 			return (obj is Money money) && Equals(money);
 		}
 
+		/// <inheritdoc />
 		public bool Equals(Money other)
 		{
 			return Object.ReferenceEquals(Currency, other.Currency) && _value == other._value;
 		}
 
+		/// <inheritdoc />
 		public override int GetHashCode()
 		{
 			return HashCode.Join(_value.GetHashCode(), Currency.GetHashCode());
 		}
 
+		/// <inheritdoc />
 		public override string ToString()
 		{
 			return Amount.ToString("N" + Currency.Precision, CultureInfo.InvariantCulture) + " " + Currency.Code;
 		}
 
+		/// <inheritdoc />
 		public string ToString(string? format, IFormatProvider? formatProvider = null)
 		{
 			return Amount.ToString(format, formatProvider)
@@ -323,6 +337,7 @@ namespace Lexxys
 				.Replace("S", Currency.Code);
 		}
 
+		/// <inheritdoc />
 		public int CompareTo(Money other)
 		{
 			if (Currency == other.Currency)
@@ -330,6 +345,7 @@ namespace Lexxys
 			throw new ArgumentException(SR.DifferentCurrencyCodes(Currency, other.Currency));
 		}
 
+		/// <inheritdoc />
 		public int CompareTo(object? obj)
 		{
 			if (obj is Money money)
@@ -337,6 +353,7 @@ namespace Lexxys
 			throw new ArgumentOutOfRangeException(nameof(obj));
 		}
 
+		/// <inheritdoc />
 		public DumpWriter DumpContent(DumpWriter writer)
 		{
 			if (writer is null)
@@ -350,23 +367,54 @@ namespace Lexxys
 		private static readonly Money __one = new Money(1);
 		private static readonly Money __zero = new Money(0);
 
+		/// <summary>
+		/// Value negative one in the default <see cref="Currency"/>.
+		/// </summary>
 		public static Money NegativeOne => __negOne;
+		/// <summary>
+		/// Value one in the default <see cref="Currency"/>.
+		/// </summary>
 		public static Money One => __one;
+		/// <summary>
+		/// Radix of the <see cref="Money"/>.
+		/// </summary>
 		public static int Radix => 10;
+		/// <summary>
+		/// Value zero in the default <see cref="Currency"/>.
+		/// </summary>
 		public static Money Zero => __zero;
+		/// <summary>
+		/// Additive identity of <see cref="Money"/> in the default <see cref="Currency"/>
+		/// </summary>
 		public static Money AdditiveIdentity => __zero;
+		/// <summary>
+		/// Multiplicative identity of <see cref="Money"/> in the default <see cref="Currency"/>
+		/// </summary>
 		public static Money MultiplicativeIdentity => __one;
 
 		#region INumber
 
+		/// <summary>
+		/// Returns the absolute value of a <see cref="Money"/> number.
+		/// </summary>
+		/// <param name="value"></param>
+		/// <returns></returns>
 		public static Money Abs(Money value)
 		{
 			return Create(Math.Abs(value._value), value._currency);
 		}
 
+		/// <summary>
+		/// Returns a <see cref="Money"/> number in the specified range.
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="min"></param>
+		/// <param name="max"></param>
+		/// <returns></returns>
+		/// <exception cref="ArgumentException"></exception>
 		public static Money Clamp(Money value, Money min, Money max)
 		{
-			if (min < max)
+			if (min > max)
 				throw new ArgumentException(SR.ValueCannotBeGreaterThan(min, max));
 			if (value.Currency != min.Currency)
 				throw new ArgumentException(SR.DifferentCurrencyCodes(value.Currency, min.Currency));
@@ -375,11 +423,23 @@ namespace Lexxys
 			return value < min ? min : value > max ? max : value;
 		}
 
+		/// <summary>
+		/// Return a quotient and remainder of the specified pair of values.
+		/// </summary>
+		/// <param name="left"></param>
+		/// <param name="right"></param>
+		/// <returns></returns>
 		public static (Money Quotient, Money Remainder) DivRem(Money left, decimal right)
 		{
 			return (left / right, left % right);
 		}
 
+		/// <summary>
+		/// Return a quotient and remainder of the specified pair of values.
+		/// </summary>
+		/// <param name="left"></param>
+		/// <param name="right"></param>
+		/// <returns></returns>
 		public static (Money Quotient, Money Remainder) DivRem(Money left, long right)
 		{
 			return (left / right, left % right);
@@ -404,11 +464,19 @@ namespace Lexxys
 			if (s is null)
 				throw new ArgumentNullException(nameof(s));
 			if (!TryParse(s, style, provider, out var result))
-				throw new FormatException(SR.CannotParseValue(s.ToString()));
+				throw new FormatException(SR.CannotParseValue(s));
 			return result;
 		}
 
 #if NET6_0_OR_GREATER
+		/// <summary>
+		/// Converts the string representation of a number to its <see cref="Money"/> equivalent.
+		/// </summary>
+		/// <param name="s">The string representation of the number to convert.</param>
+		/// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of <paramref name="s"/>.</param>
+		/// <param name="provider">An object that supplies culture-specific parsing information about <paramref name="s"/>.</param>
+		/// <returns>Converted <see cref="Money"/> value.</returns>
+		/// <exception cref="FormatException"></exception>
 		public static Money Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
 		{
 			if (!TryParse(s, style, provider, out var result))
@@ -476,6 +544,13 @@ namespace Lexxys
 #endif
 
 #if NET6_0_OR_GREATER
+		/// <summary>
+		/// Converts the string representation of a number to its <see cref="Money"/> equivalent.
+		/// </summary>
+		/// <param name="s">The string representation of the number to convert.</param>
+		/// <param name="provider">An object that supplies culture-specific parsing information about <paramref name="s"/>.</param>
+		/// <returns>Converted <see cref="Money"/> value.</returns>
+		/// <exception cref="FormatException"></exception>
 		public static Money Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
 		{
 			if (!TryParse(s, provider, out var value))
@@ -484,6 +559,14 @@ namespace Lexxys
 		}
 #endif
 
+		/// <summary>
+		/// Converts the string representation of a number to its <see cref="Money"/> equivalent.
+		/// </summary>
+		/// <param name="s">The string representation of the number to convert.</param>
+		/// <param name="provider">An object that supplies culture-specific parsing information about <paramref name="s"/>.</param>
+		/// <returns>Converted <see cref="Money"/> value.</returns>
+		/// <exception cref="ArgumentNullException"></exception>
+		/// <exception cref="FormatException"></exception>
 		public static Money Parse(string s, IFormatProvider? provider)
 		{
 			if (s == null)
@@ -493,11 +576,24 @@ namespace Lexxys
 			return value;
 		}
 
-		public static bool TryParse(string value, out Money result)
+		/// <summary>
+		/// Converts the string representation of a number to its <see cref="Money"/> equivalent.
+		/// </summary>
+		/// <param name="s">The string representation of the number to convert.</param>
+		/// <param name="result">The parsed <see cref="Money"/> value.</param>
+		/// <returns>true if <paramref name="s"/> was converted successfully; otherwise, false.</returns>
+		public static bool TryParse(string s, out Money result)
 		{
-			return TryParse(value, NumberStyles.Currency, CultureInfo.CurrentCulture, out result);
+			return TryParse(s, NumberStyles.Currency, CultureInfo.CurrentCulture, out result);
 		}
 
+		/// <summary>
+		/// Converts the string representation of a number to its <see cref="Money"/> equivalent.
+		/// </summary>
+		/// <param name="s">The string representation of the number to convert.</param>
+		/// <param name="provider">An object that supplies culture-specific parsing information about <paramref name="s"/>.</param>
+		/// <param name="result">The parsed <see cref="Money"/> value.</param>
+		/// <returns>true if <paramref name="s"/> was converted successfully; otherwise, false.</returns>
 		public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Money result)
 		{
 			return TryParse(s, NumberStyles.Currency, provider, out result);
@@ -552,11 +648,26 @@ namespace Lexxys
 		}
 
 #if NET6_0_OR_GREATER
+		/// <summary>
+		/// Converts the string representation of a number to its <see cref="Money"/> equivalent.
+		/// </summary>
+		/// <param name="s">The string representation of the number to convert.</param>
+		/// <param name="provider">An object that supplies culture-specific parsing information about <paramref name="s"/>.</param>
+		/// <param name="result">The parsed <see cref="Money"/> value.</param>
+		/// <returns>true if <paramref name="s"/> was converted successfully; otherwise, false.</returns>
 		public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Money result)
 		{
 			return TryParse(s, NumberStyles.Currency, provider, out result);
 		}
 
+		/// <summary>
+		/// Converts the string representation of a number to its <see cref="Money"/> equivalent.
+		/// </summary>
+		/// <param name="s">The string representation of the number to convert.</param>
+		/// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of <paramref name="s"/>.</param>
+		/// <param name="provider">An object that supplies culture-specific parsing information about <paramref name="s"/>.</param>
+		/// <param name="result">The parsed <see cref="Money"/> value.</param>
+		/// <returns>true if <paramref name="s"/> was converted successfully; otherwise, false.</returns>
 		public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Money result)
 		{
 			s = s.Trim();
@@ -592,6 +703,7 @@ namespace Lexxys
 
 		#endregion
 
+		/// <inheritdoc />
 		public XmlBuilder ToXmlContent(XmlBuilder builder)
 		{
 			if (builder is null)
@@ -600,6 +712,7 @@ namespace Lexxys
 				builder.Item("amount", Amount).Item("currency", Currency.Code);
 		}
 
+		/// <inheritdoc />
 		public JsonBuilder ToJsonContent(JsonBuilder json)
 		{
 			if (json is null)
@@ -718,7 +831,7 @@ namespace Lexxys
 			info.AddValue("cur", _currency.Code);
 			if (__internalCurrencies.FindIndex(_currency) > 0)
 			{
-				info.AddValue("prec", (byte)_currency.Precision);
+				info.AddValue("prc", (byte)_currency.Precision);
 				info.AddValue("sym", _currency.Symbol);
 			}
 		}
@@ -782,7 +895,7 @@ namespace Lexxys
 			return
 				xv < yv ? x:
 				yv > xv ? y:
-				x < 0 ? x: y;
+				x <= 0 ? x: y;
 		}
 
 		public static Money MinMagnitudeNumber(Money x, Money y) => MinMagnitude(x, y);
@@ -1156,8 +1269,7 @@ namespace Lexxys
 
 #endif
 
-		private static readonly Currency[] __internalCurrencies = new[] { Currency.Empty, Currency.Usd, Currency.Eur, Currency.Rub, Currency.Uzs };
-
+		private static readonly Currency[] __internalCurrencies = { Currency.Empty, Currency.Usd, Currency.Eur, Currency.Rub, Currency.Uzs };
 
 		public static explicit operator Money(int value) => new Money(value);
 
@@ -1234,8 +1346,18 @@ namespace Lexxys
 		public static Money operator +(Money left, Money right)
 		{
 			if (left.Currency != right.Currency)
-				throw new ArgumentException(SR.DifferentCurrencyCodes(left.Currency, right.Currency));
+				if (left._value == 0)
+					return right;
+				else if (right._value == 0)
+					return left;
+				else
+					throw new ArgumentException(SR.DifferentCurrencyCodes(left.Currency, right.Currency));
 			return Create(checked(left._value + right._value), left._currency);
+		}
+
+		public static Money operator +(Money left, int right)
+		{
+			return Create(checked(left._value + (long)right * left.Currency.Multiplier), left._currency);
 		}
 
 		public static Money operator +(Money left, long right)
@@ -1276,7 +1398,12 @@ namespace Lexxys
 		public static Money operator -(Money left, Money right)
 		{
 			if (left.Currency != right.Currency)
-				throw new ArgumentException(SR.DifferentCurrencyCodes(left.Currency, right.Currency));
+				if (left._value == 0)
+					return right;
+				else if (right._value == 0)
+					return left;
+				else
+					throw new ArgumentException(SR.DifferentCurrencyCodes(left.Currency, right.Currency));
 			return Create(checked(left._value - right._value), left._currency);
 		}
 
@@ -1298,6 +1425,11 @@ namespace Lexxys
 		public static Money operator -(Money left, double right)
 		{
 			return Create(checked(left._value - (long)(right * left.Currency.Multiplier)), left._currency);
+		}
+
+		public static Money operator -(int left, Money right)
+		{
+			return Create(checked((long)left * right.Currency.Multiplier - right._value), right._currency);
 		}
 
 		public static Money operator -(long left, Money right)
@@ -1417,12 +1549,12 @@ namespace Lexxys
 
 		public static Money operator /(Money left, Money right)
 		{
-			throw new NotImplementedException();
+			return left / right.Amount;
 		}
 
 		public static Money operator *(Money left, Money right)
 		{
-			throw new NotImplementedException();
+			return left * right.Amount;
 		}
 
 #if NET7_0_OR_GREATER
@@ -1464,7 +1596,7 @@ namespace Lexxys
 		/// </summary>
 		public string Symbol { get; }
 		/// <summary>
-		/// Number of dignificant digits after the decimal point.
+		/// Number of significant digits after the decimal point.
 		/// </summary>
 		public int Precision { get; }
 		/// <summary>
@@ -1501,7 +1633,7 @@ namespace Lexxys
 				throw new ArgumentNullException(nameof(code));
 			if (code.Length != 3)
 				throw new ArgumentOutOfRangeException(nameof(code), code, null);
-			if (precision < 0 || precision > 9)
+			if (precision is < 0 or > 9)
 				throw new ArgumentOutOfRangeException(nameof(precision), precision, null);
 
 			Code = code;
@@ -1526,7 +1658,7 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="code">Three-letter currency code</param>
 		/// <returns>A found currency or null.</returns>
-		public static Currency? Find(string code)
+		public static Currency? Find(string? code)
 		{
 			return code == null ? null: (Currency?)__mapByCode[code.ToUpperInvariant()];
 		}
@@ -1535,7 +1667,7 @@ namespace Lexxys
 		/// Creates a new currency or returns an exising one.
 		/// </summary>
 		/// <param name="code">Three-letters ISO 4217 currency code (i.e "EUR").</param>
-		/// <param name="precision">Number of dignificant digits after the decimal point in range from 0 to 9.</param>
+		/// <param name="precision">Number of significant digits after the decimal point in range from 0 to 9.</param>
 		/// <param name="symbol">Currency symbol (i.e "€").</param>
 		/// <returns>A currency</returns>
 		public static Currency Create(string code, int precision, string? symbol = null)

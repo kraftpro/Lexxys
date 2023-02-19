@@ -12,11 +12,10 @@ namespace Lexxys.Configuration
 	public interface IConfigSource
 	{
 		int Version { get; }
-
 		event EventHandler<ConfigurationEventArgs>? Changed;
 
-		IReadOnlyList<T> GetList<T>(string key);
 		object? GetValue(string key, Type objectType);
+		IReadOnlyList<T> GetList<T>(string key);
 	}
 
 	public interface IDisposableConfigSource: IConfigSource, IDisposable

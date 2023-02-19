@@ -23,7 +23,7 @@ namespace Lexxys.Crypting.Cryptors
 		protected DesCryptoBase(object key, bool tripleDes)
 		{
 			if (key == null)
-				throw EX.ArgumentNull(nameof(key));
+				throw new ArgumentNullException(nameof(key));
 			if (key is not byte[] bk)
 			{
 				if (key is not string sk || sk.Length == 0)
@@ -55,7 +55,7 @@ namespace Lexxys.Crypting.Cryptors
 
 		public virtual byte[] Encrypt(byte[] text, int offset, int length)
 		{
-			ICryptoTransform cr = _h.CreateEncryptor();
+			using ICryptoTransform cr = _h.CreateEncryptor();
 			return cr.TransformFinalBlock(text, offset, length);
 		}
 
@@ -64,7 +64,8 @@ namespace Lexxys.Crypting.Cryptors
 			if (text is null)
 				throw new ArgumentNullException(nameof(text));
 
-			var s = new CryptoStream(bits, _h.CreateEncryptor(), CryptoStreamMode.Write);
+			using ICryptoTransform cr = _h.CreateEncryptor();
+			using var s = new CryptoStream(bits, cr, CryptoStreamMode.Write);
 			byte[] buffer = new byte[8 * 1024];
 			int n;
 			while ((n = text.Read(buffer, 0, 8 * 1024)) > 0)
@@ -74,7 +75,7 @@ namespace Lexxys.Crypting.Cryptors
 
 		public virtual byte[] Decrypt(byte[] bits, int offset, int length)
 		{
-			ICryptoTransform cr = _h.CreateDecryptor();
+			using ICryptoTransform cr = _h.CreateDecryptor();
 			return cr.TransformFinalBlock(bits, offset, length);
 		}
 
@@ -83,7 +84,8 @@ namespace Lexxys.Crypting.Cryptors
 			if (bits is null)
 				throw new ArgumentNullException(nameof(bits));
 
-			var s = new CryptoStream(text, _h.CreateDecryptor(), CryptoStreamMode.Write);
+			using ICryptoTransform cr = _h.CreateDecryptor();
+			using var s = new CryptoStream(text, cr, CryptoStreamMode.Write);
 			byte[] buffer = new byte[8 * 1024];
 			int n;
 			while ((n = bits.Read(buffer, 0, 8 * 1024)) > 0)

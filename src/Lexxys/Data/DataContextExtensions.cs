@@ -118,8 +118,5 @@ namespace Lexxys.Data
 
 		public static Task<List<Xml.XmlLiteNode>> ReadXmlAsync(this IDataContext context, string query, params DataParameter[] parameters)
 			=> (context ?? throw new ArgumentNullException(nameof(context))).MapAsync(Dc.XmlMapperAsync, query, parameters);
-
-		public static List<RowsCollection> Records(this IDataContext context, int count, string query, params DataParameter[] parameters)
-			=> (context ?? throw new ArgumentNullException(nameof(context))).Map(Dc.RecordsMapper, query, parameters);
 	}
 }

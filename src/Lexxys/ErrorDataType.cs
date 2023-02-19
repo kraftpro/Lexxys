@@ -132,7 +132,7 @@ namespace Lexxys
 		/// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
 		public static bool TryParse(string? value, out ErrorDataType code)
 		{
-			if (string.IsNullOrEmpty(value))
+			if (value is not { Length: > 0 })
 			{
 				code = default;
 				return false;

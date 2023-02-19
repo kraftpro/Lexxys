@@ -12,13 +12,11 @@ using System.Text.RegularExpressions;
 
 namespace Lexxys
 {
-	using System.Diagnostics.CodeAnalysis;
-
 	using Configuration;
 
 	public class ConfigurationEventArgs: EventArgs
 	{
-		public static new readonly ConfigurationEventArgs Empty = new ConfigurationEventArgs();
+		public new static readonly ConfigurationEventArgs Empty = new ConfigurationEventArgs();
 	}
 
 	public static class Config
@@ -26,7 +24,7 @@ namespace Lexxys
 		public static IConfigSection Current => _current ??= Statics.GetService<IConfigSection>();
 		private static IConfigSection? _current;
 
-		public static IValue<T>? GetValue<T>(string key)
+		public static IValue<T> GetValue<T>(string key)
 		{
 			if (key == null || key.Length <= 0)
 				throw new ArgumentNullException(nameof(key));
@@ -37,7 +35,7 @@ namespace Lexxys
 		{
 			if (key == null || key.Length <= 0)
 				throw new ArgumentNullException(nameof(key));
-			return Current.GetValue<T>(key, defaultValue);
+			return Current.GetValue(key, defaultValue);
 		}
 
 		public static IValue<T> GetValue<T>(string key, Func<T> defaultValue)
@@ -46,7 +44,7 @@ namespace Lexxys
 				throw new ArgumentNullException(nameof(key));
 			if (defaultValue == null)
 				throw new ArgumentNullException(nameof(defaultValue));
-			return Current.GetValue<T>(key, defaultValue);
+			return Current.GetValue(key, defaultValue);
 		}
 
 		public static IValue<IReadOnlyList<T>> GetCollection<T>(string key)

@@ -6,9 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Collections;
-using System.Runtime.InteropServices;
 
 namespace Lexxys
 {
@@ -54,9 +52,10 @@ namespace Lexxys
 			{
 				if (value != _capacity)
 				{
-					// TODO: The condition should be: value < _count
-					if (value < _capacity)
-						throw new ArgumentOutOfRangeException(nameof(value), value, null).Add(nameof(_capacity), _capacity);
+					if (value < _count)
+						throw new ArgumentOutOfRangeException(nameof(value), value, null).Add(nameof(Count), _count);
+					if (value <= _capacity)
+						return;
 
 					if (++_topI >= _items.Length)
 					{
@@ -127,7 +126,7 @@ namespace Lexxys
 						return _items[i]![index];
 					index -= _items[i]!.Length;
 				}
-				throw EX.Argument(SR.EndOfCollection(), nameof(index), index);
+				throw new ArgumentOutOfRangeException(nameof(index), index, null);
 			}
 			set
 			{
@@ -149,7 +148,7 @@ namespace Lexxys
 					}
 					index -= _items[i]!.Length;
 				}
-				throw EX.Argument(SR.EndOfCollection(), nameof(index), index);
+				throw new ArgumentOutOfRangeException(nameof(index), index, null);
 			}
 		}
 
@@ -411,7 +410,7 @@ namespace Lexxys
 
 		public bool Remove(TValue item)
 		{
-			throw EX.NotSupported("ValueList.Remove");
+			throw new NotSupportedException(SR.OperationNotSupported("ValueList.Remove"));
 		}
 		#endregion
 

@@ -1,13 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.ServiceProcess;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Lexxys;
 using Lexxys.Configuration;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -41,18 +33,21 @@ namespace Lexxys
 
 		public static T GetService<T>() where T : class => Instance.ServiceProvider.GetService<T>() ?? throw new InvalidOperationException($"Cannot create service of type {typeof(T).FullName}.");
 
-		public static void AddServices(IEnumerable<ServiceDescriptor> services, bool safe = false) => Instance.AppendServices(services, safe);
+		public static void AddServices(IEnumerable<ServiceDescriptor> services) => Instance.AppendServices(services, false);
 
-		public static void Register(Func<IServiceCollection, IServiceCollection>? settings = null)
+		public static void TryAddServices(IEnumerable<ServiceDescriptor> services) => Instance.AppendServices(services, true);
+
+		public static IServiceCollection AddServices(Func<IServiceCollection, IServiceCollection>? settings = null)
 		{
 			IServiceCollection sc = new ServiceCollection();
 			sc = settings?.Invoke(sc) ?? sc;
 			Instance.AppendServices(sc, true);
+			return sc;
 		}
 
 		#region Configuration
 
-		public static IConfigSection Congif => _config ??= Statics.GetService<IConfigSection>();
+		public static IConfigSection Config => _config ??= Statics.GetService<IConfigSection>();
 		private static IConfigSection? _config;
 
 		#endregion
@@ -78,7 +73,7 @@ namespace Lexxys
 
 	public static class StaticServicesExtensions
 	{
-		public static void RegisterStatics(this IServiceCollection services)
+		public static void AddStatics(this IServiceCollection services)
 		{
 			if (services is null)
 				throw new ArgumentNullException(nameof(services));

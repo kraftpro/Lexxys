@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Lexxys.Configuration
@@ -51,10 +50,7 @@ namespace Lexxys.Configuration
 				{
 					lock (Location)
 					{
-						if (_content == null)
-						{
-							_content = _converter(GetText(Location), Name);
-						}
+						_content ??= _converter(GetText(Location), Name);
 					}
 				}
 				return _content;
@@ -67,10 +63,8 @@ namespace Lexxys.Configuration
 			using var client = new System.Net.Http.HttpClient();
 			return client.GetStringAsync(location).GetAwaiter().GetResult();
 #else
-			using (var c = new System.Net.WebClient())
-			{
-				return c.DownloadString(location);
-			}
+			using var c = new System.Net.WebClient();
+			return c.DownloadString(location);
 #endif
 		}
 
@@ -105,13 +99,14 @@ namespace Lexxys.Configuration
 			if ((int)rp.StatusCode / 100 != 2)
 				throw new InvalidOperationException($"GET {location} returns status code {((int)rp.StatusCode)}.");
 
-			type = TypeByContentType(rp.ContentType?.Split(';'), location);
+			type = TypeByContentType(rp.ContentType.Split(';'), location);
 
-			string content;
-			using (var reader = new StreamReader(rp.GetResponseStream()))
-			{
-				content = reader.ReadToEnd();
-			}
+			var stream = rp.GetResponseStream();
+			if (stream == null)
+				return (type, null);
+
+			using var reader = new StreamReader(stream);
+			var content = reader.ReadToEnd();
 			return (type, content);
 		}
 #endif
@@ -134,6 +129,7 @@ namespace Lexxys.Configuration
 			if (contentType == null)
 				throw new InvalidOperationException($"GET {location} doesn't have content type specified.");
 
+			// ReSharper disable once PossibleMultipleEnumeration
 			var type  = contentType.FirstOrDefault(o => o.IndexOf('/') > 0)?.Trim() ?? "";
 			if (type.EndsWith("/json", StringComparison.Ordinal))
 				return "json";
@@ -143,6 +139,7 @@ namespace Lexxys.Configuration
 				return "xml";
 			if (type == "text/plain")
 				return "txt";
+			// ReSharper disable once PossibleMultipleEnumeration
 			throw new InvalidOperationException($"GET {location} returns unsupported content type \"{String.Join(";", contentType)}\".");
 		}
 
@@ -166,7 +163,7 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private IEnumerable<XmlLiteNode>? OptionHandler(string option, IReadOnlyCollection<string> parameters)
+		private IEnumerable<XmlLiteNode>? OptionHandler(TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters)
 		{
 			if (option != "include")
 			{
@@ -188,7 +185,7 @@ namespace Lexxys.Configuration
 			return dir;
 		}
 
-		public static HttpConfigurationSource? Create(Uri location, IReadOnlyCollection<string> parameters)
+		public static HttpConfigurationSource? TryCreate(Uri? location, IReadOnlyCollection<string> parameters)
 		{
 			if (location == null || !location.IsAbsoluteUri)
 				return null;

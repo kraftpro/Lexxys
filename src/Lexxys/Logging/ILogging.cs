@@ -11,10 +11,10 @@ namespace Lexxys
 		Error = 1,
 		Warning = 2,
 		Information = 3,
-		Trace = 4,
-		Debug = 5,
-		Verbose = Debug,
-		MaxValue = Debug
+		Debug = 4,
+		Trace = 5,
+		Verbose = Trace,
+		MaxValue = Trace
 	}
 
 	public interface ILogging: ILogger

@@ -27,9 +27,9 @@ namespace Lexxys.Data
 
 		public static ValidationResults ReferenceKey(IDataContext dc, int? value, string reference, string field, bool nullable)
 		{
-			if (reference == null || reference.Length <= 0)
+			if (reference is not { Length: >0 })
 				throw new ArgumentNullException(nameof(reference));
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -42,9 +42,9 @@ namespace Lexxys.Data
 
 		public static ValidationResults ReferenceKey(IDataContext dc, int value, string reference, string field)
 		{
-			if (reference == null || reference.Length <= 0)
+			if (reference is not { Length: >0 })
 				throw new ArgumentNullException(nameof(reference));
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return _ignoreReferenceKey || Check.ReferenceKey(dc, value, reference) ?
@@ -58,9 +58,9 @@ namespace Lexxys.Data
 
 		public static ValidationResults ReferenceKey(IDataContext dc, int? value, string table, string key, string field, bool nullable)
 		{
-			if (table == null || table.Length <= 0)
+			if (table is not { Length: >0 })
 				throw new ArgumentNullException(nameof(table));
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -73,7 +73,7 @@ namespace Lexxys.Data
 
 		public static ValidationResults ReferenceKey(int value, string field)
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return Check.IsId(value) ?
@@ -88,7 +88,7 @@ namespace Lexxys.Data
 
 		public static ValidationResults ReferenceKey(int? value, string field, bool nullable)
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -102,7 +102,7 @@ namespace Lexxys.Data
 		public static ValidationResults Range<T>(T value, ValueTuple<T, T>[]? ranges, string field)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -116,7 +116,7 @@ namespace Lexxys.Data
 		public static ValidationResults Range<T>(T? value, ValueTuple<T, T>[]? ranges, string field)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return Range(value, ranges, field, true);
@@ -125,7 +125,7 @@ namespace Lexxys.Data
 		public static ValidationResults Range<T>(T? value, ValueTuple<T, T>[]? ranges, string field, bool nullable)
 			where T: struct, IComparable<T>, IEquatable<T>
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -141,7 +141,7 @@ namespace Lexxys.Data
 		public static ValidationResults Range<T>(T value, T[]? values, string field)
 			where T : struct, IEquatable<T>
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return Check.Range(value, values) ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.OutOfRange(value));
@@ -150,7 +150,7 @@ namespace Lexxys.Data
 		public static ValidationResults Range<T>(T? value, T[]? values, string field)
 			where T : struct, IEquatable<T>
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return Range(value, values, field, true);
@@ -159,7 +159,7 @@ namespace Lexxys.Data
 		public static ValidationResults Range<T>(T? value, T[]? values, string field, bool nullable)
 			where T : struct, IEquatable<T>
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -173,7 +173,7 @@ namespace Lexxys.Data
 		public static ValidationResults FieldValue<T>(T? value, T? min, T? max, string field, bool nullable)
 			where T: class, IComparable<T>
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -195,7 +195,7 @@ namespace Lexxys.Data
 		public static ValidationResults FieldValue<T>(T? value, T? min, T? max, string field, bool nullable)
 			where T: struct, IComparable<T>
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -228,7 +228,7 @@ namespace Lexxys.Data
 
 		public static ValidationResults FieldValue(string? value, int length, string field, bool nullable = false)
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -241,7 +241,7 @@ namespace Lexxys.Data
 
 		public static ValidationResults FieldValue(byte[]? value, int length, string field, bool nullable = false)
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -254,7 +254,7 @@ namespace Lexxys.Data
 
 		public static ValidationResults Format(string? value, ErrorDataType dataType, Func<string, bool> test, int length, string field, bool nullable)
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 			if (test == null)
 				throw new ArgumentNullException(nameof(test));
@@ -291,7 +291,7 @@ namespace Lexxys.Data
 
 		public static ValidationResults EinCode(int value, string field)
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return ValueValidator.IsEin(value) ?
@@ -306,7 +306,7 @@ namespace Lexxys.Data
 
 		public static ValidationResults EinCode(int? value, string field, bool nullable)
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return
@@ -365,7 +365,7 @@ namespace Lexxys.Data
 		public static ValidationResults NotNull<T>(T? value, string field)
 			where T: class
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return value is null ? ValidationResults.Create(field, ErrorInfo.NullValue()): ValidationResults.Empty;
@@ -374,7 +374,7 @@ namespace Lexxys.Data
 		public static ValidationResults NotNull<T>(T? value, string field)
 			where T: struct
 		{
-			if (field == null || field.Length <= 0)
+			if (field is not { Length: >0 })
 				throw new ArgumentNullException(nameof(field));
 
 			return !value.HasValue ? ValidationResults.Create(field, ErrorInfo.NullValue()) : ValidationResults.Empty;
@@ -388,9 +388,9 @@ namespace Lexxys.Data
 
 		public static ValidationResults UniqueFieldDebug(string value, int length, string table, string tableField, string? keyField = null, int keyValue = 0, string? field = null, bool nullable = false)
 		{
-			if (table == null || table.Length <= 0)
+			if (table is not { Length: >0 })
 				throw new ArgumentNullException(nameof(table));
-			if (tableField == null || tableField.Length <= 0)
+			if (tableField is not { Length: >0 })
 				throw new ArgumentNullException(nameof(tableField));
 			if (field == null || field.Length == 0)
 				field = tableField;
@@ -399,9 +399,9 @@ namespace Lexxys.Data
 
 		public static ValidationResults UniqueFieldDebug(int? value, string table, string tableField, string? keyField = null, int keyValue = 0, string? field = null, bool nullable = false)
 		{
-			if (table == null || table.Length <= 0)
+			if (table is not { Length: >0 })
 				throw new ArgumentNullException(nameof(table));
-			if (tableField == null || tableField.Length <= 0)
+			if (tableField is not { Length: >0 })
 				throw new ArgumentNullException(nameof(tableField));
 
 			if (field == null || field.Length == 0)

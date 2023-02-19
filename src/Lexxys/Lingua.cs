@@ -91,7 +91,7 @@ namespace Lexxys
 			}
 			return text.ToString();
 		}
-		private static readonly Regex DigitsRex = new Regex(@"(\d+(?:,\d+)*)");
+		private static readonly Regex DigitsRex = new Regex(@"(\d+(?:,\d+)*)", RegexOptions.Compiled);
 
 		public static string NumWord(decimal value, string? comma = null, string? and = null)
 		{
@@ -102,7 +102,7 @@ namespace Lexxys
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
-			if (original == null || original.Length == 0)
+			if (original is not { Length: > 0 })
 				throw new ArgumentNullException(nameof(original));
 
 			if (!Char.IsUpper(original[0]))
@@ -130,7 +130,7 @@ namespace Lexxys
 				Match m = __spaceRex.Match(text);
 				return m.Groups[1].Value + PluralLc2(m.Groups[2].Value, false, classicalEnglish) + m.Groups[3].Value;
 			}
-			private static readonly Regex __spaceRex = new Regex(@"\A(\s*)(.*?)(\s*)\z");
+			private static readonly Regex __spaceRex = new Regex(@"\A(\s*)(.*?)(\s*)\z", RegexOptions.Compiled);
 
 			private static string PluralLc2(string word, bool toPlural, bool classicalEnglish)
 			{
@@ -176,11 +176,11 @@ namespace Lexxys
 				string? w;
 				if (classicalEnglish)
 				{
-					w = PluralLc5(word, toPlural ? _rule.SPC: _rule.PSC);
+					w = PluralLc5(word, toPlural ? _rule.Spc: _rule.Psc);
 					if (w != null)
 						return SetCase(w, word);
 				}
-				w = PluralLc5(word, toPlural ? _rule.SPU: _rule.PSU);
+				w = PluralLc5(word, toPlural ? _rule.Spu: _rule.Psu);
 				if (w == null)
 					if (toPlural)
 						return word.EndsWith("s", StringComparison.OrdinalIgnoreCase) ? word: word + (word.Length > 1 && Char.IsUpper(word[1]) ? "S": "s");
@@ -211,10 +211,10 @@ namespace Lexxys
 			}
 
 			private const string CompoundPart = "about|above|across|after|among|around|at|athwart|before|behind|below|beneath|beside|besides|between|betwixt|beyond|but|by|during|except|for|from|in|into|near|of|off|on|onto|out|over|since|till|to|under|until|unto|upon|with";
-			private static readonly Regex _compound = new Regex(@"\A\s*(.*?)((\s*-\s*|\s+)(" + CompoundPart + @"|d[eu])((\s*-\s*|\s+)(.*?))?)\s*\z", RegexOptions.IgnoreCase);
-			private static readonly Regex _dualCompound = new Regex(@"\A\s*(.*?)((?:\s*-\s*|\s+)(?:" + CompoundPart + @"|d[eu])(?:\s*-\s*|\s+))a(?:\s*-\s*|\s+)(.*?)\s*\z", RegexOptions.IgnoreCase);
-			private static readonly Regex _article = new Regex(@"\A\s*(a)(?:\s*-\s*|\s+)(.*?)\s*\z", RegexOptions.IgnoreCase);
-			private static readonly Regex _spec = new Regex("'s?$", RegexOptions.IgnoreCase);
+			private static readonly Regex _compound = new Regex(@"\A\s*(.*?)((\s*-\s*|\s+)(" + CompoundPart + @"|d[eu])((\s*-\s*|\s+)(.*?))?)\s*\z", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+			private static readonly Regex _dualCompound = new Regex(@"\A\s*(.*?)((?:\s*-\s*|\s+)(?:" + CompoundPart + @"|d[eu])(?:\s*-\s*|\s+))a(?:\s*-\s*|\s+)(.*?)\s*\z", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+			private static readonly Regex _article = new Regex(@"\A\s*(a)(?:\s*-\s*|\s+)(.*?)\s*\z", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+			private static readonly Regex _spec = new Regex("'s?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
 			#region Rules
 			private static readonly Rule _rule = PrepareRule();
@@ -733,9 +733,9 @@ namespace Lexxys
 
 			class OneWay
 			{
-				public Dictionary<string, string> Map;
+				public readonly Dictionary<string, string> Map;
+				public readonly List<Ending> Ending;
 				public Regex? Rex;
-				public List<Ending> Ending;
 
 				public OneWay(Dictionary<string, string> map)
 				{
@@ -746,17 +746,17 @@ namespace Lexxys
 
 			class Rule
 			{
-				public readonly OneWay SPU;
-				public readonly OneWay SPC;
-				public readonly OneWay PSU;
-				public readonly OneWay PSC;
+				public readonly OneWay Spu;
+				public readonly OneWay Spc;
+				public readonly OneWay Psu;
+				public readonly OneWay Psc;
 
 				public Rule(Dictionary<string, string> pluralUniversal, Dictionary<string, string> pluralClassic, Dictionary<string, string> adjPlural, Dictionary<string, string> adjSingular)
 				{
-					PSU = new OneWay(Join(Reverse(pluralUniversal), adjSingular));
-					PSC = new OneWay(Reverse(pluralClassic));
-					SPU = new OneWay(Join(pluralUniversal, adjPlural));
-					SPC = new OneWay(pluralClassic);
+					Psu = new OneWay(Join(Reverse(pluralUniversal), adjSingular));
+					Psc = new OneWay(Reverse(pluralClassic));
+					Spu = new OneWay(Join(pluralUniversal, adjPlural));
+					Spc = new OneWay(pluralClassic);
 				}
 			}
 
@@ -803,13 +803,13 @@ namespace Lexxys
 							string p = w + rr[i].PluralEnding;
 							if (rr[i].Classical)
 							{
-								ir.SPC.Map[s] = p;
-								ir.PSC.Map[p] = s;
+								ir.Spc.Map[s] = p;
+								ir.Psc.Map[p] = s;
 							}
 							else
 							{
-								ir.SPU.Map[s] = p;
-								ir.PSU.Map[p] = s;
+								ir.Spu.Map[s] = p;
+								ir.Psu.Map[p] = s;
 							}
 							ww[j] = null;
 							++k;
@@ -819,18 +819,18 @@ namespace Lexxys
 					{
 						if (rr[i].Classical)
 						{
-							ir.SPC.Ending.Add(new Ending(rr[i].SingualEnding.Length, rr[i].PluralEnding));
+							ir.Spc.Ending.Add(new Ending(rr[i].SingualEnding.Length, rr[i].PluralEnding));
 							Append(rspc, ww, rr[i].SingualEnding);
-							ir.PSC.Ending.Add(new Ending(rr[i].PluralEnding.Length, rr[i].SingualEnding));
+							ir.Psc.Ending.Add(new Ending(rr[i].PluralEnding.Length, rr[i].SingualEnding));
 							Append(rpsc, ww, rr[i].PluralEnding);
 						}
 						else
 						{
-							ir.SPU.Ending.Add(new Ending(rr[i].SingualEnding.Length, rr[i].PluralEnding));
+							ir.Spu.Ending.Add(new Ending(rr[i].SingualEnding.Length, rr[i].PluralEnding));
 							Append(rspu, ww, rr[i].SingualEnding);
 							if (rr[i].SingualEnding != "is")
 							{
-								ir.PSU.Ending.Add(new Ending(rr[i].PluralEnding.Length, rr[i].SingualEnding));
+								ir.Psu.Ending.Add(new Ending(rr[i].PluralEnding.Length, rr[i].SingualEnding));
 								Append(rpsu, ww, rr[i].PluralEnding);
 							}
 						}
@@ -844,10 +844,10 @@ namespace Lexxys
 				rpsu.Append(")\\z");
 				rspc.Append(")\\z");
 				rpsc.Append(")\\z");
-				ir.SPU.Rex = new Regex(rspu.ToString(), RegexOptions.IgnoreCase);
-				ir.PSU.Rex = new Regex(rpsu.ToString(), RegexOptions.IgnoreCase);
-				ir.SPC.Rex = new Regex(rspc.ToString(), RegexOptions.IgnoreCase);
-				ir.PSC.Rex = new Regex(rpsc.ToString(), RegexOptions.IgnoreCase);
+				ir.Spu.Rex = new Regex(rspu.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
+				ir.Psu.Rex = new Regex(rpsu.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
+				ir.Spc.Rex = new Regex(rspc.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
+				ir.Psc.Rex = new Regex(rpsc.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
 				return ir;
 			}
@@ -972,7 +972,7 @@ namespace Lexxys
 				}
 				decimal integral = Decimal.Truncate(value);
 				decimal fract = value - integral;
-				string[] parts = new string[12];
+				string?[] parts = new string[12];
 				int i = 0;
 
 				while (integral >= 1)
@@ -1086,29 +1086,6 @@ namespace Lexxys
 			private static readonly string[] __teen = { "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen" };
 			private static readonly string[] __ten = { "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety" };
 			private static readonly string[] __mill = { "", " thousand", " million", " billion", " trillion", " quadrillion", " quintillion", " sextillion", " septillion", " octillion", " nonillion", " decillion" };
-
-			//private static Dictionary<string, string> __nth = BuildNth();
-			//private static Regex __nthRex = new Regex("(" + String.Join("|", __nth.Keys) + ")(?=\\W|\\Z)", RegexOptions.IgnoreCase);
-			//private static string[] __unitTh = new string[] { "zero", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth" };
-
-			//private static Dictionary<string, string> BuildNth()
-			//{
-			//    Dictionary<string, string> nth = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-			//    for (int i = 0; i < __unit.Length; ++i)
-			//    {
-			//        nth.Add(__unit[i], __unitTh[i]);
-			//    }
-			//    for (int i = 0; i < __teen.Length; ++i)
-			//    {
-			//        nth.Add(__teen[i], __teen[i] + "th");
-			//    }
-			//    for (int i = 2; i < __ten.Length; ++i)
-			//    {
-			//        nth.Add(__ten[i], __ten[i] + "th");
-			//    }
-			//    nth["twelve"] = "twelfth";
-			//    return nth;
-			//}
 		}
 	}
 }

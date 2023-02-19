@@ -1,16 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
 
 namespace Lexxys.Configuration
 {
 	using Xml;
 
-	internal class ConfigurationSource
+	internal static class ConfigurationSource
 	{
-		internal static IEnumerable<XmlLiteNode>? HandleInclude(string logSource, IReadOnlyCollection<string> parameters, string? directory, ref List<string>? includes, EventHandler<ConfigurationEventArgs> eventHandler)
+		internal static IEnumerable<XmlLiteNode>? HandleInclude(string logSource, IReadOnlyCollection<string>? parameters, string? directory, ref List<string>? includes, EventHandler<ConfigurationEventArgs> eventHandler)
 		{
 			var include = parameters?.FirstOrDefault();
 			if (String.IsNullOrEmpty(include))
@@ -25,14 +23,13 @@ namespace Lexxys.Configuration
 				return null;
 			}
 			var inc = incs[0];
-			var xs = ConfigurationFactory.TryCreateXmlConfigurationSource(inc, parameters);
+			var xs = TryCreateXmlConfigurationSource(inc, parameters);
 			if (xs == null)
 				return null;
 
 			xs.Changed += eventHandler;
 
-			if (includes == null)
-				includes = new List<string>();
+			includes ??= new List<string>();
 			if (!includes.Contains(inc.ToString()))
 			{
 				includes.Add(inc.ToString());
@@ -41,27 +38,29 @@ namespace Lexxys.Configuration
 			return xs.Content;
 		}
 
-		internal static string GetContent(Uri location, string? currentDirectory = null)
+		internal static IXmlConfigurationSource? TryCreateXmlConfigurationSource(Uri location, IReadOnlyCollection<string>? parameters)
 		{
-			if (!location.IsAbsoluteUri || location.IsFile)
-			{
-				string path = location.IsAbsoluteUri ? location.LocalPath : location.OriginalString;
-				return File.ReadAllText(String.IsNullOrEmpty(currentDirectory) ? path: Path.Combine(currentDirectory, path));
-			}
+			if (location == null)
+				throw new ArgumentNullException(nameof(location));
 
-#if NETFRAMEWORK
-			using (var c = new WebClient())
+			var arguments = new object?[] { location, parameters };
+			foreach (var constructor in Factory.Constructors(typeof(IXmlConfigurationSource), "TryCreate", __locationType2))
 			{
-				return c.DownloadString(location);
+				try
+				{
+					var obj = constructor.Invoke(null, arguments);
+					if (obj is IXmlConfigurationSource source)
+						return source;
+				}
+#pragma warning disable CA1031 // Ignore all the errors.
+				catch (Exception flaw)
+				{
+					Config.LogConfigurationError($"{nameof(TryCreateXmlConfigurationSource)} from {location}", flaw);
+				}
+#pragma warning restore CA1031 // Do not catch general exception types
 			}
-#else
-			if (location.Scheme == Uri.UriSchemeHttp || location.Scheme == Uri.UriSchemeHttps)
-			{
-				using var http = new System.Net.Http.HttpClient();
-				return http.GetStringAsync(location).GetAwaiter().GetResult();
-			}
-			throw new NotSupportedException($"Specified url \"{location}\" is not supported");
-#endif
+			return null;
 		}
+		private static readonly Type[] __locationType2 = { typeof(Uri), typeof(IReadOnlyCollection<string>) };
 	}
 }

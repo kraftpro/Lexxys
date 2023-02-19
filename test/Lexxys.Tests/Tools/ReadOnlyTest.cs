@@ -4,7 +4,6 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
-﻿using Lexxys;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -43,11 +42,10 @@ namespace Lexxys.Tests.Tools
 		}
 
 		#region Additional test attributes
-		[ClassInitialize()]
-		public static void MyClassInitialize(TestContext testContext)
-		{
-			EX.DisableDebugLogging();
-		}
+		//[ClassInitialize()]
+		//public static void MyClassInitialize(TestContext testContext)
+		//{
+		//}
 		
 		//Use ClassCleanup to run code after all tests in a class have run
 		//[ClassCleanup()]

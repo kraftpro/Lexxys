@@ -17,13 +17,11 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+#pragma warning disable CA1508 // Avoid dead conditional code
+
 namespace Lexxys
 {
-
 	using Configuration;
-
-	using Lexxys;
-
 	using Tokenizer;
 
 	public static class Factory
@@ -79,6 +77,8 @@ namespace Lexxys
 
 		private static string[] SystemAssemblyNames()
 		{
+			if (!Statics.Instance.ServiceInitialized)
+				return DefaultSystemAssemblyNames;
 			var systemNamesConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<string>(ConfigurationSkip);
 			var systemNames = systemNamesConfig?.Value;
 			if (systemNames == null || systemNames.Count == 0)
@@ -136,10 +136,9 @@ namespace Lexxys
 				lock (SyncRoot)
 				{
 					if (__assemblies == null)
-					{
 						CollectAssembliesInternal();
+					if (!__assembliesImported)
 						ImportAssembliesInternal();
-					}
 				}
 			}
 			else if (!__assembliesImported)
@@ -204,6 +203,8 @@ namespace Lexxys
 
 		private static void ImportRestAssemblies()
 		{
+			if (!Statics.Instance.ServiceInitialized)
+				return;
 			var importConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<string>(ConfigurationImport);
 			var assemblies = importConfig?.Value;
 			if (assemblies == null)
@@ -224,7 +225,7 @@ namespace Lexxys
 
 		public static Assembly? TryLoadAssembly(string? assemblyName, bool throwOnError)
 		{
-			if (assemblyName == null || assemblyName.Length == 0)
+			if (assemblyName is not { Length: > 0 })
 				if (throwOnError)
 					throw new ArgumentNullException(nameof(assemblyName));
 				else
@@ -322,9 +323,7 @@ namespace Lexxys
 			if (type == null)
 				throw new ArgumentNullException(nameof(type));
 
-			if (types == null)
-				types = Type.EmptyTypes;
-
+			types ??= Type.EmptyTypes;
 			return String.IsNullOrEmpty(methodName) ?
 				Factory.Types(type)
 					.SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => ConstructorPredicate(m, type, types)))
@@ -362,7 +361,7 @@ namespace Lexxys
 		public static void SetSynonym(string? name, Type? type)
 		{
 			string? key = name?.Replace(" ", "");
-			if (key is null || key.Length <= 0)
+			if (key is not { Length: >0 })
 				return;
 			lock (SyncRoot)
 			{
@@ -481,26 +480,26 @@ namespace Lexxys
 		#region Type name parser
 
 		#pragma warning disable CA1034 // Nested types should not be visible
-		public sealed class TypeNameParser
+		public static class TypeNameParser
 		{
 			/*
 
-			fullname			:= shortname ('@' assembly | [ ',' assembly [ ',' option ]* ])
+			full_name			:= shortname ('@' assembly | [ ',' assembly [ ',' option ]* ])
 
-			shortname			:= dottedname [ generic_definition ] [ nullable_suffix ] pointer_suffix* array_suffix*
-			dottedname			:= NAME ('.' NAME)*
+			short_name			:= dottedname [ generic_definition ] [ nullable_suffix ] pointer_suffix* array_suffix*
+			dotted_name			:= NAME ('.' NAME)*
 			nullable_suffix		:= '?'
 			pointer_suffix		:= '*'
 			array_suffix		:= '[' (',')+ ']'
 
-			generic_definition	:= generic_sufix
-								|  generic_sufix? '[' param_name (',' param_name)* ']'
-								|  generic_sufix? '<' param_name (',' param_name)* '>'
+			generic_definition	:= generic_suffix
+								|  generic_suffix? '[' param_name (',' param_name)* ']'
+								|  generic_suffix? '<' param_name (',' param_name)* '>'
 			generic_suffix		:= '^' NUMBER
 
-			param_name			:= '[' fullname ']'
-								|	shortname
-			assembly			:= dottedname
+			param_name			:= '[' full_name ']'
+								|	short_name
+			assembly			:= dotted_name
 			option				:= NAME '=' VALUE
 			*/
 
@@ -750,7 +749,7 @@ namespace Lexxys
 			// type?*[]
 			public class TypeTree
 			{
-				public string Name { get; set; }
+				public string Name { get; }
 				public string? Assembly { get; set; }
 				public int PointerCount { get; set; }
 				public bool IsNullable { get; set; }
@@ -835,7 +834,7 @@ namespace Lexxys
 
 				public Type? MakeType()
 				{
-					Type? type = Type.GetType(BaseName(false));
+					Type? type = Type.GetType(BaseName());
 					if (type != null)
 						return type;
 					type = FindType();
@@ -898,7 +897,7 @@ namespace Lexxys
 
 		public static Type? GetType(string? typeName, IEnumerable<Assembly>? assemblies)
 		{
-			if (typeName is null || typeName.Length <= 0)
+			if (typeName is not { Length: >0 })
 				return null;
 
 			var type = Type.GetType(typeName, false, true);
@@ -916,11 +915,11 @@ namespace Lexxys
 
 		public static bool IsPublicType(Type? type)
 		{
-			while (type != null && type.IsNestedPublic)
+			while (type is { IsNestedPublic: true })
 			{
 				type = type.DeclaringType;
 			}
-			return type != null && type.IsPublic;
+			return type is { IsPublic: true };
 		}
 
 		public static bool IsNullableType(Type type)
@@ -993,29 +992,29 @@ namespace Lexxys
 
 		public static object Construct(string typeName)
 		{
-			if (typeName == null || typeName.Length == 0)
+			if (typeName is not { Length: >0 })
 				throw new ArgumentNullException(nameof(typeName));
 			Type? type = GetType(typeName);
 			if (type == null)
-				throw EX.ArgumentOutOfRange(nameof(typeName), typeName);
+				throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
 
 			return Construct(type);
 		}
 
 		public static object Construct(string typeName, params object?[] parameters)
 		{
-			if (typeName is null || typeName.Length <= 0)
+			if (typeName is not { Length: >0 })
 				throw new ArgumentNullException(nameof(typeName));
 			Type? type = GetType(typeName);
 			if (type == null)
-				throw EX.ArgumentOutOfRange(nameof(typeName), typeName);
+				throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
 
 			return Construct(type, parameters);
 		}
 
 		public static object? TryConstruct(string typeName)
 		{
-			if (typeName is null || typeName.Length <= 0)
+			if (typeName is not { Length: >0 })
 				throw new ArgumentNullException(nameof(typeName));
 			Type? type = GetType(typeName);
 			if (type == null)
@@ -1026,7 +1025,7 @@ namespace Lexxys
 
 		public static object? TryConstruct(string typeName, params object?[] parameters)
 		{
-			if (typeName is null || typeName.Length <= 0)
+			if (typeName is not { Length: >0 })
 				throw new ArgumentNullException(nameof(typeName));
 			Type? type = GetType(typeName);
 			if (type == null)
@@ -1051,7 +1050,7 @@ namespace Lexxys
 			if (type is null)
 				throw new ArgumentNullException(nameof(type));
 
-			return TryGetConstructor(type) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, 0));
+			return TryGetConstructor(type) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, 0));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1060,7 +1059,7 @@ namespace Lexxys
 			if (type is null)
 				throw new ArgumentNullException(nameof(type));
 
-			return TryConstruct(type, args) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
+			return TryConstruct(type, args) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1069,7 +1068,7 @@ namespace Lexxys
 			if (type is null)
 				throw new ArgumentNullException(nameof(type));
 
-			return TryGetConstructor(type, args) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
+			return TryGetConstructor(type, args) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1692,7 +1691,7 @@ namespace Lexxys
 
 			Type type = TryGetType(typeName, assemblyName);
 			if (type == null)
-				throw EX.InvalidOperation(SR.TLS_CannotCreateType(typeName, assemblyName));
+				throw new InvalidOperationException(SR.TLS_CannotCreateType(typeName, assemblyName));
 			return type;
 		}
 
@@ -1718,7 +1717,7 @@ namespace Lexxys
 
 			Type type = TryGetType(typeName);
 			if (type == null)
-				throw EX.InvalidOperation(SR.TLS_CannotCreateType(typeName, null));
+				throw new InvalidOperationException(SR.TLS_CannotCreateType(typeName, null));
 			return type;
 		}
 
@@ -1780,7 +1779,7 @@ namespace Lexxys
 			if (method == null)
 				throw new ArgumentNullException(nameof(method));
 			if (!method.IsStatic)
-				throw EX.ArgumentOutOfRange(nameof(method), method);
+				throw new ArgumentOutOfRangeException(nameof(method), method, null);
 
 			Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
 			return f?.Invoke(null, parameters);

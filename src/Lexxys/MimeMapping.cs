@@ -704,7 +704,7 @@ namespace Lexxys
 			{
 				var ext = item["ext"]?.AsString();
 				var type = item["type"]?.AsString();
-				if (!String.IsNullOrEmpty(ext) && !String.IsNullOrEmpty(type))
+				if (ext != null && ext.Length > 0 && type != null && type.Length > 0)
 					if (ext.IndexOf('/') > 0)
 						mappings[ext] = type[0] == '.' ? type : "." + type;
 					else if (type.IndexOf('/') > 0)
@@ -716,7 +716,7 @@ namespace Lexxys
 				if (!mappings.ContainsKey(mapping.Value))
 					mappings.Add(mapping.Value, mapping.Key);
 			}
-			return ReadOnly.Wrap(mappings);
+			return ReadOnly.Wrap(mappings)!;
 		}
 
 		public const string ApplicationOctetStream = "application/octet-stream";
@@ -732,7 +732,7 @@ namespace Lexxys
 			return Mappings.TryGetValue(extension, out var mime) ? mime: defaultMimeType ?? ApplicationOctetStream;
 		}
 
-		[return: NotNullIfNotNull("defaultExtension")]
+		[return: NotNullIfNotNull(nameof(defaultExtension))]
 		public static string? GetExtension(string mimeType, string? defaultExtension = null)
 		{
 			if (mimeType == null)

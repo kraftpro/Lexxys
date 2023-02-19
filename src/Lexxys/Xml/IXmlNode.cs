@@ -15,7 +15,7 @@ namespace Lexxys.Xml
 	{
 		string? this[string name] { get; }
 
-		IEqualityComparer<string> Comparer { get; }
+		IEqualityComparer<string?> Comparer { get; }
 
 		bool IsEmpty { get; }
 		string Name { get; }
@@ -25,17 +25,17 @@ namespace Lexxys.Xml
 		IReadOnlyList<IXmlReadOnlyNode> Elements { get; }
 
 		IEnumerable<IXmlReadOnlyNode> Where(string? name);
-		IEnumerable<IXmlReadOnlyNode> Where(string? name, IEqualityComparer<string> comparer);
+		IEnumerable<IXmlReadOnlyNode> Where(string? name, IEqualityComparer<string?> comparer);
 		IEnumerable<IXmlReadOnlyNode> Where(Func<IXmlReadOnlyNode, bool> predicate);
 
 		bool HasAttribute(string name);
 
 		IXmlReadOnlyNode Element(string? name);
-		IXmlReadOnlyNode Element(string? name, IEqualityComparer<string> comparer);
+		IXmlReadOnlyNode Element(string? name, IEqualityComparer<string?> comparer);
 		IXmlReadOnlyNode Element(Func<IXmlReadOnlyNode, bool> predicate);
 
 		IXmlReadOnlyNode? FirstOrDefault(string? name);
-		IXmlReadOnlyNode? FirstOrDefault(string? name, IEqualityComparer<string> comparer);
+		IXmlReadOnlyNode? FirstOrDefault(string? name, IEqualityComparer<string?> comparer);
 		IXmlReadOnlyNode? FirstOrDefault(Func<IXmlReadOnlyNode, bool> predicate);
 
 		XmlReader ReadSubtree();
@@ -51,15 +51,15 @@ namespace Lexxys.Xml
 		new IList<IXmlNode> Elements { get; }
 
 		new IEnumerable<IXmlNode> Where(string? name);
-		new IEnumerable<IXmlNode> Where(string? name, IEqualityComparer<string> comparer);
+		new IEnumerable<IXmlNode> Where(string? name, IEqualityComparer<string?> comparer);
 		new IEnumerable<IXmlNode> Where(Func<IXmlReadOnlyNode, bool> predicate);
 
 		new IXmlNode Element(string? name);
-		new IXmlNode Element(string? name, IEqualityComparer<string> comparer);
+		new IXmlNode Element(string? name, IEqualityComparer<string?> comparer);
 		IXmlNode Element(Func<IXmlNode, bool> predicate);
 
 		new IXmlNode? FirstOrDefault(string? name);
-		new IXmlNode? FirstOrDefault(string? name, IEqualityComparer<string> comparer);
+		new IXmlNode? FirstOrDefault(string? name, IEqualityComparer<string?> comparer);
 		new IXmlNode? FirstOrDefault(Func<IXmlReadOnlyNode, bool> predicate);
 	}
 }

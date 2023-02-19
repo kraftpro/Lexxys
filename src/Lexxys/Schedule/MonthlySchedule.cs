@@ -239,7 +239,7 @@ namespace Lexxys
 
 		public new static MonthlySchedule FromJson(string json)
 		{
-			if (json is null || json.Length <= 0)
+			if (json is not { Length: > 0 })
 				throw new ArgumentNullException(nameof(json));
 
 			return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));

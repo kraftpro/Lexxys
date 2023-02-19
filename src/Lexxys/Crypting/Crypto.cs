@@ -45,7 +45,7 @@ namespace Lexxys.Crypting
 
 			public AlgKeyPair(string algorithm, object? key)
 			{
-				Algorithm = algorithm ?? throw EX.ArgumentNull(nameof(algorithm));
+				Algorithm = algorithm ?? throw new ArgumentNullException(nameof(algorithm));
 				Key = key;
 			}
 
@@ -77,7 +77,7 @@ namespace Lexxys.Crypting
 
 			try
 			{
-				return (args == null || args.Length == 0 ? Factory.TryConstruct(item.Type, true): Factory.TryConstruct(item.Type, true, args)) ?? throw EX.Argument(SR.Factory_CannotFindConstructor(item.Type, args?.Length ?? 0));
+				return (args == null || args.Length == 0 ? Factory.TryConstruct(item.Type, true): Factory.TryConstruct(item.Type, true, args)) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(item.Type, args?.Length ?? 0));
 			}
 			catch (Exception flaw)
 			{

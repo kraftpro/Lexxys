@@ -1,22 +1,30 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace Lexxys.Testing;
 
 public static class RandItemsListExtensions
 {
-	public static T[] Collect<T>(this IReadOnlyCollection<RandItem<T>> items) => Collect(items, items.Count);
+	public static T[] Collect<T>(this IReadOnlyCollection<RandItem<T>> collection)
+	{
+		if (collection == null)
+			throw new ArgumentNullException(nameof(collection));
+
+		return Collect(collection, collection.Count);
+	}
 
 	public static T[] Collect<T>(this IEnumerable<RandItem<T>> collection, int count)
 	{
+		if (collection == null)
+			throw new ArgumentNullException(nameof(collection));
 		if (count < 0)
 			throw new ArgumentOutOfRangeException(nameof(count), count, null);
 		if (count == 0)
 			return Array.Empty<T>();
-		if (collection == null)
-			throw new ArgumentNullException(nameof(collection));
+
 		var result = new T[count];
 		int i = 0;
 		foreach (var item in collection)
@@ -27,7 +35,10 @@ public static class RandItemsListExtensions
 	}
 }
 
-
+/// <summary>
+/// Represents a sequence of the random elements.
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 {
 	public static readonly RandSeq<T> Empty = new RandSeq<T>();
@@ -50,23 +61,30 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 	{
 		if (items == null)
 			throw new ArgumentNullException(nameof(items));
-		_items = items.Where(item => item != null).ToArray();
+		_items = items.ToArray()!;
 	}
 
 	public RandSeq(params RandItem<T>[] items)
 	{
 		if (items == null)
 			throw new ArgumentNullException(nameof(items));
-		var list = new List<RandItem<T>>(items.Length);
-		list.AddRange(items.Where(item => item != null));
-		_items = list.ToArray();
+		_items = new RandItem<T>[items.Length];
+		Array.Copy(items, _items, items.Length);
 	}
 
 	public RandSeq(RandItem<T> item)
 	{
-		if (item == null)
-			throw new ArgumentNullException(nameof(item));
 		_items = new[] { item };
+	}
+
+	public RandSeq(RandItem<T> item1, RandItem<T> item2)
+	{
+		_items = new[] { item1, item2 };
+	}
+
+	public RandSeq(RandItem<T> item1, RandItem<T> item2, RandItem<T> item3)
+	{
+		_items = new[] { item1, item2, item3 };
 	}
 
 	public RandItem<T> this[int index] => _items[index];
@@ -118,8 +136,6 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 
 	public RandSeq<T> Add(RandItem<T> item)
 	{
-		if (item == null)
-			return this;
 		var result = new RandSeq<T>(_items.Length + 1);
 		if (_items.Length == 1)
 			result._items[0] = _items[0];
@@ -131,8 +147,6 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 
 	public RandSeq<T> Insert(RandItem<T> item)
 	{
-		if (item == null)
-			return this;
 		var result = new RandSeq<T>(_items.Length + 1);
 		if (_items.Length == 1)
 			result._items[1] = _items[0];
@@ -144,8 +158,6 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 
 	public RandSeq<T> Insert(int index, RandItem<T> item)
 	{
-		if (item == null)
-			return this;
 		if (index < 0 || index > _items.Length)
 			throw new ArgumentOutOfRangeException(nameof(index), index, null);
 		if (index == 0)
@@ -181,28 +193,26 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 		return String.Join(null, (IEnumerable<RandItem<T>>)_items);
 	}
 
-	public static RandSeq<T> operator |(RandSeq<T> left, RandSeq<T> right)
+	public static RandSeq<T>? operator |(RandSeq<T>? left, RandSeq<T>? right)
 	{
 		return right is null ? left:
 			left is null ? right: left.Add(right);
 	}
 
-	public static RandSeq<T> operator |(RandSeq<T> collection, RandItem<T> item)
+	public static RandSeq<T> operator |(RandSeq<T>? collection, RandItem<T> item)
 	{
-		return item is null ? collection:
-			collection is null ? new RandSeq<T>(item): collection.Add(item);
+		return collection is null ? new RandSeq<T>(item): collection.Add(item);
 	}
 
-	public static RandSeq<T> operator |(RandItem<T> item, RandSeq<T> collection)
+	public static RandSeq<T> operator |(RandItem<T> item, RandSeq<T>? collection)
 	{
-		return item is null ? collection:
-			collection is null ? new RandSeq<T>(item): collection.Insert(item);
+		return collection is null ? new RandSeq<T>(item): collection.Insert(item);
 	}
 
-	public static implicit operator T[] (RandSeq<T> collection)
+	public static implicit operator T[] (RandSeq<T>? collection)
 	{
-		if (collection == null)
-			throw new ArgumentNullException(nameof(collection));
-		return collection.Collect();
+		return collection?.Collect() ?? Array.Empty<T>();
 	}
+
+	public T[] ToTArray() => Collect();
 }

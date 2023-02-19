@@ -17,6 +17,29 @@ namespace Lexxys
 
 	public static class StringExtensions
 	{
+#if !NETCOREAPP
+		public static bool Contains(this string value, char item)
+		{
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			return value.IndexOf(item) != -1;
+		}
+
+		public static bool Contains(this string value, string item)
+		{
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			return value.IndexOf(item, StringComparison.CurrentCulture) != -1;
+		}
+
+		public static bool Contains(this string value, string item, StringComparison comparisonType)
+		{
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			return value.IndexOf(item, comparisonType) != -1;
+		}
+#endif
+
 		public static string Format(this string value, IFormatProvider formatProvider, IDictionary<string, object> data)
 		{
 			if (value == null)
@@ -78,7 +101,7 @@ namespace Lexxys
 			return value == null || (value = value.Trim()).Length == 0 ? null: value;
 		}
 
-		[return: NotNullIfNotNull("emptyValue")]
+		[return: NotNullIfNotNull(nameof(emptyValue))]
 		public static unsafe string? TrimSpace(this string? value, string? emptyValue = null, string? space = null)
 		{
 			if (value == null)
@@ -348,7 +371,7 @@ namespace Lexxys
 			return XmlTools.GetString(value, null);
 		}
 
-		[return: NotNullIfNotNull("defaultValue")]
+		[return: NotNullIfNotNull(nameof(defaultValue))]
 		public static string? AsString(this string? value, string? defaultValue)
 		{
 			return XmlTools.GetString(value, defaultValue);
@@ -457,12 +480,12 @@ namespace Lexxys
 			return XmlTools.GetValue(value, defaultValue);
 		}
 
-		public static object AsValue(this string value, Type returnType)
+		public static object? AsValue(this string value, Type returnType)
 		{
 			return XmlTools.GetValue(value, returnType);
 		}
 
-		public static object AsValue(this string? value, Type returnType, object defaultValue)
+		public static object? AsValue(this string? value, Type returnType, object? defaultValue)
 		{
 			return XmlTools.GetValue(value, returnType, defaultValue);
 		}

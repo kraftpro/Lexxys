@@ -156,7 +156,7 @@ namespace Lexxys
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public JsonBuilder Item(string name)
 		{
-			if (name is null || name.Length <= 0)
+			if (name is not { Length: > 0 })
 				throw new ArgumentNullException(nameof(name));
 			if (_state == State.Item || _state == State.Array)
 				throw new InvalidOperationException();
@@ -996,7 +996,7 @@ namespace Lexxys
 	/// </summary>
 	public class JsonUtf8Builder: JsonBuilder
 	{
-		private static new readonly byte[] NullValue = { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
+		private new static readonly byte[] NullValue = { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
 		private readonly MemoryStream _buffer;
 
 		/// <summary>
@@ -1024,7 +1024,7 @@ namespace Lexxys
 		}
 
 		/// <inheritdoc />
-		protected unsafe override void Text(char value)
+		protected override unsafe void Text(char value)
 		{
 			if (value < 128)
 			{

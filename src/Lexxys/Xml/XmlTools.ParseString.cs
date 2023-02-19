@@ -28,30 +28,28 @@ namespace Lexxys.Xml
 
 		public static object? GetValue(string value, Type type)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: > 0 })
 				throw new ArgumentNullException(nameof(value));
 			if (type == null)
 				throw new ArgumentNullException(nameof(type));
 			return TryGetValue(value, type, out object? result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		[return: MaybeNull]
 		public static T GetValue<T>(string? value, T defaultValue)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: > 0 })
 				return defaultValue;
 			return TryGetValue<T>(value, out var result) ? result: defaultValue;
 		}
 
-		[return: MaybeNull]
 		public static T GetValue<T>(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: > 0 })
 				throw new ArgumentNullException(nameof(value));
 			return TryGetValue<T>(value, out var result) ? result: throw new FormatException(SR.FormatException(value));
 		}
 
-		public static bool TryGetValue<T>(string? value, [MaybeNull] out T result)
+		public static bool TryGetValue<T>(string? value, [MaybeNullWhen(false)] out T result)
 		{
 			if (TryGetValue(value, typeof(T), out var temp))
 			{
@@ -387,10 +385,7 @@ namespace Lexxys.Xml
 				new[] { tmp, res },
 				Expression.Assign(tmp, Expression.Default(type)),
 				Expression.Assign(res, condition),
-					//Expression.IfThenElse(res,
 					Expression.Assign(argResult, Expression.TypeAs(tmp, typeof(object))),
-				//	Expression.Assign(argResult, Expression.Constant(null))
-				//	),
 				res
 				);
 

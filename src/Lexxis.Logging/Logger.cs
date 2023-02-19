@@ -24,7 +24,7 @@ public class Logger<T>: Logger, ILogging<T>
 	{
 		public string Source { get { return "Empty"; } set { } }
 
-		public IDisposable BeginScope<TState>(TState state) => LoggingTools.Disposable;
+		public IDisposable? BeginScope<TState>(TState state) where TState: notnull => null;
 
 		public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => null;
 
@@ -181,8 +181,6 @@ public class Logger: ILogging
 
 	private class Entry: IDisposable
 	{
-		public static IDisposable Empty = new NotEntry();
-
 		private readonly Logger _log;
 		private readonly string _endMessage;
 		private readonly long _stamp;
@@ -236,20 +234,13 @@ public class Logger: ILogging
 			}
 		}
 		private bool _disposed;
-
-		private class NotEntry: IDisposable
-		{
-			public void Dispose()
-			{
-			}
-		}
 	}
 
 	private class EmptyLogger: ILogging
 	{
 		public string Source { get { return "Empty"; } set { } }
 
-		public IDisposable BeginScope<TState>(TState state) => LoggingTools.Disposable;
+		public IDisposable? BeginScope<TState>(TState state) where TState: notnull => null;
 
 		public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => null;
 

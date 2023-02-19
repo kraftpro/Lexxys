@@ -39,7 +39,7 @@ namespace Lexxys
 		public int CompareTo(object obj)
 		{
 			if (obj == null)
-				throw EX.ArgumentNull("obj");
+				throw new ArgumentNullException(nameof(obj));
 
 			Tuple<T1, T2> tuple = obj as Tuple<T1, T2>;
 			if (tuple == null)
@@ -80,7 +80,7 @@ namespace Lexxys
 		public int CompareTo(object obj)
 		{
 			if (obj == null)
-				throw EX.ArgumentNull("obj");
+				throw new ArgumentNullException(nameof(obj));
 
 			Tuple<T1, T2, T3> tuple = obj as Tuple<T1, T2, T3>;
 			if (tuple == null)

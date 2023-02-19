@@ -46,6 +46,14 @@ namespace Lexxys.Tokenizer
 			_culture = charStream._culture;
 		}
 
+		/// <summary>
+		/// Creates a new instance of the <see cref="CharStream"/> 
+		/// </summary>
+		/// <param name="buffer">Content of the stream</param>
+		/// <param name="tabSize">Tab size (default 4)</param>
+		/// <param name="culture">Culture-specific information (default null)</param>
+		/// <exception cref="System.ArgumentNullException"><paramref name="buffer"/>is null</exception>
+		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="tabSize"/> is less than zero or greater than 32</exception>
 		public CharStream(string buffer, int tabSize = 0, CultureInfo? culture = null)
 			: this(buffer, true, tabSize, culture)
 		{
@@ -64,7 +72,7 @@ namespace Lexxys.Tokenizer
 		{
 			if (buffer == null)
 				throw new ArgumentNullException(nameof(buffer));
-			if (tabSize < 0 || tabSize > 32)
+			if (tabSize is < 0 or > 32)
 				throw new ArgumentOutOfRangeException(nameof(tabSize), tabSize, null);
 
 			_buffer = KeepNewLine(buffer, appendNewLine);
@@ -84,7 +92,7 @@ namespace Lexxys.Tokenizer
 		{
 			if (stream == null)
 				throw new ArgumentNullException(nameof(stream));
-			if (tabSize < 0 || tabSize > 32)
+			if (tabSize is < 0 or > 32)
 				throw new ArgumentOutOfRangeException(nameof(tabSize), tabSize, null);
 
 			_buffer = KeepNewLine(stream);
@@ -176,7 +184,7 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="index">A relative character position in the <see cref="CharStream"/>.</param>
 		/// <returns>
-		///		A Unicode character if absolute position within the <see cref="CharStream"/> buffer boudaries;
+		///		A Unicode character if absolute position within the <see cref="CharStream"/> buffer boundaries;
 		///		<see cref="BofMarker"/> if absolute position less then zero;
 		///		<see cref="EofMarker"/> if absolute position greater or equal to the length of <see cref="CharStream"/>.
 		///	</returns>
@@ -192,7 +200,7 @@ namespace Lexxys.Tokenizer
 		/// <summary>
 		/// Gets culture-specific information associated with the stream.
 		/// </summary>
-		public CultureInfo CultureInfo => _culture;
+		public CultureInfo Culture => _culture;
 
 		/// <summary>
 		/// Gets number of characters in the current <see cref="CharStream"/>.
@@ -217,7 +225,7 @@ namespace Lexxys.Tokenizer
 		/// <summary>
 		/// Sets the stream position.
 		/// </summary>
-		/// <param name="position">New srteam position</param>
+		/// <param name="position">New stream position</param>
 		public void Move(int position)
 		{
 			_position = position <= 0 ? 0: position >= _buffer.Length ? _buffer.Length: position;
@@ -411,7 +419,7 @@ namespace Lexxys.Tokenizer
 		/// <summary>
 		/// Reports the index of the first occurrence in this Stream of specified reqular expression.
 		/// </summary>
-		/// <param name="regex">A regualr expression to seek.</param>
+		/// <param name="regex">A regular expression to seek.</param>
 		/// <param name="offset">The search starting position.</param>
 		/// <returns>The zero-based index position of value if that regular expression is found, or -1 it is not.</returns>
 		/// <exception cref="System.ArgumentNullException"><paramref name="regex"/> is null.</exception>
@@ -518,7 +526,7 @@ namespace Lexxys.Tokenizer
 		}
 
 		/// <summary>
-		/// Moves current podition of the <see cref="CharStream"/> forward until the <paramref name="predicate"/> is true.
+		/// Moves current position of the <see cref="CharStream"/> forward until the <paramref name="predicate"/> is true.
 		/// </summary>
 		/// <param name="predicate"></param>
 		/// <returns></returns>
@@ -540,7 +548,7 @@ namespace Lexxys.Tokenizer
 		}
 
 		/// <summary>
-		/// Moves current podition of the <see cref="CharStream"/> forward until the <paramref name="predicate"/> is true starting from specified <paramref name="offset"/>.
+		/// Moves current position of the <see cref="CharStream"/> forward until the <paramref name="predicate"/> is true starting from specified <paramref name="offset"/>.
 		/// </summary>
 		/// <param name="offset"></param>
 		/// <param name="predicate"></param>
@@ -565,7 +573,7 @@ namespace Lexxys.Tokenizer
 		/// <summary>
 		/// Searches the first occurrence of a regular expression in the <see cref="CharStream"/>.
 		/// </summary>
-		/// <param name="regex">A regualr expression to search.</param>
+		/// <param name="regex">A regular expression to search.</param>
 		/// <param name="offset">The search starting position.</param>
 		/// <returns>An object that contains information about the match.</returns>
 		/// <exception cref="System.ArgumentNullException"><paramref name="regex"/> is null.</exception>
@@ -593,7 +601,7 @@ namespace Lexxys.Tokenizer
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
 		public bool StartsWith(string? value, int offset, StringComparison comparision)
 		{
-			if (value == null || value.Length == 0)
+			if (value is not { Length: > 0})
 				return false;
 			if (offset < 0)
 				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
@@ -662,16 +670,31 @@ namespace Lexxys.Tokenizer
 			return new SyntaxException(message, file, at.Line + 1, at.Column + 1);
 		}
 
+		/// <summary>
+		/// Gets line and column values of the current char position.
+		/// </summary>
+		/// <returns></returns>
 		public CharPosition GetCharPosition()
 		{
 			return GetCharPosition(_position);
 		}
 
+		/// <summary>
+		/// Gets line and column values of the specified char <paramref name="position"/>.
+		/// </summary>
+		/// <param name="position"></param>
+		/// <param name="prev"></param>
+		/// <returns></returns>
 		public CharPosition GetCharPosition(int position, CharPosition prev)
 		{
 			return position < prev.Position ? GetCharPosition(position):  GetCharPosition(prev, position - prev.Position);
 		}
 
+		/// <summary>
+		/// Gets line and column values of the specified char <paramref name="position"/>.
+		/// </summary>
+		/// <param name="position"></param>
+		/// <returns></returns>
 		public CharPosition GetCharPosition(int position)
 		{
 			if (position <= 0)
@@ -734,7 +757,7 @@ namespace Lexxys.Tokenizer
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format(_culture, "{0}: {1}", _position, _buffer == null ? "(null)": Strings.Ellipsis(Strings.EscapeCsString(Substring(0, 120)), 120, "…\""));
+			return String.Format(_culture, "{0}: {1}", _position, Strings.Ellipsis(Strings.EscapeCsString(Substring(0, 120)), 120, "ï¿½\""));
 		}
 	}
 }

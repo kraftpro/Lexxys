@@ -15,16 +15,16 @@ namespace Lexxys.Tokenizer
 	public class CommentsTokenRule: LexicalTokenRule
 	{
 		private readonly string _beginning;
-		private readonly string[] _startEnd;
+		private readonly (string Start, string End)[] _startEnd;
 		private readonly int _startLength;
-		private static readonly string[] _cppComments = { "//", "\n" };
+		private static readonly (string, string)[] _cppComments = { ("//", "\n") };
 
-		public CommentsTokenRule(params string[] startEnd)
+		public CommentsTokenRule(params (string, string)[] startEnd)
 			: this(LexicalTokenType.COMMENT, startEnd)
 		{
 		}
 
-		public CommentsTokenRule(LexicalTokenType comment, params string[] startEnd)
+		public CommentsTokenRule(LexicalTokenType comment, params (string Start, string End)[] startEnd)
 		{
 			TokenType = comment;
 			if (startEnd == null || startEnd.Length == 0)
@@ -33,66 +33,61 @@ namespace Lexxys.Tokenizer
 			}
 			else
 			{
-				_startEnd = new string[(startEnd.Length + 1) & ~1];
-				_startEnd[_startEnd.Length - 1] = "\n";
-				startEnd.CopyTo(_startEnd, 0);
 				for (int i = 0; i < startEnd.Length; ++i)
 				{
-					if (startEnd[i] == null || startEnd[i].Length == 0)
-						throw new ArgumentOutOfRangeException($"startEnd[{i}]", startEnd[i], null);
+					if (String.IsNullOrEmpty(startEnd[i].Start))
+						throw new ArgumentOutOfRangeException($"startEnd[{i}].Start", startEnd[i].Start, null);
+					if (String.IsNullOrEmpty(startEnd[i].End))
+						throw new ArgumentOutOfRangeException($"startEnd[{i}].End", startEnd[i].End, null);
 				}
+				_startEnd = new (string, string)[startEnd.Length];
+				startEnd.CopyTo(_startEnd, 0);
 			}
 			_startLength = 0;
-			string beginning = "";
-			for (int i = 0; i < _startEnd.Length; i += 2)
+			char[] beginning = new char[_startEnd.Length];
+			int j = 0;
+			for (int i = 0; i < _startEnd.Length; ++i)
 			{
-				if (_startEnd[i].Length > _startLength)
-					_startLength = _startEnd[i].Length;
-				if (beginning.IndexOf(_startEnd[i][0]) < 0)
-					beginning += _startEnd[i][0].ToString();
+				if (_startEnd[i].Start.Length > _startLength)
+					_startLength = _startEnd[i].Start.Length;
+				if (!beginning.Contains(_startEnd[i].Start[0]))
+					beginning[j++] = _startEnd[i].Start[0];
 			}
-			_beginning = beginning;
+			_beginning = new string(beginning, 0, j);
 		}
 
-		public override string? BeginningChars => _beginning;
+		public override string BeginningChars => _beginning;
 
 		public LexicalTokenType TokenType { get; }
 
 		public override bool TestBeginning(char value)
 		{
-			return _beginning.Contains(value);
+			return _beginning.IndexOf(value) >= 0;
 		}
 
 		public override LexicalToken? TryParse(CharStream stream)
 		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
-
-			string? commentStart = null;
-			string? commentEnd = null;
 			string s = stream.Substring(0, _startLength);
-			for (int i = 0; i < _startEnd.Length; i += 2)
+			bool found = false;
+			foreach ((string Start, string End) item in _startEnd)
 			{
-				if (s.StartsWith(_startEnd[i], StringComparison.Ordinal))
+				if (s.StartsWith(item.Start, StringComparison.Ordinal))
 				{
-					commentStart = _startEnd[i];
-					commentEnd = _startEnd[i + 1];
-					break;
+					found = true;
+					int position = stream.IndexOf(item.End, item.Start.Length);
+					if (position < 0)
+					{
+						if (item.End != "\n")
+							continue;
+						position = stream.Length;
+					}
+					string comment = stream.Substring(item.Start.Length, position - item.Start.Length);
+					return stream.Token(TokenType, position + (item.End == "\n" ? 0: item.End!.Length), comment);
 				}
 			}
-			if (commentStart == null)
-				return null;
-			Debug.Assert(commentEnd != null);
-
-			int position = stream.IndexOf(commentEnd!, commentStart.Length);
-			if (position < 0)
-			{
-				if (commentEnd != "\n")
-					throw stream.SyntaxException(SR.EofInComments());
-				position = stream.Length;
-			}
-			string comment = stream.Substring(commentStart.Length, position - commentStart.Length);
-			return stream.Token(TokenType, position + (commentEnd == "\n" ? 0: commentEnd!.Length), comment);
+			if (found)
+				throw stream.SyntaxException(SR.EofInComments());
+			return null;
 		}
 	}
 

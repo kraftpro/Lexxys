@@ -55,7 +55,7 @@ namespace Lexxys
 			if (_locker == null || _locker.IsReaderLockHeld || _locker.IsWriterLockHeld)
 				return null;
 			if (timingThreshold < 0)
-				throw EX.ArgumentOutOfRange("logTiming", timingThreshold);
+				throw new ArgumentOutOfRangeException(nameof(timingThreshold), timingThreshold, null);
 
 			if (timingThreshold == 0)
 				return new NewReader(_locker, timeout);
@@ -92,7 +92,7 @@ namespace Lexxys
 			if (_locker == null || _locker.IsWriterLockHeld)
 				return null;
 			if (timingThreshold < 0)
-				throw EX.ArgumentOutOfRange("logTiming", timingThreshold);
+				throw new ArgumentOutOfRangeException(nameof(timingThreshold), timingThreshold, null);
 
 			if (timingThreshold == 0)
 				return _locker.IsReaderLockHeld ?

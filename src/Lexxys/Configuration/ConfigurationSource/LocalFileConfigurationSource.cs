@@ -12,7 +12,7 @@ namespace Lexxys.Configuration
 {
 	using Xml;
 
-	class LocalFileConfigurationSource: IXmlConfigurationSource
+	internal class LocalFileConfigurationSource: IXmlConfigurationSource
 	{
 		private const string LogSource = "Lexxys.Configuration.LocalFileConfigurationSource";
 		private readonly FileInfo _file;
@@ -22,7 +22,7 @@ namespace Lexxys.Configuration
 		private readonly Uri _location;
 		private int _version;
 
-		private LocalFileConfigurationSource(Uri location, IReadOnlyCollection<string> parameters)
+		private LocalFileConfigurationSource(Uri location, IReadOnlyCollection<string>? parameters)
 		{
 			_file = new FileInfo(location.LocalPath);
 			_location = location;
@@ -65,16 +65,12 @@ namespace Lexxys.Configuration
 
 		public override bool Equals(object? obj)
 		{
-			if (obj is not LocalFileConfigurationSource x)
-				return false;
-			if (_file == null)
-				return x._file == null;
-			return _file.FullName == x._file.FullName;
+			return obj is LocalFileConfigurationSource x && _file.FullName == x._file.FullName;
 		}
 
 		public override int GetHashCode()
 		{
-			return _file == null ? 0: _file.FullName.GetHashCode();
+			return _file.FullName.GetHashCode();
 		}
 
 		private void OnFileChanged(object sender, FileSystemEventArgs e)
@@ -96,12 +92,12 @@ namespace Lexxys.Configuration
 			#pragma warning disable CA1031 // Do not catch general exception types
 			catch (Exception flaw)
 			{
-				Config.LogConfigurationError(LogSource, flaw.Add("fileName", _file?.FullName));
+				Config.LogConfigurationError(LogSource, flaw.Add("fileName", _file.FullName));
 			}
 			#pragma warning restore CA1031 // Do not catch general exception types
 		}
 
-		private IEnumerable<XmlLiteNode>? OptionHandler(string option, IReadOnlyCollection<string> parameters)
+		private IEnumerable<XmlLiteNode>? OptionHandler(TextToXmlConverter converter, string option, IReadOnlyCollection<string>? parameters)
 		{
 			if (option != "include")
 			{
@@ -111,13 +107,11 @@ namespace Lexxys.Configuration
 			return ConfigurationSource.HandleInclude(LogSource, parameters, _file.DirectoryName, ref _includes, OnChanged);
 		}
 
-		public static LocalFileConfigurationSource? Create(Uri location, IReadOnlyCollection<string> parameters)
+		public static LocalFileConfigurationSource? TryCreate(Uri? location, IReadOnlyCollection<string>? parameters)
 		{
 			if (location == null || !location.IsAbsoluteUri || !location.IsFile)
 				return null;
-			if (!File.Exists(location.LocalPath))
-				return null;
-			return new LocalFileConfigurationSource(location, parameters);
+			return !File.Exists(location.LocalPath) ? null: new LocalFileConfigurationSource(location, parameters);
 		}
 	}
 }

@@ -16,19 +16,17 @@ namespace Lexxys.Tests.Configuration
 
 	[TestClass]
 	[DeploymentItem("test.config.txt")]
-	public class ConfiguraitionTest
+	public class ConfigurationTest
 	{
 		private IValue<System.Xml.XmlNode[]> SharedConfiguration => __config ??= Config.Current.GetValue<System.Xml.XmlNode[]>("scattergories.lists");
 		private IValue<System.Xml.XmlNode[]> __config;
 
-		//static ConfiguraitionTest()
-		//{
-
-		//}
-
 		[TestInitialize]
 		public void Initialize()
 		{
+			Statics.AddServices(o => o
+				.AddConfigService());
+
 			string configFile = "test.config.txt";
 			if (!File.Exists(configFile))
 				throw new ArgumentOutOfRangeException(nameof(configFile), configFile, null);
@@ -43,7 +41,7 @@ namespace Lexxys.Tests.Configuration
 
 
 		[TestMethod, DoNotParallelize]
-		public void GetSestionMultiThread()
+		public void GetSessionMultiThread()
 		{
 			var nodes = SharedConfiguration.Value;
 

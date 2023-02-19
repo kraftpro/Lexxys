@@ -89,8 +89,13 @@ namespace Lexxys.Tests.Data
 			const string IsSsn = "value {0} is valid SSN";
 			const string IsNotSsn = "value {0} is not valid SSN";
 			string v;
-			v = R.Digit(9).Enumerate().FirstOrDefault(o => !o.StartsWith("9")); Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
-			v = R.Digit(4); Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
+			v = "666456789"; Assert.IsFalse(Check.SsnCode(v, false), IsSsn, v);
+			v = "123456789"; Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
+			
+			v = "0000"; Assert.IsFalse(Check.SsnCode(v, false), IsSsn, v);
+			v = "0001"; Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
+			v = "6664"; Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
+			v = "9876"; Assert.IsTrue(Check.SsnCode(v, false), IsNotSsn, v);
 
 			v = R.Digit(4+1); Assert.IsFalse(Check.SsnCode(v, false), IsSsn, v);
 			v = R.Digit(4-1); Assert.IsFalse(Check.SsnCode(v, false), IsSsn, v);

@@ -14,7 +14,7 @@ using System.Diagnostics.Contracts;
 namespace Lexxys.Tokenizer
 {
 	/// <summary>
-	/// Replresents a position in a text.
+	/// Represents a position in a text.
 	/// </summary>
 	public readonly struct CharPosition: IEquatable<CharPosition>
 	{

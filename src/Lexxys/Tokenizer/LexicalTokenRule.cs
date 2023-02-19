@@ -38,7 +38,7 @@ namespace Lexxys.Tokenizer
 		}
 
 		/// <summary>
-		/// Tryes to extract a token from the <paramref name="stream"/>.
+		/// Tries to extract a token from the <paramref name="stream"/>.
 		/// </summary>
 		/// <param name="stream"></param>
 		/// <returns>Extracted token or null.</returns>

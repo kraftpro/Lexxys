@@ -28,12 +28,12 @@ namespace Lexxys.Configuration
 		public object? GetValue(string key, Type objectType)
 		{
 			if (objectType == null)
-				throw EX.ArgumentNull(nameof(objectType));
+				throw new ArgumentNullException(nameof(objectType));
 			if (key == null)
-				throw EX.ArgumentNull(nameof(key));
+				throw new ArgumentNullException(nameof(key));
 
 			string value = ConfigurationManager.AppSettings[key];
-			if (value != null && XmlTools.TryGetValue(value, objectType, out object result))
+			if (value != null && XmlTools.TryGetValue(value, objectType, out object? result))
 				return result;
 			if (key.StartsWith("connection.", StringComparison.OrdinalIgnoreCase) && objectType == typeof(string))
 				return ConfigurationManager.ConnectionStrings[key.Substring(11)];
@@ -46,17 +46,17 @@ namespace Lexxys.Configuration
 		public IReadOnlyList<T> GetList<T>(string key)
 		{
 			if (key == null)
-				throw EX.ArgumentNull(nameof(key));
+				throw new ArgumentNullException(nameof(key));
 
-			string[] values = ConfigurationManager.AppSettings.GetValues(key);
+			string[]? values = ConfigurationManager.AppSettings.GetValues(key);
 			if (values != null)
 			{
 				var result = new List<T>();
 				foreach (string value in values)
 				{
-					if (XmlTools.TryGetValue(value, typeof(T), out object x))
+					if (XmlTools.TryGetValue(value, typeof(T), out object? x))
 					{
-						result.Add((T)x);
+						result.Add((T)x!);
 					}
 				}
 				if (result.Count > 0)

@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.ConstrainedExecution;
 using System.Linq;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Lexxys.Xml
 {
@@ -13,7 +14,7 @@ namespace Lexxys.Xml
 	{
 		public static byte GetByte(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return Byte.TryParse(value, out byte result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -30,7 +31,7 @@ namespace Lexxys.Xml
 
 		public static sbyte GetSByte(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return SByte.TryParse(value, out sbyte result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -47,7 +48,7 @@ namespace Lexxys.Xml
 
 		public static short GetInt16(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return Int16.TryParse(value, out short result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -64,7 +65,7 @@ namespace Lexxys.Xml
 
 		public static ushort GetUInt16(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return UInt16.TryParse(value, out ushort result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -81,7 +82,7 @@ namespace Lexxys.Xml
 
 		public static int GetInt32(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return Int32.TryParse(value, out int result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -103,7 +104,7 @@ namespace Lexxys.Xml
 
 		public static uint GetUInt32(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return UInt32.TryParse(value, out uint result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -120,7 +121,7 @@ namespace Lexxys.Xml
 
 		public static long GetInt64(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return Int64.TryParse(value, out long result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -137,7 +138,7 @@ namespace Lexxys.Xml
 
 		public static ulong GetUInt64(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return UInt64.TryParse(value, out ulong result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -154,7 +155,7 @@ namespace Lexxys.Xml
 
 		public static float GetSingle(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return Single.TryParse(value, out float result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -171,7 +172,7 @@ namespace Lexxys.Xml
 
 		public static double GetDouble(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return Double.TryParse(value, out double result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -188,7 +189,7 @@ namespace Lexxys.Xml
 
 		public static decimal GetDecimal(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return Decimal.TryParse(value, out decimal result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -205,7 +206,7 @@ namespace Lexxys.Xml
 
 		public static char GetChar(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return TryGetChar(value) ?? throw new FormatException(SR.FormatException(value));
 		}
@@ -252,7 +253,7 @@ namespace Lexxys.Xml
 
 		public static TimeSpan GetTimeSpan(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return TryGetTimeSpan(value, out TimeSpan result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -619,7 +620,7 @@ namespace Lexxys.Xml
 
 		public static DateTime GetDateTime(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return TryGetDateTime(value, out DateTime result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -647,7 +648,7 @@ namespace Lexxys.Xml
 
 		public static DateTimeOffset GetDateTimeOffset(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -852,7 +853,7 @@ namespace Lexxys.Xml
 
 		public static Guid GetGuid(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return Guid.TryParse(value, out Guid result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -874,7 +875,7 @@ namespace Lexxys.Xml
 
 		public static Type GetType(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return TryGetType(value, out Type? result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -902,7 +903,7 @@ namespace Lexxys.Xml
 
 		public static bool GetBoolean(string value)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return TryGetBoolean(value, out bool result) ? result : throw new FormatException(SR.FormatException(value));
 		}
@@ -945,7 +946,7 @@ namespace Lexxys.Xml
 
 		public static T GetEnum<T>(string value) where T : struct
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			if (TryGetEnum(value, out T result))
 				return result;
@@ -974,12 +975,12 @@ namespace Lexxys.Xml
 
 		public static object GetEnum(string value, Type enumType)
 		{
-			if (value is null || value.Length <= 0)
+			if (value is not { Length: >0 })
 				throw new ArgumentNullException(nameof(value));
 			return TryGetEnum(value, enumType, out object result) ? result : throw new FormatException(SR.FormatException(value));
 		}
 
-		[return: NotNullIfNotNull("defaultValue")]
+		[return: NotNullIfNotNull(nameof(defaultValue))]
 		public static object? GetEnum(string? value, Type enumType, object? defaultValue)
 		{
 			return TryGetEnum(value, enumType, out object result) ? result : defaultValue;
@@ -990,7 +991,7 @@ namespace Lexxys.Xml
 			if (enumType is null)
 				throw new ArgumentNullException(nameof(enumType));
 
-#if NETCOREAPP2_0_OR_GREATER
+#if NETCOREAPP
 			if (Enum.TryParse(enumType, value, true, out result!))
 			{
 				var s = result.ToString()!;
@@ -1026,6 +1027,18 @@ namespace Lexxys.Xml
 
 			ulong sum = 0;
 			bool found = false;
+			Func<object, ulong> converter = Type.GetTypeCode(enumType) switch
+			{
+				TypeCode.Byte => o => (ulong)(byte)o,
+				TypeCode.SByte => o => (ulong)(sbyte)o,
+				TypeCode.Int16 => o => (ulong)(short)o,
+				TypeCode.UInt16 => o => (ulong)(ushort)o,
+				TypeCode.Int32 => o => (ulong)(int)o,
+				TypeCode.UInt32 => o => (ulong)(uint)o,
+				TypeCode.Int64 => o => (ulong)(long)o,
+				TypeCode.UInt64 => o => (ulong)o,
+				_ => o => System.Convert.ToUInt64(o.ToString(), CultureInfo.InvariantCulture)
+			};
 			foreach (var item in enumType.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Select(o => (Name: o.Name, Value: o.GetRawConstantValue())))
 			{
 				for (int i = 0; i < parts.Length; ++i)
@@ -1033,7 +1046,7 @@ namespace Lexxys.Xml
 					if (String.Equals(parts[i], item.Name, StringComparison.OrdinalIgnoreCase))
 					{
 						found = true;
-						sum |= (ulong)item.Value;
+						sum |= converter(item.Value);
 						break;
 					}
 				}
@@ -1043,11 +1056,11 @@ namespace Lexxys.Xml
 			return found;
 #endif
 		}
-#if !NETCOREAPP2_0_OR_GREATER
+#if !NETCOREAPP
 		private static readonly char[] __enumSeparators = new[] { ',' };
 #endif
 
-		[return: NotNullIfNotNull("defaultValue")]
+		[return: NotNullIfNotNull(nameof(defaultValue))]
 		public static string? GetString(string? value, string? defaultValue)
 		{
 			if (value == null)

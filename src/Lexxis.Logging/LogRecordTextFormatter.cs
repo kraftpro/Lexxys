@@ -5,51 +5,18 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lexxys.Logging;
-
-public enum FormatItemType
-{
-	IndentMark = 0,
-	EventId = 1,
-	MachineName = 2,
-	DomainName = 3,
-	ProcessId = 4,
-	ThreadId = 5,
-	ThreadSysId = 6,
-	SequentialNumber = 7,
-	Timestamp = 8,
-
-	Source = 9,
-	Message = 10,
-	Type = 11,
-	Grouping = 12,
-	Indent = 13,
-
-	Empty = 14,
-}
-
-public readonly struct LogRecordFormatItem
-{
-	public readonly FormatItemType Index;
-	public readonly string Prefix;
-	public readonly string? Format;
-
-	public LogRecordFormatItem(FormatItemType index, string prefix, string? format)
-	{
-		Index = index;
-		Prefix = prefix;
-		Format = format;
-	}
-}
 
 /// <summary>
 /// Convert <see cref="LogRecord"/> to string using formatting template.
@@ -57,7 +24,7 @@ public readonly struct LogRecordFormatItem
 public class LogRecordTextFormatter: ILogRecordFormatter
 {
 	public const int MaxIndents = 20;
-	private const int MAX_STACK_ALLOC = 16 * 1024;
+	private const int MAX_STACK_ALLOC = 4 * 1024;
 	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
 		"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}{EventId:\\.0}: {Message}",
 		"  ",
@@ -96,7 +63,6 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 	/// 	DomainName
 	/// 	ProcessID
 	/// 	ThreadID
-	/// 	ThreadSysID
 	/// 	SeqNumber
 	/// 	TimeStamp
 	/// 	Source
@@ -215,9 +181,6 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 				case FormatItemType.ThreadId:
 					writer.Write(record.Context.ThreadId.ToString(item.Format));
 					break;
-				case FormatItemType.ThreadSysId:
-					writer.Write(record.Context.ThreadSysId.ToString(item.Format));
-					break;
 				case FormatItemType.SequentialNumber:
 					writer.Write(record.Context.SequentialNumber.ToString(item.Format));
 					break;
@@ -239,30 +202,35 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 					break;
 				case FormatItemType.Type:
 					string s;
-					if (item.Format == null || record.LogType < LogType.Output || record.LogType > LogType.MaxValue)
-						s = record.LogType.ToString();
-					else
-						s = item.Format?.ToUpper() switch
+					if (record.LogType is >= LogType.Output and <= LogType.MaxValue)
+						s = item.Format?.ToUpperInvariant() switch
 						{
 							"1" => __severity1[(int)record.LogType],
 							"3" => __severity3[(int)record.LogType],
 							"4" => __severity4[(int)record.LogType],
 							"X" => item.Format[0] == 'x' ?
-										__severity1[(int)record.LogType].ToLowerInvariant() :
+										__severity1[(int)record.LogType].ToLowerInvariant():
 										__severity1[(int)record.LogType],
 							"XXX" => item.Format[0] == 'x' ?
-										__severity3[(int)record.LogType].ToLowerInvariant() :
-									item.Format.StartsWith("Xx", StringComparison.Ordinal) ?
-										__severity3[(int)record.LogType] :
-										__severity3[(int)record.LogType].ToUpperInvariant(),
+										__severity3[(int)record.LogType].ToLowerInvariant():
+									item.Format[1] == 'X' ?
+										__severity3[(int)record.LogType].ToUpperInvariant():
+										__severity3[(int)record.LogType],
 							"XXXX" => item.Format[0] == 'x' ?
-										__severity4[(int)record.LogType].ToLowerInvariant() :
-									item.Format.StartsWith("Xx", StringComparison.Ordinal) ?
-										__severity4[(int)record.LogType] :
-										__severity4[(int)record.LogType].ToUpperInvariant(),
+										__severity4[(int)record.LogType].ToLowerInvariant():
+									item.Format[1] == 'X' ?
+										__severity5[(int)record.LogType].ToUpperInvariant():
+										__severity4[(int)record.LogType],
+							"XXXXX" => item.Format[0] == 'x' ?
+										__severity5[(int)record.LogType].ToLowerInvariant():
+									item.Format[1] == 'X' ?
+										__severity5[(int)record.LogType].ToUpperInvariant():
+										__severity5[(int)record.LogType],
 							"D" => record.LogType.ToString(item.Format),
-							_ => record.LogType.ToString(),
+							_ => __severity5[(int)record.LogType],
 						};
+					else
+						s = record.LogType.ToString();
 					writer.Write(s);
 					break;
 				case FormatItemType.Grouping:
@@ -274,45 +242,52 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			}
 		}
 	}
-	private static readonly string[] __severity1 = new[] { "O", "E", "W", "I", "T", "D" };
-	private static readonly string[] __severity3 = new[] { "Out", "Err", "Wrn", "Inf", "Trc", "Dbg" };
-	private static readonly string[] __severity4 = new[] { "Outp", "Fail", "Warn", "Info", "Trce", "Dbug" };
+	private static readonly string[] __severity1 = new[] { "O", "E", "W", "I", "D", "T" };
+	private static readonly string[] __severity3 = new[] { "Out", "Err", "Wrn", "Inf", "Dbg", "Trc" };
+	private static readonly string[] __severity4 = new[] { "Outp", "Fail", "Warn", "Info", "Dbug", "Trce" };
+	private static readonly string[] __severity5 = new[] { "Output", "Error", "Warning", "Information", "Debug", "Trace" };
 
 	private static void AppendTimeStamp(TextWriter writer, DateTime date, bool useDate)
 	{
+		char[] buffer = ArrayPool<char>.Shared.Rent(26);
+		var n = 0;
 		if (useDate)
 		{
 			Write4(date.Year);
-			writer.Write('-');
+			buffer[n++] = '-';
 			Write2(date.Month);
-			writer.Write('-');
+			buffer[n++] = '-';
 			Write2(date.Day);
-			writer.Write('T');
+			buffer[n++] = 'T';
 		}
 
 		Write2(date.Hour);
-		writer.Write(':');
+		buffer[n++] = ':';
 		Write2(date.Minute);
-		writer.Write(':');
+		buffer[n++] = ':';
 		Write2(date.Second);
-		writer.Write('.');
-		var value = (int)(date.Ticks % TicksPerSecond / TicksPerFraction);
-		writer.Write((char)(value / 10000 + '0'));
-		Write4(value % 10000);
+		buffer[n++] = '.';
+		Write5((int)(date.Ticks % TicksPerSecond / TicksPerFraction));
+		writer.Write(buffer, 0, n);
+		ArrayPool<char>.Shared.Return(buffer);
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void Write2(int value)
 		{
-			writer.Write((char)(value / 10 + '0'));
-			writer.Write((char)(value % 10 + '0'));
+			buffer[n++] = (char)(value / 10 + '0');
+			buffer[n++] = (char)(value % 10 + '0');
 		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void Write4(int value)
 		{
-			writer.Write((char)(value / 1000 + '0'));
-			value %= 1000;
-			writer.Write((char)(value / 100 + '0'));
-			value %= 100;
-			writer.Write((char)(value / 10 + '0'));
-			writer.Write((char)(value % 10 + '0'));
+			Write2(value / 100);
+			Write2(value % 100);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		void Write5(int value)
+		{
+			buffer[n++] = (char)(value / 10000 + '0');
+			Write4(value % 10000);
 		}
 	}
 	private const long TicksPerFraction = 100L;
@@ -391,9 +366,17 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 
 		if (value.Length > MAX_STACK_ALLOC)
 		{
-			fixed (char* buffer = new char[value.Length])
+			var array = ArrayPool<char>.Shared.Rent(value.Length);
+			try
 			{
-				return NormalizeWs_(buffer, value);
+				fixed (char* buffer = array)
+				{
+					return NormalizeWs_(buffer, value);
+				}
+			}
+			finally
+			{
+				ArrayPool<char>.Shared.Return(array);
 			}
 		}
 		else
@@ -480,7 +463,6 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			{ "DOMAINNAME", FormatItemType.DomainName },
 			{ "PROCESSID", FormatItemType.ProcessId },
 			{ "THREADID", FormatItemType.ThreadId },
-			{ "THREADSYSID", FormatItemType.ThreadSysId },
 			{ "SEQNUMBER", FormatItemType.SequentialNumber },
 			{ "TIMESTAMP", FormatItemType.Timestamp },
 
@@ -580,6 +562,40 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			}
 			--Left;
 			return this;
+		}
+	}
+
+	private enum FormatItemType
+	{
+		IndentMark = 0,
+		EventId = 1,
+		MachineName = 2,
+		DomainName = 3,
+		ProcessId = 4,
+		ThreadId = 5,
+		SequentialNumber = 6,
+		Timestamp = 7,
+
+		Source = 8,
+		Message = 9,
+		Type = 10,
+		Grouping = 11,
+		Indent = 12,
+
+		Empty = 13,
+	}
+
+	private readonly struct LogRecordFormatItem
+	{
+		public readonly FormatItemType Index;
+		public readonly string Prefix;
+		public readonly string? Format;
+
+		public LogRecordFormatItem(FormatItemType index, string prefix, string? format)
+		{
+			Index = index;
+			Prefix = prefix;
+			Format = format;
 		}
 	}
 }
