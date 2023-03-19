@@ -53,7 +53,7 @@ namespace Lexxys.Tokenizer
 				throw new ArgumentNullException(nameof(keyword));
 			if (_ignoreCase)
 				keyword = keyword.ToUpperInvariant();
-			if (!_keywords.TryGetValue(keyword, out LexicalTokenType tp))
+			if (!_keywords.TryGetValue(keyword, out LexicalTokenType? tp))
 				_keywords.Add(keyword, type);
 			else if (tp != type)
 				throw new ArgumentOutOfRangeException(nameof(keyword), keyword, null);
@@ -72,13 +72,11 @@ namespace Lexxys.Tokenizer
 			return (Char.IsLetter(value) || value == '_');
 		}
 
-		public override LexicalToken? TryParse(CharStream stream)
+		public override LexicalToken TryParse(ref CharStream stream)
 		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
 			char ch = stream[0];
 			if (!(Char.IsLetter(ch) || ch == '_'))
-				return null;
+				return LexicalToken.Empty;
 
 			int i = 0;
 			do
@@ -88,7 +86,7 @@ namespace Lexxys.Tokenizer
 			string text = stream.Substring(0, i);
 			if (_ignoreCase)
 				text = text.ToUpperInvariant();
-			if (!_keywords.TryGetValue(text, out LexicalTokenType tp))
+			if (!_keywords.TryGetValue(text, out LexicalTokenType? tp))
 				tp = IdentifierTokenType;
 			return stream.Token(tp, i, text);
 		}

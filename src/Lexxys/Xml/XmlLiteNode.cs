@@ -445,7 +445,7 @@ namespace Lexxys.Xml
 		public ReadOnly.ListValueWrap<KeyValuePair<string, string>> Attributes { get; }
 
 		/// <summary>
-		/// Contains all subnodes of this node.
+		/// Contains all sub-nodes of this node.
 		/// </summary>
 		public ReadOnly.ListValueWrap<XmlLiteNode> Elements { get; }
 

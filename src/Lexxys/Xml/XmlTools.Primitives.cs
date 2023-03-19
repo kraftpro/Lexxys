@@ -3,9 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.ConstrainedExecution;
 using System.Linq;
-using System.Collections.Generic;
 using System.Globalization;
 
 namespace Lexxys.Xml
@@ -230,7 +228,7 @@ namespace Lexxys.Xml
 			return value[0];
 		}
 
-		private static bool TryGetChar(string value, out char result)
+		private static bool TryGetChar(string? value, out char result)
 		{
 			if (value == null)
 			{
@@ -287,7 +285,7 @@ namespace Lexxys.Xml
 			if (value == null || value.Length == 0)
 				return false;
 
-			var text = new Tokenizer.CharStream(value, false, 1);
+			var text = new Tokenizer.CharStream(value, 1);
 			var last = new NumberScale();
 			var temp = new TimeSpan();
 
@@ -668,7 +666,7 @@ namespace Lexxys.Xml
 			return TryGetDateTimeOffset(value, out result, out _);
 		}
 
-		private static int MatchTwo(Tokenizer.CharStream text)
+		private static int MatchTwo(ref Tokenizer.CharStream text)
 		{
 			char a = text[0];
 			char b = text[1];
@@ -695,7 +693,7 @@ namespace Lexxys.Xml
 
 			static bool Space(char c) => c <= ' ';
 
-			var text = new Tokenizer.CharStream(value, false, 1);
+			var text = new Tokenizer.CharStream(value, 1);
 			int year = 1;
 			int month = 1;
 			int day = 1;
@@ -710,10 +708,10 @@ namespace Lexxys.Xml
 			if (text[2] == ':')
 				goto SetHour;
 
-			int x = MatchTwo(text);
+			int x = MatchTwo(ref text);
 			if (x < 0)
 				return false;
-			year = MatchTwo(text);
+			year = MatchTwo(ref text);
 			if (year < 0)
 				return false;
 			year += x * 100;
@@ -722,7 +720,7 @@ namespace Lexxys.Xml
 			bool delimiter = text[0] == '-';
 			if (delimiter)
 				text.Forward(1);
-			month = MatchTwo(text);
+			month = MatchTwo(ref text);
 			if (month < 1 || month > 12)
 				return false;
 			if (delimiter)
@@ -730,7 +728,7 @@ namespace Lexxys.Xml
 					text.Forward(1);
 				else
 					return false;
-			day = MatchTwo(text);
+			day = MatchTwo(ref text);
 			if (day < 1 || (day > 28 && day > DateTime.DaysInMonth(year, month)))
 				return false;
 
@@ -745,13 +743,13 @@ namespace Lexxys.Xml
 			}
 
 		SetHour:
-			int hour = MatchTwo(text);
+			int hour = MatchTwo(ref text);
 			if (hour < 0 || hour > 23)
 				return false;
 			delimiter = text[0] == ':';
 			if (delimiter)
 				text.Forward(1);
-			int minute = MatchTwo(text);
+			int minute = MatchTwo(ref text);
 			if (minute < 0 || minute > 59)
 				return false;
 			if (delimiter)
@@ -759,7 +757,7 @@ namespace Lexxys.Xml
 					text.Forward(1);
 				else
 					return false;
-			int second = MatchTwo(text);
+			int second = MatchTwo(ref text);
 			if (second < 0 || second > 59)
 				return false;
 
@@ -815,7 +813,7 @@ namespace Lexxys.Xml
 				if (text[0] == ':')
 				{
 					text.Forward(1);
-					m = MatchTwo(text);
+					m = MatchTwo(ref text);
 					if (m < 0 || m > 59)
 						return false;
 				}
@@ -834,11 +832,11 @@ namespace Lexxys.Xml
 				if (hour > 12 || text.Length != 2)
 					return false;
 				string ap = text.Substring(0, 2);
-				if (string.Equals(ap, "PM", StringComparison.OrdinalIgnoreCase))
+				if (String.Equals(ap, "PM", StringComparison.OrdinalIgnoreCase))
 					pm = true;
-				else if (!string.Equals(ap, "AM", StringComparison.OrdinalIgnoreCase))
+				else if (!String.Equals(ap, "AM", StringComparison.OrdinalIgnoreCase))
 					return false;
-				if (hour > 12 || pm && hour == 12)
+				if (pm && hour == 12)
 					return false;
 				if (pm)
 					hour += 12;
@@ -961,11 +959,6 @@ namespace Lexxys.Xml
 		public static T? GetEnum<T>(string? value, T? defaultValue) where T : struct
 		{
 			return TryGetEnum(value, out T result) ? result : defaultValue;
-		}
-
-		private static bool IsEnum(Type type)
-		{
-			return type.IsEnum;
 		}
 
 		public static bool TryGetEnum<T>(string? value, out T result) where T : struct

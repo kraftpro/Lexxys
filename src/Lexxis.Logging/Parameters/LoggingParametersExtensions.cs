@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Lexxys.Logging;
 
-public static partial class LoggingParametersExtenstions
+public static partial class LoggingParametersExtensions
 {
 	public static ILoggingParameters AddConsole(this ILoggingParameters parameters, Action<LoggingConsoleParameters>? config = null)
 	{

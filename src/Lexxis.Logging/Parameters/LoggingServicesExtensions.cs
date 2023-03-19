@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Logging;
 
-public static class LoggingServicesExtenstions
+public static class LoggingServicesExtensions
 {
 	public static IServiceCollection AddLoggingService(this IServiceCollection services, Action<ILoggingParameters>? configure = default)
 	{

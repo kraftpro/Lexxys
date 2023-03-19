@@ -205,9 +205,9 @@ internal class LoggingRule
 		/// <code>
 		/// wildcard := item [ item ]*
 		/// item     := text
-		///          | '[' wildcard ']' -- iptional
 		///          | '(' wildcard ')' -- group
-		///          | '*'              -- any char
+		///          | '[' wildcard ']' -- optional group
+		///          | '*'              -- zero or more chars
 		///          | ';' | ','        -- OR separator
 		/// </code>
 		/// </summary>

@@ -86,38 +86,40 @@ namespace Lexxys.Tokenizer
 		public LexicalTokenType TokenType { get; }
 
 		public override bool TestBeginning(char value) => value switch {
-			>= '0' and <= '9' => true,
+			>='0' and <='9' => true,
 			'.' => (_style & NumericTokenStyles.StartingWithDot) != 0,
 			'-' => (_style & NumericTokenStyles.NegativeSign) != 0,
 			'+' => (_style & NumericTokenStyles.PositiveSign) != 0,
 			_ => false
 		};
 
-		public override LexicalToken? TryParse(CharStream stream)
+		public override LexicalToken TryParse(ref CharStream stream)
 		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
 			var text = new StringBuilder();
 			int i = 0;
 			char ch = stream[0];
 			bool dec = false;
 			bool exp = false;
 
-			if (ch == '-' || ch == '+')
+			if (ch is '-' or '+')
 			{
 				if (ch == '-')
 					text.Append(ch);
 				ch = stream[1];
-				++i;
+				i = 1;
 			}
 
-			if (ch >= '0' && ch <= '9')
+			if (ch is >= '0' and <= '9')
 			{
-				if (ch == '0' && "oOxXbB".Contains(stream[i + 1]))
-					return TryParseBinary(stream);
-				while (ch == '0')
+				if (ch == '0' && (i + 1) < stream.Length)
 				{
 					ch = stream[++i];
+					if (ch is 'o' or 'O' or 'x' or 'X' or 'b' or 'B')
+						return TryParseBinary(ref stream);
+					while (ch == '0')
+					{
+						ch = stream[++i];
+					}
 				}
 				while (ch >= '0' && ch <= '9')
 				{
@@ -131,10 +133,10 @@ namespace Lexxys.Tokenizer
 			if (ch == DecimalPoint && (_style & NumericTokenStyles.AllowDecimalPoint) != 0)
 			{
 				if (i == 0 && (_style & NumericTokenStyles.StartingWithDot) == 0)
-					return null;
+					return LexicalToken.Empty;
 
 				ch = stream[++i];
-				if (ch >= '0' && ch <= '9')
+				if (ch is >='0' and <='9')
 				{
 					if (text.Length == 0)
 						text.Append('0');
@@ -143,17 +145,17 @@ namespace Lexxys.Tokenizer
 					{
 						text.Append(ch);
 						ch = stream[++i];
-					} while (ch >= '0' && ch <= '9');
+					} while (ch is >='0' and <='9');
 				}
 				else if (text.Length == 0 || (_style & NumericTokenStyles.EndingWithDot) == 0)
 				{
-					return null;
+					return LexicalToken.Empty;
 				}
 				dec = true;
 			}
 
 			if (text.Length == 0)
-				return null;
+				return LexicalToken.Empty;
 
 			if ((_style & NumericTokenStyles.AllowExponent) != 0)
 			{
@@ -170,9 +172,9 @@ namespace Lexxys.Tokenizer
 					} while (ch == ' ');
 
 					bool minus = ch == '-';
-					if (ch == '-' || ch == '+')
+					if (ch is '-' or '+')
 						ch = stream[++i];
-					if (ch >= '0' && ch <= '9')
+					if (ch is >='0' and <='9')
 					{
 						text.Append(ExponentChar1);
 						if (minus)
@@ -181,7 +183,7 @@ namespace Lexxys.Tokenizer
 						{
 							text.Append(ch);
 							ch = stream[++i];
-						} while (ch >= '0' && ch <= '9');
+						} while (ch is >='0' and <='9');
 						exp = true;
 						i0 = i;
 					}
@@ -192,16 +194,16 @@ namespace Lexxys.Tokenizer
 			string s = text.ToString();
 
 			if (!exp && !dec && Int64.TryParse(s, out long n))
-				return n <= Int32.MaxValue && n >= Int32.MinValue ? stream.Token(TokenType, i, s, (int)n): stream.Token(TokenType, i, s, n);
+				return n <= Int32.MaxValue && n >= Int32.MinValue ? stream.Token(TokenType, i, (_, _) => (int)n): stream.Token(TokenType, i, (_,_) => n);
 			if (!exp && Decimal.TryParse(s, out decimal d))
-				return stream.Token(TokenType, i, s, d);
+				return stream.Token(TokenType, i, (_, _) => d);
 			if (Double.TryParse(s, out double f))
-				return stream.Token(TokenType, i, s, f);
+				return stream.Token(TokenType, i, (_, _) => f);
 
-			return null;
+			return LexicalToken.Empty;
 		}
 
-		private LexicalToken? TryParseBinary(CharStream stream)
+		private LexicalToken TryParseBinary(ref CharStream stream)
 		{
 			ulong x = 0;
 			int i = 2;
@@ -211,11 +213,11 @@ namespace Lexxys.Tokenizer
 				case 'b':
 				case 'B':
 					if ((_style & NumericTokenStyles.AllowBinary) == 0)
-						return null;
+						return LexicalToken.Empty;
 					while (ch == '0' || ch == '1')
 					{
 						if ((x & 0x800000000000u) != 0)
-							return null;
+							return LexicalToken.Empty;
 						x <<= 1;
 						if (ch == '1')
 							x |= 1;
@@ -226,11 +228,11 @@ namespace Lexxys.Tokenizer
 				case 'o':
 				case 'O':
 					if ((_style & NumericTokenStyles.AllowOctal) == 0)
-						return null;
+						return LexicalToken.Empty;
 					while (ch >= '0' && ch <= '7')
 					{
 						if ((x & 0xE00000000000u) != 0)
-							return null;
+							return LexicalToken.Empty;
 						x <<= 3;
 						x |= (uint)(ch - '0');
 						ch = stream[++i];
@@ -240,11 +242,11 @@ namespace Lexxys.Tokenizer
 				case 'x':
 				case 'X':
 					if ((_style & NumericTokenStyles.AllowHexadecimal) == 0)
-						return null;
+						return LexicalToken.Empty;
 					while (ch >= '0' && ch <= '9' || ch >= 'A' && ch <= 'F' || ch >= 'a' && ch <= 'f')
 					{
 						if ((x & 0xF00000000000u) != 0)
-							return null;
+							return LexicalToken.Empty;
 						x <<= 4;
 						if (ch >= '0' && ch <= '9')
 							x |= (uint)(ch - '0');
@@ -257,13 +259,13 @@ namespace Lexxys.Tokenizer
 					break;
 
 				default:
-					return null;
+					return LexicalToken.Empty;
 			}
 
 			if (i == 2)
-				return null;
+				return LexicalToken.Empty;
 
-			return x > Int32.MaxValue ? stream.Token(TokenType, i, (long)x): stream.Token(TokenType, i, (int)x);
+			return x > Int32.MaxValue ? stream.Token(TokenType, i, (_, _) => (long)x): stream.Token(TokenType, i, (_,_) => (int)x);
 		}
 	}
 }

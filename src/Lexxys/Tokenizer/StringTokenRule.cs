@@ -15,7 +15,7 @@ namespace Lexxys.Tokenizer
 	{
 		public const char NoEscape = Char.MaxValue;
 
-		public StringTokenRule(char escapeChar = '\0', LexicalTokenType tokenType = default)
+		public StringTokenRule(char escapeChar = '\0', LexicalTokenType? tokenType = default)
 		{
 			EscapeChar = escapeChar == '\0' ? '\\': escapeChar;
 			TokenType = tokenType == default ? LexicalTokenType.STRING: tokenType;
@@ -23,21 +23,15 @@ namespace Lexxys.Tokenizer
 
 		public char EscapeChar { get; }
 		public LexicalTokenType TokenType { get; }
-		public override string? BeginningChars => "\"'";
+		public override string BeginningChars => "\"'";
 
 		public override bool TestBeginning(char value) => value is '"' or '\'';
 
-		public override LexicalToken? TryParse(CharStream stream)
-		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
-			return stream[0] is '"' or '\'' ? ParseString(TokenType, stream, EscapeChar): null;
-		}
+		public override LexicalToken TryParse(ref CharStream stream)
+			=> stream[0] is '"' or '\'' ? ParseString(TokenType, ref stream, EscapeChar): LexicalToken.Empty;
 
-		public static LexicalToken ParseString(LexicalTokenType tokenType, CharStream stream, char escapeChar)
+		public static LexicalToken ParseString(LexicalTokenType tokenType, ref CharStream stream, char escapeChar)
 		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
 			char c0 = stream[0];
 			StringBuilder sb = new StringBuilder();
 			int i = 1;
@@ -53,18 +47,31 @@ namespace Lexxys.Tokenizer
 						throw stream.SyntaxException(SR.EofInStringConstant());
 					j = j0;
 				}
-				sb.Append(stream.Substring(i, j - i));
+				sb.Append(stream.Slice(i, j - i));
 				if (j == j0)
 				{
-					if (stream[j + 1] != c0)
-						return stream.Token(tokenType, j + 1, sb.ToString());
+                    if (stream[j + 1] != c0)
+                    {
+	                    LexicalToken result;
+	                    if (sb.Length == j - i)
+	                    {
+		                    result = new LexicalToken(tokenType, stream.Position + i, j - i);
+	                    }
+	                    else
+	                    {
+	                        string value = sb.ToString();
+		                    result = new LexicalToken(tokenType, stream.Position + i, j - i, (_, _) => value);
+	                    }
+	                    stream.Forward(j + 1);
+	                    return result;
+                    }
 					i = j + 2;
 					j0 = stream.IndexOf(c0, i);
 					sb.Append(c0);
 				}
 				else
 				{
-					char ch = ParseEscape(stream, j + 1, out i);
+					char ch = ParseEscape(ref stream, j + 1, out i);
 					sb.Append(ch);
 					j1 = stream.IndexOf(escapeChar, i);
 					if (j0 < i)
@@ -73,10 +80,8 @@ namespace Lexxys.Tokenizer
 			}
 		}
 
-		private static char ParseEscape(CharStream stream, int position, out int next)
+		private static char ParseEscape(ref CharStream stream, int position, out int next)
 		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
 			int k;
 			int i = position;
 			int j;

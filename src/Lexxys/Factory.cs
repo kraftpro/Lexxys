@@ -17,8 +17,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-#pragma warning disable CA1508 // Avoid dead conditional code
-
 namespace Lexxys
 {
 	using Configuration;
@@ -479,8 +477,7 @@ namespace Lexxys
 
 		#region Type name parser
 
-		#pragma warning disable CA1034 // Nested types should not be visible
-		public static class TypeNameParser
+		public ref struct TypeNameParser
 		{
 			/*
 
@@ -538,69 +535,66 @@ namespace Lexxys
 					.Add(AT, "@"),
 			};
 
-			class TokenScanner2: TokenScanner
-			{
-				private readonly OneBackFilter _push;
-				public TokenScanner2(CharStream stream, params LexicalTokenRule[] rules)
-					: base(stream, rules)
-				{
-					_push = new OneBackFilter();
-					SetFilter(_push);
-				}
-
-				public void Back()
-				{
-					_push.Back();
-				}
-			}
-
 			public static Type? Parse(string? value)
 			{
 				if (value == null)
 					return null;
-				var tree = Parse(new TokenScanner2(new CharStream(value), __rules), true);
-				return tree?.MakeType();
+				var stream = new CharStream(value);
+				return new TypeNameParser(true).Parse(ref stream, true)?.MakeType();
 			}
 
 			public static TypeTree? ParseType(string? value)
 			{
 				if (value == null)
 					return null;
-				return Parse(new TokenScanner2(new CharStream(value), __rules), true);
+				var stream = new CharStream(value);
+				return new TypeNameParser(true).Parse(ref stream, true);
 			}
 
-			private static TypeTree? Parse(TokenScanner2 scanner, bool fullName)
+
+			private readonly TokenScanner _scanner;
+			private readonly OneBackFilter _back;
+
+			private TypeNameParser(bool _)
+            {
+				_back = new OneBackFilter();
+                _scanner = new TokenScanner(new ITokenFilter[] { _back }, __rules);
+			}
+
+
+            private TypeTree? Parse(ref CharStream stream, bool fullName)
 			{
-				var t = scanner.Next();
+				var t = _scanner.Next(ref stream);
 				if (!t.Is(LexicalTokenType.IDENTIFIER))
 					return null;
 
-				string name = t.Text;
+				string name = t.GetString(stream);
 				int generics = 0;
 				bool nullable = false;
 				int pointer = 0;
 				List<int>? rank = null;
 				List<TypeTree>? parameters = null;
 
-				t = scanner.Next();
+				t = _scanner.Next(ref stream);
 				if (t.Is(LexicalTokenType.SEQUENCE, GENERIC_SUFFIX))
 				{
-					t = scanner.Next();
+					t = _scanner.Next(ref stream);
 					if (!t.Is(LexicalTokenType.NUMERIC))
 						return null;
-					if (!Int32.TryParse(t.Text, out generics))
+					if (!Int32.TryParse(t.GetString(stream), out generics))
 						return null;
-					t = scanner.Next();
+					t = _scanner.Next(ref stream);
 				}
 				if (t.Is(LexicalTokenType.SEQUENCE, BEGIN_GENERICS, OPEN_SQRBRC))
 				{
 					int terminal = t.TokenType.Item + 1;
-					if (scanner.Next().Is(LexicalTokenType.SEQUENCE, COMMA, terminal))
+					var token = _scanner.Next(ref stream);
+					if (token.Is(LexicalTokenType.SEQUENCE, COMMA, terminal))
 					{
 						int count = 1;
-						while (!scanner.Current.Is(LexicalTokenType.SEQUENCE, terminal))
+						while (!token.Is(LexicalTokenType.SEQUENCE, terminal))
 						{
-							if (!scanner.Next().Is(LexicalTokenType.SEQUENCE, COMMA, terminal))
+							if (!_scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, COMMA, terminal))
 								return null;
 							++count;
 						}
@@ -611,26 +605,26 @@ namespace Lexxys
 					}
 					else
 					{
-						scanner.Back();
-						parameters = ParseParameters(scanner, terminal);
+						_back.Back();
+						parameters = ParseParameters(ref stream, terminal);
 						if (parameters == null)
 							return null;
 					}
-					t = scanner.Next();
+					t = _scanner.Next(ref stream);
 				}
 				if (t.Is(LexicalTokenType.SEQUENCE, QUESTION))
 				{
 					if (rank != null)
 						return null;
 					nullable = true;
-					t = scanner.Next();
+					t = _scanner.Next(ref stream);
 				}
 				while (t.Is(LexicalTokenType.SEQUENCE, ASTERISK))
 				{
 					if (rank != null)
 						return null;
 					++pointer;
-					t = scanner.Next();
+					t = _scanner.Next(ref stream);
 				}
 				while (t.Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC))
 				{
@@ -638,12 +632,12 @@ namespace Lexxys
 					do
 					{
 						++count;
-						t = scanner.Next();
+						t = _scanner.Next(ref stream);
 						if (!t.Is(LexicalTokenType.SEQUENCE, COMMA, CLOSE_SQRBRC))
 							return null;
 					} while (t.Is(LexicalTokenType.SEQUENCE, COMMA));
 					(rank ??= new List<int>()).Add(count);
-					t = scanner.Next();
+					t = _scanner.Next(ref stream);
 				}
 
 				string? assembly = null;
@@ -651,38 +645,38 @@ namespace Lexxys
 
 				if (fullName && t.Is(LexicalTokenType.SEQUENCE, COMMA))
 				{
-					t = scanner.Next();
+					t = _scanner.Next(ref stream);
 					if (!t.Is(LexicalTokenType.IDENTIFIER))
 						return null;
-					assembly = t.Text;
-					t = scanner.Next();
+					assembly = t.GetString(stream);
+					t = _scanner.Next(ref stream);
 					while (t.Is(LexicalTokenType.SEQUENCE, COMMA))
 					{
 						do
 						{
-							t = scanner.Next();
+							t = _scanner.Next(ref stream);
 						} while (t.Is(LexicalTokenType.SEQUENCE, COMMA));
 						if (!t.Is(LexicalTokenType.IDENTIFIER))
 							return null;
-						string n = t.Text;
-						if (!scanner.Next().Is(LexicalTokenType.SEQUENCE, EQUAL))
+						string n = t.GetString(stream);
+						if (!_scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, EQUAL))
 							return null;
-						int i = scanner.Stream.IndexOf(c => !Char.IsWhiteSpace(c));
-						int j = scanner.Stream.IndexOf(c => c != '.' && c != '_' && c != '-' && !Char.IsLetterOrDigit(c), i);
+						int i = stream.IndexOf(c => !Char.IsWhiteSpace(c));
+						int j = stream.IndexOf(c => c != '.' && c != '_' && c != '-' && !Char.IsLetterOrDigit(c), i);
 						if (j == i)
 							return null;
-						(options ??= new OrderedBag<string, string>(StringComparer.OrdinalIgnoreCase))[n] = scanner.Stream.Substring(i, j - i);
-						scanner.Stream.Forward(j);
-						t = scanner.Next();
+						(options ??= new OrderedBag<string, string>(StringComparer.OrdinalIgnoreCase))[n] = stream.Substring(i, j - i);
+						stream.Forward(j);
+						t = _scanner.Next(ref stream);
 					}
 				}
 				else if (t.Is(LexicalTokenType.SEQUENCE, AT))
 				{
-					t = scanner.Next();
+					t = _scanner.Next(ref stream);
 					if (!t.Is(LexicalTokenType.IDENTIFIER))
 						return null;
-					assembly = t.Text;
-					scanner.Next();
+					assembly = t.GetString(stream);
+					_scanner.Next(ref stream);
 				}
 				var tree = new TypeTree(name)
 				{
@@ -701,39 +695,39 @@ namespace Lexxys
 				return tree;
 			}
 
-			private static List<TypeTree>? ParseParameters(TokenScanner2 scanner, int terminal)
+			private List<TypeTree>? ParseParameters(ref CharStream stream, int terminal)
 			{
-				bool fullName = scanner.Next().Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC);
+				bool fullName = _scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC);
 				if (!fullName)
-					scanner.Back();
-				TypeTree? item = Parse(scanner, fullName);
+					_back.Back();
+				TypeTree? item = Parse(ref stream, fullName);
 				if (item == null)
 					return null;
 				if (fullName)
-					if (!scanner.Current.Is(LexicalTokenType.SEQUENCE, CLOSE_SQRBRC))
+					if (!_back.Value.Is(LexicalTokenType.SEQUENCE, CLOSE_SQRBRC))
 						return null;
 					else
-						scanner.Next();
+						_scanner.Next(ref stream);
 
 				List<TypeTree> parameters = new List<TypeTree> { item };
 
-				while (scanner.Current.Is(LexicalTokenType.SEQUENCE, COMMA))
+				while (_back.Value.Is(LexicalTokenType.SEQUENCE, COMMA))
 				{
-					fullName = scanner.Next().Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC);
+					fullName = _scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC);
 					if (!fullName)
-						scanner.Back();
-					item = Parse(scanner, fullName);
+						_back.Back();
+					item = Parse(ref stream, fullName);
 					if (item == null)
 						return null;
 					if (fullName)
-						if (!scanner.Current.Is(LexicalTokenType.SEQUENCE, CLOSE_SQRBRC))
+						if (!_back.Value.Is(LexicalTokenType.SEQUENCE, CLOSE_SQRBRC))
 							return null;
 						else
-							scanner.Next();
+							_scanner.Next(ref stream);
 					parameters.Add(item);
 				}
 
-				if (!scanner.Current.Is(LexicalTokenType.SEQUENCE, terminal))
+				if (!_back.Value.Is(LexicalTokenType.SEQUENCE, terminal))
 					return null;
 				
 				return parameters;
@@ -878,7 +872,6 @@ namespace Lexxys
 					{
 						return type.MakeGenericType(parameters);
 					}
-					#pragma warning disable CA1031 // Ignore errors.
 					catch
 					{
 						return null;

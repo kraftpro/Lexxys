@@ -20,7 +20,7 @@ namespace Lexxys.Tests.Tools
 	[TestClass()]
 	public class SixBitsCoderTest
 	{
-		private TestContext testContextInstance;
+		private TestContext _testContextInstance;
 
 		/// <summary>
 		///Gets or sets the test context which provides
@@ -30,11 +30,11 @@ namespace Lexxys.Tests.Tools
 		{
 			get
 			{
-				return testContextInstance;
+				return _testContextInstance;
 			}
 			set
 			{
-				testContextInstance = value;
+				_testContextInstance = value;
 			}
 		}
 
@@ -68,20 +68,6 @@ namespace Lexxys.Tests.Tools
 		//
 		#endregion
 
-
-		/// <summary>
-		///A test for BitsToChar / CharToBits
-		///</summary>
-		[TestMethod()]
-		public void CharToBitsToCharTest()
-		{
-			for (int expected = 0; expected < 64; ++expected)
-			{
-				char c = SixBitsCoder.BitsToChar(expected);
-				int actual = SixBitsCoder.CharToBits(c);
-				Assert.AreEqual(expected, actual);
-			}
-		}
 
 		/// <summary>
 		///A test for Encode / Decode

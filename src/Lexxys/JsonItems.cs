@@ -240,6 +240,7 @@ namespace Lexxys
 		public static readonly JsonScalar Null = new JsonScalar(null);
 		public static readonly JsonScalar True = new JsonScalar(true);
 		public static readonly JsonScalar False = new JsonScalar(false);
+		public static readonly JsonScalar NaN = new JsonScalar(double.NaN);
 
 		public override object? Value { get; }
 		public override bool IsScalar => true;

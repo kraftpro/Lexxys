@@ -268,15 +268,14 @@ class LogRecordQueueListener: ILogRecordQueueListener
 	private LogRecordQueue _queue;
 	private volatile EventWaitHandle? _data;
 	private Thread? _thread;
-	private int _queueSize;
 
-	public LogRecordQueueListener(ILogWriter writer, int? maxQuereSize = default, TimeSpan? flushTimeout = default)
+	public LogRecordQueueListener(ILogWriter writer, int? maxQueueSize = default, TimeSpan? flushTimeout = default)
 	{
 		_writer = writer ?? throw new ArgumentNullException(nameof(writer));
 		_queue = new LogRecordQueue();
 		_data = new AutoResetEvent(false);
 		FlushTimeout = flushTimeout ?? LogRecordService.DefaultFlushTimeout;
-		MaxQueueSize = maxQuereSize ?? LogRecordService.DefaultMaxQueueSize;
+		MaxQueueSize = maxQueueSize ?? LogRecordService.DefaultMaxQueueSize;
 	}
 
 	private int MaxQueueSize { get; }
@@ -411,11 +410,12 @@ class LogRecordQueueListener: ILogRecordQueueListener
 		if (handle != null)
 		{
 			handle.Set();
-			if (MaxQueueSize > 0 && Interlocked.Increment(ref _queueSize) > MaxQueueSize)
+			if (MaxQueueSize > 0 && _queue.Count > MaxQueueSize)
 			{
-				while (_queue.Count > MaxQueueSize)
+				do
+				{
 					Thread.Sleep(5);
-				_queueSize = 0;
+				} while (_queue.Count > MaxQueueSize);
 			}
 		}
 	}

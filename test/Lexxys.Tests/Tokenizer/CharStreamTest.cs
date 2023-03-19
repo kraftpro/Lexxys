@@ -91,32 +91,20 @@ namespace Lexxys.Tests.Tokenizer
 		{
 			string buffer = string.Empty;
 			int tabSize = 4;
-			bool appendNewLine = true;
-			CultureInfo culture = null;
-			CharStream target = new CharStream(buffer, appendNewLine, tabSize, culture);
+			CharStream target = new CharStream(buffer, tabSize);
 		}
 
 		/// <summary>
 		///A test for CharStream Constructor
 		///</summary>
 		[TestMethod()]
-		public void CharStreamCopyConstructorTest()
+		public void CharStreamCopyTest()
 		{
-			CharStream charStream = new CharStream("12345", false, 0);
-			CharStream target = new CharStream(charStream);
-			Assert.AreEqual(charStream.ToString(), target.ToString());
-		}
-
-		/// <summary>
-		///A test for Clone
-		///</summary>
-		[TestMethod()]
-		public void CloneTest()
-		{
-			CharStream cs = GetStream();
-			cs.Forward(15);
-			CharStream actual = cs.Clone();
-			Assert.AreEqual(cs.ToString(), actual.ToString());
+			CharStream source = new CharStream("12345", 0);
+			CharStream target = source;
+			Assert.AreEqual(source.ToString(), target.ToString());
+			source.Forward(2);
+			Assert.AreNotEqual(source.ToString(), target.ToString());
 		}
 
 		/// <summary>
@@ -152,10 +140,10 @@ namespace Lexxys.Tests.Tokenizer
 				for (int j = 0; j < text.Length; ++j)
 				{
 					int index = __r.Next(text.Length);
-					int length = __r.Next(text.Length - index);
+					int length = __r.Next(1, text.Length - index);
 					int position = __r.Next(index);
 					string value = text.Substring(index, length);
-					int expected = text.IndexOf(value, position) - position;
+					int expected = Math.Max(-1, text.IndexOf(value, position) - position);
 					cs.Rewind();
 					cs.Forward(position);
 					int actual = cs.IndexOf(value);
@@ -245,9 +233,9 @@ namespace Lexxys.Tests.Tokenizer
 					int index = __r.Next(text.Length);
 					int position = __r.Next(index);
 					int offset = __r.Next(index - position);
-					int length = __r.Next(text.Length - index);
+					int length = __r.Next(1, text.Length - index);
 					string value = text.Substring(index, length);
-					int expected = text.IndexOf(value, position + offset) - position;
+					int expected = Math.Max(-1, text.IndexOf(value, position + offset) - position);
 					cs.Rewind();
 					cs.Forward(position);
 					int actual = cs.IndexOf(value, offset);
@@ -284,7 +272,7 @@ namespace Lexxys.Tests.Tokenizer
 					int position = __r.Next(index);
 					int offset = __r.Next(index - position);
 					char[] value = GetRandomCharArray();
-					int expected = text.IndexOfAny(value, position + offset) - position;
+					int expected = Math.Max(-1, Math.Max(-1, text.IndexOfAny(value, position + offset) - position));
 					cs.Rewind();
 					cs.Forward(position);
 					int actual = cs.IndexOfAny(value, offset);
@@ -321,7 +309,7 @@ namespace Lexxys.Tests.Tokenizer
 				CharStream cs = GetStream();
 				cs.Forward(__r.Next(cs.Length));
 				cs.Rewind();
-				Assert.AreEqual(CharPosition.Start, cs.GetCharPosition());
+				Assert.AreEqual(CharPosition.Start, cs.GetPosition());
 			}
 		}
 
@@ -335,10 +323,10 @@ namespace Lexxys.Tests.Tokenizer
 			{
 				CharStream cs = GetStream();
 				cs.Forward(__r.Next(cs.Length));
-				CharPosition expected = cs.GetCharPosition();
+				CharPosition expected = cs.GetPosition();
 				cs.Rewind();
 				cs.Move(expected.Position);
-				Assert.AreEqual(expected, cs.GetCharPosition());
+				Assert.AreEqual(expected, cs.GetPosition());
 			}
 		}
 
@@ -371,12 +359,13 @@ namespace Lexxys.Tests.Tokenizer
 			for (int i = 0; i < 100; ++i)
 			{
 				c.Rewind();
-				var k = Rand.Int(length + 5) - 2;
+				var k = Rand.Int(length);
 				var a = c[k];
-				var l = Rand.Int(length / 2);
+				var l = Rand.Int(k);
 				c.Forward(l);
 				var b = c[k - l];
-				Assert.AreEqual(a, b);
+				c.Rewind();
+				Assert.AreEqual(a, b, $"a={a},b={b},k={k},l=${l},c={c.ToString()}");
 			}
 		}
 	}

@@ -157,7 +157,9 @@ namespace Lexxys.Xml
 
 		private static Type? GetConverterType(Type? type)
 		{
-			while (type != null)
+			if (type is null)
+				return null;
+			while (type != typeof(object))
 			{
 				CustomAttributeTypedArgument argument = CustomAttributeData.GetCustomAttributes(type)
 					.Where(o => o.Constructor.ReflectedType == typeof(TypeConverterAttribute) && o.ConstructorArguments.Count == 1)
@@ -175,7 +177,7 @@ namespace Lexxys.Xml
 					}
 					return null;
 				}
-				type = type.BaseType;
+				type = type.BaseType!;
 			}
 			return null;
 		}

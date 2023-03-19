@@ -10,6 +10,9 @@ using Microsoft.Extensions.FileProviders;
 
 namespace Lexxys.Configuration
 {
+	/// <summary>
+	/// A <see cref="Lexxys.Xml.TextToXmlConverter">config.txt</see> file based <see cref="ConfigurationProvider"/>.
+	/// </summary>
 	public class TextFileConfigurationProvider: FileConfigurationProvider
 	{
 		public TextFileConfigurationProvider(FileConfigurationSource source) : base(source)
@@ -19,6 +22,9 @@ namespace Lexxys.Configuration
 		public override void Load(Stream stream) => Data = TextConfigurationParser.Parse(stream, Source.Path);
 	}
 
+	/// <summary>
+	/// A <see cref="Lexxys.Xml.TextToXmlConverter">config.txt</see> file based <see cref="StreamConfigurationProvider"/>.
+	/// </summary>
 	public class TextStreamConfigurationProvider: StreamConfigurationProvider
 	{
 		public TextStreamConfigurationProvider(StreamConfigurationSource source) : base(source)
@@ -28,6 +34,9 @@ namespace Lexxys.Configuration
 		public override void Load(Stream stream) => Data = TextConfigurationParser.Parse(stream);
 	}
 
+	/// <summary>
+	/// Represents <see cref="Lexxys.Xml.TextToXmlConverter">config.txt</see> file as an <see cref="IConfigurationSource"/>.
+	/// </summary>
 	public class TextFileConfigurationSource: FileConfigurationSource
 	{
 		public override IConfigurationProvider Build(IConfigurationBuilder builder)
@@ -37,6 +46,9 @@ namespace Lexxys.Configuration
 		}
 	}
 
+	/// <summary>
+	/// Represents <see cref="Lexxys.Xml.TextToXmlConverter">config.txt</see> file as an <see cref="IConfigurationSource"/>.
+	/// </summary>
 	public class TextStreamConfigurationSource: StreamConfigurationSource
 	{
 		public override IConfigurationProvider Build(IConfigurationBuilder builder) => new TextStreamConfigurationProvider(this);
@@ -114,9 +126,16 @@ namespace Lexxys.Configuration
 
 	public static class TextFileConfigurationExtensions
 	{
-		public static IConfigurationBuilder AddTextFile(this IConfigurationBuilder builder, string path, bool optional = false, bool reloadOnChange = false)
-			=> AddTextFile(builder, null, path, optional, reloadOnChange);
-
+		/// <summary>
+		/// Adds the <see cref="Lexxys.Xml.TextToXmlConverter">config.txt</see> configuration provider at <paramref name="path"/> to <paramref name="builder"/>.
+		/// </summary>
+		/// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
+		/// <param name="provider">The <see cref="IFileProvider"/> to use to access the file.</param>
+		/// <param name="path"></param>Path relative to the base path stored in <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.
+		/// <param name="optional">Whether the file is optional.</param>
+		/// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
+		/// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
+		/// <exception cref="ArgumentNullException"></exception>
 		public static IConfigurationBuilder AddTextFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional = false, bool reloadOnChange = false)
 		{
 			if (builder is null)
@@ -134,6 +153,25 @@ namespace Lexxys.Configuration
 			});
 		}
 
+		/// <summary>
+		/// Adds the <see cref="Lexxys.Xml.TextToXmlConverter">config.txt</see> configuration provider at <paramref name="path"/> to <paramref name="builder"/>.
+		/// </summary>
+		/// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
+		/// <param name="path"></param>Path relative to the base path stored in <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.
+		/// <param name="optional">Whether the file is optional.</param>
+		/// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
+		/// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
+		/// <exception cref="ArgumentNullException"></exception>
+		public static IConfigurationBuilder AddTextFile(this IConfigurationBuilder builder, string path, bool optional = false, bool reloadOnChange = false)
+			=> AddTextFile(builder, null, path, optional, reloadOnChange);
+
+		/// <summary>
+		/// Adds a <see cref="Lexxys.Xml.TextToXmlConverter">config.txt</see> configuration source.
+		/// </summary>
+		/// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
+		/// <param name="configureSource">Configures the source.</param>
+		/// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
+		/// <exception cref="ArgumentNullException"></exception>
 		public static IConfigurationBuilder AddTextFile(this IConfigurationBuilder builder, Action<TextFileConfigurationSource> configureSource)
 		{
 			if (builder == null)
@@ -142,6 +180,13 @@ namespace Lexxys.Configuration
 			return builder.Add(configureSource);
 		}
 
+		/// <summary>
+		/// Adds the <see cref="Lexxys.Xml.TextToXmlConverter">config.txt</see> configuration provider at <paramref name="stream"/> to <paramref name="builder"/>.
+		/// </summary>
+		/// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
+		/// <param name="stream">The stream containing the configuration data</param>
+		/// <returns></returns>
+		/// <exception cref="ArgumentNullException"></exception>
 		public static IConfigurationBuilder AddTextStream(this IConfigurationBuilder builder, Stream stream)
 		{
 			if (builder == null)

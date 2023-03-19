@@ -71,36 +71,15 @@ namespace Lexxys.Tests.Xml
 		///A test for Convert
 		///</summary>
 		[TestMethod()]
-		public void ConvertJsonToXmlTest()
+		[DataRow("""{"type":"weekly","week":2,"reminder":{"value":"P2D","businessDays":true,"shift":"backward"}}""", """<Schedule><type>weekly</type><week>2</week><reminder><value>P2D</value><businessDays>true</businessDays><shift>backward</shift></reminder></Schedule>""", false)]
+		[DataRow("""{"@type":"weekly","@week":2,"reminder":{"@value":"P2D","@businessDays":true,"@shift":"backward"}}""", """<Schedule type="weekly" week="2"><reminder value="P2D" businessDays="true" shift="backward"/></Schedule>""", false)]
+		[DataRow("""{"type":"weekly","week":2,"reminder":{"@value":"P2D","businessDays":true,"shift":"backward"}}""", """<Schedule type="weekly" week="2"><reminder value="P2D" businessDays="true" shift="backward"/></Schedule>""", true)]
+		public void ConvertJsonToXmlTest(string source, string target, bool force)
 		{
-			(string Actual, string Result, bool Force)[] tables = new (string Actual, string Result, bool Force)[]
-			{
-				(
-					Actual: "{\"type\":\"weekly\",\"week\":2,\"reminder\":{\"value\":\"P2D\",\"businessDays\":true,\"shift\":\"backward\"}}",
-					Result: "<Schedule><type>weekly</type><week>2</week><reminder><value>P2D</value><businessDays>true</businessDays><shift>backward</shift></reminder></Schedule>",
-					Force: false
-				),
-				(
-					Actual: "{\"@type\":\"weekly\",\"@week\":2,\"reminder\":{\"@value\":\"P2D\",\"@businessDays\":true,\"@shift\":\"backward\"}}",
-					Result: "<Schedule type=\"weekly\" week=\"2\"><reminder value=\"P2D\" businessDays=\"true\" shift=\"backward\"/></Schedule>",
-					Force: false
-				),
-				(
-					Actual: "{\"type\":\"weekly\",\"week\":2,\"reminder\":{\"@value\":\"P2D\",\"businessDays\":true,\"shift\":\"backward\"}}",
-					Result: "<Schedule type=\"weekly\" week=\"2\"><reminder value=\"P2D\" businessDays=\"true\" shift=\"backward\"/></Schedule>",
-					Force: true
-				),
-			};
-
-			for (int i = 0; i < tables.Length; ++i)
-			{
-				var (source, target, force) = tables[i];
-
-				var actual = JsonToXmlConverter.Convert(source, "Schedule", forceAttributes: force);
-				Assert.IsNotNull(actual);
-				XmlLiteNode expected = XmlLiteNode.FromXml(target, true);
-				Assert.AreEqual(expected, actual, source);
-			}
+			var actual = JsonToXmlConverter.Convert(source, "Schedule", forceAttributes: force);
+			Assert.IsNotNull(actual);
+			XmlLiteNode expected = XmlLiteNode.FromXml(target, true);
+			Assert.AreEqual(expected, actual, source);
 		}
 	}
 }

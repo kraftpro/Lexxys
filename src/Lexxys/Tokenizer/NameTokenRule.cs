@@ -14,37 +14,28 @@ namespace Lexxys.Tokenizer
 	public class NameTokenRule: LexicalTokenRule
 	{
 		public const string DefaultBeginning = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-		private string? _beginning = DefaultBeginning;
+		private string _beginning = DefaultBeginning;
 		private bool _extra = true;
-		private Func<char, bool> _isNameStartCharacter = o => IsNameStartCharacter(o);
-		private Func<char, bool> _isNamePartCharacter = o => IsNamePartCharacter(o);
-		private Func<char, bool> _isNameEndCharacter = o => true;
-		private Func<string, string>? _cleanupResult;
+		private Func<char, bool> _isNameStartCharacter = IsNameStartCharacter;
+		private Func<char, bool> _isNamePartCharacter = IsNamePartCharacter;
+		private Func<char, bool> _isNameEndCharacter = _ => true;
 
-		public NameTokenRule(LexicalTokenType nameTokenType, bool ignoreCase)
+		public NameTokenRule(LexicalTokenType nameTokenType)
 		{
 			TokenType = nameTokenType;
-			if (ignoreCase)
-				_cleanupResult = ToUppercase;
 		}
 
-		public NameTokenRule(bool ignoreCase)
-			: this(LexicalTokenType.IDENTIFIER, ignoreCase)
+		public NameTokenRule(): this(LexicalTokenType.IDENTIFIER)
 		{
 		}
 
-		public NameTokenRule()
-			: this(LexicalTokenType.IDENTIFIER, false)
-		{
-		}
-
-		public override string? BeginningChars => _beginning;
+		public override string BeginningChars => _beginning;
 
 		public override bool HasExtraBeginning => _extra;
 
 		public override bool TestBeginning(char value) => _isNameStartCharacter(value);
 
-		public NameTokenRule WithNameRecognition(Func<char, bool>? nameStart = null, Func<char, bool>? namePart = null, Func<char, bool>? nameEnd = null, Func<string, string>? cleanup = null, string beginning = "", bool? extra = null)
+		public NameTokenRule WithNameRecognition(Func<char, bool>? nameStart = null, Func<char, bool>? namePart = null, Func<char, bool>? nameEnd = null, string beginning = "", bool? extra = null)
 		{
 			if (nameStart != null)
 				NameStartCharacter = nameStart;
@@ -52,8 +43,6 @@ namespace Lexxys.Tokenizer
 				NamePartCharacter = namePart;
 			if (nameEnd != null)
 				NameEndCharacter = nameEnd;
-			if (cleanup != null)
-				CleanupResult = cleanup;
 			if (!String.IsNullOrEmpty(beginning))
 				_beginning = beginning;
 			if (extra != null)
@@ -79,21 +68,13 @@ namespace Lexxys.Tokenizer
 			set => _isNameEndCharacter = value ?? throw new ArgumentNullException(nameof(value));
 		}
 
-		public Func<string, string>? CleanupResult
-		{
-			get => _cleanupResult;
-			set => _cleanupResult = value;
-		}
-
 		public LexicalTokenType TokenType { get; }
 
-		public override LexicalToken? TryParse(CharStream stream)
+		public override LexicalToken TryParse(ref CharStream stream)
 		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
 			char ch = stream[0];
 			if (!_isNameStartCharacter(ch))
-				return null;
+				return LexicalToken.Empty;
 
 			int i = 0;
 			do
@@ -106,24 +87,13 @@ namespace Lexxys.Tokenizer
 				--i;
 			}
 			if (i == 0)
-				return null;
+				return LexicalToken.Empty;
 
-			string text = stream.Substring(0, i);
-			if (_cleanupResult != null)
-			{
-				text = _cleanupResult(text);
-				if (text == null || text.Length == 0)
-					return null;
-			}
-			return stream.Token(TokenType, i, text);
+			return stream.Token(TokenType, i);
 		}
 
-		private static bool IsNameStartCharacter(char value) => (Char.IsLetter(value) || value == '_');
+		private static bool IsNameStartCharacter(char value) => Char.IsLetter(value) || value == '_';
 
-		private static bool IsNamePartCharacter(char value) => (Char.IsLetterOrDigit(value) || value == '_');
-
-		private static string ToUppercase(string name) => name.ToUpperInvariant();
+		private static bool IsNamePartCharacter(char value) => Char.IsLetterOrDigit(value) || value == '_';
 	}
 }
-
-

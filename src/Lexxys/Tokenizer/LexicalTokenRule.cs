@@ -4,10 +4,6 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Globalization;
 
 namespace Lexxys.Tokenizer
 {
@@ -42,45 +38,6 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="stream"></param>
 		/// <returns>Extracted token or null.</returns>
-		public abstract LexicalToken? TryParse(CharStream stream);
-	}
-
-	/// <summary>
-	/// Generic token rule
-	/// </summary>
-	public class TokenRule: LexicalTokenRule
-	{
-		public delegate LexicalToken Parser(CharStream stream);
-		private readonly Parser _parser;
-		private readonly string? _start;
-		private readonly Func<char, bool>? _test;
-
-		/// <summary>
-		/// Creates a new <see cref="LexicalTokenRule"/> with the specified fuctions for testing and parsing.
-		/// </summary>
-		/// <param name="parser">Function that will be used to extract a token from a stream.</param>
-		/// <param name="start">List of the possible starting characters for the parsing token.</param>
-		/// <param name="test">Function that will be used to test that a character could be start of a new token.</param>
-		public TokenRule(Parser parser, string? start = null, Func<char, bool>? test = null)
-		{
-			_parser = parser ?? throw new ArgumentNullException(nameof(parser));
-			_start = start;
-			_test = test;
-		}
-
-		/// <ingeritdoc />
-		public override string? BeginningChars => _start;
-
-		/// <ingeritdoc />
-		public override bool TestBeginning(char value)
-		{
-			return _test?.Invoke(value) ?? _start == null || _start.IndexOf(value) >= 0;
-		}
-
-		/// <ingeritdoc />
-		public override LexicalToken? TryParse(CharStream stream)
-		{
-			return _parser(stream);
-		}
+		public abstract LexicalToken TryParse(ref CharStream stream);
 	}
 }

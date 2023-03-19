@@ -13,10 +13,11 @@ namespace Lexxys.Tokenizer
 {
 	public class SequenceTokenRule: LexicalTokenRule
 	{
+		private bool _isSorted;
 		private string? _beginning;
-		private readonly bool _ignoreCase;
+		private int _length;
 		private readonly List<Element> _sequence;
-		private readonly List<Element> _sequence0;
+		private readonly bool _ignoreCase;
 
 		public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase, params string[] sequence)
 		{
@@ -25,14 +26,13 @@ namespace Lexxys.Tokenizer
 
 			TokenType = tokenType;
 			_ignoreCase = ignoreCase;
-			_sequence = new List<Element>(Math.Max(sequence.Length + 2, 8));
+			_sequence = new List<Element>(sequence.Length);
 			for (int i = 0; i < sequence.Length; ++i)
 			{
 				if (sequence[i] == null || sequence[i].Length == 0)
 					throw new ArgumentOutOfRangeException($"sequence[{i}]");
 				_sequence.Add(new Element((short)(i + 1), ignoreCase ? sequence[i].ToUpperInvariant() : sequence[i]));
 			}
-			_sequence0 = new List<Element>();
 		}
 
 		public SequenceTokenRule(LexicalTokenType tokenType, params string[] sequence)
@@ -50,37 +50,21 @@ namespace Lexxys.Tokenizer
 		{
 		}
 
-		public override string? BeginningChars => _beginning ??= GetBeginning(_sequence, _ignoreCase);
-
-		public override bool HasExtraBeginning => _sequence0.Count > 0;
-
-		private static string GetBeginning(List<Element> sequence, bool ignoreCase)
+		public override string? BeginningChars
 		{
-			//Comparison<Element> startComparison = ignoreCase ?
-			//	(x, y) => Char.ToUpperInvariant(x.Start).CompareTo(Char.ToUpperInvariant(y.Start)):
-			//	(x, y) => x.Start.CompareTo(y.Start);
-			//sequence.Sort(startComparison);
-
-			Comparison<Element> lengthComparison = (x, y) => String.CompareOrdinal(y.Text, x.Text);
-			sequence.Sort(lengthComparison);
-
-			char[] chars = new char[sequence.Count];
-			for (int i = 0; i < sequence.Count; ++i)
+			get
 			{
-				chars[i] = ignoreCase ? Char.ToUpperInvariant(sequence[i].Start): sequence[i].Start;
+				Sort();
+				return _beginning;
 			}
-
-			return new string(chars);
 		}
 
 		public LexicalTokenType TokenType { get; }
 
 		public override bool TestBeginning(char value) => BeginningChars?.Contains(value) ?? false;
 
-		public override LexicalToken? TryParse(CharStream stream)
+		public override LexicalToken TryParse(ref CharStream stream)
 		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
 			var c = stream[0];
 			var beginning = BeginningChars;
 #if NET6_0_OR_GREATER
@@ -88,89 +72,80 @@ namespace Lexxys.Tokenizer
 #else
 			int k = beginning == null ? -1: _ignoreCase ? beginning.IndexOf(c.ToString(), StringComparison.OrdinalIgnoreCase): beginning.IndexOf(c);
 #endif
-			if (k >= 0)
+			if (k < 0)
+				return LexicalToken.Empty;
+
+			var s = stream.Slice(0, _length).ToString();
+			if (_ignoreCase)
+			{
+				for (int i = k % _sequence.Count; i < _sequence.Count; ++i)
+				{
+					if (s.StartsWith(_sequence[i].Text, StringComparison.OrdinalIgnoreCase))
+						return stream.Token(LexicalTokenType.Create(TokenType.Group, _sequence[i].Id, TokenType.Name), _sequence[i].Text.Length);
+					if (Char.ToUpperInvariant(s[0]) != Char.ToUpperInvariant(_sequence[i].Text[0]))
+						return LexicalToken.Empty;
+				}
+			}
+			else
 			{
 				for (int i = k; i < _sequence.Count; ++i)
 				{
-					int n = _sequence[i].Match(stream, _ignoreCase);
-					if (n > 0)
-						return stream.Token(new LexicalTokenType(TokenType.Group, _sequence[i].Id, TokenType.Name), n, stream.Substring(0, n));
-					if (c != _sequence[i].Start)
-						break;
+					if (s.StartsWith(_sequence[i].Text, StringComparison.Ordinal))
+						return stream.Token(LexicalTokenType.Create(TokenType.Group, _sequence[i].Id, TokenType.Name), _sequence[i].Text.Length);
+					if (s[0] != _sequence[i].Text[0])
+						return LexicalToken.Empty;
 				}
 			}
-			for (int i = 0; i < _sequence0.Count; ++i)
-			{
-				int n = _sequence[i].Match(stream, _ignoreCase);
-				if (n > 0)
-					return stream.Token(new LexicalTokenType(TokenType.Group, _sequence[i].Id, TokenType.Name), n, stream.Substring(0, n));
-			}
-			return null;
+			return LexicalToken.Empty;
 		}
 
 		public SequenceTokenRule Add(int id, string text)
 		{
-			if (id <= 0 || id > Int16.MaxValue)
-				throw new ArgumentOutOfRangeException(nameof(id), id, null);
-			if (text == null || text.Length == 0)
+			if (text is not { Length: >0 })
 				throw new ArgumentNullException(nameof(text));
-
+			if (id is <=0 or >Int16.MaxValue)
+				throw new ArgumentOutOfRangeException(nameof(id), id, null);
 			_sequence.Add(new Element((short)id, text));
-			_beginning = null;
+			_isSorted = false;
 			return this;
 		}
 
-		public SequenceTokenRule Add(short id, string text, char start, Func<CharStream, bool, int> match)
+		private void Sort()
 		{
-			if (id <= 0 || id > Int16.MaxValue)
-				throw new ArgumentOutOfRangeException(nameof(id), id, null);
-			if (text == null || text.Length == 0)
-				throw new ArgumentNullException(nameof(text));
-			if (match == null)
-				throw new ArgumentNullException(nameof(match));
-
-			if (start == '\0')
-				_sequence0.Add(new Element(id, text, start, match));
-			else
-				_sequence.Add(new Element(id, text, start, match));
-			_beginning = null;
-			return this;
+			if (_isSorted) return;
+			_isSorted = true;
+			_sequence.Sort((x, y) => String.CompareOrdinal(y.Text, x.Text));
+			int n = _sequence.Count;
+			char[] line = new char[n * 2];
+			_length = 0;
+			for (int i = 0; i < n; ++i)
+			{
+				string s = _sequence[i].Text;
+				char c = s[0];
+				if (_ignoreCase)
+				{
+					line[i] = Char.ToUpperInvariant(s[0]);
+					line[n + i] = Char.ToLowerInvariant(s[0]);
+				}
+				else
+				{
+					line[i] = s[0];
+				}
+				if (s.Length > _length)
+					_length = s.Length;
+			}
+			_beginning = _ignoreCase ? new string(line): new string(line, 0, n);
 		}
 
-		private readonly struct Element
+		private struct Element
 		{
-			public short Id { get; }
-			public string Text { get; }
-			public char Start { get; }
-			//public int Length { get; }
-			public Func<CharStream, bool, int> Match { get; }
+			public readonly short Id;
+			public readonly string Text;
 
 			public Element(short id, string text)
 			{
-				if (id <= 0 || id > Int16.MaxValue)
-					throw new ArgumentOutOfRangeException(nameof(id), id, null);
-				if (text is not { Length: >0 })
-					throw new ArgumentNullException(nameof(text));
-
 				Id = id;
 				Text = text;
-				Start = text[0];
-				Match = (o, b) => o.StartsWith(text, 0, b ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal) ? text.Length: 0;
-			}
-
-			public Element(short id, string text, char start, Func<CharStream, bool, int> match)
-			{
-				if (id <= 0 || id > Int16.MaxValue)
-					throw new ArgumentOutOfRangeException(nameof(id), id, null);
-				if (text is not { Length: >0 })
-					throw new ArgumentNullException(nameof(text));
-				if (match == null)
-					throw new ArgumentNullException(nameof(match));
-
-				Id = id;
-				Text = text;
-				Start = start;
-				Match = match;
 			}
 		}
 	}

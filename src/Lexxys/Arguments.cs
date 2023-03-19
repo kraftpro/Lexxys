@@ -151,63 +151,63 @@ namespace Lexxys
 		}
 	}
 
-	public class Args
-	{
-		public Args(string[] args)
-		{
-		}
-
-		public string? Get(string property) => null;
-		public bool Contains(string property) => false;
-		public string[] Values => Array.Empty<string>();
-
-		public void Select(string space) { }
-
-		public string[] ArgSets() => Array.Empty<string>();
-
-		public enum ParameterType
-		{
-			None,
-			Positional,
-			Required,
-		}
-
-		public class ArgParameter
-		{
-			public string Name { get; }
-			public string[] Alias { get; }
-			public ParameterType Type { get; }
-			public string? Value { get; set; }
-
-			public ArgParameter(string name, ParameterType type, params string[] alias)
-			{
-				if (name is null or { Length: 0 }) throw new ArgumentNullException(nameof(name));
-
-				Name = name;
-				Type = type;
-				Alias = alias;
-
-			}
-		}
-
-		public static void Test(string[] args)
-		{
-			Args aa = new Args(args)
-				.Parameter("", ParameterType.Positional | ParameterType.Required, out ArgParameter command)
-				.Parameter("name", ParameterType.Positional, new[] { "nm", "mm" });
-
-		}
-
-		private Args Parameter(string name, ParameterType type, params string[] alias)
-		{
-			throw new NotImplementedException();
-		}
-
-		private Args Parameter(string name, ParameterType type, out ArgParameter parameter, params string[] alias)
-		{
-			throw new NotImplementedException();
-		}
-	}
+	// public class Args
+	// {
+	// 	public Args(string[] args)
+	// 	{
+	// 	}
+	//
+	// 	public string? Get(string property) => null;
+	// 	public bool Contains(string property) => false;
+	// 	public string[] Values => Array.Empty<string>();
+	//
+	// 	public void Select(string space) { }
+	//
+	// 	public string[] ArgSets() => Array.Empty<string>();
+	//
+	// 	public enum ParameterType
+	// 	{
+	// 		None,
+	// 		Positional,
+	// 		Required,
+	// 	}
+	//
+	// 	public class ArgParameter
+	// 	{
+	// 		public string Name { get; }
+	// 		public string[] Alias { get; }
+	// 		public ParameterType Type { get; }
+	// 		public string? Value { get; set; }
+	//
+	// 		public ArgParameter(string name, ParameterType type, params string[] alias)
+	// 		{
+	// 			if (name is null or { Length: 0 }) throw new ArgumentNullException(nameof(name));
+	//
+	// 			Name = name;
+	// 			Type = type;
+	// 			Alias = alias;
+	//
+	// 		}
+	// 	}
+	//
+	// 	public static void Test(string[] args)
+	// 	{
+	// 		Args aa = new Args(args)
+	// 			.Parameter("", ParameterType.Positional | ParameterType.Required, out ArgParameter command)
+	// 			.Parameter("name", ParameterType.Positional, new[] { "nm", "mm" });
+	//
+	// 	}
+	//
+	// 	private Args Parameter(string name, ParameterType type, params string[] alias)
+	// 	{
+	// 		throw new NotImplementedException();
+	// 	}
+	//
+	// 	private Args Parameter(string name, ParameterType type, out ArgParameter parameter, params string[] alias)
+	// 	{
+	// 		throw new NotImplementedException();
+	// 	}
+	// }
 }
 
 

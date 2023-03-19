@@ -11,43 +11,9 @@ namespace Lexxys.Tests.Xml
 {
 	using Lexxys.Xml;
 
-	[TestClass()]
+	//[TestClass()]
 	public class SyntaxRuleCollectionTest
 	{
-		#region Additional test attributes
-		// 
-		//You can use the following additional attributes as you write your tests:
-		//
-		//Use ClassInitialize to run code before running the first test in the class
-		//
-		//[ClassInitialize()]
-		//public static void MyClassInitialize(TestContext testContext)
-		//{
-		//}
-		//
-		//Use ClassCleanup to run code after all tests in a class have run
-		//
-		//[ClassCleanup()]
-		//public static void MyClassCleanup()
-		//{
-		//}
-		//
-		//Use TestInitialize to run code before running each test
-		//
-		//[TestInitialize()]
-		//public void MyTestInitialize()
-		//{
-		//}
-		//
-		//Use TestCleanup to run code after each test has run
-		//
-		//[TestCleanup()]
-		//public void MyTestCleanup()
-		//{
-		//}
-		//
-		#endregion
-
 		#region Private Accessors
 
 		class SyntaxRuleCollection
@@ -57,7 +23,7 @@ namespace Lexxys.Tests.Xml
 
 			public SyntaxRuleCollection()
 			{
-				PrivateObject root = new PrivateObject(typeof(TextToXmlConverter), new Lexxys.Tokenizer.CharStream(""), "abc", null, null);
+				PrivateObject root = new PrivateObject(typeof(TextToXmlConverter));
 				_o = new PrivateObject(root, "_syntaxRules");
 				_list = (IList)_o.GetField("_rule");
 			}

@@ -6,7 +6,6 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -19,12 +18,12 @@ namespace Lexxys.Tokenizer
 		private readonly int _startLength;
 		private static readonly (string, string)[] _cppComments = { ("//", "\n") };
 
-		public CommentsTokenRule(params (string, string)[] startEnd)
+		public CommentsTokenRule(params (string, string)[]? startEnd)
 			: this(LexicalTokenType.COMMENT, startEnd)
 		{
 		}
 
-		public CommentsTokenRule(LexicalTokenType comment, params (string Start, string End)[] startEnd)
+		public CommentsTokenRule(LexicalTokenType comment, params (string Start, string End)[]? startEnd)
 		{
 			TokenType = comment;
 			if (startEnd == null || startEnd.Length == 0)
@@ -60,18 +59,15 @@ namespace Lexxys.Tokenizer
 
 		public LexicalTokenType TokenType { get; }
 
-		public override bool TestBeginning(char value)
-		{
-			return _beginning.IndexOf(value) >= 0;
-		}
+		public override bool TestBeginning(char value) => _beginning.IndexOf(value) >= 0;
 
-		public override LexicalToken? TryParse(CharStream stream)
+		public override LexicalToken TryParse(ref CharStream stream)
 		{
-			string s = stream.Substring(0, _startLength);
+			var s = stream.Slice(0, _startLength);
 			bool found = false;
 			foreach ((string Start, string End) item in _startEnd)
 			{
-				if (s.StartsWith(item.Start, StringComparison.Ordinal))
+				if (s.StartsWith(item.Start.AsSpan()))
 				{
 					found = true;
 					int position = stream.IndexOf(item.End, item.Start.Length);
@@ -81,13 +77,12 @@ namespace Lexxys.Tokenizer
 							continue;
 						position = stream.Length;
 					}
-					string comment = stream.Substring(item.Start.Length, position - item.Start.Length);
-					return stream.Token(TokenType, position + (item.End == "\n" ? 0: item.End!.Length), comment);
+					return stream.Token(TokenType, position + (item.End == "\n" ? 0 : item.End.Length));
 				}
 			}
 			if (found)
 				throw stream.SyntaxException(SR.EofInComments());
-			return null;
+			return LexicalToken.Empty;
 		}
 	}
 
@@ -108,16 +103,10 @@ namespace Lexxys.Tokenizer
 
 		public LexicalTokenType TokenType { get; }
 
-		public override bool TestBeginning(char value)
-		{
-			return value == '/';
-		}
+		public override bool TestBeginning(char value) => value == '/';
 
-		public override LexicalToken? TryParse(CharStream stream)
+		public override LexicalToken TryParse(ref CharStream stream)
 		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
-
 			if (stream[0] == '/')
 			{
 				if (stream[1] == '/')
@@ -125,20 +114,19 @@ namespace Lexxys.Tokenizer
 					int i = stream.IndexOf('\n', 2);
 					if (i < 0)
 						i = stream.Length;
-					return stream.Token(TokenType, i, stream.Substring(2, i - 2));
+					return stream.Token(TokenType, i);
 				}
 				if (stream[1] == '*')
 				{
 					int i = stream.IndexOf("*/", 2);
 					if (i < 0)
 						throw stream.SyntaxException(SR.EofInComments());
-					return stream.Token(TokenType, i + 2, stream.Substring(2, i - 2));
+					return stream.Token(TokenType, i + 2);
 				}
 			}
-			return null;
+			return LexicalToken.Empty;
 		}
 	}
-
 
 	public class PythonCommentsTokenRule: LexicalTokenRule
 	{
@@ -156,24 +144,16 @@ namespace Lexxys.Tokenizer
 
 		public LexicalTokenType TokenType { get; }
 
-		public override bool TestBeginning(char value)
-		{
-			return value == '#';
-		}
+		public override bool TestBeginning(char value) => value == '#';
 
-		public override LexicalToken? TryParse(CharStream stream)
+		public override LexicalToken TryParse(ref CharStream stream)
 		{
-			if (stream is null)
-				throw new ArgumentNullException(nameof(stream));
-
-			if (stream[0] == '#')
-			{
-				int i = stream.IndexOf('\n', 2);
-				if (i < 0)
-					i = stream.Length;
-				return stream.Token(TokenType, i, stream.Substring(2, i - 2));
-			}
-			return null;
+			if (stream[0] != '#')
+				return LexicalToken.Empty;
+			int i = stream.IndexOf('\n', 1);
+			if (i < 0)
+				i = stream.Length;
+			return stream.Token(TokenType, i);
 		}
 	}
 }

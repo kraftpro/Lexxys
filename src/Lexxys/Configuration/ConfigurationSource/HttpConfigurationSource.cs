@@ -163,7 +163,7 @@ namespace Lexxys.Configuration
 			}
 		}
 
-		private IEnumerable<XmlLiteNode>? OptionHandler(TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters)
+		private IEnumerable<XmlLiteNode>? OptionHandler(ref TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters)
 		{
 			if (option != "include")
 			{

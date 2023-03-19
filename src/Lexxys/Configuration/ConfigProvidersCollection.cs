@@ -224,7 +224,6 @@ namespace Lexxys.Configuration
 				}
 				return found;
 			}
-			#pragma warning disable CA1031 // Ignore any errors
 			catch (Exception flaw)
 			{
 				flaw = flaw.Unwrap()
@@ -237,7 +236,6 @@ namespace Lexxys.Configuration
 					_log.Error(nameof(AddConfiguration), flaw);
 				return Found.None;
 			}
-			#pragma warning restore CA1031 // Do not catch general exception types
 		}
 
 		private List<IConfigProvider?> CreateProviders(Uri location, IReadOnlyCollection<string>? parameters)
@@ -265,7 +263,6 @@ namespace Lexxys.Configuration
 					i = _providers.FindIndex(o => o.Location == provider.Location);
 					result.Add(i < 0 ? provider: null);
 				}
-				#pragma warning disable CA1031 // Ignore any errors
 				catch (Exception flaw)
 				{
 					flaw = flaw.Unwrap()
@@ -278,7 +275,6 @@ namespace Lexxys.Configuration
 					else
 						_log.Error(nameof(CreateProviders), flaw);
 				}
-				#pragma warning restore CA1031 // Do not catch general exception types
 			}
 			return result;
 		}
@@ -298,12 +294,10 @@ namespace Lexxys.Configuration
 					if (obj is IConfigProvider source)
 						return source;
 				}
-#pragma warning disable CA1031 // Ignore all the errors.
 				catch (Exception flaw)
 				{
 					Config.LogConfigurationError($"{nameof(TryCreateProvider)} from {location}", flaw);
 				}
-#pragma warning restore CA1031 // Do not catch general exception types
 			}
 			return null;
 		}

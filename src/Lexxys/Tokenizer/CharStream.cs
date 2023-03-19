@@ -5,79 +5,52 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Lexxys.Tokenizer
 {
-	#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
-
 	/// <summary>
 	/// Represents a characters stream, optimized for parsing purposes.
 	/// </summary>
-	public class CharStream
+	public ref struct CharStream
 	{
-		private readonly string _buffer;
-		private readonly int _tabSize;
-		private readonly CultureInfo _culture;
-		private int _position;
-
-		public static readonly CharStream Empty = new CharStream("", false);
-
 		public const char BofMarker = '\0';
 		public const char EofMarker = '\uFFFF';
+		public const char NewLineMarker = '\n';
 		public const int DefaultTabSize = 4;
 
-		/// <summary>
-		/// Creates a copy of CharScream.
-		/// </summary>
-		/// <param name="charStream"></param>
-		/// <exception cref="System.ArgumentNullException"><paramref name="charStream"/>is null</exception>
-		public CharStream(CharStream charStream)
-		{
-			if (charStream == null)
-				throw new ArgumentNullException(nameof(charStream));
-
-			_buffer = charStream._buffer;
-			_position = charStream._position;
-			_tabSize = charStream._tabSize;
-			_culture = charStream._culture;
-		}
+		private readonly ReadOnlySpan<char> _start;		// Actual buffer
+		private ReadOnlySpan<char> _buffer;	// := _start.Slice(Position)
 
 		/// <summary>
-		/// Creates a new instance of the <see cref="CharStream"/> 
+		/// Creates a new CharStream.
 		/// </summary>
-		/// <param name="buffer">Content of the stream</param>
+		/// <param name="text">Content of the stream</param>
 		/// <param name="tabSize">Tab size (default 4)</param>
-		/// <param name="culture">Culture-specific information (default null)</param>
-		/// <exception cref="System.ArgumentNullException"><paramref name="buffer"/>is null</exception>
-		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="tabSize"/> is less than zero or greater than 32</exception>
-		public CharStream(string buffer, int tabSize = 0, CultureInfo? culture = null)
-			: this(buffer, true, tabSize, culture)
+		/// <exception cref="System.ArgumentNullException"><paramref name="text"/>is null</exception>
+		public CharStream(ReadOnlySpan<char> text, int tabSize = 0)
 		{
+			_buffer = _start = text;
+			TabSize = tabSize > 0 ? tabSize: DefaultTabSize;
 		}
 
 		/// <summary>
 		/// Creates a new CharStream.
 		/// </summary>
-		/// <param name="buffer">Content of the stream</param>
-		/// <param name="appendNewLine">append new line at the end of stream if missing (default true)</param>
+		/// <param name="text">Content of the stream</param>
 		/// <param name="tabSize">Tab size (default 4)</param>
-		/// <param name="culture">Culture-specific information (default null)</param>
-		/// <exception cref="System.ArgumentNullException"><paramref name="buffer"/>is null</exception>
-		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="tabSize"/> is less than zero or greater than 32</exception>
-		public CharStream(string buffer, bool appendNewLine, int tabSize = 0, CultureInfo? culture = null)
+		/// <exception cref="System.ArgumentNullException"><paramref name="text"/>is null</exception>
+		public CharStream(string text, int tabSize = 0)
 		{
-			if (buffer == null)
-				throw new ArgumentNullException(nameof(buffer));
-			if (tabSize is < 0 or > 32)
-				throw new ArgumentOutOfRangeException(nameof(tabSize), tabSize, null);
-
-			_buffer = KeepNewLine(buffer, appendNewLine);
-			_tabSize = tabSize == 0 ? DefaultTabSize: tabSize;
-			_culture = culture ?? CultureInfo.InvariantCulture;
+			if (text == null)
+				throw new ArgumentNullException(nameof(text));
+			_buffer = _start = text.AsSpan();
+			TabSize = tabSize > 0 ? tabSize : DefaultTabSize;
 		}
 
 		/// <summary>
@@ -85,98 +58,21 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="stream">Input stream</param>
 		/// <param name="tabSize">Tab size (default 4)</param>
-		/// <param name="culture">Culture-specific information (default null)</param>
 		/// <exception cref="System.ArgumentNullException"><paramref name="stream"/> is null</exception>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="tabSize"/> is less than zero or greater than 32</exception>
-		public CharStream(TextReader stream, int tabSize = 0, CultureInfo? culture = null)
+		public CharStream(TextReader stream, int tabSize = 0)
 		{
 			if (stream == null)
 				throw new ArgumentNullException(nameof(stream));
-			if (tabSize is < 0 or > 32)
-				throw new ArgumentOutOfRangeException(nameof(tabSize), tabSize, null);
 
-			_buffer = KeepNewLine(stream);
-			_tabSize = tabSize == 0 ? DefaultTabSize: tabSize;
-			_culture = culture ?? CultureInfo.InvariantCulture;
-		}
-
-		private static string KeepNewLine(TextReader stream)
-		{
 			var buffer = new StringBuilder();
 			string? line;
 			while ((line = stream.ReadLine()) != null)
 			{
 				buffer.Append(line).Append('\n');
 			}
-			return buffer.ToString();
-		}
-
-		private static unsafe string KeepNewLine(string text, bool appendNewLine)
-		{
-			int i = text.IndexOfAny(new [] {'\r', '\f', '\u2028', '\u2029'});
-			if (i < 0)
-				return (appendNewLine && (text.Length == 0 || text[text.Length-1] != '\n')) ? text + "\n": text;
-			if (i > 0 && text[i-1] == '\n')
-				--i;
-
-			if (text.Length < Tools.MaxStackAllocSize)
-			{
-				char* buffer = stackalloc char[text.Length + 1];
-				return KeepNewLine(text, buffer, i, appendNewLine);
-			}
-
-			fixed (char* buffer = new char[text.Length + 1])
-				return KeepNewLine(text, buffer, i, appendNewLine);
-		}
-
-		private static unsafe string KeepNewLine(string value, char* buffer, int index, bool appendNewLine)
-		{
-			char* p = buffer;
-			int length = value.Length - 1;
-			fixed (char* pvalue = value)
-			{
-				char* q = pvalue;
-				Buffer.MemoryCopy(q, p, index * sizeof(char), index * sizeof(char));
-				p += index;
-				q += index;
-				for (; index <= length; ++index)
-				{
-					char c = *q++;
-					switch (c)
-					{
-						case '\r':
-						case '\n':
-							if (index < length)
-							{
-								if (*q == (c ^ ('\r' ^ '\n')))
-								{
-									++index;
-									++q;
-								}
-							}
-							c = '\n';
-							break;
-						case '\f':
-						case '\u2028':
-						case '\u2029':
-							c = '\n';
-							break;
-					}
-					*p++ = c;
-				}
-			}
-			if (appendNewLine && p[-1] != '\n')
-				*p++ = '\n';
-			return new string(buffer, 0, (int)(p - buffer));
-		}
-
-		/// <summary>
-		/// Creates a copy of the <see cref="CharStream"/>.
-		/// </summary>
-		/// <returns></returns>
-		public CharStream Clone()
-		{
-			return new CharStream(this);
+			_buffer = _start = buffer.ToString().AsSpan();
+			TabSize = tabSize > 0 ? tabSize : DefaultTabSize;
 		}
 
 		/// <summary>
@@ -188,39 +84,23 @@ namespace Lexxys.Tokenizer
 		///		<see cref="BofMarker"/> if absolute position less then zero;
 		///		<see cref="EofMarker"/> if absolute position greater or equal to the length of <see cref="CharStream"/>.
 		///	</returns>
-		public char this[int index]
-		{
-			get
-			{
-				index += _position;
-				return index < 0 ? BofMarker: index >= _buffer.Length ? EofMarker: _buffer[index];
-			}
-		}
-
-		/// <summary>
-		/// Gets culture-specific information associated with the stream.
-		/// </summary>
-		public CultureInfo Culture => _culture;
+		public readonly char this[int index] => (uint)index < (uint)_buffer.Length ? _buffer[index]: index < 0 ? BofMarker: EofMarker;
 
 		/// <summary>
 		/// Gets number of characters in the current <see cref="CharStream"/>.
 		/// </summary>
-		public int Length => _buffer.Length - _position;
+		public readonly int Length => _buffer.Length;
+
+		public readonly int Position => _start.Length - _buffer.Length;
+
+		public readonly int Capacity => _start.Length;
+		
+		public int TabSize { get; }
 
 		/// <summary>
 		/// It indicates that the end of the stream has been encountered.
 		/// </summary>
-		public bool Eof => _position >= _buffer.Length;
-
-		/// <summary>
-		/// Gets current Tab size.
-		/// </summary>
-		public int TabSize => _tabSize;
-
-		/// <summary>
-		/// Gets current position in the stream.
-		/// </summary>
-		public int Position => _position;
+		public bool Eof => _buffer.Length == 0;
 
 		/// <summary>
 		/// Sets the stream position.
@@ -228,7 +108,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="position">New stream position</param>
 		public void Move(int position)
 		{
-			_position = position <= 0 ? 0: position >= _buffer.Length ? _buffer.Length: position;
+			_buffer = position <= 0 ? _start: _start.Slice(Math.Min(position, _start.Length));
 		}
 
 		/// <summary>
@@ -236,21 +116,28 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		public void Rewind()
 		{
-			_position = 0;
+			_buffer = _start;
 		}
 
 		/// <summary>
 		/// Moves the stream position.
 		/// </summary>
-		/// <param name="length">Number of characters to move (0 if less then zero)</param>
+		/// <param name="length">Number of characters to move</param>
 		public void Forward(int length)
 		{
 			if (length <= 0)
 				return;
-			_position += length;
-			if (_position > _buffer.Length)
-				_position = _buffer.Length;
+			_buffer = _buffer.Slice(Math.Min(length, _buffer.Length));
 		}
+
+		public readonly ReadOnlySpan<char> Slice(int start, int length)
+			=> _buffer.Slice(start, length);
+
+		public readonly ReadOnlySpan<char> Slice(int start)
+			=> _buffer.Slice(start);
+
+		public readonly ReadOnlySpan<char> Chunk(int start, int length)
+			=> _start.Slice(start, length);
 
 		/// <summary>
 		/// Creates a <see cref="LexicalToken"/> from the stream buffer fragment and move current stream position forward on <paramref name="length"/> characters.
@@ -260,97 +147,50 @@ namespace Lexxys.Tokenizer
 		/// <returns>New <see cref="LexicalToken"/> or null if the stream has been at the EOF state.</returns>
 		public LexicalToken Token(LexicalTokenType tokenType, int length)
 		{
-			return Token(tokenType, length, Substring(0, length));
+			var token = new LexicalToken(tokenType, Position, length);
+			Forward(length);
+			return token;
 		}
-
-		/// <summary>
-		/// Creates a <see cref="LexicalToken"/> and move current stream position forward on <paramref name="length"/> characters.
-		/// </summary>
-		/// <param name="tokenType">Type of the created <see cref="LexicalToken"/></param>
-		/// <param name="length">Number of characters to move.</param>
-		/// <param name="text">Content of the <see cref="LexicalToken"/>.</param>
-		/// <returns>New <see cref="LexicalToken"/> or null if the stream has been at the EOF state.</returns>
-		public LexicalToken Token(LexicalTokenType tokenType, int length, string text)
+		
+	   public LexicalToken Token(LexicalTokenType tokenType, int length, LexicalToken.Getter getter)
 		{
-			if (Eof)
-				return LexicalToken.Eof(_position);
-			var token = new LexicalToken(tokenType, text, _position, _culture);
+			var token = new LexicalToken(tokenType, Position, length, getter);
+			Forward(length);
+			return token;
+		}
+		
+		public LexicalToken Token(LexicalTokenType tokenType, int length, object value)
+		{
+			var token = new LexicalToken(tokenType, Position, length, (_,_) => value);
 			Forward(length);
 			return token;
 		}
 
 		/// <summary>
-		/// Creates a <see cref="LexicalToken"/> from the stream buffer fragment and move current stream position forward on <paramref name="length"/> characters.
-		/// </summary>
-		/// <param name="tokenType">Type of the created <see cref="LexicalToken"/></param>
-		/// <param name="length">Number of characters to copy from current position of stream into the content (textual value) of new <see cref="LexicalToken"/>.</param>
-		/// <param name="value">Value of the <see cref="LexicalToken"/>.</param>
-		/// <returns>New <see cref="LexicalToken"/> or null if the stream has been at the EOF state.</returns>
-		public LexicalToken Token(LexicalTokenType tokenType, int length, object? value)
-		{
-			return Token(tokenType, length, Substring(0, length), value);
-		}
-
-		/// <summary>
-		/// Creates a <see cref="LexicalToken"/> and move current stream position forward on <paramref name="length"/> characters.
-		/// </summary>
-		/// <param name="tokenType">Type of the created <see cref="LexicalToken"/></param>
-		/// <param name="length">Number of characters to move.</param>
-		/// <param name="text">Content of the <see cref="LexicalToken"/>.</param>
-		/// <param name="value">Value of the <see cref="LexicalToken"/>.</param>
-		/// <returns>New <see cref="LexicalToken"/> or null if the stream has been at the EOF state.</returns>
-		public LexicalToken Token(LexicalTokenType tokenType, int length, string text, object? value)
-		{
-			if (Eof)
-				return LexicalToken.Eof(_position);
-			var token = new LexicalToken(tokenType, text, _position, value, _culture);
-			Forward(length);
-			return token;
-		}
-
-		/// <summary>
-		/// Gets a substring from the srteam buffer.
+		/// Gets a substring from the stream buffer.
 		/// </summary>
 		/// <param name="start">Offset from current position in the stream</param>
 		/// <param name="length">Length of the substring</param>
 		/// <returns></returns>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="start"/> is less then zero.</exception>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="length"/> is less then zero.</exception>
-		public string Substring(int start, int length)
+		public readonly string Substring(int start, int length)
 		{
 			if (start < 0)
 				throw new ArgumentOutOfRangeException(nameof(start), start, null);
 			if (length < 0)
 				throw new ArgumentOutOfRangeException(nameof(length), length, null);
 
-			start += _position;
 			if (start + length <= _buffer.Length)
-				return _buffer.Substring(start, length);
-			return start < _buffer.Length ? _buffer.Substring(start): String.Empty;
+				return _buffer.Slice(start, length).ToString();
+			return start < _buffer.Length ? _buffer.Slice(start).ToString(): String.Empty;
 		}
-
 		/// <summary>
 		/// Reports the index of the first occurrence of the specified character in this Stream.
 		/// </summary>
 		/// <param name="value">Character to seek</param>
 		/// <returns>The zero-based index position of value if that character is found, or -1 it is not.</returns>
-		public int IndexOf(char value)
-		{
-			return _position < _buffer.Length ? _buffer.IndexOf(value, _position) - _position: -1;
-		}
-
-		/// <summary>
-		/// Reports the index of the first occurrence of the specified string in this Stream.
-		/// </summary>
-		/// <param name="value">String to seek</param>
-		/// <returns>The zero-based index position of value if that character is found, or -1 it is not.</returns>
-		/// <exception cref="System.ArgumentNullException"><paramref name="value"/> is null.</exception>
-		public int IndexOf(string value)
-		{
-			if (value == null)
-				throw new ArgumentNullException(nameof(value));
-			return _position < _buffer.Length ? _buffer.IndexOf(value, _position, StringComparison.Ordinal) - _position: -1;
-		}
+		public readonly int IndexOf(char value) => _buffer.IndexOf(value);
 
 		/// <summary>
 		/// Reports the index of the first occurrence of the specified character in this Stream.
@@ -359,13 +199,24 @@ namespace Lexxys.Tokenizer
 		/// <param name="offset">The search starting position.</param>
 		/// <returns>The zero-based index position of value if that character is found, or -1 it is not.</returns>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
-		public int IndexOf(char value, int offset)
+		public readonly int IndexOf(char value, int offset)
 		{
 			if (offset < 0)
 				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
-
-			return _position + offset < _buffer.Length ? _buffer.IndexOf(value, _position + offset) - _position: -1;
+			if (offset == 0)
+				return _buffer.IndexOf(value);
+			if (offset >= _buffer.Length)
+				return -1;
+			int k = _buffer.Slice(offset).IndexOf(value);
+			return k < 0 ? k: k + offset;
 		}
+
+		/// <summary>
+		/// Reports the index of the first occurrence of the specified string in this Stream.
+		/// </summary>
+		/// <param name="value">String to seek.</param>
+		/// <returns>The zero-based index position of value if that character is found, or -1 it is not.</returns>
+		public readonly int IndexOf(ReadOnlySpan<char> value) => _buffer.IndexOf(value);
 
 		/// <summary>
 		/// Reports the index of the first occurrence of the specified string in this Stream.
@@ -373,17 +224,27 @@ namespace Lexxys.Tokenizer
 		/// <param name="value">String to seek.</param>
 		/// <param name="offset">The search starting position.</param>
 		/// <returns>The zero-based index position of value if that character is found, or -1 it is not.</returns>
-		/// <exception cref="System.ArgumentNullException"><paramref name="value"/> is null.</exception>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
-		public int IndexOf(string value, int offset)
+		public readonly int IndexOf(ReadOnlySpan<char> value, int offset)
 		{
-			if (value == null)
-				throw new ArgumentNullException(nameof(value));
 			if (offset < 0)
 				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
-
-			return _position + offset < _buffer.Length ? _buffer.IndexOf(value, _position + offset, StringComparison.Ordinal) - _position: -1;
+			if (offset == 0)
+				return _buffer.IndexOf(value);
+			if (offset >= _buffer.Length)
+				return -1;
+			int k = _buffer.Slice(offset).IndexOf(value);
+			return k < 0 ? k : k + offset;
 		}
+
+		/// <summary>
+		/// Reports the index of the first occurrence of the specified string in this Stream.
+		/// </summary>
+		/// <param name="value">String to seek</param>
+		/// <returns>The zero-based index position of value if that character is found, or -1 it is not.</returns>
+		public readonly int IndexOf(string? value) => String.IsNullOrEmpty(value) ? -1: _buffer.IndexOf(value.AsSpan());
+
+		public readonly int IndexOf(string? value, int offset) => String.IsNullOrEmpty(value) ? -1: IndexOf(value.AsSpan(), offset);
 
 		/// <summary>
 		/// Reports the index of the first occurrence in this Stream of any character in a specified array of characters.
@@ -391,12 +252,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="any">A character array containing one or more characters to seek.</param>
 		/// <returns>The zero-based index position of value if that character is found, or -1 it is not.</returns>
 		/// <exception cref="System.ArgumentNullException"><paramref name="any"/> is null.</exception>
-		public int IndexOfAny(char[] any)
-		{
-			if (any == null)
-				throw new ArgumentNullException(nameof(any));
-			return IndexOfAny(any, 0);
-		}
+		public readonly int IndexOfAny(ReadOnlySpan<char> any) => _buffer.IndexOfAny(any);
 
 		/// <summary>
 		/// Reports the index of the first occurrence in this Stream of any character in a specified array of characters.
@@ -406,37 +262,16 @@ namespace Lexxys.Tokenizer
 		/// <returns>The zero-based index position of value if that character is found, or -1 it is not.</returns>
 		/// <exception cref="System.ArgumentNullException"><paramref name="any"/> is null.</exception>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
-		public int IndexOfAny(char[] any, int offset)
+		public readonly int IndexOfAny(char[]? any, int offset)
 		{
-			if (any == null)
-				throw new ArgumentNullException(nameof(any));
 			if (offset < 0)
 				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
-
-			return _position + offset < _buffer.Length ? _buffer.IndexOfAny(any, _position + offset) - _position: -1;
-		}
-
-		/// <summary>
-		/// Reports the index of the first occurrence in this Stream of specified reqular expression.
-		/// </summary>
-		/// <param name="regex">A regular expression to seek.</param>
-		/// <param name="offset">The search starting position.</param>
-		/// <returns>The zero-based index position of value if that regular expression is found, or -1 it is not.</returns>
-		/// <exception cref="System.ArgumentNullException"><paramref name="regex"/> is null.</exception>
-		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
-		public int IndexOf(Regex regex, int offset = 0)
-		{
-			if (regex == null)
-				throw new ArgumentNullException(nameof(regex));
-			if (offset < 0)
-				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
-
-			if (_position + offset >= _buffer.Length)
+			if (any == null || any.Length == 0)
 				return -1;
-			Match m = regex.Match(_buffer, _position + offset);
-			if (!m.Success)
-				return -1;
-			return m.Index - _position;
+			if (offset == 0)
+				return _buffer.IndexOfAny(any.AsSpan());
+			var i = _buffer.Slice(offset).IndexOfAny(any.AsSpan());
+			return i < 0 ? -1: i + offset;
 		}
 
 		/// <summary>
@@ -445,18 +280,17 @@ namespace Lexxys.Tokenizer
 		/// <param name="predicate"></param>
 		/// <param name="offset"></param>
 		/// <returns>Offset of the character where the <paramref name="predicate"/> returns false.</returns>
-		public int IndexOf(Func<char, bool> predicate, int offset = 0)
+		public readonly int IndexOf(Func<char, bool> predicate, int offset = 0)
 		{
 			if (predicate == null)
 				throw new ArgumentNullException(nameof(predicate));
 			if (offset < 0)
 				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 
-			offset += _position;
 			for (int i = offset; i < _buffer.Length; ++i)
 			{
 				if (predicate(_buffer[i]))
-					return i - _position;
+					return i;
 			}
 			return -1;
 		}
@@ -467,20 +301,50 @@ namespace Lexxys.Tokenizer
 		/// <param name="predicate"></param>
 		/// <param name="offset"></param>
 		/// <returns>Offset of the character where the <paramref name="predicate"/> returns false.</returns>
-		public int IndexOf(Func<char, int, bool> predicate, int offset = 0)
+		public readonly int IndexOf(Func<char, int, bool> predicate, int offset = 0)
 		{
 			if (predicate == null)
 				throw new ArgumentNullException(nameof(predicate));
 			if (offset < 0)
 				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 
-			offset += _position;
 			for (int i = offset; i < _buffer.Length; ++i)
 			{
 				if (predicate(_buffer[i], i - offset))
-					return i - _position;
+					return i;
 			}
 			return -1;
+		}
+
+		public readonly int IndexOfNewLine(out int newLineWidth, int offset = 0)
+		{
+			if (offset < 0)
+				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
+			int index = offset == 0 ? _buffer.IndexOfAny(CrLf) : _buffer.Slice(offset).IndexOfAny(CrLf);
+			if (index < 0)
+			{
+				newLineWidth = 0;
+				return -1;
+			}
+			index += offset;
+			newLineWidth = _buffer[index] == CR && index + 1 < _buffer.Length && _buffer[index + 1] == LF ? 2 : 1;
+			return index;
+		}
+
+		public readonly int NewLineSize(int offset = 0)
+		{
+			if (offset < 0)
+				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
+
+			if (offset >= _buffer.Length)
+				return 0;
+
+			return _buffer[offset] switch
+			{
+				LF => 1,
+				CR => offset + 1 < _buffer.Length && _buffer[offset + 1] == LF ? 2 : 1,
+				_ => 0
+			};
 		}
 
 		/// <summary>
@@ -488,14 +352,13 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="predicate"></param>
 		/// <param name="offset"></param>
-		public int Match(Func<char, bool> predicate, int offset = 0)
+		public readonly int Match(Func<char, bool> predicate, int offset = 0)
 		{
 			if (predicate == null)
 				throw new ArgumentNullException(nameof(predicate));
 			if (offset < 0)
 				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 
-			offset += _position;
 			for (int i = offset; i < _buffer.Length; ++i)
 			{
 				if (!predicate(_buffer[i]))
@@ -509,14 +372,13 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="predicate"></param>
 		/// <param name="offset"></param>
-		public int Match(Func<char, int, bool> predicate, int offset = 0)
+		public readonly int Match(Func<char, int, bool> predicate, int offset = 0)
 		{
 			if (predicate == null)
 				throw new ArgumentNullException(nameof(predicate));
 			if (offset < 0)
 				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 
-			offset += _position;
 			for (int i = offset; i < _buffer.Length; ++i)
 			{
 				if (!predicate(_buffer[i], i - offset))
@@ -530,21 +392,20 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="predicate"></param>
 		/// <returns></returns>
-		public int Forward(Func<char, bool> predicate)
+		public void Forward(Func<char, bool> predicate)
 		{
 			if (predicate == null)
 				throw new ArgumentNullException(nameof(predicate));
 
-			for (int i = _position; i < _buffer.Length; ++i)
+			for (int i = 0; i < _buffer.Length; ++i)
 			{
 				if (!predicate(_buffer[i]))
 				{
-					Forward(i - _position);
-					return i - _position;
+					_buffer = _buffer.Slice(i);
+					return;
 				}
 			}
-			Forward(_buffer.Length - _position);
-			return _buffer.Length - _position;
+			_buffer = _start.Slice(_start.Length);
 		}
 
 		/// <summary>
@@ -553,42 +414,20 @@ namespace Lexxys.Tokenizer
 		/// <param name="offset"></param>
 		/// <param name="predicate"></param>
 		/// <returns></returns>
-		public int Forward(int offset, Func<char, bool> predicate)
+		public void Forward(int offset, Func<char, bool> predicate)
 		{
 			if (predicate == null)
 				throw new ArgumentNullException(nameof(predicate));
 
-			for (int i = _position + offset; i < _buffer.Length; ++i)
+			for (int i = offset; i < _buffer.Length; ++i)
 			{
 				if (!predicate(_buffer[i]))
 				{
-					Forward(i - _position);
-					return i - _position;
+					_buffer = _buffer.Slice(i);
+					return;
 				}
 			}
-			Forward(_buffer.Length - _position);
-			return _buffer.Length - _position;
-		}
-
-		/// <summary>
-		/// Searches the first occurrence of a regular expression in the <see cref="CharStream"/>.
-		/// </summary>
-		/// <param name="regex">A regular expression to search.</param>
-		/// <param name="offset">The search starting position.</param>
-		/// <returns>An object that contains information about the match.</returns>
-		/// <exception cref="System.ArgumentNullException"><paramref name="regex"/> is null.</exception>
-		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
-		public Match? Match(Regex regex, int offset = 0)
-		{
-			if (regex == null)
-				throw new ArgumentNullException(nameof(regex));
-			if (offset < 0)
-				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
-
-			if (_position + offset >= _buffer.Length)
-				return null;
-			Match m = regex.Match(_buffer, _position + offset);
-			return m.Success ? m: null;
+			_buffer = _start.Slice(_start.Length);
 		}
 
 		/// <summary>
@@ -596,30 +435,18 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="value">The string to compare.</param>
 		/// <param name="offset">The search starting position.</param>
-		/// <param name="comparision">One of the enumeration values that determines how this string and value are compared.</param>
 		/// <returns>true if the value parameter matches the Stream; otherwise, false.</returns>
 		/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
-		public bool StartsWith(string? value, int offset, StringComparison comparision)
+		public readonly bool StartsWith(string value, int offset = 0)
 		{
-			if (value is not { Length: > 0})
+			if (String.IsNullOrEmpty(value))
 				return false;
 			if (offset < 0)
 				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 
-			offset += _position;
 			if (offset + value.Length > _buffer.Length)
 				return false;
-			return _buffer.Substring(offset, value.Length).Equals(value, comparision);
-		}
-
-		/// <summary>
-		/// Calculates offset value for absolute position in the <see cref="CharStream"/> buffer.
-		/// </summary>
-		/// <param name="index"></param>
-		/// <returns></returns>
-		public int Offset(int index)
-		{
-			return index - _position;
+			return offset == 0 ? _buffer.StartsWith(value.AsSpan()): _buffer.Slice(offset).StartsWith(value.AsSpan());
 		}
 
 		/// <summary>
@@ -627,9 +454,9 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		/// <param name="message">Exception message.</param>
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
-		public SyntaxException SyntaxException(string? message)
+		public readonly SyntaxException SyntaxException(string? message)
 		{
-			var at = GetCharPosition();
+			var at = GetPosition();
 			return new SyntaxException(message, null, at.Line + 1, at.Column + 1);
 		}
 
@@ -639,9 +466,9 @@ namespace Lexxys.Tokenizer
 		/// <param name="message">Exception message.</param>
 		/// <param name="file">File info to include into the result</param>
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
-		public SyntaxException SyntaxException(string? message, string? file)
+		public readonly SyntaxException SyntaxException(string? message, string file)
 		{
-			var at = GetCharPosition();
+			var at = GetPosition();
 			return new SyntaxException(message, file, at.Line + 1, at.Column + 1);
 		}
 
@@ -651,9 +478,9 @@ namespace Lexxys.Tokenizer
 		/// <param name="message">Exception message.</param>
 		/// <param name="position">Position in the Stream.</param>
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
-		public SyntaxException SyntaxException(string? message, int position)
+		public readonly SyntaxException SyntaxException(string? message, int position)
 		{
-			var at = GetCharPosition(position);
+			var at = GetPosition();
 			return new SyntaxException(message, null, at.Line + 1, at.Column + 1);
 		}
 
@@ -664,102 +491,80 @@ namespace Lexxys.Tokenizer
 		/// <param name="file">File info to include into the result</param>
 		/// <param name="position">Position in the Stream.</param>
 		/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
-		public SyntaxException SyntaxException(string? message, string? file, int position)
+		public readonly SyntaxException SyntaxException(string? message, string? file, int position)
 		{
-			var at = GetCharPosition(position);
+			var at = GetPosition(position);
 			return new SyntaxException(message, file, at.Line + 1, at.Column + 1);
 		}
 
-		/// <summary>
-		/// Gets line and column values of the current char position.
-		/// </summary>
-		/// <returns></returns>
-		public CharPosition GetCharPosition()
-		{
-			return GetCharPosition(_position);
-		}
+		public readonly CharPosition GetPosition() => GetPosition(Position);
 
-		/// <summary>
-		/// Gets line and column values of the specified char <paramref name="position"/>.
-		/// </summary>
-		/// <param name="position"></param>
-		/// <param name="prev"></param>
-		/// <returns></returns>
-		public CharPosition GetCharPosition(int position, CharPosition prev)
-		{
-			return position < prev.Position ? GetCharPosition(position):  GetCharPosition(prev, position - prev.Position);
-		}
+		public readonly CharPosition GetPosition(int position, CharPosition prev)
+			=> position < prev.Position ? GetPosition(position) : GetPosition(prev, position - prev.Position);
 
-		/// <summary>
-		/// Gets line and column values of the specified char <paramref name="position"/>.
-		/// </summary>
-		/// <param name="position"></param>
-		/// <returns></returns>
-		public CharPosition GetCharPosition(int position)
+		public readonly CharPosition GetPosition(int position)
 		{
 			if (position <= 0)
 				return default;
 
-			int end = Math.Min(position, _buffer.Length);
-			var (line, column) = OffsetBox(_buffer, 0, 0, end);
-			return new CharPosition(end, line, column);
+			int end = position;
+			if (end > _start.Length)
+				end = _start.Length;
+			var lc = OffsetBox(_start.Slice(0, end), TabSize);
+			return new CharPosition(end, lc.Line, lc.Column);
 		}
 
-		private CharPosition GetCharPosition(CharPosition at, int offset)
+		private readonly CharPosition GetPosition(CharPosition at, int offset)
 		{
 			if (offset <= 0)
 				return at;
 
 			int start = at.Position;
 			int end = start + offset;
-			if (end > _buffer.Length)
-				end = _buffer.Length;
-			var (line, column) = OffsetBox(_buffer, at.Column, start, end);
-			return new CharPosition(end, line + at.Line, column);
+			if (end > _start.Length)
+				end = _start.Length;
+			var lc = OffsetBox(_start.Slice(start, end - start), TabSize);
+			return new CharPosition(end, lc.Line + at.Line, lc.Line == 0 ? lc.Column + at.Column: lc.Column);
 		}
 
-		private (int Line, int Column) OffsetBox(string part, int column, int start, int end)
+		private static (int Line, int Column) OffsetBox(ReadOnlySpan<char> part, int tab)
 		{
-			if (start >= end)
-				return default;
-
 			int line = 0;
-			int i = part.IndexOf('\n', start);
-			if (i >= 0 && i < end)
+			var newLineTokens = new ReadOnlySpan<char>(CrLf);
+			int i = part.IndexOfAny(newLineTokens);
+			if (i >= 0)
 			{
-				column = 0;
 				do
 				{
 					++line;
-					start = i + 1;
-				} while ((i = part.IndexOf('\n', start)) >= 0 && i < end);
+					part = part.Slice(i + NewLineLen(part, i));
+				} while ((i = part.IndexOfAny(newLineTokens)) >= 0);
 			}
 
-			if (_tabSize > 1)
+			if (tab <= 1)
+				return (line, part.Length);
+
+			int column = 0;
+			while ((i = part.IndexOf(TAB)) >= 0)
 			{
-				i = part.IndexOf('\t', start);
-				if (i >= 0 && i < end)
-				{
-					do
-					{
-						column += i - start;
-						column = column - (column % _tabSize) + _tabSize;
-						start = i + 1;
-					} while ((i = part.IndexOf('\t', start)) >= 0 && i < end);
-				}
+				var position = column + i;
+				column = position - position % tab + tab;
+				part = part.Slice(i + 1);
 			}
-			return (line, column + (end - start));
+			return (line, column + part.Length);
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			static int NewLineLen(ReadOnlySpan<char> part, int index) => part[index] == CR && index + 1 < part.Length && part[index + 1] == LF ? 2 : 1;
 		}
+		private const char CR = '\r';
+		private const char LF = '\n';
+		private const char TAB = '\t';
+		private static readonly char[] CrLf = { LF, CR };
 
 		/// <summary>
 		/// Displays current position and current 120 characters of the stream.
 		/// </summary>
 		/// <returns></returns>
-		public override string ToString()
-		{
-			return String.Format(_culture, "{0}: {1}", _position, Strings.Ellipsis(Strings.EscapeCsString(Substring(0, 120)), 120, "�\""));
-		}
+		public readonly override string ToString() => $"{Position}: {Strings.Ellipsis(Strings.EscapeCsString(Substring(0, 120)), 120, "...\"")}";
 	}
 }
-
-

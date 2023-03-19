@@ -43,27 +43,6 @@ namespace Lexxys.Cube
 			Parse(expression);
 		}
 
-		/// <summary>Create new <see cref="LogicalExpression"/> based on parsed text of <paramref name="tokenizer"/></summary>
-		/// <param name="tokenizer">Text of expression</param>
-		public LogicalExpression(TokenScanner tokenizer)
-		{
-			if (tokenizer is null)
-				throw new ArgumentNullException(nameof(tokenizer));
-			_dictionary = new Dictionary<string, int>();
-			Parse(tokenizer);
-		}
-
-		/// <summary>Create new <see cref="LogicalExpression"/> based on parsed text of <paramref name="tokenizer"/></summary>
-		/// <param name="tokenizer">Text of expression</param>
-		/// <param name="dictionary">Known parameters</param>
-		public LogicalExpression(TokenScanner tokenizer, Dictionary<string, int> dictionary)
-		{
-			if (tokenizer is null)
-				throw new ArgumentNullException(nameof(tokenizer));
-			_dictionary = dictionary;
-			Parse(tokenizer);
-		}
-
 		/// <summary>Map of known parameters</summary>
 		public Dictionary<string, int> Dictionary
 		{
@@ -74,14 +53,14 @@ namespace Lexxys.Cube
 		/// <param name="expression">Text of expression to be parsed.</param>
 		private void Parse(string expression)
 		{
-			var scanner = new TokenScanner(new Lexxys.Tokenizer.CharStream(expression),
-				new WhiteSpaceTokenRule(),
+			var scanner = new TokenScanner(new WhiteSpaceTokenRule(),
 				new CommentsTokenRule(LexicalTokenType.IGNORE, ("/*", "*/")),
 				new SequenceTokenRule(LexicalTokenType.SEQUENCE, "|", "^", "&", "~", "(", ")")
 					.Add(NOT, "!"),
 				new IdentifierTokenRule(LexicalTokenType.IDENTIFIER, LexicalTokenType.SEQUENCE, true, "OR", "XOR", "AND", "NOT")
 				);
-            Parse(scanner);
+			var stream = new Lexxys.Tokenizer.CharStream(expression);
+            Parse(ref stream, scanner);
 		}
 
 		private const int OR  = 1;
@@ -92,15 +71,15 @@ namespace Lexxys.Cube
 		private const int CLOSEBR = 6;
 
 		/// <summary>Parse stream of tokens into <see cref="LogicalExpression"/>.</summary>
+		/// <param name="stream"></param>
 		/// <param name="tokenizer">Stream of tokens to be parsed.</param>
 		/// <remarks>The complexity 27 is fine for such type of functions</remarks>
-		private void Parse(TokenScanner tokenizer)
+		private void Parse(ref CharStream stream, in TokenScanner tokenizer)
 		{
 			_polish = new Polish();
 			LexicalToken t;
-			while (tokenizer.MoveNext())
+			while ((t = tokenizer.Next(ref stream)))
 			{
-				t = tokenizer.Current;
 				PolishToken? lt;
 				if (t.TokenType.Is(LexicalTokenType.SEQUENCE))
 				{
@@ -125,29 +104,30 @@ namespace Lexxys.Cube
 							lt = new LogicalNot();
 							break;
 						default:
-							throw new FormatException(SR.EXP_UnknownSymbol(t.Text));
+							throw new FormatException(SR.EXP_UnknownSymbol(t.GetString(stream)));
 					}
 				}
 				else if (t.TokenType.Is(LexicalTokenType.IDENTIFIER))
 				{
-					if (t.Text == "TRUE" || t.Text == "GRANT" || t.Text == "1")
+					string s = t.GetString(stream);
+					if (s is "TRUE" or "GRANT" or "1")
 					{
 						lt = LogicalValue.True;
 					}
-					else if (t.Text == "FALSE" || t.Text == "DENY" || t.Text == "0")
+					else if (s is "FALSE" or "DENY" or "0")
 					{
 						lt = LogicalValue.False;
 					}
 					else
 					{
-						if (!_dictionary.ContainsKey(t.Text))
-							_dictionary.Add(t.Text, _dictionary.Count);
-						lt = new LogicalVariable(_dictionary[t.Text]);
+						if (!_dictionary.ContainsKey(s))
+							_dictionary.Add(s, _dictionary.Count);
+						lt = new LogicalVariable(_dictionary[s]);
 					}
 				}
 				else
 				{
-					throw new FormatException(SR.EXP_UnknownSymbol(t.Text));
+					throw new FormatException(SR.EXP_UnknownSymbol(t.GetString(stream)));
 				}
 				_polish.Add(lt);
 			}

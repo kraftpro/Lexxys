@@ -5,6 +5,8 @@
 // You may use this code under the terms of the MIT license
 //
 using System;
+using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Lexxys
@@ -27,31 +29,27 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="index">Value to convert</param>
 		/// <returns>Resulting character</returns>
-		public static char BitsToChar(int index)
-		{
-			return CharLine[index & 0x3F];
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static char BitsToChar(int index) => CharLine[index & 0x3F];
 
 		/// <summary>
 		/// Convert character to 6 bits value
 		/// </summary>
 		/// <param name="value">Character to convert</param>
 		/// <returns>Integer value in the rage 0..63 or -1 if <paramref name="value"/> has invalid character</returns>
-		public static int CharToBits(char value)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static int CharToBits(char value) => value switch
 		{
-			if (value >= 'a')										// 97
-				return value <= 'z' ? (value - 'a') + 38: -1;		// 38..63
-			if (value >= 'A')										// 65
-				return value <= 'Z' ? (value - 'A') + 11:			// 11..36
-					value == '_' ? 37: -1;
-			if (value >= '0')										// 48
-				return value <= '9' ? (value - '0') + 1: -1;		// 1..10
-
-			return value == '.' || value == '-' ? 0: -1;			// 0
-		}
+			>='0' and <='9' => value - ('0' - 1),
+			>='A' and <='Z' => value - ('A' - 11),
+			>='a' and <='z' => value - ('a' - 38),
+			'-' or '.' => 0, 
+			'_' => 37, 
+			_ => -1
+		};
 
 		/// <summary>
-		/// Encode byte array <paramref name="bits"/> to string
+		/// Encode byte array <paramref name="bits"/> using 64 characters map.
 		/// </summary>
 		/// <param name="bits">Bytes to encode</param>
 		/// <returns>Encoded string</returns>
@@ -72,7 +70,7 @@ namespace Lexxys
 		}
 
 		/// <summary>
-		/// Encode byte array <paramref name="bits"/> and append encoded characters to output stream.
+		/// Encode byte array <paramref name="bits"/> using 64 characters map.
 		/// </summary>
 		/// <param name="bits">Bytes to encode</param>
 		/// <param name="result">Output stream to append encoded characters</param>
@@ -117,13 +115,49 @@ namespace Lexxys
 		}
 
 		/// <summary>
+		/// Encode byte array <paramref name="bits"/> using 32 characters map.
+		/// </summary>
+		/// <param name="bits">Bytes to encode</param>
+		/// <returns>Encoded string</returns>
+		public static string Encode5(byte[] bits)
+		{
+			if (bits is not { Length: >0})
+				return String.Empty;
+
+			var mem = ArrayPool<char>.Shared.Rent((bits.Length * 8 + 4) / 5);
+			int n = 0;
+			int k = 0;
+			int b = 0;
+			foreach (var v in bits)
+			{
+				b |= v << k;
+				k += 8;
+				do
+				{
+					mem[n++] = ToChar(b & 0x1F);
+					b >>= 5;
+					k -= 5;
+				} while (k >= 5);
+			}
+			if (k > 0)
+				mem[n++] = ToChar(b & 0x1F);
+
+			var result = new string(mem, 0, n);
+			ArrayPool<char>.Shared.Return(mem);
+			return result;
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			static char ToChar(int x) => (char)(x + (x < 10 ? '0': 'a' - 10));
+		}
+
+		/// <summary>
 		/// Calculate decoded byte array length
 		/// </summary>
 		/// <param name="encodedLength">Length of encoded string</param>
 		/// <returns>Length of decoded byte array</returns>
 		public static int DecodedLength(int encodedLength)
 		{
-			if (encodedLength < 0 || encodedLength > Int32.MaxValue / 8)
+			if (encodedLength is <0 or >Int32.MaxValue/8)
 				throw new ArgumentOutOfRangeException(nameof(encodedLength), encodedLength, null);
 			return (encodedLength * 3) / 4;
 		}
@@ -131,12 +165,12 @@ namespace Lexxys
 		/// <summary>
 		/// Calculate length of encoded string buffer
 		/// </summary>
-		/// <param name="decodedLength">Numer of decoded bytes</param>
+		/// <param name="decodedLength">Number of decoded bytes</param>
 		/// <param name="keepRest">Preserve extra space for rest of bits</param>
 		/// <returns>Length of encoded buffer</returns>
 		public static int EncodedLength(int decodedLength, bool keepRest = true)
 		{
-			if (decodedLength < 0 || decodedLength > Int32.MaxValue / 8)
+			if (decodedLength is <0 or >Int32.MaxValue/8)
 				throw new ArgumentOutOfRangeException(nameof(decodedLength), decodedLength, null);
 			return keepRest ? (decodedLength * 4 + 2) / 3: (decodedLength * 4) / 3;
 		}
@@ -148,7 +182,7 @@ namespace Lexxys
 		/// <returns>Number of bits to be coded in the last character</returns>
 		public static int EncodedRest(int decodedLength)
 		{
-			if (decodedLength < 0 || decodedLength > Int32.MaxValue / 8)
+			if (decodedLength is <0 or >Int32.MaxValue/8)
 				throw new ArgumentOutOfRangeException(nameof(decodedLength), decodedLength, null);
 			return (decodedLength * 8) % 6;
 		}
@@ -158,9 +192,9 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="value">String to decode</param>
 		/// <returns>Decoded bytes</returns>
-		public static byte[]? Decode(string value)
+		public static byte[] Decode(string value)
 		{
-			if (value == null)
+			if (value is null)
 				throw new ArgumentNullException(nameof(value));
 
 			byte[] bits = new byte[(value.Length * 3) / 4];
@@ -173,7 +207,7 @@ namespace Lexxys
 					CharToBits(value[i - 2]) << 6 |
 					CharToBits(value[i - 3]);
 				if (k < 0)
-					return null;
+					throw new ArgumentOutOfRangeException(nameof(value), value, null);
 				bits[j++] = (byte)(k);
 				bits[j++] = (byte)(k >> 8);
 				bits[j++] = (byte)(k >> 16);
@@ -197,7 +231,7 @@ namespace Lexxys
 			}
 			else if (n == 1)
 			{
-				return null;
+				throw new ArgumentOutOfRangeException(nameof(value), value, null);
 			}
 
 			return bits;
@@ -209,17 +243,7 @@ namespace Lexxys
 		/// <returns>Generated string</returns>
 		public static string GenerateSessionId()
 		{
-			return GenerateSessionId(Guid.NewGuid().ToByteArray());
-		}
-
-		public static string GenerateSessionId(byte[] bits)
-		{
-			if (bits == null)
-				throw new ArgumentNullException(nameof(bits));
-			if (bits.Length != 16)
-				#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-				throw new ArgumentOutOfRangeException(nameof(bits) + ".Length", bits.Length, null);
-
+			var bits = Guid.NewGuid().ToByteArray();
 			var result = new StringBuilder(24);
 			int rest = Encode(bits, result);
 
@@ -235,15 +259,20 @@ namespace Lexxys
 		/// </summary>
 		/// <param name="sessionId">String to test</param>
 		/// <returns>true if the <paramref name="sessionId"/> was generated by <see cref="IsWellFormedSessionId"/> function</returns>
-		public static bool IsWellFormedSessionId(string sessionId)
+		public static bool IsWellFormedSessionId(string? sessionId)
 		{
-			if (sessionId == null || sessionId.Length != 24)
+			if (sessionId is not { Length: 24 })
 				return false;
 			int q = HashCode(sessionId, 21) & 0xFFFF;
 			int k = (CharToBits(sessionId[21]) | (CharToBits(sessionId[22]) << 6) | (CharToBits(sessionId[23]) << 12));
 			return ((k >> 2) == q);
 		}
 
+		/// <summary>
+		/// Convert an unsigned <paramref name="value"/> to a base 62 string.
+		/// </summary>
+		/// <param name="value">The value to convert</param>
+		/// <returns>The string representation of the specified <paramref name="value"/></returns>
 		public static unsafe string Sixty(ulong value)
 		{
 			if (value == 0)
@@ -259,20 +288,39 @@ namespace Lexxys
 			return new String(p);
 		}
 
+		/// <summary>
+		/// Convert a base 62 string <paramref name="value"/> to an unsigned number.
+		/// </summary>
+		/// <param name="value">The value to convert</param>
+		/// <returns>The numeric representation of the specified <paramref name="value"/></returns>
 		public static ulong Sixty(string? value)
 		{
 			if (value == null)
 				return 0;
 			ulong result = 0;
-			for (int i = 0; i < value.Length; ++i)
+			foreach (char c in value)
 			{
-				int j = CharLin2.IndexOf(value[i]);
+				int j = Index(c);
 				if (j >= 0)
 					result = result * 62 + (ulong)j;
 			}
 			return result;
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			static int Index(char c) => c switch
+			{
+				>='0' and <= '9' => c - '0',
+				>='A' and <= 'Z' => c - ('A' - ('9' - '0' + 1)),
+				>='a' and <= 'z' => c - ('a' - (('9' - '0' + 1) + ('Z' - 'A' + 1))),
+				_ => -1
+			};
 		}
 
+		/// <summary>
+		/// Convert an unsigned <paramref name="value"/> to a base 36 string.
+		/// </summary>
+		/// <param name="value">The value to convert</param>
+		/// <returns>The string representation of the specified <paramref name="value"/></returns>
 		public static unsafe string Thirty(ulong value)
 		{
 			if (value == 0)
@@ -288,23 +336,45 @@ namespace Lexxys
 			return new String(p);
 		}
 
+		/// <summary>
+		/// Convert a base 36 string <paramref name="value"/> to an unsigned number.
+		/// </summary>
+		/// <param name="value">The value to convert</param>
+		/// <returns>The numeric representation of the specified <paramref name="value"/></returns>
 		public static ulong Thirty(string? value)
 		{
 			if (value == null)
 				return 0;
 			ulong result = 0;
-			for (int i = 0; i < value.Length; ++i)
+			foreach (char c in value)
 			{
-				char c = value[i];
-				if (c > '9')
-					c |= ' ';
-				int j = CharLin3L.IndexOf(c);
+				int j = Index(c);
 				if (j >= 0)
 					result = result * 36 + (ulong)j;
 			}
 			return result;
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			static int Index(char c) => c switch
+			{
+				>='0' and <= '9' => c - '0',
+				>='A' and <= 'Z' => c - ('A' - ('9' - '0' + 1)),
+				>='a' and <= 'z' => c - ('a' - ('9' - '0' + 1)),
+				_ => -1
+			};
 		}
 
+		/// <summary>
+		/// Hashes the specified <paramref name="id"/> value and converts it to a string. 
+		/// </summary>
+		/// <param name="id">The value to encode</param>
+		/// <param name="encodeMult">Hash value multiplier</param>
+		/// <param name="encodeMask">Hash value XOR mask</param>
+		/// <param name="convert">Function to convert a numeric value to a string</param>
+		/// <param name="straight">Indicates not to swap bytes of the converting value</param>
+		/// <returns>An encoded value</returns>
+		/// <exception cref="ArgumentOutOfRangeException"><paramref name="id"/> value is less than 0.</exception>
+		/// <exception cref="ArgumentNullException"></exception>
 		public static string EncodeId(int id, uint encodeMult, ulong encodeMask, Func<ulong, string> convert, bool straight = false)
 		{
 			if (id < 0)
@@ -317,10 +387,24 @@ namespace Lexxys
 			return convert(code);
 		}
 
-		private static ushort Swap16(ushort value) => (ushort)(value << 8 | value >> 8);
-		private static uint Swap32(uint value) => (uint)Swap16((ushort)value) << 16 | Swap16((ushort)(value >> 16));
-		private static ulong Swap64(ulong value) => (ulong)Swap32((uint)value) << 32 | Swap32((uint)(value >> 32));
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static ulong Swap64(ulong value)
+		{
+			var x = value << 32 | value >> 32;
+			x = (x & 0xFFFF0000_FFFF0000) >> 16 | (x & 0x0000FFFF_0000FFFF) << 16;
+			x = (x & 0xFF00FF00_FF00FF00) >> 8  | (x & 0x00FF00FF_00FF00FF) << 8;
+			return x;
+		}
 
+		/// <summary>
+		/// Restores an ID value from the string representation.
+		/// </summary>
+		/// <param name="value">String value to be decoded to the ID.</param>
+		/// <param name="encodeMult">Hash value multiplier</param>
+		/// <param name="encodeMask">Hash value XOR mask</param>
+		/// <param name="convert">Function to convert a string value to a number</param>
+		/// <returns>A decoded value</returns>
+		/// <exception cref="ArgumentNullException"></exception>
 		public static int DecodeId(string? value, uint encodeMult, ulong encodeMask, Func<string, ulong> convert)
 		{
 			if (convert == null)
@@ -332,30 +416,44 @@ namespace Lexxys
 			if (source == 0)
 				return 0;
 
-			var code = source ^ encodeMask;
-			var r0 = Math.DivRem((long)code, encodeMult, out var r1);
-			if (r1 == 0 && r0 > 0 && r0 < int.MaxValue)
+			ulong code = source ^ encodeMask;
+			long r0 = Math.DivRem((long)code, encodeMult, out long r1);
+			if (r1 == 0 && (ulong)r0 < int.MaxValue)
 				return (int)r0;
 
-			code = Swap64(source) ^ (ulong)encodeMask;
+			code = Swap64(source) ^ encodeMask;
 			r0 = Math.DivRem((long)code, encodeMult, out r1);
-			if (r1 == 0 && r0 > 0 && r0 < int.MaxValue)
+			if (r1 == 0 && (ulong)r0 < int.MaxValue)
 				return (int)r0;
 
 			return 0;
 		}
 
+		/// <summary>
+		/// Hashes the specified <paramref name="id"/> value and converts it to a string. 
+		/// </summary>
+		/// <param name="id">The value to encode</param>
+		/// <param name="encodeMult">Hash value multiplier</param>
+		/// <param name="encodeMask">Hash value XOR mask</param>
+		/// <param name="straight">Indicates not to swap bytes of the converting value</param>
+		/// <returns>An encoded value</returns>
+		/// <exception cref="ArgumentOutOfRangeException"><paramref name="id"/> value is less than 0.</exception>
+		/// <exception cref="ArgumentNullException"></exception>
 		public static string EncodeId(int id, uint encodeMult, ulong encodeMask, bool straight = false)
-		{
-			return EncodeId(id, encodeMult, encodeMask, Sixty, straight);
-		}
+			=> EncodeId(id, encodeMult, encodeMask, Sixty, straight);
 
+		/// <summary>
+		/// Restores an ID value from the string representation.
+		/// </summary>
+		/// <param name="value">String value to be decoded to the ID.</param>
+		/// <param name="encodeMult">Hash value multiplier</param>
+		/// <param name="encodeMask">Hash value XOR mask</param>
+		/// <returns>A decoded value</returns>
+		/// <exception cref="ArgumentNullException"></exception>
 		public static int DecodeId(string? value, uint encodeMult, ulong encodeMask)
-		{
-			return DecodeId(value, encodeMult, encodeMask, Sixty);
-		}
+			=> DecodeId(value, encodeMult, encodeMask, Sixty);
 
-		public static unsafe int HashCode(string? value, int length)
+		private static unsafe int HashCode(string? value, int length)
 		{
 			if (value == null)
 				return 0;

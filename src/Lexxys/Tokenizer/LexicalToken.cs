@@ -6,113 +6,68 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Globalization;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Lexxys.Tokenizer
 {
 	/// <summary>
 	/// Represents a lexical token produced by TokenScanner.
 	/// </summary>
-	public sealed class LexicalToken
+	public readonly struct LexicalToken
 	{
-		public static readonly LexicalToken Empty = new LexicalToken(LexicalTokenType.EMPTY, "", 0);
+		public delegate object? Getter(LexicalTokenType token, ReadOnlySpan<char> buffer);
+        
+		public static readonly LexicalToken Empty = new();
 
-		/// <summary>
-		/// Creates a copy of the specified <paramref name="token"/>.
-		/// </summary>
-		/// <param name="token"></param>
-		public LexicalToken(LexicalToken token)
-		{
-			if (token == null)
-				throw new ArgumentNullException(nameof(token));
+		private readonly Getter? _getter;
 
-			TokenType = token.TokenType;
-			Position = token.Position;
-			Text = token.Text;
-			CultureInfo = token.CultureInfo;
-			Value = token.Value;
-		}
+        public LexicalToken()
+        {
+			TokenType = LexicalTokenType.EMPTY;
+        }
 
-		/// <summary>
-		/// Creates a copy of the specified <paramref name="token"/> with a new object value.
-		/// </summary>
-		/// <param name="token"></param>
-		/// <param name="value"></param>
-		public LexicalToken(LexicalToken token, object? value)
-		{
-			if (token == null)
-				throw new ArgumentNullException(nameof(token));
-
-			TokenType = token.TokenType;
-			Position = token.Position;
-			Text = token.Text;
-			CultureInfo = token.CultureInfo;
-			Value = value;
-		}
+        /// <summary>
+        /// Creates a new <see cref="LexicalToken"/>.
+        /// </summary>
+        /// <param name="type">Type of the token</param>
+        /// <param name="position">Position of the token in the text</param>
+        /// <param name="length">Length of the token</param>
+        public LexicalToken(LexicalTokenType type, int position, int length)
+        {
+			TokenType = type;
+            Position = position;
+            Length = length;
+        }
 
 		/// <summary>
 		/// Creates a new <see cref="LexicalToken"/>.
 		/// </summary>
-		/// <param name="tokenType">Type of the token</param>
-		/// <param name="text">Textual value of the token</param>
+		/// <param name="type">Type of the token</param>
 		/// <param name="position">Position of the token in the text</param>
-		/// <param name="cultureInfo">The culture of the token</param>
-		public LexicalToken(LexicalTokenType tokenType, string text, int position, CultureInfo? cultureInfo = null)
-		{
-			Text = text ?? throw new ArgumentNullException(nameof(text));
-			TokenType = tokenType;
-			Position = position;
-			Value = text;
-			CultureInfo = cultureInfo ?? CultureInfo.InvariantCulture;
-		}
-
-		/// <summary>
-		/// Creates a new <see cref="LexicalToken"/>.
-		/// </summary>
-		/// <param name="tokenType">Type of the token</param>
-		/// <param name="text">Textual value of the token</param>
-		/// <param name="position">Position of the token in the text</param>
-		/// <param name="value">Value of the token.</param>
-		/// <param name="cultureInfo">The culture of the token</param>
-		public LexicalToken(LexicalTokenType tokenType, string text, int position, object? value, CultureInfo? cultureInfo = null)
-		{
-			Text = text ?? throw new ArgumentNullException(nameof(text));
-			TokenType = tokenType;
-			Position = position;
-			Value = value;
-			CultureInfo = cultureInfo ?? CultureInfo.InvariantCulture;
-		}
-
-		public bool IsEmpty => TokenType.Is(LexicalTokenType.EMPTY);
-
-		public bool IsEof => TokenType == LexicalTokenType.EOF;
+		/// <param name="length">Length of the token</param>
+		/// <param name="getter">Function to extract token value from the stream</param>
+		public LexicalToken(LexicalTokenType type, int position, int length, Getter getter)
+        {
+			TokenType = type;
+            Position = position;
+            Length = length;
+            _getter = getter;
+        }
 
 		/// <summary>
 		/// Gets type of the token.
 		/// </summary>
 		public LexicalTokenType TokenType { get; }
 
-		/// <summary>
-		/// Gets textual value of the token.
-		/// </summary>
-		public string Text { get; }
+        /// <summary>
+        /// Gets position of the token in the parsed text.
+        /// </summary>
+        public int Position { get; }
 
-		/// <summary>
-		/// Gets position of the token in the parsed text.
-		/// </summary>
-		public int Position { get; }
-
-		/// <summary>
-		/// The token's culture.
-		/// </summary>
-		public CultureInfo CultureInfo { get; }
-
-		/// <summary>
-		/// The token's value.
-		/// </summary>
-		public object? Value { get; }
+        public int Length { get; }
 
 		/// <summary>
 		/// The group value of the token type.
@@ -124,12 +79,43 @@ namespace Lexxys.Tokenizer
 		/// </summary>
 		public short Item => TokenType.Item;
 
+		public bool IsEmpty => TokenType?.IsEmpty ?? true;
+
+		public bool IsEof => TokenType?.Is(LexicalTokenType.EOF) ?? true;
+
+		public bool HasValue => _getter != null;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public object? GetValue(ReadOnlySpan<char> buffer) => _getter is null ? buffer.Slice(Position, Length).ToString(): _getter(TokenType, buffer);
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public object? GetValue(in CharStream stream) => _getter is null ? stream.Chunk(Position, Length).ToString(): _getter(TokenType, stream.Chunk(0, stream.Capacity));
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public string GetString(ReadOnlySpan<char> buffer) => _getter is null ? buffer.Slice(Position, Length).ToString(): _getter(TokenType, buffer)?.ToString() ?? String.Empty;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public string GetString(in CharStream stream) => _getter is null ? stream.Chunk(Position, Length).ToString(): _getter(TokenType, stream.Chunk(0, stream.Capacity))?.ToString() ?? String.Empty;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<char> GetSpan(ReadOnlySpan<char> buffer) => buffer.Slice(Position, Length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<char> GetSpan(in CharStream stream) => stream.Chunk(Position, Length);
+
 		/// <summary>
 		/// Tests if type of this token has the same group ID as the <paramref name="other"/> one.
 		/// </summary>
 		/// <param name="other"></param>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool Is(LexicalTokenType other) => TokenType.Is(other);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool Is(LexicalTokenType other, LexicalTokenType other2) => TokenType.Is(other, other2);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool Is(LexicalTokenType other, LexicalTokenType other2, LexicalTokenType other3) => TokenType.Is(other, other2, other3);
 
 		/// <summary>
 		/// Tests if type of this token has the same group ID as the <paramref name="other"/> one and the specified <paramref name="itemId"/>.
@@ -137,6 +123,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="other"><see cref="LexicalTokenType"/> to test group ID.</param>
 		/// <param name="itemId">The item ID to test.</param>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool Is(LexicalTokenType other, int itemId) => TokenType.Is(other, itemId);
 
 		/// <summary>
@@ -146,6 +133,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="itemId">The first item ID to test.</param>
 		/// <param name="itemId2">The second item ID to test.</param>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool Is(LexicalTokenType other, int itemId, int itemId2) => TokenType.Is(other, itemId, itemId2);
 
 		/// <summary>
@@ -156,6 +144,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="itemId2">The second item ID to test.</param>
 		/// <param name="itemId3">The third item ID to test.</param>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool Is(LexicalTokenType other, int itemId, int itemId2, int itemId3) => TokenType.Is(other, itemId, itemId2, itemId3);
 
 		/// <summary>
@@ -167,6 +156,7 @@ namespace Lexxys.Tokenizer
 		/// <param name="itemId3">The third item ID to test.</param>
 		/// <param name="itemId4">The forth item ID to test.</param>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool Is(LexicalTokenType other, int itemId, int itemId2, int itemId3, int itemId4) => TokenType.Is(other, itemId, itemId2, itemId3, itemId4);
 
 		/// <summary>
@@ -175,16 +165,12 @@ namespace Lexxys.Tokenizer
 		/// <param name="other"><see cref="LexicalTokenType"/> to test group ID.</param>
 		/// <param name="items">Collection of the items IDs to test.</param>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool Is(LexicalTokenType other, params int[] items) => TokenType.Is(other, items);
 
-		public static LexicalToken Eof(int position) => new LexicalToken(LexicalTokenType.EOF, "", position);
-
 		/// <inheritdoc />
-		public override string ToString()
-		{
-			return String.Format(CultureInfo, "{0}, {1}: {2}", TokenType, Position.ToString(CultureInfo), Text == null ? "(null)" : Strings.Ellipsis(Strings.EscapeCsString(Text.Substring(0, Math.Min(Text.Length, 120))), 120, "…\""));
-		}
+		public override string ToString() => $"{TokenType} ({Position}:{Length})";
+
+		public static implicit operator bool(LexicalToken token) => !token.Is(LexicalTokenType.EMPTY);
 	}
 }
-
-

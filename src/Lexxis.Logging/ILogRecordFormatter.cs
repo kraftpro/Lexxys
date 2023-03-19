@@ -10,8 +10,16 @@ using System.Text;
 
 namespace Lexxys.Logging;
 
+/// <summary>
+/// <see cref="LogRecord"/> formatter.
+/// </summary>
 public interface ILogRecordFormatter
 {
+	/// <summary>
+	/// Writes the <paramref name="record"/> in to the text stream.
+	/// </summary>
+	/// <param name="writer">Text stream to write the <paramref name="record"/> to.</param>
+	/// <param name="record">The <see cref="LogRecord"/> is to be formatted.</param>
 	void Format(TextWriter writer, LogRecord record);
 }
 

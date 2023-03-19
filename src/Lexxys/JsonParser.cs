@@ -12,7 +12,7 @@ namespace Lexxys
 {
 	using Tokenizer;
 
-	public class JsonParser
+	public ref struct JsonParser
 	{
 		private const int OBJBEG = 1;
 		private const int OBJEND = 2;
@@ -24,10 +24,13 @@ namespace Lexxys
 		private const int COMMA = 8;
 		private const int EQUAL = 9;
 
-		private JsonParser(CharStream stream, string? sourceName)
+		private readonly OneBackFilter _back;
+
+		private JsonParser(string? sourceName)
 		{
+			_back = new OneBackFilter();
 			SourceName = sourceName;
-			Scanner = new TokenScannerWithBack(stream,
+			Scanner = new TokenScanner(new ITokenFilter[] { _back },
 				new StringTokenRule(),
 				new CppCommentsTokenRule(LexicalTokenType.IGNORE),
 				new NumericTokenRule(),
@@ -41,39 +44,18 @@ namespace Lexxys
 				new WhiteSpaceTokenRule());
 		}
 
-		class TokenScannerWithBack: TokenScanner
-		{
-			private readonly OneBackFilter _push;
-			public TokenScannerWithBack(CharStream stream, params LexicalTokenRule[] rules) : base(stream, rules)
-			{
-				_push = new OneBackFilter();
-				SetFilter(_push);
-			}
-
-			public void Back()
-			{
-				_push.Back();
-			}
-		}
-
-
-		private TokenScannerWithBack Scanner { get; }
+		private TokenScanner Scanner { get; }
 		private string? SourceName { get; }
-
-		private SyntaxException SyntaxException(string message)
-		{
-			return Scanner.SyntaxException(message, SourceName);
-		}
-
 
 		public static JsonItem Parse(string text, string? sourceName = null)
 		{
 			if (text == null)
 				throw new ArgumentNullException(nameof(text));
 
-			var converter = new JsonParser(new CharStream(text), sourceName);
-			converter.Scanner.Next();
-			return converter.ParseItem();
+			var stream = new CharStream(text);
+			var converter = new JsonParser(sourceName);
+			converter.Scanner.Next(ref stream);
+			return converter.ParseItem(ref stream);
 		}
 
 		public static JsonItem Parse(TextReader text, string? sourceName = null)
@@ -81,132 +63,134 @@ namespace Lexxys
 			if (text == null)
 				throw new ArgumentNullException(nameof(text));
 
-			var converter = new JsonParser(new CharStream(text), sourceName);
-			converter.Scanner.Next();
-			return converter.ParseItem();
+			var stream = new CharStream(text);
+			var converter = new JsonParser(sourceName);
+			converter.Scanner.Next(ref stream);
+			return converter.ParseItem(ref stream);
 		}
 
 		// jsonExValue := ['(' args ')'] jsonValue
 
-		private JsonItem ParseItem(bool allowColon = false)
+		private JsonItem ParseItem(ref CharStream stream, bool allowColon = false)
 		{
-			var token = Scanner.Current;
+			var token = _back.Value;
 			List<JsonPair>? args = null;
 			// [ '(' args ')' [:] ]
 			if (token.Is(LexicalTokenType.SEQUENCE, PRMBEG))
 			{
-				args = ParseJsonArg();
-				if (Scanner.Next().Is(LexicalTokenType.SEQUENCE, COLON) && allowColon)
-					Scanner.Next();
-				token = Scanner.Current;
+				args = ParseJsonArg(ref stream);
+				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, COLON) && allowColon)
+					Scanner.Next(ref stream);
+				token = _back.Value;
 			}
 
 			if (token.Is(LexicalTokenType.SEQUENCE, OBJBEG))
-				return ParseMap(args);
+				return ParseMap(ref stream, args);
 			if (token.Is(LexicalTokenType.SEQUENCE, ARRBEG))
-				return ParseArray(args);
-			return ParseScalar(args);
+				return ParseArray(ref stream, args);
+			return ParseScalar(ref stream, args);
 		}
 
-		private JsonScalar ParseScalar(List<JsonPair>? args)
+		private JsonScalar ParseScalar(ref CharStream stream, List<JsonPair>? args)
 		{
-			var token = Scanner.Current;
+			var token = _back.Value;
 			if (token.Is(LexicalTokenType.NUMERIC) || token.Is(LexicalTokenType.STRING))
-				return new JsonScalar(token.Value, args);
+				return new JsonScalar(token.GetValue(stream), args);
 			if (token.Is(LexicalTokenType.IDENTIFIER))
-				return (token.Text) switch
+				return (token.GetString(stream)) switch
 				{
 					"null" => args?.Count > 0 ? new JsonScalar(null, args): JsonScalar.Null,
 					"true" => args?.Count > 0 ? new JsonScalar(true, args): JsonScalar.True,
 					"false" => args?.Count > 0 ? new JsonScalar(false, args): JsonScalar.False,
-					_ => new JsonScalar(token.Value, args)
+					"NaN" => args?.Count > 0 ? new JsonScalar(double.NaN, args): JsonScalar.NaN,
+					_ => new JsonScalar(token.GetString(stream), args)
 				};
-			Scanner.Back();
+			_back.Back();
 			return args?.Count > 0 ? new JsonScalar(null, args): JsonScalar.Null;
 		}
 
-		private JsonMap ParseMap(List<JsonPair>? args)
+		private JsonMap ParseMap(ref CharStream stream, List<JsonPair>? args)
 		{
 			var result = new List<JsonPair>();
 
 			for (; ; )
 			{
-				if (Scanner.Next().Is(LexicalTokenType.SEQUENCE, OBJEND))
+				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, OBJEND))
 					return new JsonMap(result, args);
-				if (Scanner.EOF)
-					throw SyntaxException("Unexpected end of stream found.");
+				if (_back.Value.IsEof)
+					throw stream.SyntaxException("Unexpected end of stream found.");
 
 				// pair :=  (name | string) [':' value]
 				// pair :=  (name | string) '(' args ')' [':'] [value]
 				// pair :=  (name | string) ':' '(' args ')' [value]
 
-				LexicalToken token = Scanner.Current;
+				LexicalToken token = _back.Value;
 				if (!(token.Is(LexicalTokenType.IDENTIFIER) ||token.Is(LexicalTokenType.STRING)))
-					throw SyntaxException("Expected name of the element.");
+					throw stream.SyntaxException("Expected name of the element.");
 
-				string name = token.Text;
+				string name = token.GetString(stream);
 				JsonItem? value = null;
-				if (Scanner.Next().Is(LexicalTokenType.SEQUENCE, COLON, PRMBEG))
+				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, COLON, PRMBEG))
 				{
-					bool colon = Scanner.Current.Is(LexicalTokenType.SEQUENCE, COLON);
+					bool colon = _back.Value.Is(LexicalTokenType.SEQUENCE, COLON);
 					if (colon)
-						Scanner.Next();
-					value = ParseItem(!colon);
+						Scanner.Next(ref stream);
+					value = ParseItem(ref stream, !colon);
 				}
 				result.Add(new JsonPair(name, value ?? JsonScalar.True));
 
-				if (Scanner.Next().Is(LexicalTokenType.SEQUENCE, OBJEND))
+				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, OBJEND))
 					return new JsonMap(result, args);
-				if (!Scanner.Current.Is(LexicalTokenType.SEQUENCE, COMMA))
-					throw SyntaxException("Expected comma.");
+				if (!_back.Value.Is(LexicalTokenType.SEQUENCE, COMMA))
+					throw stream.SyntaxException("Expected comma.");
 			}
 		}
 
-		private List<JsonPair> ParseJsonArg()
+		private List<JsonPair> ParseJsonArg(ref CharStream stream)
 		{
 			// args :=  '(' [ arg [',' arg]* ] ')'
 			// args :=  '(' [ [arg ',']* arg ] ')'
 			// arg  :=  name eq value | value
 			// eq   :=  ':' | '='
 
-			if (!Scanner.Current.Is(LexicalTokenType.SEQUENCE, PRMBEG))
-				throw SyntaxException("Expected begin of arguments.");
+			if (!_back.Value.Is(LexicalTokenType.SEQUENCE, PRMBEG))
+				throw stream.SyntaxException("Expected begin of arguments.");
 
 			var args = new List<JsonPair>();
 			bool comma = false;
 			for (; ; )
 			{
 				// name
-				var token = Scanner.Next();
+				var token = Scanner.Next(ref stream);
 				if (token.Is(LexicalTokenType.SEQUENCE, PRMEND))
 					return args;
 				if (comma)
 				{
 					if (!token.Is(LexicalTokenType.SEQUENCE, COMMA))
-						throw SyntaxException("Expected end of parameters or comma.");
-					token = Scanner.Next();
+						throw stream.SyntaxException("Expected end of parameters or comma.");
+					token = Scanner.Next(ref stream);
 				}
 				if (!(token.Is(LexicalTokenType.IDENTIFIER) || token.Is(LexicalTokenType.STRING)))
-					throw SyntaxException("Expected name of parameter.");
-				string name = token.Text;
-				if (!Scanner.Next().Is(LexicalTokenType.SEQUENCE, COLON, EQUAL))
-					throw SyntaxException("Expected equal or colon symbol for parameter value.");
-				Scanner.Next();
-				args.Add(new JsonPair(name, ParseScalar(null)));
+					throw stream.SyntaxException("Expected name of parameter.");
+				string name = token.GetString(stream);
+				if (!Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, COLON, EQUAL))
+					throw stream.SyntaxException("Expected equal or colon symbol for parameter value.");
+				Scanner.Next(ref stream);
+				args.Add(new JsonPair(name, ParseScalar(ref stream, null)));
 				comma = true;
 			}
 		}
 
-		private JsonArray ParseArray(List<JsonPair>? args)
+		private JsonArray ParseArray(ref CharStream stream, List<JsonPair>? args)
 		{
 			var result = new List<JsonItem>();
 
 			for (; ; )
 			{
-				if (Scanner.Next().Is(LexicalTokenType.SEQUENCE, ARREND))
+				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, ARREND))
 					return new JsonArray(result, args);
-				if (Scanner.EOF)
-					throw SyntaxException("Unexpected end of stream found.");
+				if (_back.Value.IsEof)
+					throw stream.SyntaxException("Unexpected end of stream found.");
 
 				// item0 := jsonValue
 				// item0 := jsonObject
@@ -215,13 +199,13 @@ namespace Lexxys
 				// item := '(' args ')' item0
 				// [ (2, 'A') { here, there }, 
 
-				JsonItem value = ParseItem();
+				JsonItem value = ParseItem(ref stream);
 				result.Add(value);
 
-				if (Scanner.Next().Is(LexicalTokenType.SEQUENCE, ARREND))
+				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, ARREND))
 					return new JsonArray(result, args);
-				if (!Scanner.Current.Is(LexicalTokenType.SEQUENCE, COMMA))
-					throw SyntaxException("Expected comma.");
+				if (!_back.Value.Is(LexicalTokenType.SEQUENCE, COMMA))
+					throw stream.SyntaxException("Expected comma.");
 			}
 		}
 	}
