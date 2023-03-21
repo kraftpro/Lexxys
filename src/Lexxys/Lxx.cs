@@ -19,6 +19,17 @@ namespace Lexxys
 	{
 		private static bool _initialized;
 
+		public const string Framework =
+#if NETFRAMEWORK
+			"framework";
+#elif NETSTANDARD
+			"standard";
+#elif NET6_0
+			"net6";
+#elif NET7_0_OR_GREATER
+			"net7";
+#endif
+
 		public static event EventHandler<ConfigurationEventArgs>? ConfigurationChanged;
 		public static event EventHandler<ConfigurationEventArgs>? ConfigurationInitialized;
 		public static event EventHandler<ThreadExceptionEventArgs>? UnhandledException;

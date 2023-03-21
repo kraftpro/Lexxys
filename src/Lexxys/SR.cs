@@ -16,7 +16,7 @@ namespace Lexxys
 		private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
 		// Ap
 
-		// General
+// General
 
 		internal static string FileNotFound(string fileName)
 		{

@@ -638,11 +638,11 @@ namespace Lexxys.Xml
 					return null;
 
 				var itemName = "item";
-				if (node.Element(itemName, StringComparer.OrdinalIgnoreCase) != null)
+				if (!node.Element(itemName, StringComparer.OrdinalIgnoreCase).IsEmpty)
 					return node.Elements.All(o => String.Equals(itemName, o.Name, StringComparison.OrdinalIgnoreCase)) ? itemName: null;
 
 				itemName = Lingua.Singular(node.Name);
-				if (node.Element(itemName, StringComparer.OrdinalIgnoreCase) != null)
+				if (!node.Element(itemName, StringComparer.OrdinalIgnoreCase).IsEmpty)
 					return node.Elements.All(o => String.Equals(itemName, o.Name, StringComparison.OrdinalIgnoreCase)) ? itemName: null;
 
 				return null;
