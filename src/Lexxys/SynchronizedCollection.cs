@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections;
 
 namespace Lexxys
 {
 	/// <summary>
 	/// Provides helper to create an instance of the <see cref="SynchronizedCollection{T}"/>.
 	/// </summary>
-	#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
+#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 	public static class SynchronizedCollection
 	{
 		/// <summary>
@@ -212,6 +206,8 @@ namespace Lexxys
 		{
 			if (IsReadOnly)
 				throw CollectionReadOnlyException();
+			if (values is null)
+				throw new ArgumentNullException(nameof(values));
 			if (equals is null)
 				throw new ArgumentNullException(nameof(equals));
 			if (create is null)
@@ -221,7 +217,7 @@ namespace Lexxys
 			_deletedItems.Clear();
 
 			var used = new BitArray(_items.Count);
-			foreach (var item in values ?? Array.Empty<T2>())
+			foreach (var item in values)
 			{
 				int i = _items.FindIndex(o => equals(o.Value, item));
 				if (i >= 0 && i < used.Count)

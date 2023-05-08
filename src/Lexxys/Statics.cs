@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Lexxys.Configuration;
+﻿using Lexxys.Configuration;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

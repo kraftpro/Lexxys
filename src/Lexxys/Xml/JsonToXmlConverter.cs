@@ -4,32 +4,29 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
 
-namespace Lexxys.Xml
+namespace Lexxys.Xml;
+
+public static class JsonToXmlConverter
 {
-	public static class JsonToXmlConverter
+	public static XmlLiteNode Convert(string text, string rootName, bool ignoreCase = false, bool forceAttributes = false, string? sourceName = null)
 	{
-		public static XmlLiteNode Convert(string text, string rootName, bool ignoreCase = false, bool forceAttributes = false, string? sourceName = null)
-		{
-			if (text is null)
-				throw new ArgumentNullException(nameof(text));
-			if (rootName is not { Length: > 0 })
-				throw new ArgumentNullException(nameof(rootName));
+		if (text is null)
+			throw new ArgumentNullException(nameof(text));
+		if (rootName is not { Length: > 0 })
+			throw new ArgumentNullException(nameof(rootName));
 
-			return JsonParser.Parse(text, sourceName)
-				.ToXml(rootName, ignoreCase, forceAttributes);
-		}
+		return JsonParser.Parse(text)
+			.ToXml(rootName, ignoreCase, forceAttributes);
+	}
 
-		public static IReadOnlyList<XmlLiteNode> Convert(string text, bool ignoreCase = false, bool forceAttributes = false, string? sourceName = null)
-		{
-			if (text is null)
-				throw new ArgumentNullException(nameof(text));
+	public static IReadOnlyList<XmlLiteNode> Convert(string text, bool ignoreCase = false, bool forceAttributes = false, string? sourceName = null)
+	{
+		if (text is null)
+			throw new ArgumentNullException(nameof(text));
 
-			return JsonParser.Parse(text, sourceName)
-				.ToXml("x", ignoreCase, forceAttributes).Elements;
-		}
+		return JsonParser.Parse(text)
+			.ToXml("x", ignoreCase, forceAttributes).Elements;
 	}
 }
 

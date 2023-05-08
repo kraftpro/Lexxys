@@ -5,11 +5,10 @@
 // You may use this code under the terms of the MIT license
 //
 
-namespace Lexxys.Data
+namespace Lexxys.Data;
+
+public interface ICommitAction
 {
-	public interface ICommitAction
-	{
-		void Commit();
-		void Rollback();
-	}
+	void Commit();
+	void Rollback();
 }

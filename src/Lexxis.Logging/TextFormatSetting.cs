@@ -52,16 +52,16 @@ public readonly struct TextFormatSetting
 
 	/// <summary>
 	/// Replace formatting setting from XmlStream <paramref name="config"/>
-	/// </summary>
-	/// <param name="config">Xml Stream with formatting serring</param>
-	/// <returns>this object</returns>
-	/// <remarks>
-	/// Xml Attribes:
+	/// <code>
+	/// Xml attributes:
 	///		format		- log record format <see cref="LogRecordTextFormatter.Format(System.IO.TextWriter, LogRecord)"/>
 	///		indent		- the indentation string
 	///		para		- new paragraph indentation string
-	/// </remarks>
-	public TextFormatSetting Join(XmlLiteNode config)
+	/// </code>
+	/// </summary>
+	/// <param name="config">Xml Stream with formatting settings</param>
+	/// <returns>this object</returns>
+	public TextFormatSetting Join(XmlLiteNode? config)
 	{
 		return config == null || config.IsEmpty ? this:
 			new TextFormatSetting(

@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Lexxys.Cube
 {
-	/// <summary>Represents logical constant or logucal variable.</summary>
+	/// <summary>Represents logical constant or logical variable.</summary>
 	public abstract class LogicalValue: LiteralToken
 	{
 		public abstract bool Evaluate(Delegate context);
@@ -61,7 +61,7 @@ namespace Lexxys.Cube
 	{
 		public override int Priority => 3;
 
-		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
+		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
 			if (stack is null)
 				throw new ArgumentNullException(nameof(stack));
@@ -80,7 +80,7 @@ namespace Lexxys.Cube
 	{
 		public override int Priority => 2;
 
-		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
+		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
 			if (stack is null)
 				throw new ArgumentNullException(nameof(stack));
@@ -102,7 +102,7 @@ namespace Lexxys.Cube
 	{
 		public override int Priority => 1;
 
-		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
+		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
 			if (stack is null)
 				throw new ArgumentNullException(nameof(stack));
@@ -124,7 +124,7 @@ namespace Lexxys.Cube
 	{
 		public override int Priority => 1;
 
-		public override void Evaluate(Stack<Cube.PolishToken> stack, Delegate context)
+		public override void Evaluate(Stack<PolishToken> stack, Delegate context)
 		{
 			if (stack is null)
 				throw new ArgumentNullException(nameof(stack));

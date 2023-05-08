@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace Lexxys.Tests.Tokenizer
+﻿namespace Lexxys.Tests.Tokenizer
 {
 	[TestClass()]
 	public class NumericTokenRuleTests

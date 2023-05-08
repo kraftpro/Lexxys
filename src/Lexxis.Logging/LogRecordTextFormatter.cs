@@ -25,10 +25,6 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 {
 	public const int MaxIndents = 20;
 	private const int MAX_STACK_ALLOC = 4 * 1024;
-	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{MachineName}:{ProcessID:X4}{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:yyyyMMddTHH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}{EventId:\\.0}: {Message}",
-		"  ",
-		". ");
 
 	private const string NullValue = "<null>";
 	private const string DbNullValue = "<dbnull>";
@@ -55,7 +51,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 	/// <param name="record">The <paramref name="record"/> to format</param>
 	/// <returns>Formatted string</returns>
 	/// <remarks>
-	/// Available formating fields options are:
+	/// Available formatting fields options are:
 	/// <code>
 	/// 	IndentMark
 	/// 	EventID
@@ -109,20 +105,15 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		{
 			writer.Write(newLine);
 			if (arg.Key == null)
-			{
-				writer.Write(NullValue + " = ");
-			}
+				writer.Write(NullValue);
 			else if (arg.Key == DBNull.Value)
-			{
-				writer.Write(DbNullValue + " = ");
-			}
+				writer.Write(DbNullValue);
 			else
-			{
 				writer.Write(arg.Key.ToString().AsSpan().Trim());
-				writer.Write(" = ");
-			}
-			if (arg.Value is string strvalue)
-				WriteText(writer, strvalue.AsSpan().Trim(), newLine2);
+
+			writer.Write(" = ");
+			if (arg.Value is string str)
+				WriteText(writer, str.AsSpan().Trim(), newLine2);
 			else
 				Dump(writer, arg.Value, newLine2);
 		}
@@ -158,7 +149,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			switch (item.Index)
 			{
 				case FormatItemType.IndentMark:
-					if (indent != null && indent.Length > 0)
+					if (indent is { Length: > 0 })
 						writer.Write(indent);
 					break;
 				case FormatItemType.EventId:
@@ -308,26 +299,12 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		var crLf = CrLfFf.AsSpan();
 		int i = 0;
 		for (; i < value.Length && crLf.IndexOf(value[i]) >= 0; ++i)
-			;
-		value = value.Slice(i);
-		if (value.Length == 0)
-			return;
-
-		int k;
-		while ((k = value.IndexOfAny(crLf)) >= 0)
 		{
-			writer.Write(value.Slice(0, k));
-			while (++k < value.Length && crLf.IndexOf(value[k]) >= 0)
-				;
-			value = value.Slice(k);
-			if (value.Length == 0)
-				return;
-			writer.Write(newLine);
 		}
-		writer.Write(value);
+		WriteTextStraight(writer, value.Slice(i), newLine);
 	}
 
-	public static void WriteTextStraight(TextWriter writer, ReadOnlySpan<char> value, string newLine)
+	private static void WriteTextStraight(TextWriter writer, ReadOnlySpan<char> value, string newLine)
 	{
 		var crLf = CrLfFf.AsSpan();
 		int k;
@@ -337,7 +314,8 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 				writer.Write(value.Slice(0, k));
 			writer.Write(newLine);
 			while (++k < value.Length && crLf.IndexOf(value[k]) >= 0)
-				;
+			{
+			}
 			value = value.Slice(k);
 		}
 		if (value.Length > 0)
@@ -359,11 +337,8 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			new DumpTextWriter(writer, newLine).Dump(value, true);
 	}
 
-	private static unsafe string? NormalizeWs(string value)
+	private static unsafe string NormalizeWs(string value)
 	{
-		if (value == null)
-			return null;
-
 		if (value.Length > MAX_STACK_ALLOC)
 		{
 			var array = ArrayPool<char>.Shared.Rent(value.Length);
@@ -389,7 +364,6 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 	private static unsafe string NormalizeWs_(char* buffer, string value)
 	{
 		char* p = buffer;
-		int length = value.Length;
 		fixed (char* pvalue = value)
 		{
 			char* q = pvalue;
@@ -432,19 +406,18 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			int last = 0;
 			foreach (var m in mc.Cast<Match>())
 			{
-				if (NamesMap.TryGetValue(m.Groups[1].Value.ToUpperInvariant(), out FormatItemType id))
-				{
-					string? f = m.Groups[4].Value;
-					if (f.Length == 0)
+				if (!NamesMap.TryGetValue(m.Groups[1].Value.ToUpperInvariant(), out FormatItemType id))
+					continue;
+				var f = m.Groups[4].Value;
+				if (f.Length == 0)
+					f = null;
+				else if (id == FormatItemType.Timestamp)
+					if (f.Equals("yyyy-MM-ddTHH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
 						f = null;
-					else if (id == FormatItemType.Timestamp)
-						if (f.Equals("yyyy-MM-ddTHH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
-							f = null;
-						else if (f.Equals("HH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
-							f = "t";
-					result.Add(new LogRecordFormatItem(id, format.Substring(last, m.Index - last), f));
-					last = m.Index + m.Length;
-				}
+					else if (f.Equals("HH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
+						f = "t";
+				result.Add(new LogRecordFormatItem(id, format.Substring(last, m.Index - last), f));
+				last = m.Index + m.Length;
 			}
 			if (last < format.Length)
 				result.Add(new LogRecordFormatItem(FormatItemType.Empty, format.Substring(last), null));
@@ -492,9 +465,8 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			if (Left == 0)
 				return this;
 			text ??= NullValue;
-			ReadOnlySpan<char> value;
 			int length = text.Length;
-			value = Left < length ? text.AsSpan(0, Left) : text.AsSpan();
+			var value = Left < length ? text.AsSpan(0, Left) : text.AsSpan();
 			if (value.Length == 0)
 				return this;
 
@@ -585,6 +557,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		Empty = 13,
 	}
 
+	// ReSharper disable once MemberHidesStaticFromOuterClass
 	private readonly struct LogRecordFormatItem
 	{
 		public readonly FormatItemType Index;

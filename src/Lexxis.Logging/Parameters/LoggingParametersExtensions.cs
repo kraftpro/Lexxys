@@ -55,7 +55,7 @@ public static partial class LoggingParametersExtensions
 		return parameters;
 	}
 
-	public static ILoggingParameters AddDebugerLog(this ILoggingParameters parameters, Action<LoggingDebugParameters> config)
+	public static ILoggingParameters AddDebugLog(this ILoggingParameters parameters, Action<LoggingDebugParameters>? config = null)
 	{
 		var param = (LoggingDebugParameters?)parameters.FirstOrDefault(o => o is LoggingDebugParameters);
 		param ??= new LoggingDebugParameters
@@ -71,7 +71,7 @@ public static partial class LoggingParametersExtensions
 		return parameters;
 	}
 
-	public static ILoggingParameters AddTraceLog(this ILoggingParameters parameters, Action<LoggingTraceParameters> config)
+	public static ILoggingParameters AddTraceLog(this ILoggingParameters parameters, Action<LoggingTraceParameters>? config = null)
 	{
 		var param = (LoggingTraceParameters?)parameters.FirstOrDefault(o => o is LoggingTraceParameters);
 		param ??= new LoggingTraceParameters

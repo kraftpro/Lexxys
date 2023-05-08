@@ -25,8 +25,10 @@ public static class LoggingServicesExtensions
 		// services.AddSingleton(typeof(ILogger<>), typeof(Lexxys.Logging.Logger<>));
 
 		services.AddSingleton<ILoggingService>(new LogRecordService(parameters));
-		services.AddSingleton(typeof(ILogger<>), typeof(Lexxys.Logging.Logger<>));
-		services.AddSingleton(typeof(ILogging<>), typeof(Lexxys.Logging.Logger<>));
+		services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+		services.AddSingleton(typeof(ILogging<>), typeof(Logger<>));
+		services.AddSingleton(typeof(ILogger), typeof(Logger));
+		services.AddSingleton(typeof(ILogging), typeof(Logger));
 
 		return services;
 	}

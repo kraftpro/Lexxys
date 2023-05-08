@@ -130,8 +130,7 @@ namespace Lexxys.Cube
 					{
 						cube2.Add(x + y);
 						optimized = true;
-						if (!mark.Contains(y.Bits))
-							mark.Add(y.Bits);
+						mark.Add(y.Bits);
 					}
 					if (!optimized & !mark.Contains(x.Bits))
 						result.Add(x);

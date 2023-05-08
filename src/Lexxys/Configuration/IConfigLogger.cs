@@ -1,13 +1,10 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
 
-using Microsoft.Extensions.Logging;
+namespace Lexxys.Configuration;
 
-namespace Lexxys.Configuration
+public interface IConfigLogger
 {
-	public interface IConfigLogger
-	{
-		void LogConfigurationError(string logSource, Exception exception);
-		void LogConfigurationEvent(string logSource, string message);
-		void SetLogger(ILogger? logger = null);
-	}
+	void LogConfigurationError(string logSource, Exception exception);
+	void LogConfigurationEvent(string logSource, string message);
+	void SetLogger(ILogger? logger = null);
 }

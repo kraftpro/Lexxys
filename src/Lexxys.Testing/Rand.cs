@@ -207,7 +207,7 @@ public static class Rand
 		return values[Int(values.Count)];
 	}
 
-	public static T[] Items<T>(int count, IReadOnlyList<T> values)
+	public static T[] Items<T>(int count, IReadOnlyList<T>? values)
 	{
 		if (count <= 0 || values == null)
 			return System.Array.Empty<T>();

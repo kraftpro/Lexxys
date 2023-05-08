@@ -10,105 +10,104 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 
-namespace Lexxys.Configuration
+namespace Lexxys.Configuration;
+
+using Xml;
+
+[DebuggerDisplay("[System.Configuration]")]
+public sealed class SystemConfigurationProvider: IConfigProvider
 {
-	using Xml;
+	private static readonly Uri Uri = new Uri("system:configuration");
 
-	[DebuggerDisplay("[System.Configuration]")]
-	public sealed class SystemConfigurationProvider: IConfigProvider
+	public string Name => "System.Configuration";
+
+	public Uri Location => Uri;
+
+	public int Version => 1;
+
+	public object? GetValue(string key, Type objectType)
 	{
-		private static readonly Uri Uri = new Uri("system:configuration");
+		if (objectType == null)
+			throw new ArgumentNullException(nameof(objectType));
+		if (key == null)
+			throw new ArgumentNullException(nameof(key));
 
-		public string Name => "System.Configuration";
+		string value = ConfigurationManager.AppSettings[key];
+		if (value != null && XmlTools.TryGetValue(value, objectType, out object? result))
+			return result;
+		if (key.StartsWith("connection.", StringComparison.OrdinalIgnoreCase) && objectType == typeof(string))
+			return ConfigurationManager.ConnectionStrings[key.Substring(11)];
+		result = ConfigurationManager.GetSection(key);
+		if (objectType.IsInstanceOfType(result))
+			return result;
+		return null;
+	}
 
-		public Uri Location => Uri;
+	public IReadOnlyList<T> GetList<T>(string key)
+	{
+		if (key == null)
+			throw new ArgumentNullException(nameof(key));
 
-		public int Version => 1;
-
-		public object? GetValue(string key, Type objectType)
+		string[]? values = ConfigurationManager.AppSettings.GetValues(key);
+		if (values != null)
 		{
-			if (objectType == null)
-				throw new ArgumentNullException(nameof(objectType));
-			if (key == null)
-				throw new ArgumentNullException(nameof(key));
-
-			string value = ConfigurationManager.AppSettings[key];
-			if (value != null && XmlTools.TryGetValue(value, objectType, out object? result))
-				return result;
-			if (key.StartsWith("connection.", StringComparison.OrdinalIgnoreCase) && objectType == typeof(string))
-				return ConfigurationManager.ConnectionStrings[key.Substring(11)];
-			result = ConfigurationManager.GetSection(key);
-			if (objectType.IsInstanceOfType(result))
-				return result;
-			return null;
-		}
-
-		public IReadOnlyList<T> GetList<T>(string key)
-		{
-			if (key == null)
-				throw new ArgumentNullException(nameof(key));
-
-			string[]? values = ConfigurationManager.AppSettings.GetValues(key);
-			if (values != null)
+			var result = new List<T>();
+			foreach (string value in values)
 			{
-				var result = new List<T>();
-				foreach (string value in values)
+				if (XmlTools.TryGetValue(value, typeof(T), out object? x))
 				{
-					if (XmlTools.TryGetValue(value, typeof(T), out object? x))
-					{
-						result.Add((T)x!);
-					}
+					result.Add((T)x!);
 				}
-				if (result.Count > 0)
+			}
+			if (result.Count > 0)
+				return ReadOnly.Wrap(result)!;
+		}
+		if (key.StartsWith("connection.", StringComparison.OrdinalIgnoreCase))
+		{
+			var cc = ConfigurationManager.ConnectionStrings;
+			if (cc.Count > 0)
+			{
+				if (typeof(T) == typeof(string))
+				{
+					var result = new List<T>();
+					for (int i = 0; i < cc.Count; ++i)
+					{
+						result.Add(Tools.Cast<T>(cc[i].ConnectionString));
+					}
 					return ReadOnly.Wrap(result)!;
-			}
-			if (key.StartsWith("connection.", StringComparison.OrdinalIgnoreCase))
-			{
-				var cc = ConfigurationManager.ConnectionStrings;
-				if (cc.Count > 0)
-				{
-					if (typeof(T) == typeof(string))
-					{
-						var result = new List<T>();
-						for (int i = 0; i < cc.Count; ++i)
-						{
-							result.Add(Tools.Cast<T>(cc[i].ConnectionString));
-						}
-						return ReadOnly.Wrap(result)!;
-					}
-					if (typeof(T) == typeof(ConnectionStringSettings))
-					{
-						var result = new List<T>();
-						for (int i = 0; i < cc.Count; ++i)
-						{
-							result.Add(Tools.Cast<T>(cc[i]));
-						}
-						return ReadOnly.Wrap(result)!;
-					}
-					if (typeof(T) == typeof(Data.ConnectionStringInfo))
-					{
-						var result = new List<T>();
-						for (int i = 0; i < cc.Count; ++i)
-						{
-							result.Add(Tools.Cast<T>(new Data.ConnectionStringInfo(cc[i].ConnectionString)));
-						}
-						return ReadOnly.Wrap(result)!;
-					}
-					return Array.Empty<T>();
 				}
+				if (typeof(T) == typeof(ConnectionStringSettings))
+				{
+					var result = new List<T>();
+					for (int i = 0; i < cc.Count; ++i)
+					{
+						result.Add(Tools.Cast<T>(cc[i]));
+					}
+					return ReadOnly.Wrap(result)!;
+				}
+				if (typeof(T) == typeof(Data.ConnectionStringInfo))
+				{
+					var result = new List<T>();
+					for (int i = 0; i < cc.Count; ++i)
+					{
+						result.Add(Tools.Cast<T>(new Data.ConnectionStringInfo(cc[i].ConnectionString)));
+					}
+					return ReadOnly.Wrap(result)!;
+				}
+				return Array.Empty<T>();
 			}
-			if (ConfigurationManager.GetSection(key) is List<T> list)
-				return ReadOnly.Wrap(list)!;
-			if (ConfigurationManager.GetSection(key) is IEnumerable<T> ienum)
-				return ReadOnly.WrapCopy(ienum)!;
-			return Array.Empty<T>();
 		}
+		if (ConfigurationManager.GetSection(key) is List<T> list)
+			return ReadOnly.Wrap(list)!;
+		if (ConfigurationManager.GetSection(key) is IEnumerable<T> ienum)
+			return ReadOnly.WrapCopy(ienum)!;
+		return Array.Empty<T>();
+	}
 
-		public event EventHandler<ConfigurationEventArgs>? Changed
-		{
-			add { }
-			remove { }
-		}
+	public event EventHandler<ConfigurationEventArgs>? Changed
+	{
+		add { }
+		remove { }
 	}
 }
 #endif

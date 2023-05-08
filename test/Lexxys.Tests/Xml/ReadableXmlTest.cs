@@ -5,15 +5,11 @@
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
 using System.Diagnostics;
-using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Xml
 {
-	using System;
-
 	using Lexxys.Xml;
 
 	/// <summary>
@@ -23,23 +19,12 @@ namespace Lexxys.Tests.Xml
 	[TestClass()]
 	public class ReadableXmlTest
 	{
-		private TestContext testContextInstance;
-
 		/// <summary>
 		///Gets or sets the test context which provides
 		///information about and functionality for the current test run.
 		///</summary>
-		public TestContext TestContext
-		{
-			get
-			{
-				return testContextInstance;
-			}
-			set
-			{
-				testContextInstance = value;
-			}
-		}
+		public TestContext TestContext { get; set; }
+
 		#region Additional test attributes
 		// 
 		//You can use the following additional attributes as you write your tests:
@@ -73,95 +58,6 @@ namespace Lexxys.Tests.Xml
 		//}
 		//
 		#endregion
-
-		private static string[] GetFromXmlTestData()
-		{
-			return new string[] 
-			{
-@"
-<configuration>
-
-	<data>
-		<mappers
-			compile=""""
-			actionProcFormat=""ppc.Mapper_{0}_{1}""
-			>
-			<mapper name=""AspSession""
-					compile=""""
-					inline=""*""
-			/>
-		</mappers>
-	</data>
-
-	<dataContext>
-		<providers>
-			<provider
-				name=""SqlServer""
-				type=""TSQL""
-				class=""Lexxys.Data.SqlServerDataProvider""
-			/>
-		</providers>
-		<sources>
-			<source name=""Backend"" provider=""SqlServer"">
-				<connection
-					server=""(local)""
-					catalogue=""School""
-					>
-					<option name=""commandTimeout"" value=""60"" />
-				</connection>
-			</source>
-		</sources>
-	</dataContext>
-</configuration>
-", @"
-configuration
-	data
-		mappers
-			=compile	
-			=actionProcFormat	ppc.Mapper_{0}_{1}
-			mapper
-				=name	AspSession
-				=compile	
-				=inline	*
-	dataContext
-		providers
-			provider
-				=name	SqlServer
-				=type	TSQL
-				=class	Lexxys.Data.SqlServerDataProvider
-		sources
-			source
-				=name	Backend
-				=provider	SqlServer
-				connection
-					=server	(local)
-					=catalogue	School
-					option
-						=name	commandTimeout
-						=value	60
-",
-@"
-<root>
-	<node1 attr='attr'>node value</node1>
-	<node2 a='a' b='b'>node2 value node2 value2 node2 value3
-		<node2node1 c='c' />
-		<node2node2>node2node2 value</node2node2>
-	</node2>
-</root>
-", @"
-root
-	node1	node value
-		=attr	attr
-	node2	node2 value node2 value2 node2 value3
-		=a	a
-		=b	b
-		node2node1
-			=c	c
-		node2node2	node2node2 value
-",
-			};
-
-		}
 
 		/// <summary>
 		///A test for GetFromXml (XmlReader)

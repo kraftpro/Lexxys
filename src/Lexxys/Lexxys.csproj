@@ -3,8 +3,10 @@
   <PropertyGroup>
     <TargetFrameworks>net7.0;net6.0;netstandard2.0;net472</TargetFrameworks>
     <LangVersion>latest</LangVersion>
-    <!--<EnablePreviewFeatures>true</EnablePreviewFeatures>-->
+    <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+
     <VersionPrefix>2.6.0</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <!--Build>0$([System.DateTime]::Today.ToString("MMdd"))</Build-->
@@ -13,12 +15,8 @@
     <Description>Common Infrastructure Library</Description>
     <Copyright>Copyright © 2001-2016</Copyright>
     <Authors>Kraft Pro Utilities</Authors>
-    <AssemblyName>Lexxys</AssemblyName>
-    <RootNamespace>Lexxys</RootNamespace>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <AnalysisLevel>9999</AnalysisLevel>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -30,23 +28,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Cube\**" />
     <Compile Remove="Tokenizer\~\**" />
+    <EmbeddedResource Remove="Cube\**" />
     <EmbeddedResource Remove="Tokenizer\~\**" />
+    <None Remove="Cube\**" />
     <None Remove="Tokenizer\~\**" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="Data\RowsCollection.cs" />
+    <Compile Remove="IBuildXml.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.4" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
     <PackageReference Include="System.Diagnostics.EventLog" Version="7.0.0" />
     <PackageReference Include="System.Runtime.Caching" Version="7.0.0" />
     <PackageReference Include="System.Security.Permissions" Version="7.0.0" />

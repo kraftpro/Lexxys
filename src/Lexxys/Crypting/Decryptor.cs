@@ -4,122 +4,116 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.IO;
 
-namespace Lexxys.Crypting
+namespace Lexxys.Crypting;
+
+/// <summary>Wrapper for generic decryption algorithm.</summary>
+public class Decryptor
 {
+	private readonly IDecryptorAlgorithm _da;
 
-	/// <summary>Wrapper for generic decryption algorithm.</summary>
-	public class Decryptor
+	public Decryptor(IDecryptorAlgorithm algorithm)
 	{
-		private readonly IDecryptorAlgorythm _da;
+		if (algorithm == null)
+			throw new ArgumentNullException(nameof(algorithm));
+		if (!algorithm.SupportsStream && !algorithm.SupportsBlock)
+			throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null);
+		_da = algorithm;
+	}
 
-		public Decryptor(IDecryptorAlgorythm algorithm)
-		{
-			if (algorithm == null)
-				throw new ArgumentNullException(nameof(algorithm));
-			if (!algorithm.SupportsStream && !algorithm.SupportsBlock)
-				throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null);
-			_da = algorithm;
-		}
+	public int BlockSize
+	{
+		get { return _da.BlockSize; }
+	}
 
-		public int BlockSize
+	public void Decrypt(Stream text, Stream bits)
+	{
+		if (text == null)
+			throw new ArgumentNullException(nameof(text));
+		if (bits == null)
+			throw new ArgumentNullException(nameof(bits));
+		if (_da.SupportsStream)
 		{
-			get { return _da.BlockSize; }
-		}
-
-		public void Decrypt(Stream text, Stream bits)
-		{
-			if (text == null)
-				throw new ArgumentNullException(nameof(text));
-			if (bits == null)
-				throw new ArgumentNullException(nameof(bits));
-			if (_da.SupportsStream)
-			{
-				_da.DecryptStream(text, bits);
-				return;
-			}
-			int bsize = _da.BlockSize == 0 ? 8 * 1024 : _da.BlockSize;
-			byte[] buffer = new byte[bsize];
-			byte[] ciph = new byte[bsize];	// Filled by zero by default
-			byte[] txt;
-			int n;
-			while ((n = bits.Read(buffer, 0, bsize)) == bsize)
-			{
-				txt = _da.Decrypt(buffer, 0, bsize);
-				n = txt.Length;
-#if DEBUG
-				System.Diagnostics.Debug.Assert(n <= bsize, "txt.Length <= bsize");
-#endif
-				for (int i = 0; i < n; ++i)
-					txt[i] ^= ciph[i];
-				text.Write(txt, 0, n);
-				Array.Copy(buffer, 0, ciph, 0, bsize);
-			}
-
-			if (n > 0)
-			{
-				txt = _da.Decrypt(buffer, 0, n);
-				n = txt.Length;
-#if DEBUG
-				System.Diagnostics.Debug.Assert(n <= bsize, "txt.Length <= bsize");
-#endif
-				for (int i = 0; i < n; ++i)
-					txt[i] ^= ciph[i];
-				text.Write(txt, 0, n);
-#if DEBUG
-				n = bits.Read(buffer, 0, bsize);
-				System.Diagnostics.Debug.Assert(n == 0, "n == 0");
-#endif
-			}
-		}
-		public byte[] Decrypt(Stream bits)
-		{
-			if (bits == null)
-				throw new ArgumentNullException(nameof(bits));
-			using var text = new MemoryStream();
 			_da.DecryptStream(text, bits);
-			return text.GetBuffer();
+			return;
 		}
-		public byte[] Decrypt(byte[] bits)
+		int bsize = _da.BlockSize == 0 ? 8 * 1024 : _da.BlockSize;
+		byte[] buffer = new byte[bsize];
+		byte[] ciph = new byte[bsize];	// Filled by zero by default
+		byte[] txt;
+		int n;
+		while ((n = bits.Read(buffer, 0, bsize)) == bsize)
 		{
-			if (bits == null)
-				throw new ArgumentNullException(nameof(bits));
-			return Decrypt(bits, 0, bits.Length);
+			txt = _da.Decrypt(buffer, 0, bsize);
+			n = txt.Length;
+#if DEBUG
+			System.Diagnostics.Debug.Assert(n <= bsize, "txt.Length <= bsize");
+#endif
+			for (int i = 0; i < n; ++i)
+				txt[i] ^= ciph[i];
+			text.Write(txt, 0, n);
+			Array.Copy(buffer, 0, ciph, 0, bsize);
 		}
-		public string DecryptString(byte[] bits)
-		{
-			if (bits == null)
-				throw new ArgumentNullException(nameof(bits));
-			return Encoding.Unicode.GetString(Decrypt(bits));
-		}
-		public string DecryptString(byte[] bits, Encoding encoding)
-		{
-			if (bits == null)
-				throw new ArgumentNullException(nameof(bits));
-			if (encoding is null)
-				throw new ArgumentNullException(nameof(encoding));
-			return encoding.GetString(Decrypt(bits));
-		}
-		public byte[] Decrypt(byte[] bits, int offset, int length)
-		{
-			if (bits == null)
-				throw new ArgumentNullException(nameof(bits));
-			if (offset < 0 || offset >= bits.Length)
-				throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
-			if (length > bits.Length - offset)
-				throw new ArgumentOutOfRangeException(nameof(length), length, null);
 
-			if (_da.SupportsBlock && (_da.BlockSize >= length || _da.BlockSize == 0))
-				return _da.Decrypt(bits, offset, length);
-			using var text = new MemoryStream();
-			using var sbits = new MemoryStream(bits, offset, length, false);
-			Decrypt(text, sbits);
-			return text.ToArray();
+		if (n > 0)
+		{
+			txt = _da.Decrypt(buffer, 0, n);
+			n = txt.Length;
+#if DEBUG
+			System.Diagnostics.Debug.Assert(n <= bsize, "txt.Length <= bsize");
+#endif
+			for (int i = 0; i < n; ++i)
+				txt[i] ^= ciph[i];
+			text.Write(txt, 0, n);
+#if DEBUG
+			n = bits.Read(buffer, 0, bsize);
+			System.Diagnostics.Debug.Assert(n == 0, "n == 0");
+#endif
 		}
+	}
+	public byte[] Decrypt(Stream bits)
+	{
+		if (bits == null)
+			throw new ArgumentNullException(nameof(bits));
+		using var text = new MemoryStream();
+		_da.DecryptStream(text, bits);
+		return text.GetBuffer();
+	}
+	public byte[] Decrypt(byte[] bits)
+	{
+		if (bits == null)
+			throw new ArgumentNullException(nameof(bits));
+		return Decrypt(bits, 0, bits.Length);
+	}
+	public string DecryptString(byte[] bits)
+	{
+		if (bits == null)
+			throw new ArgumentNullException(nameof(bits));
+		return Encoding.Unicode.GetString(Decrypt(bits));
+	}
+	public string DecryptString(byte[] bits, Encoding encoding)
+	{
+		if (bits == null)
+			throw new ArgumentNullException(nameof(bits));
+		if (encoding is null)
+			throw new ArgumentNullException(nameof(encoding));
+		return encoding.GetString(Decrypt(bits));
+	}
+	public byte[] Decrypt(byte[] bits, int offset, int length)
+	{
+		if (bits == null)
+			throw new ArgumentNullException(nameof(bits));
+		if (offset < 0 || offset >= bits.Length)
+			throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
+		if (length > bits.Length - offset)
+			throw new ArgumentOutOfRangeException(nameof(length), length, null);
+
+		if (_da.SupportsBlock && (_da.BlockSize >= length || _da.BlockSize == 0))
+			return _da.Decrypt(bits, offset, length);
+		using var text = new MemoryStream();
+		using var sbits = new MemoryStream(bits, offset, length, false);
+		Decrypt(text, sbits);
+		return text.ToArray();
 	}
 }

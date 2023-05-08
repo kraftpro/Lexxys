@@ -14,11 +14,11 @@ public readonly struct RandItem<T>: IFormattable
 	/// <summary>
 	/// Represents an empty <see cref="RandItem{T}"/>
 	/// </summary>
-	public static readonly RandItem<T> Empty = new RandItem<T>(Array.Empty<WeightValuePair<T>>(), false);
+	public static readonly RandItem<T> Empty = new RandItem<T>(Array.Empty<IWeightValuePair<T>>(), false);
 
-	private readonly WeightValuePair<T>[] _items;
+	private readonly IWeightValuePair<T>[] _items;
 
-	private RandItem(WeightValuePair<T>[] items, bool _)
+	private RandItem(IWeightValuePair<T>[] items, bool _)
 	{
 		_items = items;
 		Weight = _items.Sum(o => o.Weight);
@@ -44,7 +44,7 @@ public readonly struct RandItem<T>: IFormattable
 		if (generator == null)
 			throw new ArgumentNullException(nameof(generator));
 
-		_items = new WeightValuePair<T>[] { WeightValuePair.Create(weight, generator) };
+		_items = new[] { WeightValuePair.Create(weight, generator) };
 		Weight = weight;
 	}
 
@@ -58,7 +58,7 @@ public readonly struct RandItem<T>: IFormattable
 		if (weight < 0)
 			throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
 
-		_items = new WeightValuePair<T>[] { WeightValuePair.Create(weight, value) };
+		_items = new[] { WeightValuePair.Create(weight, value) };
 		Weight = weight;
 	}
 
@@ -66,7 +66,7 @@ public readonly struct RandItem<T>: IFormattable
 	/// Creates a new <see cref="RandItem{T}"/> based of the specified list of <paramref name="items"/>.
 	/// </summary>
 	/// <param name="items">Items collection to be used to generate item value</param>
-	public RandItem(IEnumerable<WeightValuePair<T>> items)
+	public RandItem(IEnumerable<IWeightValuePair<T>> items)
 	{
 		if (items == null)
 			throw new ArgumentNullException(nameof(items));
@@ -79,12 +79,12 @@ public readonly struct RandItem<T>: IFormattable
 	/// Creates a new <see cref="RandItem{T}"/> based of the specifies list of <paramref name="items"/>.
 	/// </summary>
 	/// <param name="items">Items collection to be used to generate item value</param>
-	public RandItem(params WeightValuePair<T>[] items)
+	public RandItem(params IWeightValuePair<T>[] items)
 	{
 		if (items is not { Length: >0 })
 			throw new ArgumentNullException(nameof(items));
 
-		_items = new WeightValuePair<T>[items.Length];
+		_items = new IWeightValuePair<T>[items.Length];
 		Array.Copy(items, _items, _items.Length);
 		Weight = _items.Sum(o => o.Weight);
 	}
@@ -150,9 +150,9 @@ public readonly struct RandItem<T>: IFormattable
 	/// <returns>Modified <see cref="RandItem{T}"/>.</returns>
 	public RandItem<T> Mult(double value)
 	{
-		if (value <= 0)
+		if (value <= 0.0)
 			throw new ArgumentOutOfRangeException(nameof(value), value, null);
-		if (value == 1)
+		if (value == 1.0)
 			return this;
 
 		var items = Array.ConvertAll(_items, o => o.Multiply(value));
@@ -170,7 +170,7 @@ public readonly struct RandItem<T>: IFormattable
 			return this;
 		if (_items.Length == 0)
 			return other;
-		var items = new WeightValuePair<T>[_items.Length + other._items.Length];
+		var items = new IWeightValuePair<T>[_items.Length + other._items.Length];
 		if (_items.Length == 1)
 			items[0] = _items[0];
 		else
@@ -217,13 +217,13 @@ public readonly struct RandItem<T>: IFormattable
 	/// </summary>
 	/// <param name="pair">Item value</param>
 	/// <returns>New random items generator.</returns>
-	public RandItem<T> Or(WeightValuePair<T> pair)
+	public RandItem<T> Or(IWeightValuePair<T> pair)
 	{
 		if (pair.Weight <= 0)
 			return this;
 		if (_items.Length == 0)
 			return new RandItem<T>( new[] { pair }, false);
-		var items = new WeightValuePair<T>[_items.Length + 1];
+		var items = new IWeightValuePair<T>[_items.Length + 1];
 		if (_items.Length == 1)
 			items[0] = _items[0];
 		else if (_items.Length > 0)

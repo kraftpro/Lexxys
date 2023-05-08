@@ -26,7 +26,7 @@ public static class R
 		return new RandItem<T>(() => Rand.Item(vv));
 	}
 
-	public static RandItem<T> Any<T>(IEnumerable<T> items)
+	public static RandItem<T> Any<T>(IEnumerable<T>? items)
 	{
 		if (items == null)
 			return RandItem<T>.Empty;
@@ -78,14 +78,14 @@ public static class R
 	/// <typeparam name="T">Type of item value</typeparam>
 	/// <param name="pairs">Collection of values</param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(params WeightValuePair<T>[] pairs) => new RandItem<T>(pairs);
+	public static RandItem<T> I<T>(params IWeightValuePair<T>[] pairs) => new RandItem<T>(pairs);
 	/// <summary>
 	/// Create new <see cref="RandItem{T}"/> randomly returning item from provided collection <paramref name="pairs"/>
 	/// </summary>
 	/// <typeparam name="T">Type of item value</typeparam>
 	/// <param name="pairs">Collection of values</param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(IEnumerable<WeightValuePair<T>> pairs) => new RandItem<T>(pairs);
+	public static RandItem<T> I<T>(IEnumerable<IWeightValuePair<T>> pairs) => new RandItem<T>(pairs);
 
 	private const int MaxTries = 9999;
 
@@ -97,7 +97,7 @@ public static class R
 	/// <param name="filter">Predicate on item value</param>
 	/// <param name="maxTries"></param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(Func<T> generator, Func<T, bool> filter, int maxTries = 0) => I<T>(1, generator, filter, maxTries);
+	public static RandItem<T> I<T>(Func<T> generator, Func<T, bool> filter, int maxTries = 0) => I(1, generator, filter, maxTries);
 
 	/// <summary>
 	/// Creates a new <see cref="RandItem{T}"/>
@@ -122,7 +122,6 @@ public static class R
 			for (int i = 0; i < maxTries; ++i)
 			{
 				var t = generator();
-				t = generator();
 				if (filter(t))
 					return t;
 			}
@@ -144,7 +143,7 @@ public static class R
 			throw new ArgumentNullException(nameof(generator));
 		if (filter == null)
 			throw new ArgumentNullException(nameof(filter));
-		return I<T>(1, () => generator.NextValue(), filter, maxTries);
+		return I(1, generator.NextValue, filter, maxTries);
 	}
 
 	/// <summary>
@@ -163,7 +162,7 @@ public static class R
 		if (filter == null)
 			throw new ArgumentNullException(nameof(filter));
 
-		return I<T>(weight, () => generator.NextValue(), filter, maxTries);
+		return I(weight, generator.NextValue, filter, maxTries);
 	}
 
 	/// <summary>
@@ -262,22 +261,22 @@ public static class R
 		return File.ReadLines(path).Select(filter).Where(o => !Object.Equals(o, default(T))).ToList();
 	}
 
-	public static RandSeq<T> Sequance<T>(params RandItem<T>[] items) => new RandSeq<T>(items);
+	public static RandSeq<T> Sequence<T>(params RandItem<T>[] items) => new RandSeq<T>(items);
 
 	public static RandItem<string> Pic(double weight, string picture) => new RandItem<string>(Picture(weight, picture ?? throw new ArgumentNullException(nameof(picture))));
 	public static RandItem<string> Pic(params string[] picture) => Pic((IEnumerable<string>)picture);
 	public static RandItem<string> Pic(IEnumerable<string> picture) => new RandItem<string>(picture.Select(o => Picture(1, o)));
-	public static RandItem<string> Pic(params WeightValuePair<string>[] picture) => Pic((IEnumerable<WeightValuePair<string>>)picture);
-	public static RandItem<string> Pic(IEnumerable<WeightValuePair<string>> picture) => new RandItem<string>(picture.Select(o => Picture(o.Weight, o.Value)));
+	public static RandItem<string> Pic(params IWeightValuePair<string>[] picture) => Pic((IEnumerable<IWeightValuePair<string>>)picture);
+	public static RandItem<string> Pic(IEnumerable<IWeightValuePair<string>> picture) => new RandItem<string>(picture.Select(o => Picture(o.Weight, o.Value)));
 
-	public static WeightValuePair<T> P<T>(double weight, T value) => WeightValuePair.Create(weight, value);
-	public static WeightValuePair<T> P<T>(T value) => WeightValuePair.Create(value);
-	public static WeightValuePair<T> P<T>(double weight, Func<T> value) => WeightValuePair.Create(weight, value);
-	public static WeightValuePair<T> P<T>(Func<T> value) => WeightValuePair.Create(value);
-	public static WeightValuePair<T> P<T>(double weight, RandItem<T> value) => WeightValuePair.Create(weight, () => value.NextValue());
-	public static WeightValuePair<T> P<T>(RandItem<T> value) => WeightValuePair.Create(() => value.NextValue());
+	public static IWeightValuePair<T> P<T>(double weight, T value) => WeightValuePair.Create(weight, value);
+	public static IWeightValuePair<T> P<T>(T value) => WeightValuePair.Create(value);
+	public static IWeightValuePair<T> P<T>(double weight, Func<T> value) => WeightValuePair.Create(weight, value);
+	public static IWeightValuePair<T> P<T>(Func<T> value) => WeightValuePair.Create(value);
+	public static IWeightValuePair<T> P<T>(double weight, RandItem<T> value) => WeightValuePair.Create(weight, value.NextValue);
+	public static IWeightValuePair<T> P<T>(RandItem<T> value) => WeightValuePair.Create(value.NextValue);
 
-	private static WeightValuePair<string> Picture(double weight, string picture)
+	private static IWeightValuePair<string> Picture(double weight, string picture)
 	{
 		var r = RandSeq<string>.Empty;
 		int l = 0;
@@ -342,7 +341,7 @@ public static class R
 			val.ToString(format, null);
 	}
 
-	private static string Pad(string pad, string value)
+	private static string Pad(string pad, string? value)
 	{
 		if (value == null)
 			return "";

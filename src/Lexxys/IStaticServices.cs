@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.Extensions.DependencyInjection;
 
-using Microsoft.Extensions.DependencyInjection;
+namespace Lexxys;
 
-namespace Lexxys
+public interface IStaticServices
 {
-	public interface IStaticServices
-	{
-		bool ServiceInitialized { get; }
-		IServiceProvider ServiceProvider { get; }
+	bool ServiceInitialized { get; }
+	IServiceProvider ServiceProvider { get; }
 
-		void AppendServices(IEnumerable<ServiceDescriptor>? services, bool safe = false);
-	}
+	void AppendServices(IEnumerable<ServiceDescriptor>? services, bool safe = false);
 }

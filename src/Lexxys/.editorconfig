@@ -3,44 +3,44 @@
 # CS1591: Missing XML comment for publicly visible type or member
 dotnet_diagnostic.CS1591.severity = suggestion
 
-# IDE0090: Use 'new(...)'
-dotnet_diagnostic.IDE0090.severity = suggestion
+## IDE0090: Use 'new(...)'
+#dotnet_diagnostic.IDE0090.severity = suggestion
+#
+## CA1002: Do not expose generic lists
+#dotnet_diagnostic.CA1002.severity = suggestion
+#
+## CA1308: Normalize strings to uppercase
+#dotnet_diagnostic.CA1308.severity = suggestion
+#
+## CA1055: URI-like return values should not be strings
+#dotnet_diagnostic.CA1055.severity = suggestion
+#
+## IDE0090: Use 'new(...)'
+#csharp_style_implicit_object_creation_when_type_is_apparent = false
+#
+## CA1200: Avoid using cref tags with a prefix
+#dotnet_diagnostic.CA1200.severity = suggestion
+#
+## CA1305: Specify IFormatProvider
+#dotnet_diagnostic.CA1305.severity = suggestion
+#
+## Default severity for all analyzer diagnostics
+#dotnet_analyzer_diagnostic.severity = none
+#
+## CA2249: Consider using 'string.Contains' instead of 'string.IndexOf'
+#dotnet_diagnostic.CA2249.severity = suggestion
+#
+## CA1845: Use span-based 'string.Concat'
+#dotnet_diagnostic.CA1845.severity = suggestion
+#
+## CA1307: Specify StringComparison for clarity
+#dotnet_diagnostic.CA1307.severity = suggestion
+#
+## IDE0008: Use explicit type
+#csharp_style_var_when_type_is_apparent = true
+#
+## IDE0022: Use block body for methods
+#csharp_style_expression_bodied_methods = false
 
-# CA1002: Do not expose generic lists
-dotnet_diagnostic.CA1002.severity = suggestion
-
-# CA1308: Normalize strings to uppercase
-dotnet_diagnostic.CA1308.severity = suggestion
-
-# CA1055: URI-like return values should not be strings
-dotnet_diagnostic.CA1055.severity = suggestion
-
-# IDE0090: Use 'new(...)'
-csharp_style_implicit_object_creation_when_type_is_apparent = false
-
-# CA1200: Avoid using cref tags with a prefix
-dotnet_diagnostic.CA1200.severity = suggestion
-
-# CA1305: Specify IFormatProvider
-dotnet_diagnostic.CA1305.severity = suggestion
-
-# Default severity for all analyzer diagnostics
-dotnet_analyzer_diagnostic.severity = none
-
-# CA2249: Consider using 'string.Contains' instead of 'string.IndexOf'
-dotnet_diagnostic.CA2249.severity = suggestion
-
-# CA1845: Use span-based 'string.Concat'
-dotnet_diagnostic.CA1845.severity = suggestion
-
-# CA1307: Specify StringComparison for clarity
-dotnet_diagnostic.CA1307.severity = suggestion
-
-# IDE0008: Use explicit type
-csharp_style_var_when_type_is_apparent = true
-
-# IDE0022: Use block body for methods
-csharp_style_expression_bodied_methods = false
-
-# IDE0011: Add braces
-csharp_prefer_braces = when_multiline
+## IDE0011: Add braces
+#csharp_prefer_braces = when_multiline

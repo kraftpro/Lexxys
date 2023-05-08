@@ -1,59 +1,54 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.Buffers;
 
 #nullable enable
 
-namespace Lexxys
-{
+namespace Lexxys;
+
 #if !NET5_0_OR_GREATER
 
-	static class TextWriterExtension
+static class TextWriterExtension
+{
+	public static void Write(this TextWriter writer, ReadOnlySpan<char> value)
 	{
-		public static void Write(this TextWriter writer, ReadOnlySpan<char> value)
+		if (value.Length < 2)
 		{
-			if (value.Length < 2)
-			{
-				if (value.Length == 1)
-					writer.Write(value[0]);
-				return;
-			}
-			char[] array = ArrayPool<char>.Shared.Rent(value.Length);
-			try
-			{
-				value.CopyTo(new Span<char>(array));
-				writer.Write(array, 0, value.Length);
-			}
-			finally
-			{
-				ArrayPool<char>.Shared.Return(array);
-			}
+			if (value.Length == 1)
+				writer.Write(value[0]);
+			return;
 		}
-
-		public static void WriteLine(this TextWriter writer, ReadOnlySpan<char> value)
+		char[] array = ArrayPool<char>.Shared.Rent(value.Length);
+		try
 		{
-			if (value.Length < 2)
-			{
-				if (value.Length == 1)
-					writer.WriteLine(value[0]);
-				else
-					writer.WriteLine();
-				return;
-			}
-			char[] array = ArrayPool<char>.Shared.Rent(value.Length);
-			try
-			{
-				value.CopyTo(new Span<char>(array));
-				writer.WriteLine(array, 0, value.Length);
-			}
-			finally
-			{
-				ArrayPool<char>.Shared.Return(array);
-			}
+			value.CopyTo(new Span<char>(array));
+			writer.Write(array, 0, value.Length);
+		}
+		finally
+		{
+			ArrayPool<char>.Shared.Return(array);
 		}
 	}
 
-#endif
+	public static void WriteLine(this TextWriter writer, ReadOnlySpan<char> value)
+	{
+		if (value.Length < 2)
+		{
+			if (value.Length == 1)
+				writer.WriteLine(value[0]);
+			else
+				writer.WriteLine();
+			return;
+		}
+		char[] array = ArrayPool<char>.Shared.Rent(value.Length);
+		try
+		{
+			value.CopyTo(new Span<char>(array));
+			writer.WriteLine(array, 0, value.Length);
+		}
+		finally
+		{
+			ArrayPool<char>.Shared.Return(array);
+		}
+	}
 }
+
+#endif

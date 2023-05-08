@@ -4,6 +4,8 @@ using Lexxys;
 
 namespace Lexxys.Testing;
 
+// ReSharper disable all
+
 /// <summary>
 /// Implementation of pseudo-random numbers generator by DEK.
 /// </summary>
@@ -11,7 +13,7 @@ public class RndKnuth: IRand
 {
 	/*    This program by D E Knuth is in the public domain and freely copyable
 	 *    AS LONG AS YOU MAKE ABSOLUTELY NO CHANGES!
-	 *    It is explained in Seminumerical Algorithms, 3rd edition, Section 3.6
+	 *    It is explained in Semi-numerical Algorithms, 3rd edition, Section 3.6
 	 *    (or in the errata to the 2nd edition --- see
 	 *        http://www-cs-faculty.stanford.edu/~knuth/taocp.html
 	 *    in the changes to Volume 2 on pages 171 and following).              */

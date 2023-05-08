@@ -59,7 +59,7 @@ namespace Lexxys.Cube
 					.Add(NOT, "!"),
 				new IdentifierTokenRule(LexicalTokenType.IDENTIFIER, LexicalTokenType.SEQUENCE, true, "OR", "XOR", "AND", "NOT")
 				);
-			var stream = new Lexxys.Tokenizer.CharStream(expression);
+			var stream = new CharStream(expression);
             Parse(ref stream, scanner);
 		}
 
@@ -78,7 +78,7 @@ namespace Lexxys.Cube
 		{
 			_polish = new Polish();
 			LexicalToken t;
-			while ((t = tokenizer.Next(ref stream)))
+			while (!(t = tokenizer.Next(ref stream)).Is(LexicalTokenType.EMPTY))
 			{
 				PolishToken? lt;
 				if (t.TokenType.Is(LexicalTokenType.SEQUENCE))
@@ -173,14 +173,14 @@ namespace Lexxys.Cube
 			return cube.BuildMinimalDnf(names);
 		}
 
-		public static string ConvertBitsToMinDnf(BitArray mustResult, string[] names)
+		public static string ConvertBitsToMinDnf(BitArray? mustResult, string[] names)
 		{
 			if (mustResult == null)
 				return "FALSE";
 			if (mustResult.Length <= 2)
 				return mustResult.Length == 0 ? "FALSE":
 					mustResult[0] ? "TRUE": "FALSE";
-			if (names == null || names.Length == 0)
+			if (names is not { Length: >0 })
 				return "FALSE";
 
 			var dnf = new StringBuilder();
@@ -315,7 +315,7 @@ namespace Lexxys.Cube
 			if (args is null)
 				throw new ArgumentNullException(nameof(args));
 			int width = Math.Max(_dictionary.Count, args.Length);
-			if (width < 0 || width > 16)
+			if (width > 16)
 				throw new ArgumentOutOfRangeException(nameof(args), width, null);
 			int height = (1 << width);
 			var result = new BitArray(height);
@@ -659,6 +659,6 @@ namespace Lexxys.Cube
 
 		private static readonly Regex __removeSpaceRex = new Regex(@"\s+");
 
-		protected static Exception ParameterTypeException(string name, PolishToken token) => new ArgumentTypeException(name, token?.GetType() ?? typeof(void), typeof(LogicalValue));
+		protected static Exception ParameterTypeException(string name, PolishToken token) => new ArgumentTypeException(name, token.GetType(), typeof(LogicalValue));
 	}
 }

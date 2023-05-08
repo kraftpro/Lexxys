@@ -4,23 +4,20 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
 
-namespace Lexxys.Configuration
+namespace Lexxys.Configuration;
+
+using Xml;
+
+public interface IXmlConfigurationSource
 {
-	using Xml;
+	string Name { get; }
+	Uri Location { get; }
+	int Version { get; }
 
-	public interface IXmlConfigurationSource
-	{
-		string Name { get; }
-		Uri Location { get; }
-		int Version { get; }
+	event EventHandler<ConfigurationEventArgs>? Changed;
 
-		event EventHandler<ConfigurationEventArgs>? Changed;
-
-		IReadOnlyList<XmlLiteNode> Content { get; }
-	}
+	IReadOnlyList<XmlLiteNode> Content { get; }
 }
 
 

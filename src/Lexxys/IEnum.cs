@@ -7,28 +7,27 @@
 
 #pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 
-namespace Lexxys
+namespace Lexxys;
+
+public interface IEnum
 {
-	public interface IEnum
-	{
-		int Value { get; }
-		string Name { get; }
-	}
+	int Value { get; }
+	string Name { get; }
+}
 
-	public interface IOrderedEnum: IEnum
-	{
-		int Order { get; }
-	}
+public interface IOrderedEnum: IEnum
+{
+	int Order { get; }
+}
 
-	public interface IEnum<T>
-	{
-		T Value { get; }
-		string Name { get; }
-	}
+public interface IEnum<T>
+{
+	T Value { get; }
+	string Name { get; }
+}
 
-	public interface IOrderedEnum<T>: IEnum<T>
-	{
-		int Order { get; }
-	}
+public interface IOrderedEnum<T>: IEnum<T>
+{
+	int Order { get; }
 }
 

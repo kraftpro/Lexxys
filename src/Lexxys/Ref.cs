@@ -4,8 +4,6 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Threading;
 using Microsoft.Extensions.Options;
 
 #pragma warning disable CA2225 // Operator overloads have named alternates
@@ -20,7 +18,7 @@ namespace Lexxys
 
 		public Out(Func<T> getter)
 		{
-			_getter = getter;
+			_getter = getter ?? throw new ArgumentNullException(nameof(getter));
 		}
 
 		public virtual T Value
@@ -34,13 +32,13 @@ namespace Lexxys
 		public static implicit operator T(Out<T> value) => value.Value;
 	}
 
-	public sealed class Ref<T>: Out<T>
+	public sealed class Ref<T>: Out<T>, IValueRef<T>
 	{
 		private readonly Action<T> _setter;
 
 		public Ref(Func<T> getter, Action<T> setter): base(getter)
 		{
-			_setter = setter;
+			_setter = setter ?? throw new ArgumentNullException(nameof(setter));
 		}
 
 		public override T Value
@@ -49,25 +47,31 @@ namespace Lexxys
 			set => _setter(value);
 		}
 
+		object? IValueRef.Value { get => base.Value; set => _setter((T)value!); }
+
 		public static implicit operator T(Ref<T> value) => value.Value;
 
 		public static implicit operator Ref<T>(T value)
 		{
-			var boxed = new Boxed { Value = value };
-			return new Ref<T>(() => boxed.Value, v => Interlocked.Exchange(ref boxed, new Boxed { Value = v }));
+			var boxed = new Boxed(value);
+			return new Ref<T>(() => boxed.Value, v => Interlocked.Exchange(ref boxed, new Boxed(v)));
 		}
 
-		private class Boxed { public T? Value; }
+		private class Boxed
+		{
+			public T Value;
+			public Boxed(T value) => Value = value;
+		}
 	}
 
 
 	public class OptOut<T>: IValue<T>, IOptions<T> where T: class
 	{
-		protected readonly Func<T> _getter;
+		internal readonly Func<T> _getter;
 
 		public OptOut(Func<T> getter)
 		{
-			_getter = getter;
+			_getter = getter ?? throw new ArgumentNullException(nameof(getter));
 		}
 
 		public virtual T Value
@@ -88,7 +92,7 @@ namespace Lexxys
 
 		public OptRef(Func<T> getter, Action<T> setter): base(getter)
 		{
-			_setter = setter;
+			_setter = setter ?? throw new ArgumentNullException(nameof(setter));
 		}
 
 		public override T Value
@@ -101,8 +105,7 @@ namespace Lexxys
 
 		public static implicit operator OptRef<T>(T value)
 		{
-			var copy = value;
-			return new OptRef<T>(() => copy, v => Interlocked.Exchange(ref copy, v));
+			return new OptRef<T>(() => value, v => Interlocked.Exchange(ref value, v));
 		}
 		public static implicit operator Ref<T>(OptRef<T> value) => new Ref<T>(value._getter, value._setter);
 	}

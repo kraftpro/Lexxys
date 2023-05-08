@@ -20,7 +20,7 @@ public class FileLogWriter: LogWriter
 {
 	private const string LogSource = "Lexxys.Logging.FileLogWriter";
 
-	private readonly TimeSpan _timeout = DefaultTimeout;
+	private readonly TimeSpan _timeout;
 	private readonly string _file;
 	private bool _truncate;
 	private bool _errorLogged;
@@ -111,8 +111,6 @@ public class FileLogWriter: LogWriter
 
 	private static unsafe string FileMaskToName(string logFileMask)
 	{
-		if (logFileMask == null)
-			return String.Empty;
 		if (logFileMask.IndexOf('{') < 0)
 			return logFileMask;
 
@@ -195,7 +193,7 @@ public class FileLogWriter: LogWriter
 
 	private static StreamWriter? OpenLogStream(string? fileName, TimeSpan timeout, bool truncate)
 	{
-		if (fileName == null || fileName.Length == 0)
+		if (fileName is not { Length: >0 })
 			return null;
 
 		const int ErrorSharingViolation = 32;
@@ -237,7 +235,7 @@ public class FileLogWriter: LogWriter
 
 public class NullLogWriter: LogWriter
 {
-	private static NullLogWriter Instance = new NullLogWriter();
+	private static readonly NullLogWriter Instance = new NullLogWriter();
 
 	public override string Target => "Null";
 
@@ -249,13 +247,7 @@ public class NullLogWriter: LogWriter
 	{
 	}
 
-	class NullLogRecordFormatter: ILogRecordFormatter
-	{
-		public static readonly ILogRecordFormatter Instance = new NullLogRecordFormatter();
-
-		public void Format(TextWriter writer, LogRecord record) { }
-	}
-
+	// ReSharper disable MemberHidesStaticFromOuterClass
 	private class Parameters: ILogWriterParameters
 	{
 		public static readonly ILogWriterParameters Instance = new Parameters();
@@ -276,11 +268,6 @@ public class NullLogWriter: LogWriter
 
 public class ConsoleLogWriter: LogWriter
 {
-	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{Type:xxxx} {IndentMark}{Source}: {Message}",
-		"  ",
-		". ");
-
 	private readonly bool _isEnabled;
 
 	public ConsoleLogWriter(LoggingConsoleParameters parameters): base(parameters)
@@ -320,19 +307,7 @@ public class ConsoleLogWriter: LogWriter
 		{
 			if (record == null)
 				continue;
-			TextWriter writer;
-			//bool redirected;
-			if (record.LogType == LogType.Error)
-			{
-				writer = Console.Error;
-			//	redirected = Console.IsErrorRedirected;
-			}
-			else
-			{
-				writer = Console.Out;
-			//	redirected = Console.IsOutputRedirected;
-			}
-
+			var writer = record.LogType == LogType.Error ? Console.Error: Console.Out;
 			Formatter.Format(writer, record);
 			writer.WriteLine();
 		}
@@ -342,11 +317,6 @@ public class ConsoleLogWriter: LogWriter
 
 public class TraceLogWriter: LogWriter
 {
-	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}: {Message}",
-		"  ",
-		". ");
-
 	public TraceLogWriter(ILogWriterParameters parameters): base(parameters)
 	{
 	}
@@ -372,11 +342,6 @@ public class TraceLogWriter: LogWriter
 
 public class DebuggerLogWriter: LogWriter
 {
-	private static readonly TextFormatSetting Defaults = new TextFormatSetting(
-		"{ThreadID:X4}.{SeqNumber:X4} {TimeStamp:HH:mm:ss.fffff}[{Type:3}] {IndentMark}{Source}: {Message}",
-		"  ",
-		". ");
-
 	private readonly bool _isLogging;
 
 	public DebuggerLogWriter(ILogWriterParameters parameters): base(parameters)

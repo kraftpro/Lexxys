@@ -7,7 +7,7 @@ using System.Reflection;
 namespace Lexxys.Testing;
 
 #pragma warning disable CA1724
-#pragma warning disable CA1307 // StringCompatrison parameter
+#pragma warning disable CA1307 // StringComparison parameter
 
 public static partial class Resources
 {
@@ -53,7 +53,7 @@ public static partial class Resources
 	private static RandItem<string> ParseItem(JsonScalar scalar, IReadOnlyDictionary<string, RandItem<string>> resources) =>
 		IsReference(scalar) ? CreateReference(scalar, resources): R.V(scalar.Value == null ? String.Empty: scalar.Text);
 
-	private static bool IsReference(JsonScalar scalar) => scalar?.Text?.Length > 0 && scalar.Text[0] == '@';
+	private static bool IsReference(JsonScalar scalar) => scalar.Text.Length > 0 && scalar.Text[0] == '@';
 
 	private static RandItem<string> CreateReference(JsonScalar value, IReadOnlyDictionary<string, RandItem<string>> resources)
 	{
@@ -75,7 +75,7 @@ public static partial class Resources
 		if (resources == null)
 			throw new ArgumentNullException(nameof(resources));
 
-		var items = new List<WeightValuePair<string>>();
+		var items = new List<IWeightValuePair<string>>();
 		foreach (var item in value)
 		{
 			if (item is JsonScalar scalar)
@@ -121,7 +121,7 @@ public static partial class Resources
 		throw new ArgumentOutOfRangeException(nameof(value), value, null);
 	}
 
-	private static WeightValuePair<string> ParsePair(double weight, JsonItem value, IReadOnlyDictionary<string, RandItem<string>> resources)
+	private static IWeightValuePair<string> ParsePair(double weight, JsonItem value, IReadOnlyDictionary<string, RandItem<string>> resources)
 	{
 		if (weight <= 0)
 			throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
@@ -137,7 +137,7 @@ public static partial class Resources
 		};
 	}
 
-	private static WeightValuePair<string> ParsePair(double weight, JsonScalar value, IReadOnlyDictionary<string, RandItem<string>> resources)
+	private static IWeightValuePair<string> ParsePair(double weight, JsonScalar value, IReadOnlyDictionary<string, RandItem<string>> resources)
 	{
 		if (weight <= 0)
 			throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
@@ -147,7 +147,7 @@ public static partial class Resources
 		return IsReference(value) ? R.P(weight, CreateReference(value, resources)): R.P(weight, value.Value == null ? String.Empty: value.Text);
 	}
 
-	private static WeightValuePair<string> ParsePair(double weight, JsonArray value, IReadOnlyDictionary<string, RandItem<string>> resources)
+	private static IWeightValuePair<string> ParsePair(double weight, JsonArray value, IReadOnlyDictionary<string, RandItem<string>> resources)
 	{
 		if (value == null)
 			throw new ArgumentNullException(nameof(value));
@@ -159,7 +159,7 @@ public static partial class Resources
 		return value.Count > 1 ? R.P(weight, ParseItem(value, resources)): ParsePair(weight, value[0]!, resources);
 	}
 
-	private static WeightValuePair<string> ParsePair(double weight, JsonMap value, IReadOnlyDictionary<string, RandItem<string>> resources)
+	private static IWeightValuePair<string> ParsePair(double weight, JsonMap value, IReadOnlyDictionary<string, RandItem<string>> resources)
 	{
 		if (weight <= 0)
 			throw new ArgumentOutOfRangeException(nameof(weight), weight, null);

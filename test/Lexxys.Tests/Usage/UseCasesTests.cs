@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+﻿// ReSharper disable all
 namespace Lexxys.Tests.Usage
 {
 	using Lexxys.Configuration;

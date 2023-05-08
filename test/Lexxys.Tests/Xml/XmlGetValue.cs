@@ -1,9 +1,6 @@
-﻿using System;
-using System.Linq;
-using System.Numerics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.Numerics;
 
-namespace Lexxys.Tests.Core.Xml
+namespace Lexxys.Tests.Xml
 {
 	using Lexxys.Xml;
 
@@ -58,6 +55,7 @@ namespace Lexxys.Tests.Core.Xml
 
 		public class B
 		{
+			// ReSharper disable UnusedAutoPropertyAccessor.Global
 			public string Name { get; }
 			public A[] Items { get; }
 

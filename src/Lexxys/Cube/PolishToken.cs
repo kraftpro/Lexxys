@@ -23,7 +23,7 @@ namespace Lexxys.Cube
 		/// <summary>Evaluate expression element</summary>
 		public abstract void Evaluate(Stack<PolishToken> stack, Delegate context);
 
-		protected static Exception ParameterTypeException(string name, PolishToken token) => new ArgumentTypeException(name, token?.GetType() ?? typeof(void), typeof(LogicalValue));
+		protected static Exception ParameterTypeException(string name, PolishToken token) => new ArgumentTypeException(name, token.GetType(), typeof(LogicalValue));
 	}
 
 	/// <summary>Represents open brace</summary>

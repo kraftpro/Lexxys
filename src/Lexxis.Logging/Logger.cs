@@ -20,9 +20,9 @@ public class Logger<T>: Logger, ILogging<T>
 	{
 	}
 
-	private class EmptyLogger: ILogging<T>, ILogging
+	private class EmptyLogger: ILogging<T>
 	{
-		public string Source { get { return "Empty"; } set { } }
+		public string Source { get => "Empty"; set { } }
 
 		public IDisposable? BeginScope<TState>(TState state) where TState: notnull => null;
 
@@ -53,22 +53,19 @@ public class Logger: ILogging
 	private ILogRecordWriter? _writer;
 	private LogTypeFilter _levels;
 
-	public Logger(ILoggingService service): this(service, "Logger")
+	public Logger(ILoggingService service)
 	{
+		_service = service ?? throw new ArgumentNullException(nameof(service));
+		_source = "Logger";
 	}
 
 	public Logger(ILoggingService service, string source)
 	{
-		if (service is null)
-			throw new ArgumentNullException(nameof(service));
-		if (source is null)
-			throw new ArgumentNullException(nameof(source));
-
-		_source = source;
-		_service = service;
+		_source = source ?? throw new ArgumentNullException(nameof(source));
+		_service = service ?? throw new ArgumentNullException(nameof(service));
 	}
 
-	[Obsolete]
+	[Obsolete("use new Logger(ILoggingService service, string source)")]
 	public Logger(string source)
 	{
 		_source = source ?? throw new ArgumentNullException(nameof(source));
@@ -113,7 +110,7 @@ public class Logger: ILogging
 	/// <summary>
 	/// Write the <paramref name="record"/> into log
 	/// </summary>
-	/// <param name="record">The log record to be writen</param>
+	/// <param name="record">The log record to be written</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Log(LogRecord record)
 	{
@@ -188,7 +185,7 @@ public class Logger: ILogging
 		private readonly LogType _logType;
 		private readonly IDictionary? _arg;
 
-		public Entry(Logger log, string? endMessage, LogType logType, int threshold, IDictionary? arg)
+		private Entry(Logger log, string? endMessage, LogType logType, int threshold, IDictionary? arg)
 		{
 			_log = log;
 			_endMessage = endMessage ?? "exiting";
@@ -238,7 +235,7 @@ public class Logger: ILogging
 
 	private class EmptyLogger: ILogging
 	{
-		public string Source { get { return "Empty"; } set { } }
+		public string Source { get => "Empty"; set { } }
 
 		public IDisposable? BeginScope<TState>(TState state) where TState: notnull => null;
 

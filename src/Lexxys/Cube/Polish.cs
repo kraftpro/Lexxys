@@ -63,7 +63,7 @@ namespace Lexxys.Cube
 		{
 			if (_stack.Count > 0)
 				Flush();
-			if (_reverse == null || _reverse.Count == 0)
+			if (_reverse is not { Count: >0 })
 				return null;
 
 			foreach (PolishToken tok in _reverse)

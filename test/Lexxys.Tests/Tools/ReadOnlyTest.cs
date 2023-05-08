@@ -4,12 +4,8 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
 using System.Collections;
-using System.Linq;
-using System.Threading;
+
 
 namespace Lexxys.Tests.Tools
 {
@@ -21,25 +17,11 @@ namespace Lexxys.Tests.Tools
 	[TestClass()]
 	public class ReadOnlyTest
 	{
-
-
-		private TestContext testContextInstance;
-
 		/// <summary>
 		///Gets or sets the test context which provides
 		///information about and functionality for the current test run.
 		///</summary>
-		public TestContext TestContext
-		{
-			get
-			{
-				return testContextInstance;
-			}
-			set
-			{
-				testContextInstance = value;
-			}
-		}
+		public TestContext TestContext { get; set; }
 
 		#region Additional test attributes
 		//[ClassInitialize()]
@@ -112,7 +94,9 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
+
 			Assert.IsNull(result);
 			try
 			{
@@ -122,7 +106,9 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
+
 			Assert.IsNull(result);
 			try
 			{
@@ -131,6 +117,7 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
 			Assert.IsNull(result);
 			try
@@ -140,6 +127,7 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
 			Assert.IsNull(result);
 			try
@@ -149,6 +137,7 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
 			Assert.IsNull(result);
 			try
@@ -158,6 +147,7 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
 			Assert.IsNull(result);
 		}
@@ -176,6 +166,7 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
 			Assert.IsNull(result);
 			try
@@ -186,6 +177,7 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
 			Assert.IsNull(result);
 			try
@@ -195,6 +187,7 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
 			Assert.IsNull(result);
 			try
@@ -204,6 +197,7 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
 			Assert.IsNull(result);
 		}
@@ -221,6 +215,7 @@ namespace Lexxys.Tests.Tools
 
 			Dictionary<int, string> value = GetTestDictionary();
 			actual = ReadOnly.Wrap(value);
+			Assert.IsNotNull(actual);
 			Assert.IsTrue(actual.IsReadOnly);
 
 			CollectionAssert.AreEqual(value, (ICollection)actual);
@@ -254,6 +249,7 @@ namespace Lexxys.Tests.Tools
 
 			Dictionary<int, string> value = GetTestDictionary();
 			actual = ReadOnly.WrapCopy(value);
+			Assert.IsNotNull(actual);
 			Assert.IsTrue(actual.IsReadOnly);
 
 			CollectionAssert.AreEqual(value, (ICollection)actual);
@@ -286,7 +282,9 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
+
 			Assert.IsNull(result);
 			try
 			{
@@ -295,7 +293,9 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
+
 			Assert.IsNull(result);
 			try
 			{
@@ -305,7 +305,9 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
+
 			Assert.IsNull(result);
 			try
 			{
@@ -314,7 +316,9 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
+
 			Assert.IsNull(result);
 		}
 
@@ -331,9 +335,10 @@ namespace Lexxys.Tests.Tools
 
 			List<int> value = GetTestList();
 			actual = ReadOnly.Wrap(value);
+			Assert.IsNotNull(actual);
 			Assert.IsTrue(actual.IsReadOnly);
 
-			Assert.IsTrue(Lexxys.Comparer.Equals(value, actual, null));
+			Assert.IsTrue(Comparer.Equals(value, actual, null));
 
 			var item = NextListItem();
 			value.Add(item);
@@ -359,7 +364,9 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
+
 			Assert.IsNull(result);
 			try
 			{
@@ -369,7 +376,9 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
+
 			Assert.IsNull(result);
 			try
 			{
@@ -378,7 +387,9 @@ namespace Lexxys.Tests.Tools
 			}
 			catch (Exception)
 			{
+				// ignored
 			}
+
 			Assert.IsNull(result);
 
 			Assert.IsTrue(actual.IsReadOnly);
@@ -397,6 +408,7 @@ namespace Lexxys.Tests.Tools
 
 			List<int> value = GetTestList();
 			actual = ReadOnly.Wrap((ICollection<int>)value);
+			Assert.IsNotNull(actual);
 			Assert.IsTrue(actual.IsReadOnly);
 
 			CollectionAssert.AreEqual(value, (ICollection)actual);
@@ -424,10 +436,11 @@ namespace Lexxys.Tests.Tools
 			Assert.IsNull(actual);
 
 			List<int> value = GetTestList();
-			actual = ReadOnly.WrapCopy((ICollection<int>)value);
+			actual = ReadOnly.WrapCopy(value);
+			Assert.IsNotNull(actual);
 			Assert.IsTrue(actual.IsReadOnly);
 
-			Assert.IsTrue(Lexxys.Comparer.Equals(value, actual, null));
+			Assert.IsTrue(Comparer.Equals(value, actual, null));
 
 			var item = NextListItem();
 			value.Add(item);
@@ -452,10 +465,12 @@ namespace Lexxys.Tests.Tools
 			actual = ReadOnly.Wrap((IEnumerable<int>)null);
 			Assert.IsNull(actual);
 
+			// ReSharper disable PossibleMultipleEnumeration
 			List<int> value = GetTestList();
 			actual = ReadOnly.Wrap((IEnumerable<int>)value);
 
-			Assert.IsTrue(Lexxys.Comparer.Equals(value, actual, null));
+			Assert.IsNotNull(actual);
+			Assert.IsTrue(Comparer.Equals(value, actual, null));
 
 			var item = NextListItem();
 			value.Add(item);
@@ -480,10 +495,11 @@ namespace Lexxys.Tests.Tools
 			List<int> value = GetTestList();
 			actual = ReadOnly.WrapCopy((IEnumerable<int>)value);
 
-			Assert.IsTrue(Lexxys.Comparer.Equals(value, actual, null));
+			Assert.IsTrue(Comparer.Equals(value, actual, null));
 
 			var item = NextListItem();
 			value.Add(item);
+			Assert.IsNotNull(actual);
 			Assert.IsFalse(actual.Contains(item));
 
 			item = NextListItem();

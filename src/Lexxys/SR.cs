@@ -4,10 +4,8 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
 using System.Text;
 using System.Globalization;
-using System.Collections.Generic;
 
 namespace Lexxys
 {
@@ -108,11 +106,11 @@ namespace Lexxys
 		}
 		//internal static string ArgumentOutOfRangeException(string paramName, object actualValue, object expectedValue)
 		//{
-		//    return String.Format(_culture, "Value ({1}) of parameter '{0}' out of range of valid values ({2}).", paramName, actualValue, expectedValue);
+		//	return String.Format(_culture, "Value ({1}) of parameter '{0}' out of range of valid values ({2}).", paramName, actualValue, expectedValue);
 		//}
 		//internal static string ArgumentOutOfRangeException(string paramName, object actualValue, object minValue, object maxValue)
 		//{
-		//    return String.Format(_culture, "Value ({1}) of parameter '{0}' out of range of valid values ({2}, {3}).", paramName, actualValue, minValue, maxValue);
+		//	return String.Format(_culture, "Value ({1}) of parameter '{0}' out of range of valid values ({2}, {3}).", paramName, actualValue, minValue, maxValue);
 		//}
 		internal static string ArgumentWrongTypeException()
 		{
@@ -169,7 +167,7 @@ namespace Lexxys
 				(results == null || results.Success ? "Invariant check failed in {0}.": "Check invariant failed in {0} with message: \"{1}\".");
 			return String.Format(Culture, message, source, results);
 		}
-		public static string ValidationFailed(ValidationResults validation)
+		public static string ValidationFailed(ValidationResults? validation)
 		{
 			if (validation == null)
 				return "Validation Failed.";
@@ -178,16 +176,10 @@ namespace Lexxys
 			string prefix = "";
 			foreach (var item in validation.Items)
 			{
-				if (item.Field == null)
-					if (item.Message == null)
-						continue;
-					else
-						text.Append(prefix).Append('"').Append(item.Message).Append('"');
+				if (item.Message == null)
+					text.Append(prefix).Append(item.Field);
 				else
-					if (item.Message == null)
-						text.Append(prefix).Append(item.Field);
-					else
-						text.Append(prefix).Append(item.Field).Append(": \"").Append(item.Message).Append('"');
+					text.Append(prefix).Append(item.Field).Append(": \"").Append(item.Message).Append('"');
 				prefix = "; ";
 			}
 			text.Append('}');
@@ -268,11 +260,11 @@ namespace Lexxys
 		{
 			return String.Format(Culture, "Configuration loaded {1}. ({0})", location, position);
 		}
-		public static string ConfigurationChanged(Configuration.IXmlConfigurationSource source)
+		public static string ConfigurationChanged(Configuration.IXmlConfigurationSource? source)
 		{
 			return String.Format(Culture, "Configuration changed ({0}).", source?.Name);
 		}
-		public static Func<string> ConfigurationChanged(Configuration.IConfigProvider source)
+		public static Func<string> ConfigurationChanged(Configuration.IConfigProvider? source)
 		{
 			return () => String.Format(Culture, "Configuration changed ({0}).", source?.Name);
 		}
@@ -290,7 +282,7 @@ namespace Lexxys
 			return fileName == null ?
 				baseDirectory == null ?
 					"Including file not found.":
-					String.Format(Culture, "Including file not found. directory: {1}.", baseDirectory):
+					String.Format(Culture, "Including file not found. directory: {0}.", baseDirectory):
 				baseDirectory == null ?
 					String.Format(Culture, "Including file not found. file: {0}.", fileName):
 					String.Format(Culture, "Including file not found. file: {0}, directory: {1}.", fileName, baseDirectory);
@@ -311,23 +303,23 @@ namespace Lexxys
 
 		#region Crypto
 
-		internal static string CR_CannotCreateAgorithm(string type)
+		internal static string CR_CannotCreateAlgorithm(string type)
 		{
 			return String.Format(Culture, "Cannot create instance of the cryptographic algorithm for type {0}.", type);
 		}
-		internal static string CR_BadCriptingClass()
+		internal static string CR_BadEncryptingClass()
 		{
-			return "Cannot find specified interface in crypting algorithm.";
+			return "Cannot find the specified interface in encrypting algorithm.";
 		}
-		internal static string CR_CriptographicAlgorithmNotFound(string type)
+		internal static string CR_CryptographicAlgorithmNotFound(string type)
 		{
-			return String.Format(Culture, "Criptographic algorithm of type \"{0}\" not found in configuration.", type);
+			return String.Format(Culture, "Cryptographic algorithm of type \"{0}\" not found in configuration.", type);
 		}
 		#endregion
 
 		#region Logging
 
-		internal static string LoggingConfidurationMissing()
+		internal static string LoggingConfigurationMissing()
 		{
 			return "Missing Logging Configuration.";
 		}
@@ -376,8 +368,8 @@ namespace Lexxys
 		internal static string LOG_CannotCreateLogFormatter(string className, Exception? exception = null)
 		{
 			return exception == null ?
-				String.Format(Culture, "Cannot create Log Formatter (class={1}).", className) :
-				String.Format(Culture, "Cannot create Log Formatter (class={1})\nException: {2}", className, exception);
+				String.Format(Culture, "Cannot create Log Formatter (class={0}).", className) :
+				String.Format(Culture, "Cannot create Log Formatter (class={0})\nException: {1}", className, exception);
 		}
 
 		internal static string ValueCannotBeGreaterThan(object min, object max)
@@ -414,7 +406,7 @@ namespace Lexxys
 		}
 		internal static string EXP_MissingParameters(string operationName)
 		{
-			return String.Format(Culture, "Not enought parameters for operation '{0}'.", operationName);
+			return String.Format(Culture, "Not enough parameters for operation '{0}'.", operationName);
 		}
 
 		// XML Structure
@@ -428,7 +420,7 @@ namespace Lexxys
 		}
 		internal static string WrongXmlAttributeValue(string attributeName, string attributeValue)
 		{
-			return String.Format(Culture, "Wrong value of attibute {0} ({1}).", attributeName, attributeValue);
+			return String.Format(Culture, "Wrong value of attribute {0} ({1}).", attributeName, attributeValue);
 		}
 		internal static string MissingXmlAttribute(string attribute)
 		{
@@ -442,7 +434,7 @@ namespace Lexxys
 		// PermissionValue, Group
 		internal static string PV_GroupChanged()
 		{
-			return "Structure of the targed permissons group was changed";
+			return "Structure of the target permissions group was changed";
 		}
 		internal static string PG_IsReadonly()
 		{
@@ -499,7 +491,7 @@ namespace Lexxys
 
 		internal static Func<string> FileChanged(string fileName)
 		{
-			return () => String.Format(Culture, "File Chaged: {0}.", fileName);
+			return () => String.Format(Culture, "File Changed: {0}.", fileName);
 		}
 
 		internal static string CollectionIsEmpty()
@@ -544,7 +536,7 @@ namespace Lexxys
 
 		internal static string ExpectedMultilineAttribute()
 		{
-			return "Expected multiline attbribute value.";
+			return "Expected multiline attribute value.";
 		}
 
 		internal static string ExpectedEndOfNode(string nodeName)
@@ -617,7 +609,7 @@ namespace Lexxys
 			return "Connection String is empty";
 		}
 
-		internal static string DifferentCurrencyCodes(Currency left, Currency right)
+		internal static string DifferentCurrencyCodes(Currency? left, Currency? right)
 		{
 			return String.Format(Culture, "The operands have different currency codes: {0} and {1}.", left?.Code, right?.Code);
 		}

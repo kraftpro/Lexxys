@@ -61,7 +61,7 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 	{
 		if (items == null)
 			throw new ArgumentNullException(nameof(items));
-		_items = items.ToArray()!;
+		_items = items.ToArray();
 	}
 
 	public RandSeq(params RandItem<T>[] items)
@@ -117,7 +117,7 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 
 	public RandSeq<T> Add(RandSeq<T> value)
 	{
-		if (value == null || value._items.Length == 0)
+		if (value is not { _items.Length: >0 })
 			return this;
 		if (_items.Length == 0)
 			return value;
@@ -173,7 +173,7 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 
 	public RandSeq<T> Insert(int index, RandSeq<T> value)
 	{
-		if (value == null || value.Count == 0)
+		if (value is not { Count: >0 })
 			return this;
 		if (Count == 0)
 			return this;
@@ -190,7 +190,7 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 
 	public override string ToString()
 	{
-		return String.Join(null, (IEnumerable<RandItem<T>>)_items);
+		return String.Join(null, _items);
 	}
 
 	public static RandSeq<T>? operator |(RandSeq<T>? left, RandSeq<T>? right)

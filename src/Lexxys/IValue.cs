@@ -6,17 +6,26 @@
 //
 
 
-namespace Lexxys
-{
-	public interface IValue<out T>: IValue
-	{
-		new T Value { get; }
-	}
+namespace Lexxys;
 
-	public interface IValue
-	{
-		object? Value { get; }
-	}
+public interface IValue<out T>: IValue
+{
+	new T Value { get; }
+}
+
+public interface IValue
+{
+	object? Value { get; }
+}
+
+public interface IValueRef<T>: IValue<T>, IValueRef
+{
+	new T Value { get; set; }
+}
+
+public interface IValueRef: IValue
+{
+	new object? Value { get; set; }
 }
 
 

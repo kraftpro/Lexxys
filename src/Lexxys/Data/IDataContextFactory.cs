@@ -4,10 +4,9 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-namespace Lexxys.Data
+namespace Lexxys.Data;
+
+public interface IDataContextFactory
 {
-	public interface IDataContextFactory
-	{
-		IDataContext CreateContext(ConnectionStringInfo connectionInfo);
-	}
+	IDataContext CreateContext(ConnectionStringInfo connectionInfo);
 }

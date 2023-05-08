@@ -5,11 +5,11 @@
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
 using System.Collections;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Xml
 {
 	using Lexxys.Xml;
+	// ReSharper disable UnusedMember.Local
 
 	//[TestClass()]
 	public class SyntaxRuleCollectionTest

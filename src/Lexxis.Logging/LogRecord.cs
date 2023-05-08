@@ -133,7 +133,7 @@ public class LogRecord: IDumpJson
 
 	public static IDictionary? Args(params object?[] args)
 	{
-		if (args == null || args.Length == 0)
+		if (args is not { Length: >0 })
 			return null;
 
 		var arg = new OrderedBag<string, object?>((args.Length + 1) / 2);
@@ -170,7 +170,7 @@ public class LogRecord: IDumpJson
 			_data = CopyDictionary(exception.Data);
 			StackTrace = exception.StackTrace;
 			if (exception is AggregateException aggregate)
-				InnerExceptions = ReadOnly.WrapCopy(aggregate.InnerExceptions?
+				InnerExceptions = ReadOnly.WrapCopy(aggregate.InnerExceptions
 					.Where(o => o != null)
 					.Select(o => new ExceptionInfo(o)));
 			else if (exception.InnerException != null)
@@ -185,10 +185,10 @@ public class LogRecord: IDumpJson
 		public JsonBuilder ToJsonContent(JsonBuilder json)
 		{
 			return json
-				.Item("meessage", Message)
+				.Item("message", Message)
 				.Item("data", Data)
 				.Item("stackTrace", StackTrace)
-				.Item("innetException", InnerExceptions);
+				.Item("innerException", InnerExceptions);
 		}
 	}
 }

@@ -56,7 +56,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 
 		static string Clean(string? val, string def) => (val = __cleanRex.Replace(val ?? "", "")).Length > 0 ? val : def;
 	}
-	private static readonly Regex __cleanRex = new Regex(@"[\x00- '""\]\[\x7F\*/]");
+	private static readonly Regex __cleanRex = new Regex("""[\x00- '"\]\[\x7F\*/]""");
 
 	public string Name { get; }
 
@@ -64,19 +64,20 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 
 	public bool Accepts(string? source, LogType type) => _rule.Contains(source, type);
 
+#if TRACE_CONSOLE
 	private static int __xyz;
+#endif
 
 	public void Write(IEnumerable<LogRecord> records)
 	{
+		// ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
 		if (records == null || _dataContext == null || _errorsCount > 10)
 			return;
 		var text = new StringBuilder(8192);
 		bool entry = true;
 		int row = 0;
-		int xyz = Interlocked.Increment(ref __xyz);
-		int total = 0;
 #if TRACE_CONSOLE
-		Console.Write($"beg[{xyz}] ");
+		Console.Write($"beg[{Interlocked.Increment(ref __xyz)}] ");
 #endif
 		try
 		{
@@ -86,7 +87,6 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 				AppendInsertEntryStatement(instanceId, record);
 				if (++row >= MaxInsertRowsCount)
 				{
-					total += row;
 					_dataContext.Execute(text.ToString());
 					text.Clear();
 					entry = true;
@@ -121,7 +121,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 			}
 			text.Append("\n(")
 				.Append(Dc.Value(record.Context.SequentialNumber)).Append(',')
-				.Append(record.Context.UtcTimestamp.ToString(@"\'yyyyMMdd HH:mm:ss.fffffff\'")).Append(',')
+				.Append(record.Context.UtcTimestamp.ToString("""\'yyyyMMdd HH:mm:ss.fffffff\'""")).Append(',')
 				.Append(Dc.Value(instanceId)).Append(',')
 				.Append(Dc.Value(record.Source)).Append(',')
 				.Append(Dc.Value(record.Context.ThreadId)).Append(',')
@@ -129,7 +129,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 				.Append(Dc.Value((int)record.RecordType)).Append(',')
 				.Append(Dc.Value(record.Indent)).Append(',')
 				.Append(Dc.TextValue(record.Message)).Append(')');
-			if (record.Data != null && record.Data.Count > 0)
+			if (record is { Data.Count: > 0 })
 			{
 				text.Append(';').Append(_insertArgTemplate);
 				int line = 0;
@@ -197,12 +197,12 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 	private void PrepareTemplates()
 	{
 		const string InsertInstanceTemplate = "insert into [{S}].[{T}LogInstances] (LocalTime,ComputerName,DomainName,ProcessId) values ";
-		const string InstertEntryTemplate = "\ninsert into[{S}].[{T}LogEntries] (SeqNumber,LocalTime,InstanceId,Source,ThreadId,LogType,RecordType,Indentlevel,Message) values";
-		const string InstertArgTemplate = "\n declare @id int=scope_identity();\n insert into [{S}].[{T}LogArguments] (Entry,ArgName,ArgValue) values";
+		const string InsertEntryTemplate = "\ninsert into[{S}].[{T}LogEntries] (SeqNumber,LocalTime,InstanceId,Source,ThreadId,LogType,RecordType,IndentLevel,Message) values";
+		const string InsertArgTemplate = "\n declare @id int=scope_identity();\n insert into [{S}].[{T}LogArguments] (Entry,ArgName,ArgValue) values";
 
 		_insertInstanceTemplate = InsertInstanceTemplate.Replace("{S}", _schema).Replace("{T}", _table);
-		_insertEntryTemplate = InstertEntryTemplate.Replace("{S}", _schema).Replace("{T}", _table);
-		_insertArgTemplate = InstertArgTemplate.Replace("{S}", _schema).Replace("{T}", _table);
+		_insertEntryTemplate = InsertEntryTemplate.Replace("{S}", _schema).Replace("{T}", _table);
+		_insertArgTemplate = InsertArgTemplate.Replace("{S}", _schema).Replace("{T}", _table);
 	}
 	private string? _insertInstanceTemplate;
 	private string? _insertEntryTemplate;
@@ -219,47 +219,50 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 
 	private static readonly string[] CreateTableTemplates =
 	{
-		@"
-if (schema_id('{S}') is null)
-	exec ('create schema [{S}]');
-", @"if (object_id('[{S}].[{T}LogInstances]') is null)
-create table [{S}].[{T}LogInstances]
-	(
-	ID int not null identity (1, 1)
-		constraint [PK_{S}_{T}LogInstances] primary key,
-	LocalTime datetime2 not null,
-	ComputerName varchar(120) null,
-	DomainName varchar(120) null,
-	ProcessId int not null,
-	)
-", @"if (object_id('[{S}].[{T}LogEntries]') is null)
-create table [{S}].[{T}LogEntries]
-	(
-	ID int not null identity (1, 1)
-		constraint [PK_{S}_{T}LogEntries] primary key,
-	SeqNumber int not null,
-	LocalTime datetime2 not null,
-	InstanceId int not null,
-		-- constraint [FK_{S}_{T}LogEntries_Instance]
-		-- foreign key references [{S}].[{T}LogInstances] (ID),
-	Source varchar(250) null,
-	ThreadId int not null,
-	LogType tinyint not null,
-	RecordType tinyint not null,
-	Indentlevel int not null,
-	Message nvarchar(max) null
-	)
-", @"if (object_id('[{S}].[{T}LogArguments]') is null)
-create table [{S}].[{T}LogArguments]
-	(
-	ID int not null identity (1, 1)
-		constraint [PK_{S}_{T}LogArguments] primary key,
-	EntryId int not null,
-	--	constraint [FK_{S}_{T}LogArguments_Entry]
-	--	foreign key references [{S}].[{T}LogEntries](ID),
-	ArgName varchar(120) not null,
-	ArgValue nvarchar(max)
-	)
-",
+		"""
+		if (schema_id('{S}') is null)
+			exec ('create schema [{S}]');
+		""", """
+		if (object_id('[{S}].[{T}LogInstances]') is null)
+		create table [{S}].[{T}LogInstances]
+			(
+			ID int not null identity (1, 1)
+				constraint [PK_{S}_{T}LogInstances] primary key,
+			LocalTime datetime2 not null,
+			ComputerName varchar(120) null,
+			DomainName varchar(120) null,
+			ProcessId int not null,
+			)
+		""", """
+		if (object_id('[{S}].[{T}LogEntries]') is null)
+		create table [{S}].[{T}LogEntries]
+			(
+			ID int not null identity (1, 1)
+				constraint [PK_{S}_{T}LogEntries] primary key,
+			SeqNumber int not null,
+			LocalTime datetime2 not null,
+			InstanceId int not null,
+				-- constraint [FK_{S}_{T}LogEntries_Instance]
+				-- foreign key references [{S}].[{T}LogInstances] (ID),
+			Source varchar(250) null,
+			ThreadId int not null,
+			LogType tinyint not null,
+			RecordType tinyint not null,
+			IndentLevel int not null,
+			Message nvarchar(max) null
+			)
+		""", """
+		if (object_id('[{S}].[{T}LogArguments]') is null)
+		create table [{S}].[{T}LogArguments]
+			(
+			ID int not null identity (1, 1)
+				constraint [PK_{S}_{T}LogArguments] primary key,
+			EntryId int not null,
+			--	constraint [FK_{S}_{T}LogArguments_Entry]
+			--	foreign key references [{S}].[{T}LogEntries](ID),
+			ArgName varchar(120) not null,
+			ArgValue nvarchar(max)
+			)
+		""",
 	};
 }

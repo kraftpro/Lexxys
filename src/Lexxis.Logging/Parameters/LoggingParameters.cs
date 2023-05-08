@@ -8,7 +8,7 @@ namespace Lexxys.Logging;
 
 public class LoggingParameters: ILoggingParameters
 {
-	private List<ILogWriterParameters> _parameters;
+	private readonly List<ILogWriterParameters> _parameters;
 
 	public LoggingParameters(IServiceCollection services)
 	{

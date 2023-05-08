@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Threading.Tasks;
+﻿using System.Data.Common;
 
 #nullable enable
 
+// ReSharper disable all
 namespace Lexxys.Tests.Usage
 {
 	using Lexxys.Configuration;

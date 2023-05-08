@@ -4,27 +4,24 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
 
-namespace Lexxys.Configuration
+namespace Lexxys.Configuration;
+
+public interface IConfigSection
 {
-	public interface IConfigSection
-	{
-		event EventHandler<ConfigurationEventArgs>? Changed;
+	event EventHandler<ConfigurationEventArgs>? Changed;
 
-		int Version { get; }
+	int Version { get; }
 
-		IConfigSection GetSection(string? key);
+	IConfigSection GetSection(string? key);
 
-		void MapPath(string key, string value);
+	void MapPath(string key, string value);
 
-		void SetValue<T>(string? key, T value);
+	void SetValue<T>(string? key, T value);
 
-		IValue<T> GetValue<T>(string? key, Func<T>? defaultValue = null);
+	IValue<T> GetValue<T>(string? key, Func<T>? defaultValue = null);
 
-		void SetCollection<T>(string? key, IReadOnlyList<T> value);
+	void SetCollection<T>(string? key, IReadOnlyList<T> value);
 
-		IValue<IReadOnlyList<T>> GetCollection<T>(string? key);
-	}
+	IValue<IReadOnlyList<T>> GetCollection<T>(string? key);
 }

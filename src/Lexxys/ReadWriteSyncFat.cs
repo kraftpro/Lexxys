@@ -4,11 +4,6 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-
 using Microsoft.Extensions.Logging;
 
 namespace Lexxys
@@ -95,9 +90,7 @@ namespace Lexxys
 				throw new ArgumentOutOfRangeException(nameof(timingThreshold), timingThreshold, null);
 
 			if (timingThreshold == 0)
-				return _locker.IsReaderLockHeld ?
-					(IDisposable)new UpgradeToWriter(_locker, timeout) :
-					(IDisposable)new NewWriter(_locker, timeout);
+				return _locker.IsReaderLockHeld ? new UpgradeToWriter(_locker, timeout): new NewWriter(_locker, timeout);
 
 			if (source == null)
 				source = "ReadWriteSync.LockWrite";
@@ -106,20 +99,14 @@ namespace Lexxys
 
 			using (Log.DebugTiming(source, new TimeSpan(timingThreshold * TimeSpan.TicksPerMillisecond)))
 			{
-				return _locker.IsReaderLockHeld ?
-					(IDisposable)new UpgradeToWriter(_locker, timeout) :
-					(IDisposable)new NewWriter(_locker, timeout);
+				return _locker.IsReaderLockHeld ? new UpgradeToWriter(_locker, timeout): new NewWriter(_locker, timeout);
 			}
 		}
 
-		public bool IsReaderLockHeld
-		{
-			get { return _locker != null && _locker.IsReaderLockHeld; }
-		}
-		public bool IsWriterLockHeld
-		{
-			get { return _locker != null && _locker.IsWriterLockHeld; }
-		}
+		public bool IsReaderLockHeld => _locker is { IsReaderLockHeld: true };
+
+		public bool IsWriterLockHeld => _locker is { IsWriterLockHeld: true };
+
 		#endregion
 
 		#region IDisposable Members

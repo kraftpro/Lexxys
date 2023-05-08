@@ -1,8 +1,4 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-
-namespace Lexxys.Tests.Xml
+﻿namespace Lexxys.Tests.Xml
 {
 	using Lexxys.Xml;
 

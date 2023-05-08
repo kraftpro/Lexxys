@@ -4,19 +4,14 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
-using System;
 using System.Xml.Serialization;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Lexxys.Testing;
 using Lexxys.Xml;
-using System.Collections.Generic;
 
 namespace Lexxys.Tests.Xml
 {
 	[TestClass]
-	public partial class XmlToolsTest
+	public class XmlToolsTest
 	{
 		[TestMethod]
 		public void TrySerializerTest()
@@ -41,14 +36,15 @@ namespace Lexxys.Tests.Xml
 		public void TryReflection1(string xml)
 		{
 			var x = XmlLiteNode.FromXml(xml);
-			var success = XmlTools.TryGetValue<NameValueClassPprop>(x, out var result);
+			var success = XmlTools.TryGetValue<NameValueClassProp>(x, out var result);
 			Assert.IsTrue(success);
 			Assert.AreEqual("Name value", result.Name);
 			Assert.AreEqual("Value value", result.Value);
 		}
 
-		public class NameValueClassPprop
+		public class NameValueClassProp
 		{
+			// ReSharper disable UnusedAutoPropertyAccessor.Global
 			public string Name { get; set; }
 			public string Value { get; set; }
 		}

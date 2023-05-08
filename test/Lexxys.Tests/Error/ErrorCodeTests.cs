@@ -1,9 +1,4 @@
-﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace Lexxys.Tests.Error
+﻿namespace Lexxys.Tests.Error
 {
 	[TestClass]
 	public class ErrorCodeTests

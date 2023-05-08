@@ -5,14 +5,13 @@
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
 using Lexxys.Tokenizer;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+
 using System.Globalization;
 
 namespace Lexxys.Tests.Tokenizer
 {
-	
-	
+
+
 	/// <summary>
 	///This is a test class for CharPositionTest and is intended
 	///to contain all CharPositionTest Unit Tests
@@ -22,7 +21,7 @@ namespace Lexxys.Tests.Tokenizer
 	{
 
 
-		private TestContext testContextInstance;
+		private TestContext _testContextInstance;
 
 		/// <summary>
 		///Gets or sets the test context which provides
@@ -32,11 +31,11 @@ namespace Lexxys.Tests.Tokenizer
 		{
 			get
 			{
-				return testContextInstance;
+				return _testContextInstance;
 			}
 			set
 			{
-				testContextInstance = value;
+				_testContextInstance = value;
 			}
 		}
 

@@ -62,12 +62,11 @@ internal class LoggingRule
 		LogTypeFilter logTypes = LogTypeFilter.None;
 		for (int i = 0; i < _rules.Length; ++i)
 		{
-			if (_rules[i].Contains(source))
-			{
-				logTypes |= _rules[i].LogTypes;
-				if (logTypes == LogTypeFilter.All)
-					return logTypes;
-			}
+			if (!_rules[i].Contains(source))
+				continue;
+			logTypes |= _rules[i].LogTypes;
+			if (logTypes == LogTypeFilter.All)
+				return logTypes;
 		}
 		return logTypes;
 	}
@@ -79,7 +78,7 @@ internal class LoggingRule
 
 		Rule[] rr = rules
 			.Select(o => Rule.TryCreate(o, include, exclude, logLevel))
-			.Where(o => o != null && !o.IsEmpty)
+			.Where(o => o is { IsEmpty: false })
 			.ToArray()!;
 		return rr.Length == 0 ? Empty: new LoggingRule(rr);
 	}
@@ -87,8 +86,6 @@ internal class LoggingRule
 
 	class Rule
 	{
-		public static readonly Rule Empty = new Rule(LogTypeFilter.None, null, null, null);
-
 		private readonly Regex? _include;
 		private readonly Regex? _exclude;
 		private readonly LogTypeFilter _types;
@@ -117,88 +114,88 @@ internal class LoggingRule
 			string? Join(string? one, string? two) => one == null ? two: two == null ? one: one + "," + two;
 		}
 
-		/// <summary>
-		/// Parse logging type from configuration string
-		/// </summary>
-		/// <param name="configuration">The configuration string</param>
-		/// <param name="defaultValue"></param>
-		/// <returns></returns>
-		/// <remarks>
-		///	<code>
-		///	config :=	item *
-		///	item :=		WRITE | ERROR | WARNING | INFO | TRACE | DEBUG | '*'
-		///				(WRITE | ERROR | WARNING | INFO | TRACE | DEBUG | '*')+ ONLY
-		///	</code>
-		/// 
-		/// </remarks>
-		private static LogTypeFilter ParseLogType(string? configuration, LogTypeFilter defaultValue)
-		{
-			if (configuration == null)
-				return defaultValue;
-
-			MatchCollection mc = __configRex.Matches(configuration.ToUpperInvariant());
-			if (mc.Count == 0)
-				return defaultValue;
-
-			bool onlyFlag = false;
-			LogTypeFilter only = 0;
-			LogTypeFilter all = 0;
-			foreach (Match m in mc)
-			{
-				LogTypeFilter x = 0;
-				LogTypeFilter y = 0;
-				bool exclude = m.Groups[1].Value == "-";
-				switch (m.Groups[2].Value)
-				{
-					case "CRITICAL":
-					case "WRITE":
-						x = LogTypeFilter.OutputOnly;
-						y = LogTypeFilter.Output;
-						break;
-					case "ERROR":
-						x = LogTypeFilter.ErrorOnly;
-						y = LogTypeFilter.Error;
-						break;
-					case "WARNING":
-						x = LogTypeFilter.WarningOnly;
-						y = LogTypeFilter.Warning;
-						break;
-					case "INFO":
-					case "INFORMATION":
-						x = LogTypeFilter.InformationOnly;
-						y = LogTypeFilter.Information;
-						break;
-					case "DEBUG":
-						x = LogTypeFilter.DebugOnly;
-						y = LogTypeFilter.Debug;
-						break;
-					case "TRACE":
-						x = LogTypeFilter.TraceOnly;
-						y = LogTypeFilter.Trace;
-						break;
-					case "VERBOSE":
-					case "ALL":
-					case "*":
-						x = LogTypeFilter.TraceOnly;
-						y = LogTypeFilter.Trace;
-						break;
-					case "ONLY":
-						onlyFlag = true;
-						break;
-				}
-				if (exclude)
-				{
-					all &= ~x;
-				}
-				else
-				{
-					only |= x;
-					all |= y;
-				}
-			}
-			return all == 0 ? defaultValue: onlyFlag ? only: all;
-		}
-		private static readonly Regex __configRex = new Regex(@"[,;\|\+\s]*(-)?\s*\b(WRITE|CRITICAL|ERROR|WARNING|INFO|INFORMATION|DEBUG|TRACE|VERBOSE|\*|ALL|ONLY)\b", RegexOptions.Compiled);
+		// /// <summary>
+		// /// Parse logging type from configuration string
+		// /// </summary>
+		// /// <param name="configuration">The configuration string</param>
+		// /// <param name="defaultValue"></param>
+		// /// <returns></returns>
+		// /// <remarks>
+		// ///	<code>
+		// ///	config :=	item *
+		// ///	item :=		WRITE | ERROR | WARNING | INFO | TRACE | DEBUG | '*'
+		// ///				(WRITE | ERROR | WARNING | INFO | TRACE | DEBUG | '*')+ ONLY
+		// ///	</code>
+		// /// 
+		// /// </remarks>
+		// private static LogTypeFilter ParseLogType(string? configuration, LogTypeFilter defaultValue)
+		// {
+		// 	if (configuration == null)
+		// 		return defaultValue;
+		//
+		// 	MatchCollection mc = __configRex.Matches(configuration.ToUpperInvariant());
+		// 	if (mc.Count == 0)
+		// 		return defaultValue;
+		//
+		// 	bool onlyFlag = false;
+		// 	LogTypeFilter only = 0;
+		// 	LogTypeFilter all = 0;
+		// 	foreach (Match m in mc)
+		// 	{
+		// 		LogTypeFilter x = 0;
+		// 		LogTypeFilter y = 0;
+		// 		bool exclude = m.Groups[1].Value == "-";
+		// 		switch (m.Groups[2].Value)
+		// 		{
+		// 			case "CRITICAL":
+		// 			case "WRITE":
+		// 				x = LogTypeFilter.OutputOnly;
+		// 				y = LogTypeFilter.Output;
+		// 				break;
+		// 			case "ERROR":
+		// 				x = LogTypeFilter.ErrorOnly;
+		// 				y = LogTypeFilter.Error;
+		// 				break;
+		// 			case "WARNING":
+		// 				x = LogTypeFilter.WarningOnly;
+		// 				y = LogTypeFilter.Warning;
+		// 				break;
+		// 			case "INFO":
+		// 			case "INFORMATION":
+		// 				x = LogTypeFilter.InformationOnly;
+		// 				y = LogTypeFilter.Information;
+		// 				break;
+		// 			case "DEBUG":
+		// 				x = LogTypeFilter.DebugOnly;
+		// 				y = LogTypeFilter.Debug;
+		// 				break;
+		// 			case "TRACE":
+		// 				x = LogTypeFilter.TraceOnly;
+		// 				y = LogTypeFilter.Trace;
+		// 				break;
+		// 			case "VERBOSE":
+		// 			case "ALL":
+		// 			case "*":
+		// 				x = LogTypeFilter.TraceOnly;
+		// 				y = LogTypeFilter.Trace;
+		// 				break;
+		// 			case "ONLY":
+		// 				onlyFlag = true;
+		// 				break;
+		// 		}
+		// 		if (exclude)
+		// 		{
+		// 			all &= ~x;
+		// 		}
+		// 		else
+		// 		{
+		// 			only |= x;
+		// 			all |= y;
+		// 		}
+		// 	}
+		// 	return all == 0 ? defaultValue: onlyFlag ? only: all;
+		// }
+		// private static readonly Regex __configRex = new Regex(@"[,;\|\+\s]*(-)?\s*\b(WRITE|CRITICAL|ERROR|WARNING|INFO|INFORMATION|DEBUG|TRACE|VERBOSE|\*|ALL|ONLY)\b", RegexOptions.Compiled);
 
 		/// <summary>
 		/// Converts wildcard rule to regular expression.

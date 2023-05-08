@@ -4,18 +4,15 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Xml;
-using System.Collections.Generic;
-using System.IO;
 using System.Xml.XPath;
+
 using Lexxys.Xml;
 
 namespace Lexxys.Tests.Xml
 {
-	
-	
+
+
 	/// <summary>
 	///This is a test class for XmlLiteNodeTest and is intended
 	///to contain all XmlLiteNodeTest Unit Tests
@@ -54,18 +51,19 @@ namespace Lexxys.Tests.Xml
 		#endregion
 
 		#region Data Tables
-		private static string[] Xml = new string[] 
+		private static readonly string[] Xml =
 		{
-@"
-<root>
-	Root Value1
-	<node1 a='a1' b='b1'>
-		Node1 Value
-	</node1>
-	Root Value2
-	<node2 c='c2' d='d2' e='' />
-	Root Value3
-</root>"
+			"""
+			<root>
+				Root Value1
+				<node1 a='a1' b='b1'>
+					Node1 Value
+				</node1>
+				Root Value2
+				<node2 c='c2' d='d2' e='' />
+				Root Value3
+			</root>
+			"""
 		};
 		#endregion
 
@@ -76,8 +74,7 @@ namespace Lexxys.Tests.Xml
 		public void XmlLiteNodeXmlReaderConstructorTest()
 		{
 			var rdr = XmlReader.Create(new StringReader(Xml[0]));
-			bool ignoreCase = false;
-			var target = XmlLiteNode.FromXml(rdr, ignoreCase);
+			var target = XmlLiteNode.FromXml(rdr, ignoreCase: false);
 			Assert.AreEqual("root", target.Name);
 			Assert.AreEqual("\n\tRoot Value1\n\tRoot Value2\n\tRoot Value3", target.Value);
 			Assert.AreEqual(0, target.Attributes.Count);

@@ -4,15 +4,36 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
-using System.IO;
 
-namespace Lexxys
+namespace Lexxys;
+
+using Tokenizer;
+
+public static class JsonParser
 {
-	using Tokenizer;
+	public static JsonItem Parse(string text)
+	{
+		if (text == null)
+			throw new ArgumentNullException(nameof(text));
 
-	public ref struct JsonParser
+		var stream = new CharStream(text);
+		var converter = new ActualParser();
+		converter.Scanner.Next(ref stream);
+		return converter.ParseItem(ref stream);
+	}
+
+	public static JsonItem Parse(TextReader text)
+	{
+		if (text == null)
+			throw new ArgumentNullException(nameof(text));
+
+		var stream = new CharStream(text);
+		var converter = new ActualParser();
+		converter.Scanner.Next(ref stream);
+		return converter.ParseItem(ref stream);
+	}
+
+	readonly ref struct ActualParser
 	{
 		private const int OBJBEG = 1;
 		private const int OBJEND = 2;
@@ -26,10 +47,9 @@ namespace Lexxys
 
 		private readonly OneBackFilter _back;
 
-		private JsonParser(string? sourceName)
+		public ActualParser()
 		{
 			_back = new OneBackFilter();
-			SourceName = sourceName;
 			Scanner = new TokenScanner(new ITokenFilter[] { _back },
 				new StringTokenRule(),
 				new CppCommentsTokenRule(LexicalTokenType.IGNORE),
@@ -44,34 +64,11 @@ namespace Lexxys
 				new WhiteSpaceTokenRule());
 		}
 
-		private TokenScanner Scanner { get; }
-		private string? SourceName { get; }
-
-		public static JsonItem Parse(string text, string? sourceName = null)
-		{
-			if (text == null)
-				throw new ArgumentNullException(nameof(text));
-
-			var stream = new CharStream(text);
-			var converter = new JsonParser(sourceName);
-			converter.Scanner.Next(ref stream);
-			return converter.ParseItem(ref stream);
-		}
-
-		public static JsonItem Parse(TextReader text, string? sourceName = null)
-		{
-			if (text == null)
-				throw new ArgumentNullException(nameof(text));
-
-			var stream = new CharStream(text);
-			var converter = new JsonParser(sourceName);
-			converter.Scanner.Next(ref stream);
-			return converter.ParseItem(ref stream);
-		}
+		public TokenScanner Scanner { get; }
 
 		// jsonExValue := ['(' args ')'] jsonValue
 
-		private JsonItem ParseItem(ref CharStream stream, bool allowColon = false)
+		public JsonItem ParseItem(ref CharStream stream, bool allowColon = false)
 		{
 			var token = _back.Value;
 			List<JsonPair>? args = null;
@@ -209,6 +206,7 @@ namespace Lexxys
 			}
 		}
 	}
+	
 }
 
 

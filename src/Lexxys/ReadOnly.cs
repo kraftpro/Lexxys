@@ -4,17 +4,13 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Collections;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 #pragma warning disable CA1716 // Identifiers should not match keywords
 #pragma warning disable CA1034 // Nested types should not be visible
 #pragma warning disable CA1710 // Identifiers should have correct suffix
+// ReSharper disable RedundantToStringCall
 
 namespace Lexxys
 {

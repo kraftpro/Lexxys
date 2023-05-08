@@ -4,49 +4,47 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
 
-namespace Lexxys.Crypting
+namespace Lexxys.Crypting;
+
+public enum CryptoProviderType
 {
-	public enum CryptoProviderType
+	None,
+	Hasher,
+	Encryptor,
+	Decryptor,
+}
+
+public class CryptoProviderSettingItem
+{
+	private Type? _type;
+
+	public CryptoProviderSettingItem(CryptoProviderType type, string name, string @class, string? assembly = null)
 	{
-		None,
-		Hasher,
-		Encryptor,
-		Decryptor,
+		ProviderType = type;
+		Name = name;
+		Class = @class;
+		Assembly = assembly;
 	}
 
-	public class CryptoProviderSettingItem
+	public CryptoProviderType ProviderType { get; }
+	public string Name { get; }
+	public string Class { get; }
+	public string? Assembly { get; }
+
+	public Type Type
 	{
-		private Type? _type;
-
-		public CryptoProviderSettingItem(CryptoProviderType type, string name, string @class, string? assembly = null)
+		get
 		{
-			ProviderType = type;
-			Name = name;
-			Class = @class;
-			Assembly = assembly;
-		}
-
-		public CryptoProviderType ProviderType { get; }
-		public string Name { get; }
-		public string Class { get; }
-		public string? Assembly { get; }
-
-		public Type Type
-		{
-			get
+			if (_type == null)
 			{
-				if (_type == null)
-				{
+				_type = Factory.GetType(Class);
+				if (_type == null && Assembly != null && Factory.TryLoadAssembly(Assembly, false) != null)
 					_type = Factory.GetType(Class);
-					if (_type == null && Assembly != null && Factory.TryLoadAssembly(Assembly, false) != null)
-						_type = Factory.GetType(Class);
-					if (_type == null)
-						throw new InvalidOperationException(SR.CR_CannotCreateAgorithm(Class));
-				}
-				return _type; 
+				if (_type == null)
+					throw new InvalidOperationException(SR.CR_CannotCreateAlgorithm(Class));
 			}
+			return _type; 
 		}
 	}
 }

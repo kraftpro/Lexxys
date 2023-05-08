@@ -4,14 +4,11 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
-using System;
-using System.Globalization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Tokenizer
 {
+	using Testing;
 	using Lexxys.Tokenizer;
-	using Lexxys.Testing;
 
 	/// <summary>
 	///This is a test class for CharStreamTest and is intended
@@ -20,7 +17,7 @@ namespace Lexxys.Tests.Tokenizer
 	[TestClass()]
 	public class CharStreamTest
 	{
-		private TestContext testContextInstance;
+		private TestContext _testContextInstance;
 
 		/// <summary>
 		///Gets or sets the test context which provides
@@ -30,11 +27,11 @@ namespace Lexxys.Tests.Tokenizer
 		{
 			get
 			{
-				return testContextInstance;
+				return _testContextInstance;
 			}
 			set
 			{
-				testContextInstance = value;
+				_testContextInstance = value;
 			}
 		}
 
@@ -91,7 +88,7 @@ namespace Lexxys.Tests.Tokenizer
 		{
 			string buffer = string.Empty;
 			int tabSize = 4;
-			CharStream target = new CharStream(buffer, tabSize);
+			var _ = new CharStream(buffer, tabSize);
 		}
 
 		/// <summary>
@@ -143,7 +140,7 @@ namespace Lexxys.Tests.Tokenizer
 					int length = __r.Next(1, text.Length - index);
 					int position = __r.Next(index);
 					string value = text.Substring(index, length);
-					int expected = Math.Max(-1, text.IndexOf(value, position) - position);
+					int expected = Math.Max(-1, text.IndexOf(value, position, StringComparison.Ordinal) - position);
 					cs.Rewind();
 					cs.Forward(position);
 					int actual = cs.IndexOf(value);
@@ -235,7 +232,7 @@ namespace Lexxys.Tests.Tokenizer
 					int offset = __r.Next(index - position);
 					int length = __r.Next(1, text.Length - index);
 					string value = text.Substring(index, length);
-					int expected = Math.Max(-1, text.IndexOf(value, position + offset) - position);
+					int expected = Math.Max(-1, text.IndexOf(value, position + offset, StringComparison.Ordinal) - position);
 					cs.Rewind();
 					cs.Forward(position);
 					int actual = cs.IndexOf(value, offset);
@@ -309,7 +306,7 @@ namespace Lexxys.Tests.Tokenizer
 				CharStream cs = GetStream();
 				cs.Forward(__r.Next(cs.Length));
 				cs.Rewind();
-				Assert.AreEqual(CharPosition.Start, cs.GetPosition());
+				Assert.AreEqual(CharPosition.Start, cs.GetChatPosition());
 			}
 		}
 
@@ -323,10 +320,10 @@ namespace Lexxys.Tests.Tokenizer
 			{
 				CharStream cs = GetStream();
 				cs.Forward(__r.Next(cs.Length));
-				CharPosition expected = cs.GetPosition();
+				CharPosition expected = cs.GetChatPosition();
 				cs.Rewind();
 				cs.Move(expected.Position);
-				Assert.AreEqual(expected, cs.GetPosition());
+				Assert.AreEqual(expected, cs.GetChatPosition());
 			}
 		}
 

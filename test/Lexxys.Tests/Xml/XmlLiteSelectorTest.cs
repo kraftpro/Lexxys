@@ -4,14 +4,11 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
-using System;
-using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Xml
 {
-	using Lexxys.Testing;
+	using Testing;
 	using Lexxys.Xml;
 
 	[TestClass]
@@ -50,7 +47,7 @@ namespace Lexxys.Tests.Xml
 				return text;
 
 			int n = Rand.Int(nodes);
-			int a = r.Next(attribs);
+			int a = _r.Next(attribs);
 			int k = Rand.Int(n) + 1;
 			text.Append(Environment.NewLine);
 			text.Append("<node").Append(k);
@@ -84,6 +81,6 @@ namespace Lexxys.Tests.Xml
 			return text;
 		}
 
-		private static Random r = new Random();
+		private static readonly Random _r = new Random();
 	}
 }

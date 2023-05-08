@@ -4,44 +4,28 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
 
-namespace Lexxys
+namespace Lexxys;
+
+public static class DateTimeExtensions
 {
-	public static class DateTimeExtensions
-	{
-		private static readonly long __unixEpochTicks = new DateTime(1970, 1, 1).Ticks;
+	private static readonly long __unixEpochTicks = new DateTime(1970, 1, 1).Ticks;
 
-		public static long ToUnixTime(this DateTime value)
-		{
-			return (value.ToUniversalTime().Ticks - __unixEpochTicks) / TimeSpan.TicksPerSecond;
-		}
+	public static long ToUnixTimeTicks(this DateTime value) => (value.ToUniversalTime().Ticks - __unixEpochTicks);
 
-		public static long ToUnixTimeMilliseconds(this DateTime value)
-		{
-			return (value.ToUniversalTime().Ticks - __unixEpochTicks) / TimeSpan.TicksPerMillisecond;
-		}
+	public static long ToUnixTimeMilliseconds(this DateTime value) => value.ToUnixTimeTicks() / TimeSpan.TicksPerMillisecond;
 
-		public static long ToUnixTimeTicks(this DateTime value)
-		{
-			return (value.ToUniversalTime().Ticks - __unixEpochTicks);
-		}
+	public static long ToUnixTime(this DateTime value) => value.ToUnixTimeTicks() / TimeSpan.TicksPerSecond;
 
-		public static DateTime FromUnixTime(this long value)
-		{
-			return new DateTime(__unixEpochTicks + value * TimeSpan.TicksPerSecond, DateTimeKind.Utc).ToLocalTime();
-		}
+	public static DateTime FromUnixTimeTicks(this long value) => new DateTime(__unixEpochTicks + value, DateTimeKind.Utc).ToLocalTime();
 
-		public static DateTime FromUnixTimeMilliseconds(this long value)
-		{
-			return new DateTime(__unixEpochTicks + value * TimeSpan.TicksPerMillisecond, DateTimeKind.Utc).ToLocalTime();
-		}
+	public static DateTime FromUnixTimeMilliseconds(this long value) => (value * TimeSpan.TicksPerMillisecond).FromUnixTimeTicks();
 
-		public static DateTime FromUnixTimeTicks(this long value)
-		{
-			return new DateTime(__unixEpochTicks + value, DateTimeKind.Utc).ToLocalTime();
-		}
-	}
+	public static DateTime FromUnixTime(this long value) => (value * TimeSpan.TicksPerSecond).FromUnixTimeTicks();
+
+#if NET6_0_OR_GREATER
+	public static DateOnly ToDateOnly(this DateTime value) => DateOnly.FromDateTime(value);
+#endif
 }
 
 

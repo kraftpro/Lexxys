@@ -6,26 +6,26 @@ namespace Lexxys.Testing;
 /// <summary>
 /// Represents <see cref="Weight"/> and <see cref="Value"/> pair.
 /// </summary>
-public interface WeightValuePair<out T>
+public interface IWeightValuePair<out T>
 {
 	T Value { get; }
 	double Weight { get; }
 
-	WeightValuePair<T> Multiply(double weight);
+	IWeightValuePair<T> Multiply(double weight);
 }
 
 public static class WeightValuePair
 {
-	public static WeightValuePair<T> Create<T>(double weight, T value) => new WeightValuePairInternal<T>(weight, value);
-	public static WeightValuePair<T> Create<T>(T value) => new WeightValuePairInternal<T>(1, value);
-	public static WeightValuePair<T> Create<T>(double weight, Func<T> value) => new WeightFunctionPairInternal<T>(weight, value);
-	public static WeightValuePair<T> Create<T>(Func<T> value) => new WeightFunctionPairInternal<T>(1, value);
+	public static IWeightValuePair<T> Create<T>(double weight, T value) => new WeightValuePairInternal<T>(weight, value);
+	public static IWeightValuePair<T> Create<T>(T value) => new WeightValuePairInternal<T>(1, value);
+	public static IWeightValuePair<T> Create<T>(double weight, Func<T> value) => new WeightFunctionPairInternal<T>(weight, value);
+	public static IWeightValuePair<T> Create<T>(Func<T> value) => new WeightFunctionPairInternal<T>(1, value);
 }
 
 /// <summary>
 /// Represents <see cref="Weight"/> and <see cref="Value"/> pair.
 /// </summary>
-class WeightValuePairInternal<T>: WeightValuePair<T>
+class WeightValuePairInternal<T>: IWeightValuePair<T>
 {
 	public double Weight { get; }
 	public T Value { get; }
@@ -46,16 +46,16 @@ class WeightValuePairInternal<T>: WeightValuePair<T>
 		Value = value.Value;
 	}
 
-	public WeightValuePairInternal<T> Multiply(double value) => value == 1 ? this: new WeightValuePairInternal<T>(value, this);
+	public WeightValuePairInternal<T> Multiply(double value) => value == 1.0 ? this: new WeightValuePairInternal<T>(value, this);
 
-	WeightValuePair<T> WeightValuePair<T>.Multiply(double value) => value == 1 ? this: new WeightValuePairInternal<T>(value, this);
+	IWeightValuePair<T> IWeightValuePair<T>.Multiply(double value) => value == 1.0 ? this: new WeightValuePairInternal<T>(value, this);
 }
 
 
 /// <summary>
 /// Represents <see cref="Weight"/> and <see cref="Value"/> pair.
 /// </summary>
-class WeightFunctionPairInternal<T>: WeightValuePair<T>
+class WeightFunctionPairInternal<T>: IWeightValuePair<T>
 {
 	private readonly Func<T> _func;
 
@@ -82,8 +82,8 @@ class WeightFunctionPairInternal<T>: WeightValuePair<T>
 		_func = value._func;
 	}
 
-	public WeightFunctionPairInternal<T> Multiply(double value) => value == 1 ? this: new WeightFunctionPairInternal<T>(value, this);
+	public WeightFunctionPairInternal<T> Multiply(double value) => value == 1.0 ? this: new WeightFunctionPairInternal<T>(value, this);
 
-	WeightValuePair<T> WeightValuePair<T>.Multiply(double value) => value == 1 ? this: new WeightFunctionPairInternal<T>(value, this);
+	IWeightValuePair<T> IWeightValuePair<T>.Multiply(double value) => value == 1.0 ? this: new WeightFunctionPairInternal<T>(value, this);
 }
 #endif

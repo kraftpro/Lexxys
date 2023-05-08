@@ -4,180 +4,176 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 
-namespace Lexxys
+namespace Lexxys;
+
+public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 {
-	public class WeeklySchedule: Schedule, IDump, IDumpXml, IDumpJson, IEquatable<WeeklySchedule>
+	public new const string Type = "weekly";
+
+	public WeeklySchedule(int weekPeriod = 0, IEnumerable<DayOfWeek>? dayList = null, ScheduleReminder? reminder = null): base(Type, reminder)
 	{
-		public new const string Type = "weekly";
-
-		public WeeklySchedule(int weekPeriod = 0, IEnumerable<DayOfWeek>? dayList = null, ScheduleReminder? reminder = null): base(Type, reminder)
+		WeekPeriod = Math.Max(1, weekPeriod);
+		if (dayList == null)
 		{
-			WeekPeriod = Math.Max(1, weekPeriod);
-			if (dayList == null)
-			{
-				DayList = FridayOnly;
-			}
-			else
-			{
-				List<DayOfWeek> ss = new SortedSet<DayOfWeek>(dayList.Where(o => o >= DayOfWeek.Sunday && o <= DayOfWeek.Saturday)).ToList();
-				DayList = ss.Count == 0 ? FridayOnly: ss.Count == 1 ? OneDayOnly[(int)ss[0]]: ReadOnly.Wrap(ss)!;
-			}
+			DayList = FridayOnly;
 		}
-		private static readonly IReadOnlyList<DayOfWeek>[] OneDayOnly = new[]
+		else
 		{
-			ReadOnly.Wrap(new[] { DayOfWeek.Sunday })!,
-			ReadOnly.Wrap(new[] { DayOfWeek.Monday })!,
-			ReadOnly.Wrap(new[] { DayOfWeek.Tuesday })!,
-			ReadOnly.Wrap(new[] { DayOfWeek.Wednesday })!,
-			ReadOnly.Wrap(new[] { DayOfWeek.Thursday })!,
-			ReadOnly.Wrap(new[] { DayOfWeek.Friday })!,
-			ReadOnly.Wrap(new[] { DayOfWeek.Saturday })!,
-		};
-		private static readonly IReadOnlyList<DayOfWeek> FridayOnly = OneDayOnly[(int)DayOfWeek.Friday];
-
-		public int WeekPeriod { get; }
-		public IReadOnlyList<DayOfWeek> DayList { get; }
-
-		public override DateTime? Next(DateTime startTime, DateTime? previousTime = null)
-		{
-			DateTime start = startTime.Date;
-			DateTime prev = previousTime ?? start.AddDays(-1);
-			DateTime week = start.AddDays(-(int)start.DayOfWeek);
-			var diff = (prev - week).Days;
-			int period = WeekPeriod * 7;
-			if (diff > 6)
-				week = week.AddDays(((diff - 1) / period) * period);
-
-			for (;;)
-			{
-				var go = TestWeek(week, prev);
-				if (go != null)
-					return go + startTime.TimeOfDay;
-				week = week.AddDays(period);
-			}
+			List<DayOfWeek> ss = new SortedSet<DayOfWeek>(dayList.Where(o => o is >= DayOfWeek.Sunday and <= DayOfWeek.Saturday)).ToList();
+			DayList = ss.Count == 0 ? FridayOnly: ss.Count == 1 ? OneDayOnly[(int)ss[0]]: ReadOnly.Wrap(ss)!;
 		}
+	}
+	private static readonly IReadOnlyList<DayOfWeek>[] OneDayOnly =
+	{
+		ReadOnly.Wrap(new[] { DayOfWeek.Sunday })!,
+		ReadOnly.Wrap(new[] { DayOfWeek.Monday })!,
+		ReadOnly.Wrap(new[] { DayOfWeek.Tuesday })!,
+		ReadOnly.Wrap(new[] { DayOfWeek.Wednesday })!,
+		ReadOnly.Wrap(new[] { DayOfWeek.Thursday })!,
+		ReadOnly.Wrap(new[] { DayOfWeek.Friday })!,
+		ReadOnly.Wrap(new[] { DayOfWeek.Saturday })!,
+	};
+	private static readonly IReadOnlyList<DayOfWeek> FridayOnly = OneDayOnly[(int)DayOfWeek.Friday];
 
-		private DateTime? TestWeek(DateTime week, DateTime previous)
+	public int WeekPeriod { get; }
+	public IReadOnlyList<DayOfWeek> DayList { get; }
+
+	public override DateTime? Next(DateTime startTime, DateTime? previousTime = null)
+	{
+		DateTime start = startTime.Date;
+		DateTime prev = previousTime ?? start.AddDays(-1);
+		DateTime week = start.AddDays(-(int)start.DayOfWeek);
+		var diff = (prev - week).Days - 1;
+		int period = WeekPeriod * 7;
+		if (diff > 6 - 1)
+			week = week.AddDays(diff - diff % period);
+
+		for (;;)
 		{
-			foreach (var day in DayList)
-			{
-				DateTime dx = week.AddDays((int)day);
-				if (dx > previous)
-					return dx;
-			}
-			return null;
+			var go = TestWeek(week, prev);
+			if (go != null)
+				return go + startTime.TimeOfDay;
+			week = week.AddDays(period);
 		}
+	}
 
-		public override StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
+	private DateTime? TestWeek(DateTime week, DateTime previous)
+	{
+		foreach (var day in DayList)
 		{
-			if (text is null)
-				throw new ArgumentNullException(nameof(text));
-
-			var format = (DateTimeFormatInfo?)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
-			text.Append("every ")
-				.Append(
-					DayList.Count == 7 ? "day" :
-					DayList.Count == 5 && DayList[0] == DayOfWeek.Monday && DayList[4] == DayOfWeek.Friday ? "weekday" :
-					Strings.JoinAnd(DayList.Select(abbreviateMonthName ? (Func<DayOfWeek, string>)(o => format.GetAbbreviatedDayName(o)) : o => format.GetDayName(o)))
-					);
-			if (WeekPeriod > 1)
-				text.Append(" of every ").Append(Lingua.Ord(Lingua.NumWord(WeekPeriod))).Append(" week");
-			Reminder.ToString(text, provider);
-			return text;
+			DateTime dx = week.AddDays((int)day);
+			if (dx > previous)
+				return dx;
 		}
+		return null;
+	}
 
-		public bool Equals(WeeklySchedule? other)
-		{
-			if (other is null)
-				return false;
-			if (ReferenceEquals(this, other))
-				return true;
-			return WeekPeriod == other.WeekPeriod && Comparer.Equals(DayList, other.DayList);
-		}
+	public override StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
+	{
+		if (text is null)
+			throw new ArgumentNullException(nameof(text));
 
-		public override bool Equals(Schedule? other)
-		{
-			return other is WeeklySchedule ws && Equals(ws);
-		}
+		var format = (DateTimeFormatInfo?)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
+		text.Append("every ")
+			.Append(
+				DayList.Count == 7 ? "day" :
+				DayList.Count == 5 && DayList[0] == DayOfWeek.Monday && DayList[4] == DayOfWeek.Friday ? "weekday" :
+				Strings.JoinAnd(DayList.Select(abbreviateMonthName ? (Func<DayOfWeek, string>)(o => format.GetAbbreviatedDayName(o)) : o => format.GetDayName(o)))
+				);
+		if (WeekPeriod > 1)
+			text.Append(" of every ").Append(Lingua.Ord(Lingua.NumWord(WeekPeriod))).Append(" week");
+		Reminder.ToString(text, provider);
+		return text;
+	}
 
-		public override bool Equals(object? obj)
-		{
-			return obj is WeeklySchedule ws && Equals(ws);
-		}
+	public bool Equals(WeeklySchedule? other)
+	{
+		if (other is null)
+			return false;
+		if (ReferenceEquals(this, other))
+			return true;
+		return WeekPeriod == other.WeekPeriod && Comparer.Equals(DayList, other.DayList);
+	}
 
-		public override int GetHashCode()
-		{
-			return HashCode.Join(HashCode.Join(base.GetHashCode(), WeekPeriod.GetHashCode()), DayList);
-		}
+	public override bool Equals(Schedule? other)
+	{
+		return other is WeeklySchedule ws && Equals(ws);
+	}
 
-		public override DumpWriter DumpContent(DumpWriter writer)
-		{
-			if (writer is null)
-				throw new ArgumentNullException(nameof(writer));
+	public override bool Equals(object? obj)
+	{
+		return obj is WeeklySchedule ws && Equals(ws);
+	}
 
-			return base.DumpContent(writer)
-				.Then("WeekPeriod", WeekPeriod)
-				.Then("DayList", DayList);
-		}
+	public override int GetHashCode()
+	{
+		return HashCode.Join(HashCode.Join(base.GetHashCode(), WeekPeriod.GetHashCode()), DayList);
+	}
 
-		public override XmlBuilder ToXmlContent(XmlBuilder builder)
-		{
-			if (builder is null)
-				throw new ArgumentNullException(nameof(builder));
+	public override DumpWriter DumpContent(DumpWriter writer)
+	{
+		if (writer is null)
+			throw new ArgumentNullException(nameof(writer));
 
-			builder.Item("type", ScheduleType);
-			if (WeekPeriod != 1)
-				builder.Item("week", WeekPeriod);
-			if (!Object.ReferenceEquals(DayList, FridayOnly))
-				builder.Item("days", String.Join(",", DayList.Select(o => ((int)o).ToString())));
-			if (!Reminder.IsEmpty)
-				builder.Element("reminder").Value(Reminder).End();
-			return builder;
-		}
+		return base.DumpContent(writer)
+			.Then("WeekPeriod", WeekPeriod)
+			.Then("DayList", DayList);
+	}
 
-		public override JsonBuilder ToJsonContent(JsonBuilder json)
-		{
-			if (json is null)
-				throw new ArgumentNullException(nameof(json));
+	public override XmlBuilder ToXmlContent(XmlBuilder builder)
+	{
+		if (builder is null)
+			throw new ArgumentNullException(nameof(builder));
 
-			json.Item("type").Val(ScheduleType);
-			if (WeekPeriod != 1)
-				json.Item("week").Val(WeekPeriod);
-			if (!Object.ReferenceEquals(DayList, FridayOnly))
-				json.Item("days").Val(DayList.Select(o => (int)o));
-			if (!Reminder.IsEmpty)
-				json.Item("reminder").Val(Reminder);
-			return json;
-		}
+		builder.Item("type", ScheduleType);
+		if (WeekPeriod != 1)
+			builder.Item("week", WeekPeriod);
+		if (!Object.ReferenceEquals(DayList, FridayOnly))
+			builder.Item("days", String.Join(",", DayList.Select(o => ((int)o).ToString())));
+		if (!Reminder.IsEmpty)
+			builder.Element("reminder").Value(Reminder).End();
+		return builder;
+	}
 
-		public new static WeeklySchedule FromXml(Xml.XmlLiteNode xml)
-		{
-			if (xml is null)
-				throw new ArgumentNullException(nameof(xml));
-			if (xml.IsEmpty)
-				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
-			if (xml["type"] != Type)
-				throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
+	public override JsonBuilder ToJsonContent(JsonBuilder json)
+	{
+		if (json is null)
+			throw new ArgumentNullException(nameof(json));
 
-			IEnumerable<DayOfWeek>? days = xml["days"] != null ?
-				xml["days"]?.Split(',').Select(o => o.AsEnum(DayOfWeek.Friday)) :
-				xml.Element("days").Elements.Select(o => o.Value.AsEnum<DayOfWeek>());
-			return new WeeklySchedule(xml["week"].AsInt32(1), days, ScheduleReminder.FromXml(xml.Element("reminder")));
-		}
+		json.Item("type").Val(ScheduleType);
+		if (WeekPeriod != 1)
+			json.Item("week").Val(WeekPeriod);
+		if (!Object.ReferenceEquals(DayList, FridayOnly))
+			json.Item("days").Val(DayList.Select(o => (int)o));
+		if (!Reminder.IsEmpty)
+			json.Item("reminder").Val(Reminder);
+		return json;
+	}
 
-		public new static WeeklySchedule FromJson(string json)
-		{
-			if (json is not { Length: > 0 })
-				throw new ArgumentNullException(nameof(json));
+	public new static WeeklySchedule FromXml(Xml.XmlLiteNode xml)
+	{
+		if (xml is null)
+			throw new ArgumentNullException(nameof(xml));
+		if (xml.IsEmpty)
+			throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
+		if (xml["type"] != Type)
+			throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
 
-			return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
-		}
+		IEnumerable<DayOfWeek>? days = xml["days"] != null ?
+			xml["days"]?.Split(',').Select(o => o.AsEnum(DayOfWeek.Friday)) :
+			xml.Element("days").Elements.Select(o => o.Value.AsEnum<DayOfWeek>());
+		return new WeeklySchedule(xml["week"].AsInt32(1), days, ScheduleReminder.FromXml(xml.Element("reminder")));
+	}
+
+	public new static WeeklySchedule FromJson(string json)
+	{
+		if (json is not { Length: > 0 })
+			throw new ArgumentNullException(nameof(json));
+
+		return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
 	}
 }
 

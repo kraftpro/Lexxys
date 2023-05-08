@@ -5,8 +5,6 @@
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
 using Lexxys.Xml;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 
 namespace Lexxys.Tests.Xml
 {

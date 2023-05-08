@@ -16,13 +16,13 @@ namespace Lexxys.Logging;
 
 class LogRecordService: ILoggingService
 {
-	internal const int LogTypeCount = (int)LogType.MaxValue + 1;
+	private const int LogTypeCount = (int)LogType.MaxValue + 1;
 
 	internal const int DefaultMaxQueueSize = 256 * 1024;
 	internal static readonly TimeSpan DefaultFlushTimeout = TimeSpan.FromSeconds(5);
-	internal const int LogWatcherSleep = 500;
+	private const int LogWatcherSleep = 500;
 
-	private const string LogSource = "Lexxys.Logging.LogRecordService";
+	//private const string LogSource = "Lexxys.Logging.LogRecordService";
 
 	private volatile ILogRecordQueueListener[] _listeners;
 	private volatile int _lockDepth;
@@ -34,16 +34,16 @@ class LogRecordService: ILoggingService
 		if (parameters is null)
 			throw new ArgumentNullException(nameof(parameters));
 
-		var lstnrs = new List<ILogRecordQueueListener>();
+		var listeners = new List<ILogRecordQueueListener>();
 		foreach (var item in parameters)
 		{
 			if (item == null)
 				continue;
 			var wr = item.CreateWriter();
-			lstnrs.Add(new LogRecordQueueListener(wr, item.MaxQueueSize, item.FlushTimeout));
+			listeners.Add(new LogRecordQueueListener(wr, item.MaxQueueSize, item.FlushTimeout));
 		}
 		_version = 1;
-		_listeners = lstnrs.ToArray();
+		_listeners = listeners.ToArray();
 		SetTerminationHandlers();
 	}
 
@@ -99,7 +99,7 @@ class LogRecordService: ILoggingService
 			var array = new ILogRecordQueueListener[copy.Length + append.Length];
 			Array.Copy(copy, array, copy.Length);
 			Array.Copy(append, 0, array, copy.Length, append.Length);
-			++_version;
+			Interlocked.Increment(ref _version);
 			Interlocked.Exchange(ref _listeners, array);
 		}
 		OnChanged();
@@ -112,8 +112,8 @@ class LogRecordService: ILoggingService
 
 		lock (this)
 		{
-			var array = writers.Where(o => o is not null).Select(o => new LogRecordQueueListener(o!)).ToArray();
-			++_version;
+			var array = writers.Where(o => o is not null).Select(o => (ILogRecordQueueListener)new LogRecordQueueListener(o!)).ToArray();
+			Interlocked.Increment(ref _version);
 			Interlocked.Exchange(ref _listeners, array);
 		}
 		OnChanged();
@@ -126,18 +126,18 @@ class LogRecordService: ILoggingService
 		return new LogRecordWriter(this, source);
 	}
 
-	private static IEnumerable<ILogWriter> GetLogWriters(ILoggingParameters parameters)
-	{
-		var wrtrs = parameters.Select(o => o.CreateWriter()).ToList();
-		if (System.Diagnostics.Debugger.IsLogging())
-		{
-			foreach (var itm in wrtrs)
-			{
-				SystemLog.WriteDebugMessage(LogSource, "Writer: " + itm.Name + " -> " + itm.Target);
-			}
-		}
-		return wrtrs;
-	}
+	// private static IEnumerable<ILogWriter> GetLogWriters(ILoggingParameters parameters)
+	// {
+	// 	var wrtrs = parameters.Select(o => o.CreateWriter()).ToList();
+	// 	if (System.Diagnostics.Debugger.IsLogging())
+	// 	{
+	// 		foreach (var itm in wrtrs)
+	// 		{
+	// 			SystemLog.WriteDebugMessage(LogSource, "Writer: " + itm.Name + " -> " + itm.Target);
+	// 		}
+	// 	}
+	// 	return wrtrs;
+	// }
 
 
 	public void Stop(bool force = false)
@@ -147,7 +147,7 @@ class LogRecordService: ILoggingService
 		for (int i = 0; i < listeners.Length; ++i)
 		{
 			var listener = listeners[i];
-			if (listener != null && listener.IsStarted)
+			if (listener is { IsStarted: true })
 			{
 				var stopper = new Task(() => listener.Stop(force));
 				pool.Add(stopper);
@@ -172,7 +172,7 @@ class LogRecordService: ILoggingService
 
 		for (int i = 0; i < indexes.Length; ++i)
 		{
-			listeners[indexes[i]]?.Write(record);
+			listeners[indexes[i]].Write(record);
 		}
 		return true;
 	}
@@ -445,10 +445,6 @@ class LogRecordQueueListener: ILogRecordQueueListener
 
 	class LogRecordQueue: ConcurrentQueue<LogRecord>, IEnumerable<LogRecord>
 	{
-		public LogRecordQueue()
-		{
-		}
-
 		IEnumerator<LogRecord> IEnumerable<LogRecord>.GetEnumerator()
 		{
 			while (TryDequeue(out LogRecord? rec))

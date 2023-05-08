@@ -4,12 +4,7 @@
 // Copyright (c) 2001-2014, KRAFT Program LLC.
 // You may use this code under the terms of the LGPLv3 license (https://www.gnu.org/copyleft/lesser.html)
 //
- using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Lexxys.Tests.Tools
 {
@@ -31,7 +26,7 @@ namespace Lexxys.Tests.Tools
 			if (!x)
 				Debugger.Break();
 			Assert.IsTrue(x);
-			var y = Config.Current.GetCollection<Lexxys.Xml.XmlLiteNode>(Lexxys.Factory.ConfigurationSynonyms);
+			var y = Config.Current.GetCollection<Lexxys.Xml.XmlLiteNode>(Factory.ConfigurationSynonyms);
 			if (y.Value is null || y.Value.Count == 0)
 				Debugger.Break();
 			Assert.IsNotNull(y.Value);

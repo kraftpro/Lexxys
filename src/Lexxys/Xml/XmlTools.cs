@@ -7,14 +7,13 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace Lexxys.Xml
-{
-	public static partial class XmlTools
-	{
-		private static ILogger? Log => __logger ??= Statics.TryGetLogger("Lexxys.XmlTools");
-		private static ILogger? __logger;
+namespace Lexxys.Xml;
 
-		public const string OptionIgnoreCase = "opt:ignoreCase";
-		public const string OptionForceAttributes = "opt:forceAttributes";
-	}
+public static partial class XmlTools
+{
+	private static ILogger? Log => __logger ??= Statics.TryGetLogger("Lexxys.XmlTools");
+	private static ILogger? __logger;
+
+	public const string OptionIgnoreCase = "opt:ignoreCase";
+	public const string OptionForceAttributes = "opt:forceAttributes";
 }
