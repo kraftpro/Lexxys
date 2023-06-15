@@ -5,6 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace Lexxys;
 
@@ -201,17 +202,17 @@ public class LocalCache<TKey, TValue> where TKey: notnull
 
 		public CacheItem(Func<TValue> factory)
 		{
-			long start = WatchTimer.Start();
+			var start = Stopwatch.StartNew();
 			Value = factory();
-			_duration = Math.Max(EmptyDuration, WatchTimer.ToTimeSpan(WatchTimer.Stop(start) * DurationMultiplier).Ticks);
+			_duration = Math.Max(EmptyDuration, start.Elapsed.Ticks * DurationMultiplier);
 			_timeStamp = _touchStamp = DateTime.UtcNow.Ticks;
 		}
 
 		public CacheItem(TKey key, Func<TKey, TValue> factory)
 		{
-			long start = WatchTimer.Start();
+			var start = Stopwatch.StartNew();
 			Value = factory(key);
-			_duration = Math.Max(EmptyDuration, WatchTimer.ToTimeSpan(WatchTimer.Stop(start) * DurationMultiplier).Ticks);
+			_duration = Math.Max(EmptyDuration, start.Elapsed.Ticks * DurationMultiplier);
 			_timeStamp = _touchStamp = DateTime.UtcNow.Ticks;
 		}
 

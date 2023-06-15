@@ -76,14 +76,14 @@ public static class IniToXmlConverter
 				_text.Append("/>");
 		}
 
-		private static string Name(string name, string defaultName)
+		private static string Name(string? name, string defaultName)
 		{
 			if (name == null || (name = name.Trim()).Length == 0)
 				name = defaultName;
 			return XmlConvert.EncodeName(name) ?? defaultName;
 		}
 
-		private string Attr(string name, string defaultName)
+		private string Attr(string? name, string defaultName)
 		{
 			if (name == null || (name = name.Trim()).Length == 0)
 				name = defaultName;
@@ -141,14 +141,14 @@ public static class IniToXmlConverter
 			_attr.Clear();
 		}
 
-		private static string Name(string name, string defaultName)
+		private static string Name(string? name, string defaultName)
 		{
 			if (name == null || (name = name.Trim()).Length == 0)
 				name = defaultName;
 			return name;
 		}
 
-		private string Attr(string name, string defaultName)
+		private string Attr(string? name, string defaultName)
 		{
 			if (name == null || (name = name.Trim()).Length == 0)
 				name = defaultName;

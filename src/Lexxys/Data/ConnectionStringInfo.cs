@@ -5,13 +5,13 @@
 // You may use this code under the terms of the MIT license
 //
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Lexxys.Data;
-
 using Xml;
 
 /// <summary>
-/// Provides information about connection to database and commands behaviours.
+/// Provides information about connection to the data source.
 /// </summary>
 public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 {
@@ -23,6 +23,9 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 
 	private readonly Dictionary<string, string>? _properties;
 
+	/// <summary>
+	/// Creates new instance of <see cref="ConnectionStringInfo" />.
+	/// </summary>
 	private ConnectionStringInfo()
 	{
 		Workstation = Tools.MachineName;
@@ -32,37 +35,10 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		BatchAuditThreshold = DefaultBatchAuditThreshold;
 	}
 
-	public ConnectionStringInfo(IEnumerable<KeyValuePair<string, string?>>? attribs)
-		: this(null, attribs)
-	{
-	}
-
-	public ConnectionStringInfo(string connectionString)
-		: this(null, ParseParameters(connectionString))
-	{
-	}
-
-	public ConnectionStringInfo(string? server, string? database, IEnumerable<KeyValuePair<string, string?>>? pairs = null)
-		: this(null, pairs)
-	{
-		if (!String.IsNullOrWhiteSpace(server))
-			Server = server!.Trim();
-		if (!String.IsNullOrWhiteSpace(database))
-			Database = database!.Trim();
-	}
-
-	public ConnectionStringInfo(Uri location)
-		: this(null, (location ?? throw new ArgumentNullException(nameof(location))).SplitQuery())
-	{
-		if (!location.IsAbsoluteUri || location.Scheme != "database")
-			throw new ArgumentOutOfRangeException(nameof(location), location, null);
-		string s;
-		if ((s = location.Authority.Trim()).Length > 0)
-			Server = s;
-		if ((s = location.AbsolutePath.Trim('/').Trim()).Length > 0)
-			Database = s;
-	}
-
+	/// <summary>
+	/// Copy constructor for the <see cref="ConnectionStringInfo" />.
+	/// </summary>
+	/// <param name="connectionInfo">The source object to copy from.</param>
 	public ConnectionStringInfo(ConnectionStringInfo? connectionInfo)
 		: this()
 	{
@@ -84,20 +60,86 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			_properties = new Dictionary<string, string>(connectionInfo._properties);
 	}
 
-	public ConnectionStringInfo(ConnectionStringInfo? connectionString, IEnumerable<KeyValuePair<string, string?>>? attribs)
+	/// <summary>
+	/// Creates new instance of <see cref="ConnectionStringInfo" /> and initializes it with the specified <paramref name="options"/>.
+	/// </summary>
+	/// <param name="options">Collection of key-value pairs of connection parameters.</param>
+	public ConnectionStringInfo(IEnumerable<KeyValuePair<string, string?>>? options)
+		: this(null, options)
+	{
+	}
+
+	/// <summary>
+	/// Creates new instance of <see cref="ConnectionStringInfo" /> by parsing the specified <paramref name="connectionString"/>
+	/// </summary>
+	/// <param name="connectionString">Regular connection string.</param>
+	public ConnectionStringInfo(string connectionString)
+		: this(null, ParseParameters(connectionString))
+	{
+	}
+
+	/// <summary>
+	/// Creates new instance of <see cref="ConnectionStringInfo" /> based on the specified <paramref name="location"/>
+	/// </summary>
+	/// <param name="location">Uri location of the database in the form of <c>data[base]://[user-info]server[/database][?parameters]</c>.</param>
+	/// <exception cref="ArgumentNullException"><paramref name="location"/> is <c>null</c>.</exception>
+	/// <exception cref="ArgumentOutOfRangeException"><paramref name="location"/> is not a valid database location.</exception>
+	public ConnectionStringInfo(Uri location)
+		: this(null, (location ?? throw new ArgumentNullException(nameof(location))).SplitQuery())
+	{
+		if (!location.IsAbsoluteUri)
+			throw new ArgumentOutOfRangeException(nameof(location), location, null);
+		if (location.Scheme is "http" or "https")
+		{
+			(_properties ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase))["URL"] = $"{location.Scheme}://{location.Authority}{location.AbsolutePath}";
+		}
+		else if (location.Scheme is "database" or "data")
+		{
+			(Server, Database) = GetServerDatabase(location);
+		}
+		else
+		{
+			throw new ArgumentOutOfRangeException(nameof(location), location, null);
+		}
+
+		(UserId, Password) = GetUserInfo(location);
+
+		(string? Server, string? Database) GetServerDatabase(Uri uri)
+		{
+			string? s = uri.Authority.TrimToNull();
+			string? d = uri.AbsolutePath.Trim('/').TrimToNull();
+			return (s ?? Server, d ?? Database);
+		}
+
+		(string? UserId, string? Password) GetUserInfo(Uri uri)
+		{
+			string? u = uri.UserInfo.TrimToNull();
+			if (u == null)
+				return (UserId, Password);
+			int i = u.IndexOf(':');
+			return i < 0 ? (u, Password): (u.Substring(0, i), u.Substring(i + 1));
+		}
+	}
+
+	/// <summary>
+	/// Creates new instance of <see cref="ConnectionStringInfo" /> based on the specified <paramref name="connectionString"/> and <paramref name="options"/>.
+	/// </summary>
+	/// <param name="connectionString">Regular connection string.</param>
+	/// <param name="options">Collection of key-value pairs of connection parameters.</param>
+	public ConnectionStringInfo(ConnectionStringInfo? connectionString, IEnumerable<KeyValuePair<string, string?>>? options)
 		: this(connectionString)
 	{
-		if (attribs == null)
+		if (options == null)
 			return;
 
 		bool integratedSecurity = false;
-		foreach (var item in attribs)
+		foreach (var item in options)
 		{
 			if (String.IsNullOrWhiteSpace(item.Key))
 				continue;
 			string name = item.Key.Trim();
 			string? value = item.Value ?? "";
-			string lookup = name.Replace(" ", "");
+			string lookup = Regex.Replace(name, "[ _-]", "");
 			if (_synonyms.TryGetValue(lookup, out string? key))
 				lookup = key;
 			else
@@ -132,7 +174,6 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 					else if (value.StartsWith("EXP", StringComparison.OrdinalIgnoreCase))
 						value = "explicit unbind";
 					break;
-				case "TRUSTED_CONNECTION":
 				case "TRUSTEDCONNECTION":
 					integratedSecurity = XmlTools.GetBoolean(value, true);
 					value = null;
@@ -186,7 +227,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 					value = null;
 					break;
 				case "LOGIN":
-					int i = value.IndexOf(';');
+					int i = value.IndexOf(':');
 					if (i < 0)
 					{
 						Password = value;
@@ -194,7 +235,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 					else
 					{
 						UserId = value.Substring(0, i).TrimEnd();
-						Password = value.Substring(i+1).TrimStart();
+						Password = value.Substring(i + 1).TrimStart();
 					}
 					value = null;
 					break;
@@ -209,20 +250,71 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			Password = null;
 	}
 
-	public string? Server { get; }
-	public string? Database { get; }
-	public string? Application { get; }
-	public string? Workstation { get; }
-	public string? UserId { get; }
-	public string? Password { get; }
-	public TimeSpan ConnectionTimeout { get; }
-	public TimeSpan ConnectionAuditThreshold { get; }
-	public TimeSpan CommandTimeout { get; }
-	public TimeSpan CommandAuditThreshold { get; }
-	public TimeSpan BatchAuditThreshold { get; }
+	/// <summary>
+	/// Database server name.
+	/// </summary>
+	public string? Server { get; init; }
 
+	/// <summary>
+	/// Database name.
+	/// </summary>
+	public string? Database { get; init; }
+
+	/// <summary>
+	/// Client application name.
+	/// </summary>
+	public string? Application { get; init; }
+
+	/// <summary>
+	/// Client workstation name.
+	/// </summary>
+	public string? Workstation { get; init; }
+
+	/// <summary>
+	/// User ID.
+	/// </summary>
+	public string? UserId { get; init; }
+
+	/// <summary>
+	/// Password.
+	/// </summary>
+	public string? Password { get; init; }
+
+	/// <summary>
+	/// Connection timeout.
+	/// </summary>
+	public TimeSpan ConnectionTimeout { get; init; }
+
+	/// <summary>
+	/// Connection time audit threshold.
+	/// </summary>
+	public TimeSpan ConnectionAuditThreshold { get; init; }
+
+	/// <summary>
+	/// Command execution timeout.
+	/// </summary>
+	public TimeSpan CommandTimeout { get; init; }
+
+	/// <summary>
+	/// Command execution time audit threshold.
+	/// </summary>
+	public TimeSpan CommandAuditThreshold { get; init; }
+
+	/// <summary>
+	/// Execution time audit threshold for batches.
+	/// </summary>
+	public TimeSpan BatchAuditThreshold { get; init; }
+
+	/// <summary>
+	/// Returns true if the connection is empty.
+	/// </summary>
 	public bool IsEmpty => Server == null && Database == null && _properties == null;
 
+	/// <summary>
+	/// Returns the value of the specified <paramref name="property"/>.
+	/// </summary>
+	/// <param name="property">Property name</param>
+	/// <returns></returns>
 	public string? this[string property]
 	{
 		get
@@ -234,6 +326,11 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		}
 	}
 
+	/// <summary>
+	/// Constructs a connection string.
+	/// </summary>
+	/// <param name="odbc">Use ODBC escaping rules for the connection string.</param>
+	/// <returns></returns>
 	public string GetConnectionString(bool odbc = false)
 	{
 		return ToString(true, odbc);
@@ -283,31 +380,44 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		{
 			if (value.Length == 0)
 				return value;
-			if (odbc)
-				return value[0] == '{' || value.IndexOf(';') >= 0 ? "{" + value.Replace("}", "}}") + "}": value;
+			return odbc ?
+				IsOdbcCorrect(value) ? value:
+					"{" + value.Replace("}", "}}") + "}":
+				IdOledbCorrect(value) ? value :
+					value.IndexOf('"') < 0 ? "\"" + value + "\"":
+					value.IndexOf('\'') < 0 ? "'" + value + "'":
+					"\"" + value.Replace("\"", "\"\"") + "\"";
 
-			return
-				value.IndexOfAny(__adoAny) >= 0 || value.Length != value.Trim().Length || value.Any(Char.IsControl) ?
-					value.IndexOf('"') < 0 ?
-						"\"" + value + "\"":
-					value.IndexOf('\'') < 0 ?
-						"'" + value + "'":
-						"\"" + value.Replace("\"", "\"\"") + "\"":
-					value;
+			static bool IsOdbcCorrect(string value) => value[0] != '{' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[value.Length - 1]) && value.IndexOf(';') < 0;
+
+			static bool IdOledbCorrect(string value) => value[0] != '"' && value[0] != '\'' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[value.Length - 1]) && value.IndexOf(';') < 0;
 		}
 	}
 	private static readonly char[] __adoAny = new [] {';', '\'', '"'};
 
+	/// <summary>
+	/// Returns a string representation of the connection.
+	/// </summary>
+	/// <returns></returns>
 	public override string ToString()
 	{
 		return ToString(false);
 	}
 
+	/// <summary>
+	/// Returns true if the specified <paramref name="obj"/> is equal to this connection.
+	/// </summary>
+	/// <param name="obj">The object to compare.</param>
+	/// <returns></returns>
 	public override bool Equals(object? obj)
 	{
 		return obj is ConnectionStringInfo other && Equals(other);
 	}
 
+	/// <summary>
+	/// Returns a hash code for this connection.
+	/// </summary>
+	/// <returns></returns>
 	public override int GetHashCode()
 	{
 		return HashCode.Join(
@@ -326,6 +436,11 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			);
 	}
 
+	/// <summary>
+	/// Returns true if the specified <paramref name="other"/> connection is equal to this connection.
+	/// </summary>
+	/// <param name="other">The connection to compare.</param>
+	/// <returns></returns>
 	public bool Equals(ConnectionStringInfo? other)
 	{
 		if (other == null)
@@ -344,14 +459,19 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			BatchAuditThreshold == other.BatchAuditThreshold;
 		if (!fieldsEqual)
 			return false;
-		if (_properties == null || _properties.Count == 0)
-			return other._properties == null || other._properties.Count == 0;
+		if (_properties == null)
+			return other._properties == null;
 		if (other._properties == null || _properties.Count != other._properties.Count)
 			return false;
 
 		return other._properties.All(o => _properties.TryGetValue(o.Key, out var value) && o.Value == value);
 	}
 
+	/// <summary>
+	/// Creates a new connection string from the specified <see cref="XmlLiteNode"/>.
+	/// </summary>
+	/// <param name="config"><see cref="XmlLiteNode"/> configuration node.</param>
+	/// <returns></returns>
 	public static ConnectionStringInfo? Create(XmlLiteNode? config)
 	{
 		if (config == null || config.IsEmpty)
@@ -362,13 +482,9 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
 
 		ConnectionStringInfo that = Config.Current.GetValue<ConnectionStringInfo>(reference).Value;
-		if (that == null)
-			return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
-
-		if (config.Attributes.Count > 0)
-			return new ConnectionStringInfo(that, config.Attributes);
-
-		return that;
+		return that == null ?
+			config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes):
+			config.Attributes.Count <= 0 ? that : new ConnectionStringInfo(that, config.Attributes);
 	}
 
 	private static IList<KeyValuePair<string, string?>> ParseParameters(string value)
@@ -384,6 +500,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			string name;
 			string val;
 
+			// name only
 			if (i < 0 || j >= 0 && j < i)
 			{
 				if (j < 0)
@@ -428,7 +545,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		}
 		return parameters;
 
-		ReadOnlySpan<char> SkipSpace(ReadOnlySpan<char> p)
+		static ReadOnlySpan<char> SkipSpace(ReadOnlySpan<char> p)
 		{
 			for (int i = 0; i < p.Length; ++i)
 			{
@@ -438,7 +555,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			return ReadOnlySpan<char>.Empty;
 		}
 
-		(int Length, string Value) ParseValue(ReadOnlySpan<char> p)
+		static (int Length, string Value) ParseValue(ReadOnlySpan<char> p)
 		{
 			if (p.Length == 0)
 				return (0, String.Empty);
@@ -452,7 +569,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 				(i, p.Slice(0, i).TrimEnd().ToString());
 		}
 
-		(int Length, string Value) ParseAdoValue(ReadOnlySpan<char> p)
+		static (int Length, string Value) ParseAdoValue(ReadOnlySpan<char> p)
 		{
 			char d = p[0];
 			if (p.Length == 1)
@@ -474,7 +591,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			return (p.Length, text.ToString());
 		}
 
-		(int Length, string Value) ParseOdbcValue(ReadOnlySpan<char> p)
+		static (int Length, string Value) ParseOdbcValue(ReadOnlySpan<char> p)
 		{
 			if (p.Length == 1)
 				return (1, String.Empty);
@@ -493,7 +610,6 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			return (p.Length, text.ToString());
 		}
 	}
-
 
 	#region Tables
 	private static readonly Dictionary<string, string> _synonyms = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

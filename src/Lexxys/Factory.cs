@@ -70,7 +70,7 @@ public static class Factory
 
 	private static string[] SystemAssemblyNames()
 	{
-		if (!Statics.Instance.ServiceInitialized)
+		if (!Statics.Instance.IsInitialized)
 			return DefaultSystemAssemblyNames;
 		var systemNamesConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<string>(ConfigurationSkip);
 		var systemNames = systemNamesConfig?.Value;
@@ -194,7 +194,7 @@ public static class Factory
 
 	private static void ImportRestAssemblies()
 	{
-		if (!Statics.Instance.ServiceInitialized)
+		if (!Statics.Instance.IsInitialized)
 			return;
 		var importConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<string>(ConfigurationImport);
 		var assemblies = importConfig?.Value;
@@ -317,8 +317,7 @@ public static class Factory
 		types ??= Type.EmptyTypes;
 		return String.IsNullOrEmpty(methodName) ?
 			Factory.Types(type)
-				.SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => ConstructorPredicate(m, type, types)))
-				.Where(m => m != null):
+				.SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => ConstructorPredicate(m, type, types))):
 			Factory.Types(type)
 				.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null)!)
 				.Where(m => m != null && type.IsAssignableFrom(m.ReturnType));
@@ -533,22 +532,13 @@ public static class Factory
 			if (value == null)
 				return null;
 			var stream = new CharStream(value);
-			return new TypeNameParser(true).Parse(ref stream, true)?.MakeType();
+			return new TypeNameParser(false).Parse(ref stream, true)?.MakeType();
 		}
-
-		public static TypeTree? ParseType(string? value)
-		{
-			if (value == null)
-				return null;
-			var stream = new CharStream(value);
-			return new TypeNameParser(true).Parse(ref stream, true);
-		}
-
 
 		private readonly TokenScanner _scanner;
 		private readonly OneBackFilter _back;
 
-		private TypeNameParser(bool _)
+		private TypeNameParser(bool fake)
 		{
 			_back = new OneBackFilter();
 			_scanner = new TokenScanner(new ITokenFilter[] { _back }, __rules);
@@ -671,20 +661,15 @@ public static class Factory
 				assembly = t.GetString(stream);
 				_scanner.Next(ref stream);
 			}
-			var tree = new TypeTree(name)
-			{
-				PointerCount = pointer,
-				Assembly = assembly,
-				IsNullable = nullable,
-				Generics = generics
-			};
-			if (rank != null)
-				tree.ArrayRank = rank;
-			if (parameters != null)
-				tree.Parameters = parameters;
-			if (options != null)
-				tree.Options = options;
-
+			var tree = new TypeTree(
+				name: name,
+				assembly: assembly,
+				pointerCount: pointer,
+				isNullable: nullable,
+				arrayRank: rank,
+				genericsCount: generics,
+				parameters: parameters,
+				options: options);
 			return tree;
 		}
 
@@ -737,25 +722,28 @@ public static class Factory
 		public class TypeTree
 		{
 			public string Name { get; }
-			public string? Assembly { get; set; }
-			public int PointerCount { get; set; }
-			public bool IsNullable { get; set; }
-			public IReadOnlyList<int> ArrayRank { get; set; }
-			public int Generics { get; set; }
-			public IReadOnlyList<TypeTree> Parameters { get; set; }
-			public IReadOnlyDictionary<string, string> Options { get; set; }
+			public string? Assembly { get; }
+			public int PointerCount { get; }
+			public bool IsNullable { get; }
+			public IReadOnlyList<int> ArrayRank { get; }
+			public int GenericsCount { get; }
+			public IReadOnlyList<TypeTree> Parameters { get; }
+			public IReadOnlyDictionary<string, string> Options { get; }
 
-			public TypeTree(string name)
+			public TypeTree(string name, string? assembly = null, int pointerCount = 0, bool isNullable = false, IReadOnlyList<int>? arrayRank = null, int genericsCount = 0, IReadOnlyList<TypeTree>? parameters = null, IReadOnlyDictionary<string, string>? options = null)
 			{
 				Name = name;
-				ArrayRank = Array.Empty<int>();
-				Parameters = Array.Empty<TypeTree>();
-				Options = ReadOnly.Empty<string, string>();
+				Assembly = assembly;
+				PointerCount = pointerCount;
+				IsNullable = isNullable;
+				ArrayRank = arrayRank ?? Array.Empty<int>();
+				GenericsCount = genericsCount;
+				Parameters = parameters ?? Array.Empty<TypeTree>();
+				Options = options ?? ReadOnly.Empty<string, string>();
 			}
 
-			public bool IsArray => ArrayRank.Count > 0;
-			public bool IsGeneric => Parameters.Count > 0 || Generics > 0;
-			public int GenericParametersCount => Parameters.Count > 0 ? Parameters.Count: Generics;
+			public bool IsGeneric => Parameters.Count > 0 || GenericsCount > 0;
+			public int GenericParametersCount => Parameters.Count > 0 ? Parameters.Count: GenericsCount;
 			public bool HasAssemblyReference => !String.IsNullOrEmpty(Assembly);
 
 			public StringBuilder BaseName(StringBuilder text, bool alter = false)
@@ -788,7 +776,7 @@ public static class Factory
 					}
 					else if (alter)
 					{
-						text.Append('<').Append(',', Generics - 1).Append('>');
+						text.Append('<').Append(',', GenericsCount - 1).Append('>');
 					}
 				}
 				if (IsNullable)
@@ -833,9 +821,9 @@ public static class Factory
 				{
 					type = type.MakePointerType();
 				}
-				for (int i = 0; i < ArrayRank.Count; ++i)
+				foreach (var n in ArrayRank)
 				{
-					type = type.MakeArrayType(ArrayRank[i]);
+					type = type.MakeArrayType(n);
 				}
 				return type;
 			}
@@ -1099,7 +1087,7 @@ public static class Factory
 		if (type is null)
 			throw new ArgumentNullException(nameof(type));
 
-		return __constructors0.GetOrAdd(type, o => TryCreateConstructor(o));
+		return __constructors0.GetOrAdd(type, TryCreateConstructor);
 	}
 	private static readonly ConcurrentDictionary<Type, Func<object>?> __constructors0 = new ConcurrentDictionary<Type, Func<object>?>();
 
@@ -1201,9 +1189,9 @@ public static class Factory
 
 			if (Object.ReferenceEquals(xa, ya))
 				return true;
-			if (xa == null || xa.Length == 0)
-				return ya == null || ya.Length == 0;
-			if (ya == null || ya.Length != xa.Length)
+			if (xa is null || xa.Length == 0)
+				return ya is null || ya.Length == 0;
+			if (ya is null || ya.Length != xa.Length)
 				return false;
 
 			for (int i = 0; i < xa.Length; ++i)
@@ -1238,7 +1226,7 @@ public static class Factory
 				var p = pp[i];
 				if (argType[i] == null)
 				{
-					if (!p.HasDefaultValue && !p.ParameterType.IsClass && !(p.ParameterType.IsGenericType && p.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>)))
+					if (p is { HasDefaultValue: false, ParameterType.IsClass: false } && !(p.ParameterType.IsGenericType && p.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>)))
 						goto next;
 				}
 				else

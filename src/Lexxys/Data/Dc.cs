@@ -1086,7 +1086,7 @@ public static class Dc
 		public TimeHolder(DataContext context)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
-			if (!_context.Context.LockNow(_context.Context.Time))
+			if (!_context.Context.LockNow(_context.Context.Now))
 				_disposed = true;
 		}
 

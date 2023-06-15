@@ -69,8 +69,6 @@ public sealed class DataContext: IDataContext
 
 	public bool InTransaction => _context.TransactionsCount > 0;
 
-	public DateTime Time => _context.Time;
-
 	public DateTime Now => _context.Now;
 
 	public IContextHolder HoldTheMoment() => new Dc.TimeHolder(this);

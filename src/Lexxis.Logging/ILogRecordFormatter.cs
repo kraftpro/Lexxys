@@ -44,8 +44,8 @@ public static class LogRecordFormatterExtensions
 		if (record is null)
 			throw new ArgumentNullException(nameof(record));
 		text ??= new StringBuilder();
-		using (var s = new StringWriter(text))
-			formatter.Format(s, record);
+		using var s = new StringWriter(text);
+		formatter.Format(s, record);
 		return text;
 	}
 

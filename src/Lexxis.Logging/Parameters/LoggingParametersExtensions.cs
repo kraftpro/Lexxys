@@ -14,7 +14,7 @@ public static partial class LoggingParametersExtensions
 				Name = "Console",
 				Rules = new List<LogWriterFilter>
 				{
-					new LogWriterFilter { LogType = LogTypeFilter.Information }
+					new LogWriterFilter(LogTypeFilter.Information)
 				}
 			};
 		config?.Invoke(param);
@@ -31,7 +31,7 @@ public static partial class LoggingParametersExtensions
 				Formatter = new LogRecordTextParameters(),
 				Rules = new List<LogWriterFilter>
 				{
-					new LogWriterFilter { LogType = LogTypeFilter.Information }
+					new LogWriterFilter(LogTypeFilter.Information)
 				}
 			};
 		config?.Invoke(param);
@@ -47,7 +47,7 @@ public static partial class LoggingParametersExtensions
 				Name = "EventLog",
 				Rules = new List<LogWriterFilter>
 				{
-					new LogWriterFilter { LogType = LogTypeFilter.Information }
+					new LogWriterFilter(LogTypeFilter.Information)
 				}
 			};
 		config?.Invoke(param);
@@ -63,7 +63,7 @@ public static partial class LoggingParametersExtensions
 				Name = "Debugger",
 				Rules = new List<LogWriterFilter>
 				{
-					new LogWriterFilter { LogType = LogTypeFilter.Debug }
+					new LogWriterFilter(LogTypeFilter.Debug)
 				}
 			};
 		config?.Invoke(param);
@@ -79,7 +79,7 @@ public static partial class LoggingParametersExtensions
 				Name = "Trace",
 				Rules = new List<LogWriterFilter>
 				{
-					new LogWriterFilter { LogType = LogTypeFilter.Trace }
+					new LogWriterFilter(LogTypeFilter.Trace)
 				}
 			};
 		config?.Invoke(param);

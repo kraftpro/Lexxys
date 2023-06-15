@@ -1014,7 +1014,7 @@ public class XmlLiteBuilder
 				Item(item.Name, v, elements, false);
 			}
 			#pragma warning disable CA1031 // Do not catch general exception types
-			catch { }
+			catch { /* ignore */ }
 			#pragma warning restore CA1031 // Do not catch general exception types
 		}
 		foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
@@ -1031,7 +1031,7 @@ public class XmlLiteBuilder
 				Item(item.Name, v, elements, false);
 			}
 			#pragma warning disable CA1031 // Do not catch general exception types
-			catch { }
+			catch { /* ignore */ }
 			#pragma warning restore CA1031 // Do not catch general exception types
 		}
 	}

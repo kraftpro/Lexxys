@@ -16,9 +16,9 @@ public class RndCrypt: IRand
 	public void NextBytes(byte[] buffer) => _generator.GetBytes(buffer);
 
 	/// <inheritdoc/>
-	public int NextInt()
+	public unsafe int NextInt()
 	{
-#if NET5_0_OR_GREATER
+#if NET7_0_OR_GREATER
 		int val = 0;
 		_generator.GetBytes(MemoryMarshal.AsBytes(new Span<int>(ref val)));
 		return Math.Abs(val);

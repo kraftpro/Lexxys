@@ -1,22 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net7.0;net472;netcoreapp3.1</TargetFrameworks>
+    <!--<TargetFramework>net7.0</TargetFramework>-->
+    <!--<TargetFrameworks>net7.0;net6.0;net472;netcoreapp3.1</TargetFrameworks>-->
+    <TargetFrameworks>net7.0;net6.0;net472</TargetFrameworks>
+    <OutputType>Exe</OutputType>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	  <IsTestProject>true</IsTestProject>
     <GenerateProgramFile>false</GenerateProgramFile>
-    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.5" />
     <PackageReference Include="MSTest" Version="3.0.4" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lexxis.Logging\Lexxys.Logging.csproj" />
+    <ProjectReference Include="..\..\src\Lexxys.Arguments\Lexxys.Arguments.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Testing\Lexxys.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Lexxys.Validation\Lexxys.Validation.csproj" />
     <ProjectReference Include="..\..\src\Lexxys\Lexxys.csproj" />
   </ItemGroup>
 

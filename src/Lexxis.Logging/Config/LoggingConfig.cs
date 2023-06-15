@@ -107,8 +107,8 @@ public class LogFormatConfig
 
 	public virtual ILogRecordFormatterParameters Configure()
 		=> Type == LogFormatType.Json ?
-			new LogRecordJsonParameters { Naming = Naming ?? NamingCaseRule.PreferPascalCase } :
-			new LogRecordTextParameters { Format = Format, Indent = Indent, Section = Section };
+			new LogRecordJsonParameters(Naming ?? NamingCaseRule.PreferPascalCase):
+			new LogRecordTextParameters(Format, Indent, Section);
 }
 
 public class LogConsoleConfig: LogWriterConfig

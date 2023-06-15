@@ -16,7 +16,7 @@ class DataContextImplementation: IDisposable
 {
 	#pragma warning disable CA1031 // Do not catch general exception types
 
-	private static readonly TimeSpan SyncInterval = new TimeSpan(1, 0, 0);
+	private static readonly TimeSpan TimeSyncInterval = new TimeSpan(1, 0, 0);
 	private static readonly ConcurrentDictionary<string, (DateTime Stamp, long Offset)> _timeSyncMap = new ConcurrentDictionary<string, (DateTime, long)>();
 
 	private int _transactionsCount;
@@ -98,9 +98,10 @@ class DataContextImplementation: IDisposable
 		{
 			long offset;
 			DateTime now;
-			using (DbCommand cmd = NewCommand("select sysdatetime()"))
+			using (DbCommand cmd = NewCommand("select 1;"))
 			{
 				cmd.ExecuteScalar();
+				cmd.CommandText = "select sysdatetime();";
 				long delta = long.MaxValue;
 				int c = 0;
 				var dd = new List<long>();
@@ -130,8 +131,6 @@ class DataContextImplementation: IDisposable
 		}
 		(_timeSyncStamp, _timeSyncOffset) = sv;
 	}
-
-	public DateTime Time => DateTime.Now + TimeSpan.FromTicks(_timeSyncOffset);
 
 	public DateTime Now => _lockedTime == default ? DateTime.Now + TimeSpan.FromTicks(_timeSyncOffset): _lockedTime;
 
@@ -178,7 +177,7 @@ class DataContextImplementation: IDisposable
 
 			_connection.Open();
 			_connectionsCount = 1;
-			if (_timeSyncStamp + SyncInterval < DateTime.Now)
+			if (_timeSyncStamp + TimeSyncInterval < DateTime.Now)
 				SyncTime();
 		}
 		Audit.ConnectionEnd(t);
@@ -200,7 +199,7 @@ class DataContextImplementation: IDisposable
 
 			await _connection.OpenAsync().ConfigureAwait(false);
 			_connectionsCount = 1;
-			if (_timeSyncStamp + SyncInterval < DateTime.Now)
+			if (_timeSyncStamp + TimeSyncInterval < DateTime.Now)
 				SyncTime();
 		}
 		Audit.ConnectionEnd(t);

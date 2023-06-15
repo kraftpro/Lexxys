@@ -138,12 +138,7 @@ public class XmlToTextConverter
 		ConvertFragment(indentation + "\t");
 	}
 
-	private void FlushElement()
-	{
-		FlushElement(null);
-	}
-
-	private void FlushElement(string? value)
+	private void FlushElement(string? value = null)
 	{
 		if (_element == null)
 			return;

@@ -1,4 +1,6 @@
-﻿namespace Lexxys.Tests.Error
+﻿using Lexxys.Validation;
+
+namespace Lexxys.Tests.Error
 {
 	[TestClass]
 	public class ErrorCodeTests

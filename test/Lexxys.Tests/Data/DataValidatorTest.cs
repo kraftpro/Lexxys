@@ -9,6 +9,7 @@ namespace Lexxys.Tests.Data
 {
 	using Lexxys.Data;
 	using Lexxys.Testing;
+	using Lexxys.Validation;
 
 	/// <summary>
 	/// Summary description for DataValidatorTest

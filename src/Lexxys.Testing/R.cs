@@ -12,18 +12,9 @@ namespace Lexxys.Testing;
 
 public static class R
 {
-	public static RandItem<T> Any<T>(T first, T second, params T[]? rest)
+	public static RandItem<T> Any<T>(params T[] rest)
 	{
-		if (rest == null || rest.Length == 0)
-		{
-			var fs = new[] { first, second };
-			return new RandItem<T>(() => Rand.Item(fs));
-		}
-		var vv = new T[rest.Length + 2];
-		vv[0] = first;
-		vv[0] = second;
-		Array.Copy(rest, 0, vv, 1, rest.Length);
-		return new RandItem<T>(() => Rand.Item(vv));
+		return new RandItem<T>(() => Rand.Item(rest));
 	}
 
 	public static RandItem<T> Any<T>(IEnumerable<T>? items)
@@ -37,7 +28,7 @@ public static class R
 			if (col.Count == 1)
 			{
 				var v = col.FirstOrDefault()!;
-				return new RandItem<T>(1, v);
+				return new RandItem<T>(v);
 			}
 			var vv = new T[col.Count];
 			col.CopyTo(vv, 0);
@@ -51,7 +42,7 @@ public static class R
 			if (vv.Count == 1)
 			{
 				var v = vv[0];
-				return new RandItem<T>(1, v);
+				return new RandItem<T>(v);
 			}
 			return new RandItem<T>(() => Rand.Item(vv));
 		}
@@ -64,14 +55,6 @@ public static class R
 	/// <param name="generator">Item value generator</param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
 	public static RandItem<T> I<T>(Func<T> generator) => new RandItem<T>(generator);
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/>
-	/// </summary>
-	/// <typeparam name="T">Type of item value</typeparam>
-	/// <param name="weight">Weight of the item</param>
-	/// <param name="generator">Item value generator</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(float weight, Func<T> generator) => new RandItem<T>(weight, generator);
 	/// <summary>
 	/// Create new <see cref="RandItem{T}"/> randomly returning item from provided collection <paramref name="pairs"/>
 	/// </summary>
@@ -87,7 +70,9 @@ public static class R
 	/// <returns>new <see cref="RandItem{T}"/></returns>
 	public static RandItem<T> I<T>(IEnumerable<IWeightValuePair<T>> pairs) => new RandItem<T>(pairs);
 
-	private const int MaxTries = 9999;
+	public static RandItem<T> I<T>(params (double Weight, T Value)[] pairs) => new RandItem<T>(Array.ConvertAll(pairs, o => WeightValuePair.Create(o.Weight, o.Value)), false);
+
+	private const int DefaultMaxTries = 9999;
 
 	/// <summary>
 	/// Creates a new <see cref="RandItem{T}"/>
@@ -108,18 +93,18 @@ public static class R
 	/// <param name="filter">Predicate on item value</param>
 	/// <param name="maxTries"></param>
 	/// <returns>new <see cref="RandItem{T}"/></returns>
-	public static RandItem<T> I<T>(float weight, Func<T> generator, Func<T, bool> filter, int maxTries = 0)
+	public static RandItem<T> I<T>(double weight, Func<T> generator, Func<T, bool> filter, int maxTries = 0)
 	{
 		if (generator == null)
 			throw new ArgumentNullException(nameof(generator));
 		if (filter == null)
 			throw new ArgumentNullException(nameof(filter));
 		if (maxTries <= 0)
-			maxTries = MaxTries;
+			maxTries = DefaultMaxTries;
 
 		return new RandItem<T>(weight, () =>
 		{
-			for (int i = 0; i < maxTries; ++i)
+			for (int i = 0; i != maxTries; ++i)
 			{
 				var t = generator();
 				if (filter(t))
@@ -210,11 +195,12 @@ public static class R
 	public static RandItem<string> Concat<T>(Func<T, string> convert, params RandItem<T>[] items) => new RandItem<string>(() => String.Join("", items.Select(o => convert(o!))));
 	public static RandItem<string> Concat<T>(Func<T, string> convert, IEnumerable<RandItem<T>> items) => new RandItem<string>(() => String.Join("", items.Select(o => convert(o!))));
 
+	private const int NC = 'z' - 'a' + 1;
 	public static RandItem<char> DigitChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, 10) + '0'));
-	public static RandItem<char> LowerChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, 'z' - 'a' + 1) + 'a'));
-	public static RandItem<char> UpperChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, 'Z' - 'A' + 1) + 'A'));
-	public static RandItem<char> LetterChar { get; } = new RandItem<char>(() => { int i = Rand.Int(0, ('z'-'a'+1) * 2); return (char)(i < ('z'-'a'+1) ? i + 'a': i + ('z'-'a'+1) + 'A'); });
-	public static RandItem<char> LetterOrDigitChar { get; } = new RandItem<char>(() => { int i = R.Int(0, ('z' - 'a' + 1) * 2 + 10); return (char)(i < 10 ? i + '0': i < 10 + ('z' - 'a' + 1) ? i - 10 + 'a' : i - 10 - ('z' - 'a' + 1) + 'A'); });
+	public static RandItem<char> LowerChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, NC) + 'a'));
+	public static RandItem<char> UpperChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, NC) + 'A'));
+	public static RandItem<char> LetterChar { get; } = new RandItem<char>(() => { int i = Rand.Int(0, NC * 2); return (char)(i < NC ? i + 'a': i - (NC + 'A')); });
+	public static RandItem<char> LetterOrDigitChar { get; } = new RandItem<char>(() => { int i = R.Int(0, NC * 2 + 10); return (char)(i < 10 ? i + '0': i < 10 + NC ? i - (10 + 'a') : i - (10 - NC + 'A')); });
 	public static RandItem<char> AsciiChar { get; } = new RandItem<char>(() => (char)Rand.Int(' ', 127));
 	public static RandItem<char> Ascii0Char { get; } = new RandItem<char>(() => (char)Rand.Int(0, 127 + 1));
 	public static RandItem<char> Chr(int min, int max) => new RandItem<char>(() => (char)Rand.Int(min, max + 1));
@@ -254,11 +240,11 @@ public static class R
 		return lines;
 	}
 
-	public static List<T> LoadFile<T>(string path, Func<string, T> filter)
+	public static List<T> LoadFile<T>(string path, Func<string, T?> filter)
 	{
 		if (filter == null)
 			throw new ArgumentNullException(nameof(filter));
-		return File.ReadLines(path).Select(filter).Where(o => !Object.Equals(o, default(T))).ToList();
+		return File.ReadLines(path).Select(filter).Where(o => !Object.Equals(o, default(T?))).ToList()!;
 	}
 
 	public static RandSeq<T> Sequence<T>(params RandItem<T>[] items) => new RandSeq<T>(items);
@@ -359,7 +345,7 @@ public static class R
 		if (minLength < 0)
 			throw new ArgumentOutOfRangeException(nameof(minLength), minLength, null);
 		if (maxLength < MinLoremLength)
-			throw new ArgumentOutOfRangeException(nameof(minLength), minLength, null);
+			throw new ArgumentOutOfRangeException(nameof(maxLength), maxLength, null);
 		if (minLength > maxLength)
 			throw new ArgumentOutOfRangeException(nameof(minLength), minLength, null);
 

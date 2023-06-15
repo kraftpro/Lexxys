@@ -273,7 +273,7 @@ public static partial class XmlTools
 					Expression.Call(item.Parser, value, tmp),
 					Expression.Block(
 						Expression.Assign(result,
-							type.IsValueType ? (Expression)
+							type.IsValueType ?
 								Expression.TypeAs(Expression.Call(item.Method, tmp), typeof(object)):
 								Expression.Call(item.Method, tmp)),
 						Expression.Goto(end, Expression.Constant(true))
@@ -299,7 +299,7 @@ public static partial class XmlTools
 					Expression.Call(item.Parser, value, tmp),
 					Expression.Block(
 						Expression.Assign(result,
-							type.IsValueType ? (Expression)
+							type.IsValueType ?
 								Expression.TypeAs(Expression.New(item.Constructor, tmp), typeof(object)):
 								Expression.New(item.Constructor, tmp)),
 						Expression.Goto(end, Expression.Constant(true))
@@ -314,7 +314,7 @@ public static partial class XmlTools
 		if (stringOperator.Method != null)
 		{
 			Expression last = Expression.Assign(result,
-				type.IsValueType ? (Expression)
+				type.IsValueType ?
 					Expression.TypeAs(Expression.Call(stringOperator.Method, value), typeof(object)):
 					Expression.Call(stringOperator.Method, value));
 			convert.Add(last);
@@ -326,7 +326,7 @@ public static partial class XmlTools
 			if (stringConstructor.Constructor != null)
 			{
 				Expression last = Expression.Assign(result,
-					type.IsValueType ? (Expression)
+					type.IsValueType ?
 						Expression.TypeAs(Expression.New(stringConstructor.Constructor, value), typeof(object)):
 						Expression.New(stringConstructor.Constructor, value));
 				convert.Add(last);

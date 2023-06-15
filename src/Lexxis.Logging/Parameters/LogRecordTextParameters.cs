@@ -8,7 +8,11 @@ public class LogRecordTextParameters: ILogRecordFormatterParameters
 	public string? Indent { get; set; }
 	public string? Section { get; set; }
 
-	public LogRecordTextParameters(string? format = null, string? indent = null, string? section = null)
+	public LogRecordTextParameters()
+	{
+	}
+	
+	public LogRecordTextParameters(string? format, string? indent = null, string? section = null)
 	{
 		Format = format;
 		Indent = indent;

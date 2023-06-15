@@ -26,13 +26,12 @@ using Xml;
 public readonly struct Money:
 #if NET7_0_OR_GREATER
 	ISignedNumber<Money>, INumber<Money>,
-#endif
-#if NET6_0_OR_GREATER
-	ISpanFormattable,
+#elif NET6_0_OR_GREATER
+	ISpanFormattable, IComparable, IComparable<Money>, IEquatable<Money>,
 #else
-	IFormattable,
+	IFormattable, IComparable, IComparable<Money>, IEquatable<Money>,
 #endif
-	IComparable, IComparable<Money>, IConvertible, IEquatable<Money>, ISerializable, IDumpValue, IDumpXml, IDumpJson
+	IConvertible, ISerializable, IDumpValue, IDumpXml, IDumpJson
 {
 	private readonly long _value;
 	private readonly Currency _currency;
@@ -1005,24 +1004,18 @@ public readonly struct Money:
 		if (typeof(TOther) == typeof(int))
 		{
 			var iv = (int)(object)value;
-			var minInt = long.MinValue / c.Multiplier;
-			var maxInt = long.MaxValue / c.Multiplier;
 			result = new Money((ulong)((long)iv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(short))
 		{
 			var sv = (short)(object)value;
-			var minInt = long.MinValue / c.Multiplier;
-			var maxInt = long.MaxValue / c.Multiplier;
 			result = new Money((ulong)((long)sv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(sbyte))
 		{
 			var bv = (sbyte)(object)value;
-			var minInt = long.MinValue / c.Multiplier;
-			var maxInt = long.MaxValue / c.Multiplier;
 			result = new Money((ulong)((long)bv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
 			return true;
 		}

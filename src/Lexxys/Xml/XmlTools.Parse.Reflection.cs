@@ -117,16 +117,17 @@ public static partial class XmlTools
 		{
 			if (collection == null)
 				return null;
-			if (collection.FirstOrDefault(o => String.Equals(o, fieldName, StringComparison.OrdinalIgnoreCase)) != null)
+			var name = fieldName;
+			if (collection.FirstOrDefault(o => String.Equals(o, name, StringComparison.OrdinalIgnoreCase)) != null)
 				return fieldName;
 
-			var itemName = Lingua.Singular(fieldName);
-			if (itemName != fieldName && collection.FirstOrDefault(o => String.Equals(o, itemName, StringComparison.OrdinalIgnoreCase)) != null)
-				return itemName;
+			var singular = Lingua.Singular(fieldName);
+			if (singular != fieldName && collection.FirstOrDefault(o => String.Equals(o, singular, StringComparison.OrdinalIgnoreCase)) != null)
+				return singular;
 
-			itemName = Lingua.Plural(fieldName);
-			if (itemName != fieldName && collection.FirstOrDefault(o => String.Equals(o, itemName, StringComparison.OrdinalIgnoreCase)) != null)
-				return itemName;
+			var plural = Lingua.Plural(fieldName);
+			if (plural != fieldName && collection.FirstOrDefault(o => String.Equals(o, plural, StringComparison.OrdinalIgnoreCase)) != null)
+				return plural;
 
 			return null;
 		}

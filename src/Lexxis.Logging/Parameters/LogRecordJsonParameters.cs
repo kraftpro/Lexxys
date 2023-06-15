@@ -11,6 +11,15 @@ namespace Lexxys.Logging;
 
 public class LogRecordJsonParameters: ILogRecordFormatterParameters
 {
+	public LogRecordJsonParameters()
+	{
+	}
+	
+	public LogRecordJsonParameters(NamingCaseRule naming)
+	{
+		Naming = naming;
+	}
+
 	public NamingCaseRule Naming { get; set; }
 
 	public ILogRecordFormatter CreateFormatter() => new LogRecordJsonFormatter(Naming);

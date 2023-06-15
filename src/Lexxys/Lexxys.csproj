@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net7.0;net6.0;netstandard2.0;net472</TargetFrameworks>
+    <TargetFrameworks>net7.0;net6.0;net472</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -19,6 +19,11 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Using Include="System.Runtime.CompilerServices" />
+    <Using Include="System.Diagnostics.CodeAnalysis" />
+  </ItemGroup>
+  
   <PropertyGroup>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Lexxys.xml</DocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -45,7 +50,7 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
     <PackageReference Include="System.Diagnostics.EventLog" Version="7.0.0" />
     <PackageReference Include="System.Runtime.Caching" Version="7.0.0" />
@@ -54,8 +59,10 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName).Logging" />
+    <InternalsVisibleTo Include="$(AssemblyName).Legacy" />
     <InternalsVisibleTo Include="$(AssemblyName).Tests" />
     <InternalsVisibleTo Include="$(AssemblyName).Test.Console" />
+    <InternalsVisibleTo Include="$(AssemblyName).Validation" />
     <InternalsVisibleTo Include="TestPizza" />
   </ItemGroup>
 </Project>

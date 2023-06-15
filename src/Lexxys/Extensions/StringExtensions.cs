@@ -37,31 +37,68 @@ public static class StringExtensions
 	}
 #endif
 
-	public static string Format(this string value, IFormatProvider formatProvider, IDictionary<string, object> data)
-	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
+	public static string Format(this string value, IReadOnlyDictionary<string, object?>? data) => Format(value, null, data);
 
-		return __formattingElement.Replace(value, m =>
+	public static string Format(this string value, IFormatProvider? formatProvider, IReadOnlyDictionary<string, object?>? data)
+	{
+		if (value is null)
+			throw new ArgumentNullException(nameof(value));
+		if (data == null || data.Count == 0)
+			return value;
+
+		var text = new StringBuilder(value.Length + data.Count * 12);
+		var template = value.AsSpan();
+
+		while (template.Length > 0)
 		{
-			string key = m.Groups[1].Value;
-			if (!data.TryGetValue(key, out var obj))
-				return m.Value;
-			string fmt;
-			if (m.Groups.Count > 1 && m.Groups[2].Value.Length > 1)
-				fmt = "{0" + m.Groups[2].Value + "}";
+			int k = template.IndexOf('{');
+			if (k < 0)
+			{
+				text.Append(template);
+				break;
+			}
+			text.Append(template.Slice(0, k));
+			template = template.Slice(k + 1);
+			if (template.Length > 0 && template[0] == '{')
+			{
+				text.Append('{');
+				template = template.Slice(1);
+				continue;
+			}
+			k = template.IndexOf('}');
+			if (k < 0)
+			{
+				text.Append('{').Append(template);
+				break;
+			}
+			var part = template.Slice(0, k);
+			template = template.Slice(k + 1);
+			k = part.IndexOf(':');
+			string name;
+			string format;
+			if (k > 0)
+			{
+				format = part.Slice(k + 1).ToString();
+				name = part.Slice(0, k).ToString();
+			}
 			else
-				fmt = "{0}";
-			return String.Format(formatProvider, fmt, obj);
-		});
-	}
-	private static readonly Regex __formattingElement = new Regex(@"{\s*([A-Za-z_$][A-Za-z0-9_\.\$-]*)\s*(:[^}]*)?}", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-	public static string Format(this string value, IDictionary<string, object> data)
-	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
-		return value.Format(CultureInfo.CurrentCulture, data);
+			{
+				format = String.Empty;
+				name = part.ToString();
+			}
+			if (data.TryGetValue(name, out var v))
+			{
+				if (format.Length > 0 && v is IFormattable formattable)
+					text.Append(formattable.ToString(format, formatProvider));
+				else
+					text.Append(v?.ToString() ?? String.Empty);
+			}
+			else
+			{
+				text.Append('{').Append(part).Append('}');
+			}
+		}
+		return text.ToString();
 	}
 
 	public static string Left(this string value, int width)
@@ -482,6 +519,21 @@ public static class StringExtensions
 	{
 		return XmlTools.GetValue(value, returnType, defaultValue);
 	}
+
+#if NET7_0_OR_GREATER
+
+	public static T Parse<T>(this string? value, T defaultValue) where T: IParsable<T>
+	{
+		return T.TryParse(value, null, out var result) ? result: defaultValue;
+	}
+
+	public static T Parse<T>(this string value) where T: IParsable<T>
+	{
+		return T.Parse(value, null);
+	}
+
+#endif
+
 
 	#endregion
 }

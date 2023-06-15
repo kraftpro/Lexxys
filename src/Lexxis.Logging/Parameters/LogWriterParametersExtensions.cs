@@ -135,7 +135,7 @@ public static partial class LogWriterParameterExtensions
 			parameters.Rules = new List<LogWriterFilter>();
 		else if (parameters.Rules.IsReadOnly)
 			parameters.Rules = new List<LogWriterFilter>(parameters.Rules);
-		parameters.Rules.Add(new LogWriterFilter { LogType = logType, Include = include, Exclude = exclude });
+		parameters.Rules.Add(new LogWriterFilter(logType, include, exclude));
 		return parameters;
 	}
 

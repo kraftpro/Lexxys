@@ -102,15 +102,9 @@ namespace Lexxys
 			_list.CopyTo(array, arrayIndex);
 		}
 
-		public int Count
-		{
-			get { return _list.Count; }
-		}
+		public int Count => _list.Count;
 
-		public bool IsReadOnly
-		{
-			get { return false; }
-		}
+		public bool IsReadOnly => false;
 
 		public bool Remove(T item)
 		{

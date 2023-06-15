@@ -126,20 +126,6 @@ class LogRecordService: ILoggingService
 		return new LogRecordWriter(this, source);
 	}
 
-	// private static IEnumerable<ILogWriter> GetLogWriters(ILoggingParameters parameters)
-	// {
-	// 	var wrtrs = parameters.Select(o => o.CreateWriter()).ToList();
-	// 	if (System.Diagnostics.Debugger.IsLogging())
-	// 	{
-	// 		foreach (var itm in wrtrs)
-	// 		{
-	// 			SystemLog.WriteDebugMessage(LogSource, "Writer: " + itm.Name + " -> " + itm.Target);
-	// 		}
-	// 	}
-	// 	return wrtrs;
-	// }
-
-
 	public void Stop(bool force = false)
 	{
 		var listeners = Interlocked.Exchange(ref _listeners, Array.Empty<ILogRecordQueueListener>());
@@ -212,15 +198,10 @@ class LogRecordService: ILoggingService
 
 		public LogRecordWriter(LogRecordService service, string source)
 		{
-			if (service is null)
-				throw new ArgumentNullException(nameof(service));
-			if (source is null)
-				throw new ArgumentNullException(nameof(source));
-
-			_service = service;
-			service.Changed += Service_Changed;
-			_source = source;
+			_service = service ?? throw new ArgumentNullException(nameof(service));
+			_source = source ?? throw new ArgumentNullException(nameof(source));
 			_indexes = default;
+			service.Changed += Service_Changed;
 		}
 
 		public bool IsEnabled(LogType logType) => Indexes[(int)logType] != null;

@@ -52,7 +52,7 @@ public abstract class LogWriter: ILogWriter
 
 		string? name = node["name"].AsString(null);
 		string? className = node["class"].AsString(null);
-		if (className != null && className.Length > 0)
+		if (className is { Length: >0 })
 			return CreateLogWriter(className, name, node);
 
 		SystemLog.WriteErrorMessage(LogSource, SR.LOG_CannotCreateLogWriter(name, className));

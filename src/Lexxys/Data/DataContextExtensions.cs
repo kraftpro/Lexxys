@@ -7,6 +7,8 @@
 using System.Data;
 using System.Data.Common;
 
+using Lexxys;
+
 #pragma warning disable CA1002 // Do not expose generic lists
 
 namespace Lexxys.Data;
@@ -14,7 +16,7 @@ namespace Lexxys.Data;
 public static class DataContextExtensions
 {
 	/// <summary>
-	/// Sets operation to be committed or rolled back along with the database transaction.
+	/// Sets operation to be executed after the committed database transaction.
 	/// </summary>
 	/// <typeparam name="T">Unique type of the operation.</typeparam>
 	/// <param name="context">IDataContext</param>
@@ -31,18 +33,48 @@ public static class DataContextExtensions
 		return value is T t ? t: throw new InvalidOperationException();
 	}
 
+	/// <summary>
+	/// Executes the specified SQL <paramref name="query"/> and returns first column of the first row as a value of type <typeparamref name="T"/> or <paramref name="default"/>.
+	/// </summary>
+	/// <typeparam name="T">Type of the returning value</typeparam>
+	/// <param name="context"><see cref="IDataContext"/></param>
+	/// <param name="default">Default value.</param>
+	/// <param name="query">The SQL query to execute.</param>
+	/// <param name="parameters">Parameters to be used in the query.</param>
+	/// <returns></returns>
 	public static T GetValueOrDefault<T>(this IDataContext context, T @default, string query, params DataParameter[] parameters) where T: class
 	{
 		return context.GetValue<T>(query, parameters) ?? @default;
 	}
 
+	/// <summary>
+	/// Executes the specified SQL <paramref name="query"/> and returns first column of the first row as a value of type <typeparamref name="T"/> or <paramref name="default"/>.
+	/// </summary>
+	/// <typeparam name="T">Type of the returning value</typeparam>
+	/// <param name="context"><see cref="IDataContext"/></param>
+	/// <param name="default">Default value.</param>
+	/// <param name="query">The SQL query to execute.</param>
+	/// <param name="parameters">Parameters to be used in the query.</param>
+	/// <returns></returns>
 	public static async Task<T> GetValueOrDefaultAsync<T>(this IDataContext context, T @default, string query, params DataParameter[] parameters) where T: class
 	{
 		return await context.GetValueAsync<T>(query, parameters).ConfigureAwait(false) ?? @default;
 	}
 
+	/// <summary>
+	/// Executes the specified SQL <paramref name="query"/> and evaluates the specified <paramref name="mapper"/> for each row.
+	/// </summary>
+	/// <param name="context"><see cref="IDataContext"/>.</param>
+	/// <param name="limit">Maximum number of rows to return (-1 - unlimited)</param>
+	/// <param name="mapper">Action to be executed for each <see cref="IDataRecord"/>.</param>
+	/// <param name="query">SQL query to execute.</param>
+	/// <param name="parameters">Parameters to be used in the query.</param>
+	/// <returns>Number of processed rows</returns>
+	/// <exception cref="ArgumentNullException">Query, context, or mapper is null.</exception>
 	public static int Map(this IDataContext context, int limit, Action<IDataRecord> mapper, string query, params DataParameter[] parameters)
 	{
+		if (query is not { Length: >0 })
+			throw new ArgumentNullException(nameof(query));
 		if (context == null)
 			throw new ArgumentNullException(nameof(context));
 		if (mapper == null)
@@ -62,6 +94,15 @@ public static class DataContextExtensions
 		}
 	}
 
+	/// <summary>
+	/// Executes the specified SQL <paramref name="query"/> and evaluates the specified <paramref name="mapper"/> for each row.
+	/// </summary>
+	/// <param name="context"><see cref="IDataContext"/>.</param>
+	/// <param name="mapper">Action to be executed for each <see cref="IDataRecord"/>.</param>
+	/// <param name="query">SQL query to execute.</param>
+	/// <param name="parameters">Parameters to be used in the query.</param>
+	/// <returns>Number of processed rows</returns>
+	/// <exception cref="ArgumentNullException">Query, context, or mapper is null.</exception>
 	public static int Map(this IDataContext context, Action<IDataRecord> mapper, string query, params DataParameter[] parameters) => Map(context, -1, mapper, query, parameters);
 
 	public static T Map<T>(this IDataContext context, Func<DbCommand, T> mapper, string query, params DataParameter[] parameters)

@@ -58,8 +58,8 @@ public static class Lxx
 		var a = Assembly.GetEntryAssembly();
 		if (a == null || a.IsDynamic)
 		{
-			StackFrame[]? sf = new StackTrace().GetFrames();
-			if (sf is { Length: > 0 })
+			StackFrame[] sf = new StackTrace().GetFrames();
+			if (sf.Length > 0)
 			{
 				for (int i = sf.Length - 1; i >= 0; --i)
 				{

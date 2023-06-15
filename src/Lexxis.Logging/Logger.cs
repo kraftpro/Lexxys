@@ -89,10 +89,7 @@ public class Logger: ILogging
 	/// </summary>
 	public string Source
 	{
-		get
-		{
-			return _source;
-		}
+		get => _source;
 		set
 		{
 			_levels = 0;

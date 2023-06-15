@@ -279,7 +279,7 @@ public static partial class XmlTools
 	public static bool TryGetTimeSpan(string? value, out TimeSpan result)
 	{
 		result = new TimeSpan();
-		if (value == null || value.Length == 0)
+		if (value is not { Length: >0 })
 			return false;
 
 		var text = new Tokenizer.CharStream(value, 1);
@@ -312,7 +312,7 @@ public static partial class XmlTools
 		if (c0 == ':' || (c0 >= '0' && c0 <= '9'))
 			goto ShortFormat;
 
-		if (c0 == 'D' || c0 == 'd')
+		if (c0 is 'D' or 'd')
 		{
 			temp = last.Time(TimeSpan.TicksPerDay);
 			text.Forward(1, Space);
@@ -335,7 +335,7 @@ public static partial class XmlTools
 			}
 		}
 
-		if (c0 == 'T' || c0 == 't')
+		if (c0 is 'T' or 't')
 		{
 			if (last.HasValue)
 				return false;
@@ -350,7 +350,7 @@ public static partial class XmlTools
 			c0 = text[0];
 		}
 
-		if (c0 == 'H' || c0 == 'h')
+		if (c0 is 'H' or 'h')
 		{
 			temp = temp.Add(last.Time(TimeSpan.TicksPerHour));
 			text.Forward(1, Space);
@@ -368,7 +368,7 @@ public static partial class XmlTools
 			c0 = text[0];
 		}
 
-		if ((c0 == 'M' || c0 == 'm') && !(text[1] == 'S' || text[1] == 's'))
+		if (c0 is 'M' or 'm' && text[1] is not ('S' or 's'))
 		{
 			temp = temp.Add(last.Time(TimeSpan.TicksPerMinute));
 			text.Forward(1, Space);
@@ -386,7 +386,7 @@ public static partial class XmlTools
 			c0 = text[0];
 		}
 
-		if (c0 == 'S' || c0 == 's')
+		if (c0 is 'S' or 's')
 		{
 			temp = temp.Add(last.Time(TimeSpan.TicksPerSecond));
 			text.Forward(1, Space);
@@ -404,7 +404,7 @@ public static partial class XmlTools
 			c0 = text[0];
 		}
 
-		if ((c0 == 'M' || c0 == 'm') && (text[1] == 'S' || text[1] == 's'))
+		if (c0 is 'M' or 'm' && text[1] is 'S' or 's')
 		{
 			temp = temp.Add(last.Time(TimeSpan.TicksPerMillisecond));
 			text.Forward(2, Space);
@@ -570,7 +570,7 @@ public static partial class XmlTools
 
 		public bool Append(char value, int position)
 		{
-			if (value < '0' || value > '9')
+			if (value is <'0' or >'9')
 			{
 				if (value != '.' || _point)
 					return false;
@@ -685,7 +685,7 @@ public static partial class XmlTools
 	{
 		result = new DateTimeOffset();
 		timeZone = false;
-		if (value == null || value.Length == 0)
+		if (value is not { Length: >0 })
 			return false;
 
 		static bool Space(char c) => c <= ' ';
@@ -697,7 +697,7 @@ public static partial class XmlTools
 
 		text.Forward(Space);
 
-		if (text[0] == 'T' || text[0] == 't')
+		if (text[0] is 'T' or 't')
 		{
 			text.Forward(1, Space);
 			goto SetHour;
@@ -718,7 +718,7 @@ public static partial class XmlTools
 		if (delimiter)
 			text.Forward(1);
 		month = MatchTwo(ref text);
-		if (month < 1 || month > 12)
+		if (month is <1 or >12)
 			return false;
 		if (delimiter)
 			if (text[0] == '-')
@@ -730,7 +730,7 @@ public static partial class XmlTools
 			return false;
 
 		text.Forward(Space);
-		if (text[0] == 'T' || text[0] == 't')
+		if (text[0] is 'T' or 't')
 			text.Forward(1, Space);
 
 		if (text.Eof)
@@ -741,13 +741,13 @@ public static partial class XmlTools
 
 	SetHour:
 		int hour = MatchTwo(ref text);
-		if (hour < 0 || hour > 23)
+		if (hour is <0 or >23)
 			return false;
 		delimiter = text[0] == ':';
 		if (delimiter)
 			text.Forward(1);
 		int minute = MatchTwo(ref text);
-		if (minute < 0 || minute > 59)
+		if (minute is <0 or >59)
 			return false;
 		if (delimiter)
 			if (text[0] == ':')
@@ -755,7 +755,7 @@ public static partial class XmlTools
 			else
 				return false;
 		int second = MatchTwo(ref text);
-		if (second < 0 || second > 59)
+		if (second is <0 or >59)
 			return false;
 
 		long ticks = 0;
@@ -789,7 +789,7 @@ public static partial class XmlTools
 			offset = TimeSpan.Zero;
 			timeZone = true;
 		}
-		else if (text[0] == '+' || text[0] == '-')
+		else if (text[0] is '+' or '-')
 		{
 			bool minus = text[0] == '-';
 			text.Forward(1, Space);
@@ -797,7 +797,7 @@ public static partial class XmlTools
 			if (b < '0' || b > '9')
 				return false;
 			int h = b - '0';
-			if ((b = text[1]) >= '0' && b <= '9')
+			if ((b = text[1]) is >='0' and <='9')
 			{
 				h = h * 10 + (b - '0');
 				text.Forward(2);
@@ -811,7 +811,7 @@ public static partial class XmlTools
 			{
 				text.Forward(1);
 				m = MatchTwo(ref text);
-				if (m < 0 || m > 59)
+				if (m is <0 or >59)
 					return false;
 			}
 			text.Forward(Space);
@@ -838,7 +838,6 @@ public static partial class XmlTools
 			if (pm)
 				hour += 12;
 		}
-
 
 		result = new DateTimeOffset(year, month, day, hour, minute, second, offset);
 		if (ticks > 0)
@@ -880,14 +879,14 @@ public static partial class XmlTools
 		return TryGetType(value, out Type? result) ? result : defaultValue;
 	}
 
-	public static bool TryGetType(string? value, [MaybeNullWhen(false)] out Type result)
+	public static bool TryGetType([NotNullWhen(true)] string? value, [NotNullWhen(true)] out Type? result)
 	{
 		if (String.IsNullOrWhiteSpace(value))
 		{
 			result = null!;
 			return false;
 		}
-		result = Factory.GetType(value)!;
+		result = Factory.GetType(value);
 		return result != null;
 	}
 
@@ -905,22 +904,18 @@ public static partial class XmlTools
 
 	public static bool TryGetBoolean(string? value, out bool result)
 	{
-		if (value != null && value.Length > 0)
+		switch (value?.Trim().ToUpperInvariant())
 		{
-			value = value.Trim().ToUpperInvariant();
-			if (value == "TRUE" || value == "ON" || value == "YES" || value == "1" || value == "GRANT")
-			{
+			case "TRUE" or "ON" or "YES" or "1" or "GRANT":
 				result = true;
 				return true;
-			}
-			if (value == "FALSE" || value == "OFF" || value == "NO" || value == "0" || value == "DENY")
-			{
+			case "FALSE" or "OFF" or "NO" or "0" or "DENY":
 				result = false;
 				return true;
-			}
+			default:
+				result = false;
+				return false;
 		}
-		result = false;
-		return false;
 	}
 
 	public static int GetIndex(string? value, params string?[] variants)
@@ -967,16 +962,16 @@ public static partial class XmlTools
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return TryGetEnum(value, enumType, out object result) ? result : throw new FormatException(SR.FormatException(value));
+		return TryGetEnum(value, enumType, out object? result) ? result : throw new FormatException(SR.FormatException(value));
 	}
 
 	[return: NotNullIfNotNull(nameof(defaultValue))]
 	public static object? GetEnum(string? value, Type enumType, object? defaultValue)
 	{
-		return TryGetEnum(value, enumType, out object result) ? result : defaultValue;
+		return TryGetEnum(value, enumType, out object? result) ? result : defaultValue;
 	}
 
-	public static bool TryGetEnum(string? value, Type enumType, out object result)
+	public static bool TryGetEnum([NotNullWhen(true)] string? value, Type enumType, out object result)
 	{
 		if (enumType is null)
 			throw new ArgumentNullException(nameof(enumType));

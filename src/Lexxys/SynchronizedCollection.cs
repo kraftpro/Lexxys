@@ -1,11 +1,12 @@
 ﻿using System.Collections;
 
+#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
+
 namespace Lexxys
 {
 	/// <summary>
 	/// Provides helper to create an instance of the <see cref="SynchronizedCollection{T}"/>.
 	/// </summary>
-#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 	public static class SynchronizedCollection
 	{
 		/// <summary>
@@ -85,10 +86,7 @@ namespace Lexxys
 		/// <returns></returns>
 		public T this[int index]
 		{
-			get
-			{
-				return _items[index].Value;
-			}
+			get => _items[index].Value;
 			set
 			{
 				if (IsReadOnly)
@@ -200,7 +198,7 @@ namespace Lexxys
 		/// <typeparam name="T2">Type of the values item</typeparam>
 		/// <param name="values">Desired content of the collection</param>
 		/// <param name="equals">A predicate to indicate that two elements from the source and target collections are equal.</param>
-		/// <param name="create">An operator used to conver value from <typeparamref name="T"/> to <typeparamref name="T2"/>.</param>
+		/// <param name="create">An operator used to convert value from <typeparamref name="T"/> to <typeparamref name="T2"/>.</param>
 		/// <param name="replace">Optional operator used to replace element in the resulted collection items with correspondent item from <paramref name = "values" />.</param>
 		public void SynchronizeWith<T2>(IEnumerable<T2> values, Func<T, T2, bool> equals, Func<T2, T> create, Action<T, T2>? replace = null)
 		{

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net7.0;net6.0;net472</TargetFrameworks>
+    <RootNamespace>Lexxys</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Crypting\Cryptors\**" />
+    <EmbeddedResource Remove="Crypting\Cryptors\**" />
+    <None Remove="Crypting\Cryptors\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Lexxys\Lexxys.csproj" />
+  </ItemGroup>
+
+</Project>

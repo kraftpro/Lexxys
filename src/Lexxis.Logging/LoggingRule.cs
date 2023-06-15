@@ -90,7 +90,7 @@ internal class LoggingRule
 		private readonly Regex? _exclude;
 		private readonly LogTypeFilter _types;
 
-		public Rule(LogTypeFilter? types, string? include, string? exclude, LogType? minLogLevel)
+		private Rule(LogTypeFilter? types, string? include, string? exclude, LogType? minLogLevel)
 		{
 			_types = types.GetValueOrDefault() | (minLogLevel == null ? 0: (LogTypeFilter)~(~1 << (int)minLogLevel.GetValueOrDefault()));
 			_include = ParseRule(include, true);

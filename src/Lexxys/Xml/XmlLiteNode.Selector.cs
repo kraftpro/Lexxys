@@ -14,7 +14,7 @@ public partial class XmlLiteNode
 {
 	static class Selector
 	{
-		public static IEnumerable<XmlLiteNode> Select(string selector, IEnumerable<XmlLiteNode> nodes)
+		public static IEnumerable<XmlLiteNode> Select(string selector, IEnumerable<XmlLiteNode>? nodes)
 		{
 			if (nodes == null)
 				return Array.Empty<XmlLiteNode>();
@@ -30,7 +30,7 @@ public partial class XmlLiteNode
 		private static readonly ConcurrentDictionary<string, Func<IEnumerable<XmlLiteNode>, IEnumerable<XmlLiteNode>>> __compiledSelectors =
 			new ConcurrentDictionary<string, Func<IEnumerable<XmlLiteNode>, IEnumerable<XmlLiteNode>>>();
 
-		private static IEnumerable<XmlLiteNode> EmptySelector(IEnumerable<XmlLiteNode> nodes)
+		private static IEnumerable<XmlLiteNode> EmptySelector(IEnumerable<XmlLiteNode>? nodes)
 		{
 			return nodes ?? Array.Empty<XmlLiteNode>();
 		}
@@ -202,7 +202,7 @@ public partial class XmlLiteNode
 				if (_next._attrib)
 					return guarded == null ? next: o => next(guarded(o));
 
-				return guarded == null ? (Func<IEnumerable<XmlLiteNode>, IEnumerable<XmlLiteNode>>)
+				return guarded == null ?
 					(o => next(o.SelectMany(p => p.Elements))):
 					(o => next(guarded(o).SelectMany(p => p.Elements)));
 			}
@@ -216,11 +216,11 @@ public partial class XmlLiteNode
 					var next = _next?.CompileWhere();
 					if (_text.Length == 0)
 					{
-						return next == null ? guard ?? (o => true):
+						return next == null ? guard ?? (_ => true):
 							guard == null ? next: o => guard(o) && next(o);
 					}
 
-					Func<XmlLiteNode, IEnumerable<XmlLiteNode>> nodes = _text == "*" ? (Func<XmlLiteNode, IEnumerable<XmlLiteNode>>)
+					Func<XmlLiteNode, IEnumerable<XmlLiteNode>> nodes = _text == "*" ?
 						(o => o.Elements):
 						(o => o.Where(_text));
 
@@ -239,11 +239,11 @@ public partial class XmlLiteNode
 				if (_text.Length == 0)
 				{
 					if (String.IsNullOrEmpty(_value))
-						return _condition == Op.Eq ? (Func<XmlLiteNode, bool>)
+						return _condition == Op.Eq ?
 							(o => String.IsNullOrEmpty(o.Value)):
 							(o => !String.IsNullOrEmpty(o.Value));
 					else
-						return _condition == Op.Eq ? (Func<XmlLiteNode, bool>)
+						return _condition == Op.Eq ?
 							(o => o.Comparer.Equals(o.Value, _value)):
 						(o => !o.Comparer.Equals(o.Value, _value));
 				}
@@ -251,11 +251,11 @@ public partial class XmlLiteNode
 				{
 					Debug.Assert(_attrib);
 					if (String.IsNullOrEmpty(_value))
-						return _condition == Op.Eq ? (Func<XmlLiteNode, bool>)
+						return _condition == Op.Eq ?
 							(o => String.IsNullOrEmpty(o[_text])):
 							(o => !String.IsNullOrEmpty(o[_text]));
 					else
-						return _condition == Op.Eq ? (Func<XmlLiteNode, bool>)
+						return _condition == Op.Eq ?
 							(o => o.Comparer.Equals(o[_text], _value)):
 							(o => !o.Comparer.Equals(o[_text], _value));
 				}

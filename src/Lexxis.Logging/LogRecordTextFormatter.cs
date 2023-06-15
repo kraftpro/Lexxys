@@ -383,7 +383,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 				}
 				*p++ = c;
 			}
-		Finish:;
+			Finish:;
 		}
 		return new string(buffer, 0, (int)(p - buffer));
 		static bool IsWhiteSpace(char c)

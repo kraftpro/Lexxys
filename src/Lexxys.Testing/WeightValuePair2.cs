@@ -32,17 +32,17 @@ class WeightValuePairInternal<T>: IWeightValuePair<T>
 
 	public WeightValuePairInternal(double weight, T value)
 	{
-		if (weight <= 0)
-			throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
+		if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
+
 		Weight = weight;
 		Value = value;
 	}
 
-	private WeightValuePairInternal(double mult, WeightValuePairInternal<T> value)
+	private WeightValuePairInternal(double multiplier, WeightValuePairInternal<T> value)
 	{
-		if (mult <= 0)
-			throw new ArgumentOutOfRangeException(nameof(mult), mult, null);
-		Weight = mult * value.Weight;
+		if (multiplier <= 0) throw new ArgumentOutOfRangeException(nameof(multiplier), multiplier, null);
+
+		Weight = multiplier * value.Weight;
 		Value = value.Value;
 	}
 
@@ -64,21 +64,19 @@ class WeightFunctionPairInternal<T>: IWeightValuePair<T>
 
 	public WeightFunctionPairInternal(double weight, Func<T> generator)
 	{
-		if (weight <= 0)
-			throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
+		if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
+		if (generator is null) throw new ArgumentNullException(nameof(generator));
 
 		Weight = weight;
 		_func = generator;
 	}
 
-	private WeightFunctionPairInternal(double mult, WeightFunctionPairInternal<T> value)
+	private WeightFunctionPairInternal(double multiplier, WeightFunctionPairInternal<T> value)
 	{
-		if (mult <= 0)
-			throw new ArgumentOutOfRangeException(nameof(mult), mult, null);
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
+		if (multiplier <= 0) throw new ArgumentOutOfRangeException(nameof(multiplier), multiplier, null);
+		if (value == null) throw new ArgumentNullException(nameof(value));
 
-		Weight = mult * value.Weight;
+		Weight = multiplier * value.Weight;
 		_func = value._func;
 	}
 

@@ -4,7 +4,7 @@ namespace Lexxys;
 
 public interface IStaticServices
 {
-	bool ServiceInitialized { get; }
+	bool IsInitialized { get; }
 	IServiceProvider ServiceProvider { get; }
 
 	void AppendServices(IEnumerable<ServiceDescriptor>? services, bool safe = false);

@@ -171,9 +171,7 @@ public class XsdLiteValue
 
 	public bool IsMatch(string? value)
 	{
-		if (value == null || value.Length == 0)
-			return IsNullable;
-		return XmlTools.TryGetValue(value, ValueType, out var _);
+		return value is { Length: >0 } ? XmlTools.TryGetValue(value, ValueType, out var _): IsNullable;
 	}
 
 	/// <summary>

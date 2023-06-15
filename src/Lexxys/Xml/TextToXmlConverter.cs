@@ -449,7 +449,7 @@ public ref struct TextToXmlConverter
 				{
 					int k = s.Slice(i + 1).IndexOfAny(beginComments);
 					if (k < 0)
-					break;
+						break;
 					i += k + 1;
 					continue;
 				}
@@ -705,7 +705,7 @@ public ref struct TextToXmlConverter
 			if (token.TokenType.Is(TOKEN, ENDNODE))
 			{
 				token = _nodeScanner.Next(ref stream);
-				if (!MemoryExtensions.Equals(token.GetSpan(stream), node.Name.AsSpan(), StringComparison.Ordinal))
+				if (!token.GetSpan(stream).Equals(node.Name.AsSpan(), StringComparison.Ordinal))
 					throw SyntaxException(token, stream, SR.ExpectedEndOfNode(node.Name));
 				ScanNodeValue(node, ref stream);
 			}
@@ -755,7 +755,7 @@ public ref struct TextToXmlConverter
 			if (token.TokenType.Is(TOKEN, ENDNODE))
 			{
 				token = _nodeScanner.Next(ref stream);
-				if (!MemoryExtensions.Equals(token.GetSpan(stream), node.Name.AsSpan(), StringComparison.Ordinal))
+				if (!token.GetSpan(stream).Equals(node.Name.AsSpan(), StringComparison.Ordinal))
 					throw SyntaxException(token, stream, SR.ExpectedEndOfNode(node.Name));
 				ScanAttribValue(ref stream);
 			}
@@ -770,7 +770,7 @@ public ref struct TextToXmlConverter
 
 	private void ScanBeginNode(ref CharStream stream, LexicalToken token, out Node node)
 	{
-		SyntaxRuleCollection? rules = _syntaxRules.GetApplicatbleRules(CurrentNodePath);
+		SyntaxRuleCollection? rules = _syntaxRules.GetApplicableRules(CurrentNodePath);
 
 		if (token.TokenType.Is(LexicalTokenType.IDENTIFIER))
 		{
@@ -999,7 +999,7 @@ public ref struct TextToXmlConverter
 					items.Add(XmlTools.OptionIgnoreCase);
 				IEnumerable<XmlLiteNode>? xx = _optionHandler?.Invoke(ref this, pattern, items);
 				if (xx != null)
-					top.AddChild(xx.Select(o => Node.FromXml(o)));
+					top.AddChild(xx.Select(Node.FromXml));
 			}
 		}
 		else // if (!(items.Count == 0 && _syntaxRules.Add(CurrentNodePath, pattern)))
@@ -1107,14 +1107,16 @@ public ref struct TextToXmlConverter
 			if (xml is null)
 				throw new ArgumentNullException(nameof(xml));
 
-			var x = new Node(xml.Name, xml.Comparer.Equals("x", "X"));
-			x._value = xml.Value;
+			var x = new Node(xml.Name, xml.Comparer.Equals("x", "X"))
+			{
+				_value = xml.Value
+			};
 			foreach (var item in xml.Attributes)
 			{
 				x.AddAttrib(item.Key, item.Value);
 			}
 			if (xml.Elements.Count > 0)
-				x.AddChild(xml.Elements.Select(o => FromXml(o)));
+				x.AddChild(xml.Elements.Select(FromXml));
 			return x;
 		}
 	}
@@ -1155,7 +1157,7 @@ public ref struct TextToXmlConverter
 				_rule.Add(rule);
 		}
 
-		public SyntaxRuleCollection? GetApplicatbleRules(string root)
+		public SyntaxRuleCollection? GetApplicableRules(string root)
 		{
 			SyntaxRuleCollection? collection = null;
 			foreach (var rule in _rule)
@@ -1237,10 +1239,8 @@ public ref struct TextToXmlConverter
 		{
 			if (node == null || (node = node.Trim(TrimmerChars)).Length == 0)
 				return null;
-			if (attribs == null)
-				attribs = Array.Empty<string>();
-			if (path == null)
-				path = "";
+			attribs ??= Array.Empty<string>();
+			path ??= "";
 
 			string? name = null;
 			if (extractName && (name = NameRex.Match(node).Value).Length > 1)
@@ -1386,8 +1386,7 @@ public ref struct TextToXmlConverter
 			{
 				_start = path;
 				_pattern = null;
-				if (_nodeName == null)
-					_nodeName = name;
+				_nodeName ??= name;
 			}
 			else if (m.Groups.Count > 1)
 			{

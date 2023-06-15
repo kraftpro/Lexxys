@@ -62,7 +62,7 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 	/// <summary>
 	/// Actual keys comparer of the <see cref="OrderedBag{TKey,TValue}"/>.
 	/// </summary>
-	protected IEqualityComparer<TKey> Comparer { get; }
+	public IEqualityComparer<TKey> Comparer { get; }
 
 	/// <inheritdoc />
 	public ICollection<TKey> Keys => new KeyCollection(this);
@@ -408,9 +408,9 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 		}
 	}
 
-	private readonly struct DictionaryEnumerator: IDictionaryEnumerator
+	private struct DictionaryEnumerator: IDictionaryEnumerator
 	{
-		private readonly List<(TKey Key, TValue Value)>.Enumerator _parent;
+		private List<(TKey Key, TValue Value)>.Enumerator _parent;
 
 		public DictionaryEnumerator(OrderedBag<TKey, TValue> dictionary) => _parent = dictionary._list.GetEnumerator();
 

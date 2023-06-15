@@ -362,7 +362,7 @@ public static partial class XmlTools
 
 	public static string EncodeAttribute(string? value)
 	{
-		if (value == null || value.Length == 0)
+		if (value is not { Length: >0 })
 			return "\"\"";
 
 		return
@@ -376,7 +376,7 @@ public static partial class XmlTools
 		if (text is null)
 			throw new ArgumentNullException(nameof(text));
 
-		if (value == null || value.Length == 0)
+		if (value is not { Length: >0 })
 			return text.Append("\"\"");
 
 		if (value.IndexOf('"') < 0)

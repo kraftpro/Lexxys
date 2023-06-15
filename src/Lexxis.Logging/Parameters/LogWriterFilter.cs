@@ -32,4 +32,15 @@ public class LogWriterFilter
 	/// </code>
 	/// </summary>
 	public string? Exclude { get; set; }
+
+    public LogWriterFilter()
+    {
+    }
+
+    public LogWriterFilter(LogTypeFilter? logType, string? include = null, string? exclude = null)
+	{
+		LogType = logType;
+		Include = include;
+		Exclude = exclude;
+	}
 }

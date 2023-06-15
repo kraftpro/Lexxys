@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
+using Lexxys;
+
 namespace Lexxys.Testing;
 
 /// <summary>
-/// Represents a generator of random items of type <typeparamref name="T"/>.
+/// Represents a random value generator of type <typeparamref name="T"/>.
 /// </summary>
 /// <typeparam name="T">The type of generated elements.</typeparam>
 public readonly struct RandItem<T>: IFormattable
@@ -17,68 +19,70 @@ public readonly struct RandItem<T>: IFormattable
 	public static readonly RandItem<T> Empty = new RandItem<T>(Array.Empty<IWeightValuePair<T>>(), false);
 
 	private readonly IWeightValuePair<T>[] _items;
+	private readonly double _weight;
 
-	private RandItem(IWeightValuePair<T>[] items, bool _)
+	internal RandItem(IWeightValuePair<T>[]? items, bool _)
 	{
+		if (items is not { Length: > 0 })
+			throw new ArgumentNullException(nameof(items));
+
 		_items = items;
-		Weight = _items.Sum(o => o.Weight);
+		_weight = _items.Sum(o => o.Weight);
 	}
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> of weight 1, that uses <paramref name="generator"/> to create an item value.
+	/// Creates a new <see cref="RandItem{T}"/> that uses <paramref name="generator"/> and the specified <paramref name="weight"/> to create an item value.
 	/// </summary>
-	/// <param name="generator">A function that creates an item value</param>
+	/// <param name="weight">Weight of the <paramref name="generator"/></param>
+	/// <param name="generator">A function that creates an item value.</param>
+	public RandItem(double weight, Func<T> generator)
+	{
+		if (generator == null)
+			throw new ArgumentNullException(nameof(generator));
+
+		_items = new[] { WeightValuePair.Create(1, generator) };
+		_weight = weight;
+	}
+
+	/// <summary>
+	/// Creates a new <see cref="RandItem{T}"/> that uses <paramref name="generator"/> to create an item value.
+	/// </summary>
+	/// <param name="generator">A function that creates an item value.</param>
 	public RandItem(Func<T> generator): this(1, generator)
 	{
 	}
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> of the specified <paramref name="weight"/>, that uses <paramref name="generator"/> to create an item value.
+	/// Creates a new <see cref="RandItem{T}"/> with the only <paramref name="value"/> and the specified <paramref name="weight"/>.
 	/// </summary>
-	/// <param name="weight"></param>
-	/// <param name="generator"></param>
-	public RandItem(double weight, Func<T> generator)
-	{
-		if (weight < 0)
-			throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
-		if (generator == null)
-			throw new ArgumentNullException(nameof(generator));
-
-		_items = new[] { WeightValuePair.Create(weight, generator) };
-		Weight = weight;
-	}
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> of specified <paramref name="weight"/> and a constant <paramref name="value"/>.
-	/// </summary>
-	/// <param name="weight">Item weight</param>
-	/// <param name="value">Item value</param>
+	/// <param name="weight">Weight of the <paramref name="value"/></param>
+	/// <param name="value">The item value</param>
 	public RandItem(double weight, T value)
 	{
-		if (weight < 0)
-			throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
-
-		_items = new[] { WeightValuePair.Create(weight, value) };
-		Weight = weight;
+		_items = new[] { WeightValuePair.Create(1, () => value) };
+		_weight = weight;
 	}
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> based of the specified list of <paramref name="items"/>.
+	/// Creates a new <see cref="RandItem{T}"/> with the only <paramref name="value"/>.
 	/// </summary>
-	/// <param name="items">Items collection to be used to generate item value</param>
-	public RandItem(IEnumerable<IWeightValuePair<T>> items)
+	/// <param name="value">The item value</param>
+	public RandItem(T value): this(1, value)
 	{
-		if (items == null)
-			throw new ArgumentNullException(nameof(items));
-
-		_items = items.ToArray();
-		Weight = _items.Sum(o => o.Weight);
 	}
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> based of the specifies list of <paramref name="items"/>.
+	/// Creates a new <see cref="RandItem{T}"/> based om the collection of <see cref="IWeightValuePair{T}"/> pairs.
 	/// </summary>
-	/// <param name="items">Items collection to be used to generate item value</param>
+	/// <param name="items">Collection of <see cref="IWeightValuePair{T}"/> to be used to generate item value</param>
+	public RandItem(IEnumerable<IWeightValuePair<T>> items): this(items?.ToArray(), false)
+	{
+	}
+
+	/// <summary>
+	/// Creates a new <see cref="RandItem{T}"/> based om the collection of <see cref="IWeightValuePair{T}"/> pairs.
+	/// </summary>
+	/// <param name="items">Collection of <see cref="IWeightValuePair{T}"/> to be used to generate item value</param>
 	public RandItem(params IWeightValuePair<T>[] items)
 	{
 		if (items is not { Length: >0 })
@@ -86,13 +90,8 @@ public readonly struct RandItem<T>: IFormattable
 
 		_items = new IWeightValuePair<T>[items.Length];
 		Array.Copy(items, _items, _items.Length);
-		Weight = _items.Sum(o => o.Weight);
+		_weight = _items.Sum(o => o.Weight);
 	}
-
-	/// <summary>
-	/// Item Weight.
-	/// </summary>
-	private double Weight { get; }
 
 	/// <summary>
 	/// Generates nest item value.
@@ -105,7 +104,7 @@ public readonly struct RandItem<T>: IFormattable
 
 		if (_items.Length == 1)
 			return _items[0].Value;
-		double bound = Rand.Dbl(Weight);
+		double bound = Rand.Dbl(_weight);
 		double p = 0;
 		for (int i = 0; i < _items.Length; i++)
 		{
@@ -113,7 +112,7 @@ public readonly struct RandItem<T>: IFormattable
 			if (p >= bound)
 				return _items[i].Value;
 		}
-		throw new InvalidOperationException($"Bound exceeded bound:{Weight}, bound:{bound}");
+		throw new InvalidOperationException($"Bound exceeded bound:{_weight}, bound:{bound}");
 	}
 
 	/// <summary>
@@ -144,23 +143,7 @@ public readonly struct RandItem<T>: IFormattable
 	}
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> by multiplying all items by specific <paramref name="value"/>
-	/// </summary>
-	/// <param name="value">Multiplier</param>
-	/// <returns>Modified <see cref="RandItem{T}"/>.</returns>
-	public RandItem<T> Mult(double value)
-	{
-		if (value <= 0.0)
-			throw new ArgumentOutOfRangeException(nameof(value), value, null);
-		if (value == 1.0)
-			return this;
-
-		var items = Array.ConvertAll(_items, o => o.Multiply(value));
-		return new RandItem<T>(items, false);
-	}
-
-	/// <summary>
-	/// Joins two random items generators.
+	/// Creates a new <see cref="RandItem{T}"/> joining this random items generator with the specified one.
 	/// </summary>
 	/// <param name="other">The generator to join with.</param>
 	/// <returns>Combined random items generator.</returns>
@@ -183,39 +166,39 @@ public readonly struct RandItem<T>: IFormattable
 	}
 
 	/// <summary>
-	/// Appends a new <paramref name="generator"/> to the current random items generator.
+	/// Creates a new <see cref="RandItem{T}"/> adding a new <paramref name="generator"/> to the current random items generator.
 	/// </summary>
-	/// <param name="generator">Item value generator.</param>
+	/// <param name="generator">A function that creates an item value.</param>
 	/// <returns>New random items generator.</returns>
 	public RandItem<T> Or(Func<T> generator) => Or(1, generator);
 
 	/// <summary>
-	/// Appends a new <paramref name="generator"/> to the current random items generator.
+	/// Creates a new <see cref="RandItem{T}"/> adding a new <paramref name="generator"/> with the specified <paramref name="weight"/> to the current random items generator.
 	/// </summary>
 	/// <param name="weight">Weight of the generator.</param>
-	/// <param name="generator">Item value generator.</param>
+	/// <param name="generator">A function that creates an item value.</param>
 	/// <returns>New random items generator.</returns>
 	public RandItem<T> Or(double weight, Func<T> generator) => Or(WeightValuePair.Create(weight, generator));
 
 	/// <summary>
-	/// Appends a new <paramref name="value"/> to the current random items generator.
+	/// Creates a new <see cref="RandItem{T}"/> adding a new <paramref name="value"/> to the current random items generator.
 	/// </summary>
 	/// <param name="value">Value of the item.</param>
 	/// <returns>New random items generator.</returns>
 	public RandItem<T> Or(T value) => Or(1, value);
 
 	/// <summary>
-	/// Appends a new <paramref name="value"/> to the current random items generator.
+	/// Creates a new <see cref="RandItem{T}"/> adding a new <paramref name="value"/> to the current random items generator.
 	/// </summary>
-	/// <param name="weight">Weithg of the value.</param>
+	/// <param name="weight">Weight of the value.</param>
 	/// <param name="value">Value of the item.</param>
 	/// <returns>New random items generator.</returns>
 	public RandItem<T> Or(double weight, T value) => Or(WeightValuePair.Create(weight, value));
 
 	/// <summary>
-	/// Appends a new item to the current random items generator.
+	/// Creates a new <see cref="RandItem{T}"/> adding a new <see cref="RandItem{T}"/> adding the specified <see cref="IWeightValuePair{T}"/> to the current random items generator.
 	/// </summary>
-	/// <param name="pair">Item value</param>
+	/// <param name="pair"><see cref="IWeightValuePair{T}"/> value</param>
 	/// <returns>New random items generator.</returns>
 	public RandItem<T> Or(IWeightValuePair<T> pair)
 	{
@@ -240,10 +223,6 @@ public readonly struct RandItem<T>: IFormattable
 		var value = NextValue();
 		return value is IFormattable f ? f.ToString(format, formatProvider): value?.ToString() ?? String.Empty;
 	}
-
-    public static RandItem<T> operator *(double mult, RandItem<T> value) => value.Mult(mult);
-
-    public static RandItem<T> operator *(RandItem<T> value, double mult) => value.Mult(mult);
 
     public static RandItem<T> operator +(RandItem<T> left, RandItem<T> right) => left.Or(right);
 
@@ -270,7 +249,7 @@ public readonly struct RandItem<T>: IFormattable
 	/// <param name="left">First element of the sequence.</param>
 	/// <param name="right">Second element of the sequence.</param>
 	/// <returns></returns>
-	public static RandSeq<T> operator |(RandItem<T> left, T right) => new RandSeq<T>(left, new RandItem<T>(1, right));
+	public static RandSeq<T> operator |(RandItem<T> left, T right) => new RandSeq<T>(left, new RandItem<T>(right));
 
 	/// <summary>
 	/// Creates a sequence of the value and <see cref="RandItem{T}"/>.
@@ -278,7 +257,7 @@ public readonly struct RandItem<T>: IFormattable
 	/// <param name="left">First element of the sequence.</param>
 	/// <param name="right">Second element of the sequence.</param>
 	/// <returns></returns>
-	public static RandSeq<T> operator |(T left, RandItem<T> right) => new RandSeq<T>(new RandItem<T>(1, left), right);
+	public static RandSeq<T> operator |(T left, RandItem<T> right) => new RandSeq<T>(new RandItem<T>(left), right);
 
 	/// <summary>
 	/// Returns next value of the random items generator.

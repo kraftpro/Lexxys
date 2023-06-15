@@ -499,10 +499,10 @@ public class JsonScalar: JsonItem
 			if (time > 0)
 			{
 				int z = (int)(time % (60 * TicksPerSecond));
-				int fract = z % TicksPerSecond;
-				if (fract > 0)
+				int fraction = z % TicksPerSecond;
+				if (fraction > 0)
 				{
-					index = Digits(mem, index, fract);
+					index = Digits(mem, index, fraction);
 					mem[--index] = (byte)'.';
 				}
 				index = Digits2(mem, index, z / TicksPerSecond);
@@ -588,9 +588,7 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 
 	public JsonMap(IWrappedList<JsonPair> properties)
 	{
-		if (properties is null)
-			throw new ArgumentNullException(nameof(properties));
-		Properties = properties;
+		Properties = properties ?? throw new ArgumentNullException(nameof(properties));
 	}
 
 	public JsonMap(IReadOnlyList<JsonPair> properties, IReadOnlyList<JsonPair>? attributes): base(attributes)
@@ -756,10 +754,7 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 				text.Append("...");
 				break;
 			}
-			if (item == null)
-				JsonScalar.Null.ToString(text, indent2, stringLimit, arrayLimit);
-			else
-				item.ToString(text, indent2, stringLimit, arrayLimit);
+			(item ?? JsonScalar.Null).ToString(text, indent2, stringLimit, arrayLimit);
 			comma = ",";
 		}
 		if (comma.Length > 0 && indent != null)

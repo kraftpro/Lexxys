@@ -20,13 +20,13 @@ public interface IOrderedEnum: IEnum
 	int Order { get; }
 }
 
-public interface IEnum<T>
+public interface IEnum<out T>
 {
 	T Value { get; }
 	string Name { get; }
 }
 
-public interface IOrderedEnum<T>: IEnum<T>
+public interface IOrderedEnum<out T>: IEnum<T>
 {
 	int Order { get; }
 }

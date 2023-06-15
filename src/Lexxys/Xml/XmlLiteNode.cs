@@ -210,7 +210,7 @@ public partial class XmlLiteNode: IXmlReadOnlyNode, IEnumerable<XmlLiteNode>, IE
 		int n = TrimRight(node.AsSpan());
 		if (n == 0)
 			return value;
-		if (value == null || value.Length == 0)
+		if (value is not { Length: >0 })
 			return n >= node.Length ? node: node.Substring(0, n);
 
 		if (!IsCrLf(node[0]) || !IsCrLf(value[value.Length - 1]))
@@ -235,8 +235,8 @@ public partial class XmlLiteNode: IXmlReadOnlyNode, IEnumerable<XmlLiteNode>, IE
 				--i;
 		return i + 1;
 
-		static bool IsSpace(char c) => c == ' ' || c == '\t';
-		static bool IsCrLf(char c) => c == '\r' || c == '\n';
+		static bool IsSpace(char c) => c is ' ' or '\t';
+		static bool IsCrLf(char c) => c is '\r' or '\n';
 	}
 
 #if USE_XML_DOC
@@ -588,7 +588,7 @@ public partial class XmlLiteNode: IXmlReadOnlyNode, IEnumerable<XmlLiteNode>, IE
 	public object? AsObject(Type returnType) => XmlTools.GetValue(this, returnType);
 
 	/// <summary>
-	/// Eveluates the specified <paramref name="action"/> over this <see cref="XmlLiteNode"/> node.
+	/// Evaluates the specified <paramref name="action"/> over this <see cref="XmlLiteNode"/> node.
 	/// </summary>
 	/// <param name="action"></param>
 	/// <exception cref="ArgumentNullException"></exception>
@@ -596,7 +596,7 @@ public partial class XmlLiteNode: IXmlReadOnlyNode, IEnumerable<XmlLiteNode>, IE
 		=> (action ?? throw new ArgumentNullException(nameof(action))).Invoke(this);
 
 	/// <summary>
-	/// Eveluates the specified <paramref name="action"/> over this <see cref="XmlLiteNode"/> node.
+	/// Evaluates the specified <paramref name="action"/> over this <see cref="XmlLiteNode"/> node.
 	/// </summary>
 	/// <param name="action"></param>
 	/// <exception cref="ArgumentNullException"></exception>

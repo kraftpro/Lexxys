@@ -13,7 +13,7 @@ namespace Lexxys
 		{
 		}
 
-		public bool ServiceInitialized => _provider != null;
+		public bool IsInitialized => _provider != null;
 
 		public IServiceProvider ServiceProvider => _provider ??= _collection.BuildServiceProvider();
 

@@ -59,7 +59,7 @@ namespace Lexxys
 
 		private class Boxed
 		{
-			public T Value;
+			public readonly T Value;
 			public Boxed(T value) => Value = value;
 		}
 	}

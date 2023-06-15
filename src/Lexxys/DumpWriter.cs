@@ -1056,11 +1056,11 @@ public abstract class DumpWriter
 				string shortName = ShortName(typeName);
 				if (!ignoreToString)
 				{
-					var svalue = value.ToString();
+					var sv = value.ToString();
 					if (shortName.StartsWith("KeyValuePair<", StringComparison.Ordinal))
 						typeName = "<>";
-					else if (svalue != typeName)
-						return Text(shortName).Text(':').Text(svalue);
+					else if (sv != typeName)
+						return Text(shortName).Text(':').Text(sv);
 				}
 				if (typeName.Contains("<>"))
 				{
@@ -1087,9 +1087,8 @@ public abstract class DumpWriter
 			foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
 			{
 				if (item.CanRead &&
-					item.GetIndexParameters().Length == 0 &&
-					!item.PropertyType.IsGenericTypeDefinition &&
-					!item.PropertyType.IsGenericParameter)
+				    item.GetIndexParameters().Length == 0 &&
+				    item.PropertyType is { IsGenericTypeDefinition: false, IsGenericParameter: false })
 				{
 					if (Left == 0)
 						return this;

@@ -77,10 +77,7 @@ public class OrderedSet<T>: IList<T>, ISet<T>
 	public T this[int index]
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get
-		{
-			return _list[index];
-		}
+		get => _list[index];
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set
 		{

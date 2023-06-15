@@ -10,10 +10,6 @@ using System.Reflection;
 using System.Text;
 using System.Xml;
 
-#pragma warning disable CA1720 // Identifier contains type name
-#pragma warning disable CA1031 // Do not catch general exception types
-#pragma warning disable CA2225 // Operator overloads have named alternates
-
 namespace Lexxys;
 
 using Xml;
@@ -38,10 +34,12 @@ public abstract class XmlBuilder
 	/// <summary>
 	/// Initializes a new instance of the <see cref="XmlBuilder"/> class.
 	/// </summary>
-	protected XmlBuilder()
+	protected XmlBuilder(NamingCaseRule namingRule, bool preferElements)
 	{
 		_elements = new Stack<string>();
 		_visited = new HashSet<object>();
+		NamingRule = namingRule;
+		PreferElements = preferElements;
 	}
 
 	/// <summary>
@@ -72,11 +70,11 @@ public abstract class XmlBuilder
 	/// <summary>
 	/// Naming rules of the XML elements and attributes (default <see cref="NamingCaseRule.None"/>).
 	/// </summary>
-	public NamingCaseRule NamingRule { get; set; }
+	public NamingCaseRule NamingRule { get; }
 	/// <summary>
 	/// Indicates that XML elements are better than XML attributes while writing <see cref="System.Object"/> value (default <code>false</code>).
 	/// </summary>
-	public bool PreferElements { get; set; }
+	public bool PreferElements { get; }
 
 	/// <summary>
 	/// Indicates that the <see cref="XmlBuilder"/> is writing start element tag.
@@ -94,26 +92,12 @@ public abstract class XmlBuilder
 		return XmlConvert.EncodeName(name);
 	}
 
-	private string PreferName(string name)
-	{
-		return XmlConvert.EncodeName(Rename(name));
-	}
+	private string PreferName(string name) => XmlConvert.EncodeName(Rename(name));
 
-	/// <summary>
-	/// Renames the <paramref name="value"/> according to the <see cref="NamingRule"/>.
-	/// </summary>
-	/// <param name="value">The name to rename</param>
-	/// <returns>Renamed value</returns>
 	[return: NotNullIfNotNull(nameof(value))]
-	public string? Rename(string? value)
-	{
-		return Strings.ToNamingRule(value, NamingRule);
-	}
+	private string? Rename(string? value) => Strings.ToNamingRule(value, NamingRule);
 
-	private static string ReferenceValue(object value)
-	{
-		return "^[" + value.ToString() + "]";
-	}
+	private static string ReferenceValue(object value) => $"^[{value}]";
 
 	/// <summary>
 	/// Writes a start tag with specified <paramref name="name"/>.
@@ -1048,7 +1032,7 @@ public abstract class XmlBuilder
 	/// Writes object value.
 	/// </summary>
 	/// <param name="value">Value to write</param>
-	/// <param name="elements">Use XML elments instead of attributies for properties of <paramref name="value"/></param>
+	/// <param name="elements">Use XML elements instead of attributes for properties of <paramref name="value"/></param>
 	/// <returns><see cref="XmlBuilder"/></returns>
 	public XmlBuilder Value(object? value, bool elements)
 	{
@@ -1059,7 +1043,7 @@ public abstract class XmlBuilder
 	/// Writes object value ignoring <see cref="IDumpXml"/> implementation.
 	/// </summary>
 	/// <param name="value">Value to write</param>
-	/// <param name="elements">Use XML elments instead of attributies for properties of <paramref name="value"/></param>
+	/// <param name="elements">Use XML elements instead of attributes for properties of <paramref name="value"/></param>
 	/// <returns><see cref="XmlBuilder"/></returns>
 	public XmlBuilder Object(object? value, bool elements = false)
 	{
@@ -1108,7 +1092,7 @@ public abstract class XmlBuilder
 	/// </summary>
 	/// <param name="name">Name of the XML element</param>
 	/// <param name="value">Value of the XML element</param>
-	/// <param name="elements">Use XML elments instead of attributies for properties of <paramref name="value"/></param>
+	/// <param name="elements">Use XML elements instead of attributes for properties of <paramref name="value"/></param>
 	/// <returns></returns>
 	public XmlBuilder Element(string name, object? value, bool elements)
 	{
@@ -1197,11 +1181,9 @@ public abstract class XmlBuilder
 		}
 		foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
 		{
-			if (item.CanRead &&
-				!item.PropertyType.IsGenericTypeDefinition &&
-				!item.PropertyType.IsAbstract &&
-				item.GetIndexParameters().Length == 0 &&
-				!item.PropertyType.IsGenericParameter)
+			if (item is { CanRead: true, PropertyType: { IsGenericTypeDefinition: false, IsAbstract: false } } &&
+			    item.GetIndexParameters().Length == 0 &&
+			    !item.PropertyType.IsGenericParameter)
 			{
 				try
 				{
@@ -1216,9 +1198,8 @@ public abstract class XmlBuilder
 		}
 		if (elements || _state == State.Value)
 		{
-			for (int i = 0; i < items.Count; ++i)
+			foreach (var item in items)
 			{
-				var item = items[i];
 				AppendElement(PreferName(item.Key), item.Value, elements);
 			}
 		}
@@ -1267,28 +1248,14 @@ public class XmlStringBuilder: XmlBuilder
 	/// <summary>
 	/// Initializes a new instance of the <see cref="XmlStringBuilder"/> class.
 	/// </summary>
-	public XmlStringBuilder(StringBuilder? buffer = null)
+	public XmlStringBuilder(StringBuilder? buffer = null, NamingCaseRule namingRule = NamingCaseRule.None, bool preferElements = false): base(namingRule, preferElements)
 	{
 		_buffer = buffer ?? new StringBuilder();
 	}
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="XmlStringBuilder"/> class.
+	/// Underlying <see cref="StringBuilder"/>.
 	/// </summary>
-	public XmlStringBuilder(NamingCaseRule namingRule, bool preferElements = false): this(null, namingRule, preferElements)
-	{
-	}
-
-	/// <summary>
-	/// Initializes a new instance of the <see cref="XmlStringBuilder"/> class.
-	/// </summary>
-	public XmlStringBuilder(StringBuilder? buffer, NamingCaseRule namingRule, bool preferElements = false)
-	{
-		_buffer = buffer ?? new StringBuilder();
-		NamingRule = namingRule;
-		PreferElements = preferElements;
-	}
-
 	public StringBuilder Buffer => _buffer;
 
 	/// <inheritdoc />
@@ -1361,21 +1328,14 @@ public class XmlStreamBuilder: XmlBuilder
 	/// <summary>
 	/// Initializes a new instance of the <see cref="XmlStreamBuilder"/> class.
 	/// </summary>
-	public XmlStreamBuilder(TextWriter writer)
+	public XmlStreamBuilder(TextWriter writer, NamingCaseRule namingRule = NamingCaseRule.None, bool preferElements = false): base(namingRule, preferElements)
 	{
 		_writer = writer ?? throw new ArgumentNullException(nameof(writer));
 	}
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="XmlStreamBuilder"/> class.
+	/// Underlying <see cref="TextWriter"/>.
 	/// </summary>
-	public XmlStreamBuilder(TextWriter writer, NamingCaseRule namingRule, bool preferElements = false)
-	{
-		_writer = writer ?? throw new ArgumentNullException(nameof(writer));
-		NamingRule = namingRule;
-		PreferElements = preferElements;
-	}
-
 	public TextWriter Writer => _writer;
 
 	/// <inheritdoc />

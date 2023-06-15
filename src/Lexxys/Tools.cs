@@ -7,6 +7,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Lexxys;
@@ -633,7 +634,7 @@ public static class Strings
 	[return: NotNullIfNotNull(nameof(value))]
 	public static string? ToTitleCase(string? value)
 	{
-		if (value == null || value.Length == 0)
+		if (value is not { Length: >0 })
 			return value;
 		var a = new char[value.Length];
 		a[0] = Char.ToUpperInvariant(value[0]);
@@ -776,8 +777,7 @@ public static class Strings
 		var text = new StringBuilder();
 		string value = "";
 		bool first = true;
-		if (comma == null)
-			comma = ", ";
+		comma ??= ", ";
 		string pad = "";
 		foreach (var item in values.Where(o => !String.IsNullOrEmpty(o)))
 		{
@@ -1386,7 +1386,7 @@ public static class Files
 		buffer[3] = Line[t.Hour];
 		buffer[4] = (char)('0' + t.Minute / 10);
 		buffer[5] = (char)('0' + t.Minute % 10);
-		long ms = WatchTimer.Query(0) % WatchTimer.TicksPerMinute;
+		long ms = Stopwatch.GetTimestamp() % (Stopwatch.Frequency * 60);
 		int i = 0;
 		while (ms > 0)
 		{

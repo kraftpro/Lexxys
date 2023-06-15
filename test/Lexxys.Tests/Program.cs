@@ -1,41 +1,47 @@
-﻿#pragma warning disable CS0612 // Type or member is obsolete
-
-#nullable enable
+﻿#nullable enable
 
 using System.Text.RegularExpressions;
 
+using BenchmarkDotNet.Running;
+
 using Lexxys;
 using Lexxys.Logging;
+using Lexxys.Tests;
 
 Statics.AddServices(s => s
 	.AddConfigService()
 	.AddLoggingService(c => c.AddConsole())
 	);
 
-Parameters pp = new Parameters()
-	.Parameter<string[]>(
+
+// Lexxys.Tests.Performance.StringPerformanceFormatTests.Compare();
+// BenchmarkRunner.Run<Lexxys.Tests.Performance.StringPerformanceFormatTests>();
+
+return 0;
+
+ArgumentsBuilder pp = new ArgumentsBuilder()
+	.Array(
 		name: "data file",
 		description: "Specifies the file to be processed.",
-		positional: true,
+		positional: true,		
 		required: true)
 	.Parameter(
 		name: "input",
-		abbrev: new[] { "I" },
+		abbrev: "I",
 		description: "Specifies the input file to be processed.")
 	.Parameter(
 		name: "output",
-		abbrev: new[] { "O" },
+		abbrev: "O",
 		description: "Specifies the output file to be created.")
-	.Parameter<Regex>(
+	.Parameter(
 		name: "match expression",
-		abbrev: new[] { "X" },
+		abbrev: "X",
 		description: "Specifies the regular expression to be used.",
-		parser: RegExParser,
+		valueName: "regex",
 		required: true)
-	.Parameter<string[]>(
+	.Array(
 		name: "values",
 		description: "Specifies the values to be processed.")
-
 	.Command("find", "Find something")
 		.Parameter(
 			name: "find",
@@ -44,26 +50,59 @@ Parameters pp = new Parameters()
 	.Command("search", "Search something")
 		.Parameter(
 			name: "search",
-			description: "text to search");
+			description: "text to search")
+	.UnixStyle();
 
-if (!pp.Apply(args, out var message))
+var aa = pp.Build(args.Union(new[] 
+	{ "data.txt", "--input", "input.txt", "--output", "output.txt", "--m-e", ".*", "--hel" }
+	));
+
+if (aa.HelpRequested)
 {
-	if (message != null)
-		Console.WriteLine(message);
-	pp.Usage("TestApp");
+	aa.Usage("TestApp");
+}
+else if (aa.HasErrors)
+{
+	foreach (var item in aa.Errors)
+	{
+		Console.WriteLine(item);
+	}
+	aa.Usage("TestApp", brief: true);
 }
 
-foreach (var item in pp.CommonParameters.Where(o => o.Value != null))
+
+if (aa.Command != null)
+{
+	Console.WriteLine($"Command = {aa.Command}");
+}
+foreach (var item in aa.Parameters)
 {
 	Console.WriteLine($"{item.Name} = {item.Value}");
 }
-if (pp.SelectedCommand.Name != "")
+
+
+Console.WriteLine("LS");
+
+aa = ArgumentsTests.LsParameters()
+	.UnixStyle()
+	.Build(args.Union(new[] { "--help" }));
+
+if (aa.HelpRequested)
 {
-	Console.WriteLine($"Command = {pp.SelectedCommand.Name}");
-	foreach (var item in pp.SelectedCommand.Parameters.Where(o => o.Value != null))
+	aa.Usage("TestApp");
+}
+else if (aa.HasErrors)
+{
+	foreach (var item in aa.Errors)
 	{
-		Console.WriteLine($"{item.Name} = {item.Value}");
+		Console.WriteLine(item);
 	}
+	aa.Usage("TestApp", brief: true);
+}
+
+foreach (var item in aa.Parameters)
+{
+	Console.WriteLine($"{item.Name} = {item.Value}");
 }
 
 
