@@ -65,9 +65,9 @@ public readonly struct TextFormatSetting
 	{
 		return config == null || config.IsEmpty ? this:
 			new TextFormatSetting(
-				XmlTools.GetString(config["format"], Format)!,
-				XmlTools.GetString(config["indent"], Section)!,
-				XmlTools.GetString(config["para"], Indent));
+				Strings.GetString(config["format"], Format)!,
+				Strings.GetString(config["indent"], Section)!,
+				Strings.GetString(config["para"], Indent));
 	}
 }
 

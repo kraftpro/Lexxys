@@ -10,8 +10,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 
-#pragma warning disable CA1305 // Specify IFormatProvider
-
 namespace Lexxys;
 
 using Xml;
@@ -230,7 +228,7 @@ public abstract class JsonBuilder
 		Obj();
 		foreach (DictionaryEntry item in value)
 		{
-			Item(Strings.ToNamingRule(item.Key.ToString(), NamingRule)!).Val(item.Value);
+			Item(Strings.ToNamingRule(item.Key.ToString()!, NamingRule)).Val(item.Value);
 		}
 		return End();
 	}
@@ -605,9 +603,7 @@ public abstract class JsonBuilder
 				object? v = item.GetValue(value);
 				Item(Strings.ToNamingRule(item.Name, NamingRule)!).Val(v);
 			}
-			#pragma warning disable CA1031 // Do not catch general exception types
 			catch { }
-			#pragma warning restore CA1031 // Do not catch general exception types
 		}
 		return End();
 	}

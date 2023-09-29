@@ -2,7 +2,7 @@
 
 public static class ArrayExtensions
 {
-	public static T[] Add<T>(this T[] array, T value)
+	public static T[] Append<T>(this T[] array, T value)
 	{
 		if (array is null)
 			throw new ArgumentNullException(nameof(array));
@@ -12,7 +12,42 @@ public static class ArrayExtensions
 		return result;
 	}
 
-	public static int BinarySearch<T>(this T[] array, T value, IComparer<T>? comparer = null) => Array.BinarySearch(array, value, comparer);
+    public static T[] Append<T>(this T[] array, T value1, T value2)
+    {
+        if (array is null)
+            throw new ArgumentNullException(nameof(array));
+        var result = new T[array.Length + 2];
+        array.CopyTo(result, 0);
+        result[array.Length] = value1;
+        result[array.Length + 1] = value2;
+        return result;
+    }
+
+    public static T[] Append<T>(this T[] array, T value1, T value2, T value3)
+    {
+        if (array is null)
+            throw new ArgumentNullException(nameof(array));
+        var result = new T[array.Length + 3];
+        array.CopyTo(result, 0);
+        result[array.Length] = value1;
+        result[array.Length + 1] = value2;
+        result[array.Length + 2] = value3;
+        return result;
+    }
+
+    public static T[] Append<T>(this T[] array, params T[]? value)
+    {
+        if (array is null)
+            throw new ArgumentNullException(nameof(array));
+		if (value is not { Length: >0 })
+			return array;
+        var result = new T[array.Length + value.Length];
+        array.CopyTo(result, 0);
+		value.CopyTo(result, array.Length);
+        return result;
+    }
+
+    public static int BinarySearch<T>(this T[] array, T value, IComparer<T>? comparer = null) => Array.BinarySearch(array, value, comparer);
 
 	public static int BinarySearch<T>(this T[] array, int index, int length, T value, IComparer<T>? comparer = null) => Array.BinarySearch(array, index, length, value, comparer);
 

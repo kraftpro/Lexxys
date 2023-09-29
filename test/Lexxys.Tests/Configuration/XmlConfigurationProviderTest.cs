@@ -186,10 +186,10 @@ Setting
 					return null;
 				var x = new Setting2
 				{
-					IntItem = XmlTools.GetInt32(node["IntItem"], 0),
-					DateTimeItem = XmlTools.GetDateTime(node["DateTimeItem"], DateTime.MinValue, DateTime.MinValue, DateTime.MaxValue),
-					StringItem = XmlTools.GetString(node.Element("StringItem").Value, null),
-					IntBasedItem = new IntConvertable(XmlTools.GetInt32(node.Element("IntBasedItem").Value, 0))
+					IntItem = Strings.GetInt32(node["IntItem"], 0),
+					DateTimeItem = Strings.GetDateTime(node["DateTimeItem"], DateTime.MinValue, DateTime.MinValue, DateTime.MaxValue),
+					StringItem = Strings.GetString(node.Element("StringItem").Value, null),
+					IntBasedItem = new IntConvertable(Strings.GetInt32(node.Element("IntBasedItem").Value, 0))
 				};
 				XmlLiteNode xx = node.Element("IntArray");
 				if (!xx.IsEmpty)
@@ -197,7 +197,7 @@ Setting
 					var tmp = new List<int>();
 					foreach (var item in xx.Elements)
 					{
-						tmp.Add(XmlTools.GetInt32(item.Value));
+						tmp.Add(Strings.GetInt32(item.Value));
 					}
 					x.IntArray = tmp.ToArray();
 				}
@@ -207,7 +207,7 @@ Setting
 					x.Item2s = new LinkedList<Item2>();
 					foreach (var item in xx.Elements)
 					{
-						var t = new Item2(XmlTools.GetString(item["name"], null), XmlTools.GetValue<decimal>(item["value"], 0));
+						var t = new Item2(Strings.GetString(item["name"], null), Strings.GetValue<decimal>(item["value"], 0));
 						if (t.Name != null)
 							x.Item2s.AddLast(t);
 					}
@@ -218,13 +218,13 @@ Setting
 					x.ItemsIList = new List<Item2>();
 					foreach (var item in xx.Elements)
 					{
-						var t = new Item2(XmlTools.GetString(item["name"], null), XmlTools.GetValue<decimal>(item["value"], 0));
+						var t = new Item2(Strings.GetString(item["name"], null), Strings.GetValue<decimal>(item["value"], 0));
 						if (t.Name != null)
 							x.ItemsIList.Add(t);
 						else
 						{
-							t.Name = XmlTools.GetString(item.Element("Name").Value, null);
-							t.Value = XmlTools.GetValue<decimal>(item.Element("Value").Value, t.Value);
+							t.Name = Strings.GetString(item.Element("Name").Value, null);
+							t.Value = Strings.GetValue<decimal>(item.Element("Value").Value, t.Value);
 							if (item.Name != null)
 								x.ItemsIList.Add(t);
 						}

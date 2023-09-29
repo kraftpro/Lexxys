@@ -75,7 +75,7 @@ public readonly struct RandItem<T>: IFormattable
 	/// Creates a new <see cref="RandItem{T}"/> based om the collection of <see cref="IWeightValuePair{T}"/> pairs.
 	/// </summary>
 	/// <param name="items">Collection of <see cref="IWeightValuePair{T}"/> to be used to generate item value</param>
-	public RandItem(IEnumerable<IWeightValuePair<T>> items): this(items?.ToArray(), false)
+	public RandItem(IEnumerable<IWeightValuePair<T>> items): this(items.ToArray(), false)
 	{
 	}
 

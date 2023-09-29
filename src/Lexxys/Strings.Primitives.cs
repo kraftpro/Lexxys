@@ -1,11 +1,11 @@
-﻿using System.Diagnostics.Contracts;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Globalization;
 
-namespace Lexxys.Xml;
+namespace Lexxys;
 
-public static partial class XmlTools
+public static partial class Strings
 {
 	public static byte GetByte(string value)
 	{
@@ -203,29 +203,20 @@ public static partial class XmlTools
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return TryGetChar(value) ?? throw new FormatException(SR.FormatException(value));
+		return TryGetChar(value, out var c) ? c: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static char GetChar(string? value, char defaultValue)
 	{
-		return TryGetChar(value) ?? defaultValue;
+		return TryGetChar(value, out var c) ? c: defaultValue;
 	}
 
 	public static char? GetChar(string? value, char? defaultValue)
 	{
-		return TryGetChar(value) ?? defaultValue;
+		return TryGetChar(value, out var c) ? c: defaultValue;
 	}
 
-	private static char? TryGetChar(string? value)
-	{
-		if (value == null)
-			return null;
-		if (value.Length != 1 && (value = value.Trim()).Length != 1)
-			return null;
-		return value[0];
-	}
-
-	private static bool TryGetChar(string? value, out char result)
+	public static bool TryGetChar(string? value, out char result)
 	{
 		if (value == null)
 		{
@@ -244,7 +235,6 @@ public static partial class XmlTools
 		result = value[0];
 		return true;
 	}
-
 
 	public static TimeSpan GetTimeSpan(string value)
 	{
@@ -876,17 +866,17 @@ public static partial class XmlTools
 
 	public static Type GetType(string? value, Type defaultValue)
 	{
-		return TryGetType(value, out Type? result) ? result : defaultValue;
+		return TryGetType(value, out Type? result) ? result: defaultValue;
 	}
 
-	public static bool TryGetType([NotNullWhen(true)] string? value, [NotNullWhen(true)] out Type? result)
+	public static bool TryGetType([NotNullWhen(true)] string? value, [MaybeNullWhen(false)] out Type result)
 	{
 		if (String.IsNullOrWhiteSpace(value))
 		{
 			result = null!;
 			return false;
 		}
-		result = Factory.GetType(value);
+		result = Factory.GetType(value)!;
 		return result != null;
 	}
 
@@ -1054,4 +1044,12 @@ public static partial class XmlTools
 		return value.Length == 0 ? defaultValue : value;
 	}
 
+	public static (Type Regular, Type? Nullable) NullableTypes(Type type)
+	{
+		if (!type.IsValueType)
+			return (type, null);
+		if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+			return (type.GetGenericArguments()[0], type);
+		return (type, typeof(Nullable<>).MakeGenericType(type));
+	}
 }

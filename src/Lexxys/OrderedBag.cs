@@ -42,7 +42,7 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 		if (capacity < 0)
 			throw new ArgumentOutOfRangeException(nameof(capacity), capacity, null);
 		Comparer = comparer ?? EqualityComparer<TKey>.Default;
-		_list = capacity > 0 ? new List<(TKey, TValue)>(capacity): new List<(TKey, TValue)>();
+		_list = new List<(TKey, TValue)>(capacity);
 	}
 
 	/// <summary>

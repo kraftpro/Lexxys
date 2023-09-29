@@ -107,12 +107,8 @@ public class RandSeq<T>: IReadOnlyList<RandItem<T>>
 	public IEnumerator<T> Enumerate()
 	{
 		for (;;)
-		{
 			for (int i = 0; i < _items.Length; ++i)
-			{
 				yield return _items[i].NextValue();
-			}
-		}
 	}
 
 	public RandSeq<T> Add(RandSeq<T> value)

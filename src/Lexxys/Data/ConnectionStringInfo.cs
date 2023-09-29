@@ -156,17 +156,17 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 				case "CONTEXTCONNECTION":
 				case "ASYNC":
 				case "ENLIST":
-					value = XmlTools.GetBoolean(value, true) ? "true": "false";
+					value = Strings.GetBoolean(value, true) ? "true": "false";
 					break;
 				case "MINPOOLSIZE":
 				case "CONNECTIONLIFETIME":
-					value = XmlTools.GetInt32(value, 0).ToString();
+					value = Strings.GetInt32(value, 0).ToString();
 					break;
 				case "MAXPOOLSIZE":
-					value = XmlTools.GetInt32(value, 16).ToString();
+					value = Strings.GetInt32(value, 16).ToString();
 					break;
 				case "PACKETSIZE":
-					value = XmlTools.GetInt32(value, 8192).ToString();
+					value = Strings.GetInt32(value, 8192).ToString();
 					break;
 				case "TRANSACTIONBINDING":
 					if (value.StartsWith("IMP", StringComparison.OrdinalIgnoreCase))
@@ -175,11 +175,11 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 						value = "explicit unbind";
 					break;
 				case "TRUSTEDCONNECTION":
-					integratedSecurity = XmlTools.GetBoolean(value, true);
+					integratedSecurity = Strings.GetBoolean(value, true);
 					value = null;
 					break;
 				case "INTEGRATEDSECURITY":
-					integratedSecurity = String.Equals(value, "SSPI", StringComparison.OrdinalIgnoreCase) || XmlTools.GetBoolean(value, true);
+					integratedSecurity = String.Equals(value, "SSPI", StringComparison.OrdinalIgnoreCase) || Strings.GetBoolean(value, true);
 					value = null;
 					break;
 				case "SERVER":
@@ -199,23 +199,23 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 					value = null;
 					break;
 				case "CONNECTIONTIMEOUT":
-					ConnectionTimeout = XmlTools.GetTimeSpan(value, DefaultConnectionTimeout, TimeSpan.Zero, new TimeSpan(0, 5, 0));
+					ConnectionTimeout = Strings.GetTimeSpan(value, DefaultConnectionTimeout, TimeSpan.Zero, new TimeSpan(0, 5, 0));
 					value = null;
 					break;
 				case "COMMANDTIMEOUT":
-					CommandTimeout = XmlTools.GetTimeSpan(value, DefaultCommandTimeout, TimeSpan.Zero, new TimeSpan(0, 30, 0));
+					CommandTimeout = Strings.GetTimeSpan(value, DefaultCommandTimeout, TimeSpan.Zero, new TimeSpan(0, 30, 0));
 					value = null;
 					break;
 				case "CONNECTIONAUDIT":
-					ConnectionAuditThreshold = XmlTools.GetTimeSpan(value, DefaultConnectionAuditThreshold, TimeSpan.Zero, new TimeSpan(0, 1, 0));
+					ConnectionAuditThreshold = Strings.GetTimeSpan(value, DefaultConnectionAuditThreshold, TimeSpan.Zero, new TimeSpan(0, 1, 0));
 					value = null;
 					break;
 				case "COMMANDAUDIT":
-					CommandAuditThreshold = XmlTools.GetTimeSpan(value, DefaultCommandAuditThreshold, TimeSpan.Zero, new TimeSpan(0, 1, 0));
+					CommandAuditThreshold = Strings.GetTimeSpan(value, DefaultCommandAuditThreshold, TimeSpan.Zero, new TimeSpan(0, 1, 0));
 					value = null;
 					break;
 				case "BATCHAUDIT":
-					BatchAuditThreshold = XmlTools.GetTimeSpan(value, DefaultBatchAuditThreshold, TimeSpan.Zero, new TimeSpan(0, 3, 0));
+					BatchAuditThreshold = Strings.GetTimeSpan(value, DefaultBatchAuditThreshold, TimeSpan.Zero, new TimeSpan(0, 3, 0));
 					value = null;
 					break;
 				case "PWD":
@@ -477,7 +477,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		if (config == null || config.IsEmpty)
 			return null;
 
-		string? reference = XmlTools.GetString(config.Value, null);
+		string? reference = Strings.GetString(config.Value, null);
 		if (reference == null)
 			return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
 

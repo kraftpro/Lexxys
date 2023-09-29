@@ -5,6 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 
+using Lexxys;
 namespace Lexxys;
 
 public static class CollectionExtensions
@@ -200,7 +201,12 @@ public static class CollectionExtensions
 	{
 		if (value == null)
 			throw new ArgumentNullException(nameof(value));
-		return value as IReadOnlyList<T> ?? value.ToList();
+		return value switch
+		{
+			IReadOnlyList<T> irol => irol,
+			IList<T> il => ReadOnly.Wrap(il)!,
+			_ => value.ToList()
+		};
 	}
 
 	public static ICollection<T> ToICollection<T>(this IEnumerable<T> value)
@@ -214,7 +220,12 @@ public static class CollectionExtensions
 	{
 		if (value == null)
 			throw new ArgumentNullException(nameof(value));
-		return value as IReadOnlyCollection<T> ?? value.ToList();
+		return value switch
+		{
+			IReadOnlyCollection<T> iroc => iroc,
+			ICollection<T> ic => ReadOnly.Wrap(ic)!,
+			_ => value.ToList()
+		};
 	}
 
 	public static IReadOnlyList<TOut> ConvertAll<TIn, TOut>(this IReadOnlyList<TIn> value, Func<TIn, TOut> convert)
@@ -230,6 +241,29 @@ public static class CollectionExtensions
 			result[i] = convert(value[i]);
 		}
 		return result;
+	}
+
+	public static void CopyTo<T>(this IReadOnlyCollection<T> value, T[] array, int index)
+	{
+		if (value is null)
+			throw new ArgumentNullException(nameof(value));
+		if (array is null)
+			throw new ArgumentNullException(nameof(array));
+		if (index < 0 || index > array.Length)
+			throw new ArgumentOutOfRangeException(nameof(index), index, null);
+		if (array.Length < value.Count + index)
+			throw new ArgumentException("The number of elements in the source is greater than the available space from index to the end of the destination array.");
+
+		if (value is ICollection<T> c)
+		{
+			c.CopyTo(array, index);
+			return;
+		}
+		int i = index;
+		foreach (T item in value)
+		{
+			array[i++] = item;
+		}
 	}
 }
 

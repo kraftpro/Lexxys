@@ -4,8 +4,6 @@ using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
 
-#pragma warning disable CA1031 // Do not catch general exception types
-
 namespace Lexxys.Xml;
 
 public static partial class XmlTools
@@ -84,10 +82,9 @@ public static partial class XmlTools
 
 	private static bool TryGetValueFromNode(XmlLiteNode node, Type returnType, out object? result)
 	{
-		if (node.Attributes.Count == 0 && node.Elements.Count == 0 && __stringConditionalConstructor.TryGetValue(returnType, out ValueParser? stringParser))
-			return stringParser(node.Value, out result);
+		if (node.Attributes.Count == 0 && node.Elements.Count == 0 && Strings.TryWellKnownConverter(node.Value, returnType, out result))
+			return true;
 
-		result = null;
 		if (__nodeConditionalConstructor.TryGetValue(returnType, out TryGetNodeValue? nodeParser))
 			return nodeParser(node, returnType, out result);
 
@@ -98,8 +95,9 @@ public static partial class XmlTools
 		}
 
 		if (returnType.IsEnum)
-			return TryGetValue(node.Value, returnType, out result);
+			return Strings.TryGetValue(node.Value, returnType, out result);
 
+		result = null;
 		if (TestFromXmlLite(node, returnType, ref result))
 			return true;
 		if (TestFromXmlReader(node, returnType, ref result))
@@ -113,19 +111,19 @@ public static partial class XmlTools
 
 	private static bool TestFromXmlLite(XmlLiteNode node, Type returnType, ref object? value)
 	{
-		var (type1, type2) = NullableTypes(returnType);
+		var (regular, nullable) = Strings.NullableTypes(returnType);
 
-		var parser = GetFromXmlConstructor<XmlLiteNode>(type1) ?? GetFromXmlStaticConstructor<XmlLiteNode>(type1);
+		var parser = GetFromXmlConstructor<XmlLiteNode>(regular) ?? GetFromXmlStaticConstructor<XmlLiteNode>(regular);
 		if (parser == null)
 			return false;
 
-		__nodeConditionalConstructor.TryAdd(type1, (XmlLiteNode n, Type _, out object? r) =>
+		__nodeConditionalConstructor.TryAdd(regular, (XmlLiteNode n, Type _, out object? r) =>
 		{
 			r = parser(n);
 			return true;
 		});
-		if (type2 != null)
-			__nodeConditionalConstructor.TryAdd(type2, (XmlLiteNode n, Type _, out object? r) =>
+		if (nullable != null)
+			__nodeConditionalConstructor.TryAdd(nullable, (XmlLiteNode n, Type _, out object? r) =>
 			{
 				r = parser(n);
 				return true;
@@ -137,20 +135,20 @@ public static partial class XmlTools
 
 	private static bool TestFromXmlReader(XmlLiteNode node, Type returnType, ref object? value)
 	{
-		var (type1, type2) = NullableTypes(returnType);
-		var parser = GetFromXmlConstructor<XmlReader>(type1) ?? GetFromXmlStaticConstructor<XmlReader>(type1);
+		var (regular, nullable) = Strings.NullableTypes(returnType);
+		var parser = GetFromXmlConstructor<XmlReader>(regular) ?? GetFromXmlStaticConstructor<XmlReader>(regular);
 
 		if (parser == null)
 			return false;
 
-		__nodeConditionalConstructor.TryAdd(type1, (XmlLiteNode n, Type _, out object? r) =>
+		__nodeConditionalConstructor.TryAdd(regular, (XmlLiteNode n, Type _, out object? r) =>
 		{
 			using XmlReader rdr = n.ReadSubtree();
 			r = parser(rdr);
 			return true;
 		});
-		if (type2 != null)
-			__nodeConditionalConstructor.TryAdd(type2, (XmlLiteNode n, Type _, out object? r) =>
+		if (nullable != null)
+			__nodeConditionalConstructor.TryAdd(nullable, (XmlLiteNode n, Type _, out object? r) =>
 			{
 				using XmlReader rdr = n.ReadSubtree();
 				r = parser(rdr);
@@ -232,7 +230,7 @@ public static partial class XmlTools
 
 			result = xs.Deserialize(reader);
 
-			var (type1, type2) = NullableTypes(returnType);
+			var (type1, type2) = Strings.NullableTypes(returnType);
 			__nodeConditionalConstructor.TryAdd(type1, Parser);
 			if (type2 != null)
 				__nodeConditionalConstructor.TryAdd(type2, Parser);
@@ -324,7 +322,7 @@ public static partial class XmlTools
 			// <Key ...>
 			else
 			{
-				if (!TryGetValue(node.Name, keyType, out parsedKey))
+				if (!Strings.TryGetValue(node.Name, keyType, out parsedKey))
 					return false;
 				// <Key value="Value" />
 				if (node.Elements.Count == 1 && nodeValue != null)
@@ -345,7 +343,7 @@ public static partial class XmlTools
 		// <Key ... />
 		else if (node.Attributes.Count == 2 && node.Elements.Count == 0)
 		{
-			if (!TryGetValue(node["key"] ?? node.Name, keyType, out parsedKey))
+			if (!Strings.TryGetValue(node["key"] ?? node.Name, keyType, out parsedKey))
 				return false;
 			if (node["value"] == null)
 			{
@@ -354,7 +352,7 @@ public static partial class XmlTools
 			}
 			else
 			{
-				if (!TryGetValue(node["value"], valueType, out parsedValue))
+				if (!Strings.TryGetValue(node["value"], valueType, out parsedValue))
 					return false;
 			}
 		}
@@ -362,7 +360,7 @@ public static partial class XmlTools
 		// <item key="Key" ...> ... </item>
 		else
 		{
-			if (!TryGetValue(node["key"] ?? node.Name, keyType, out parsedKey))
+			if (!Strings.TryGetValue(node["key"] ?? node.Name, keyType, out parsedKey))
 				return false;
 
 			XmlLiteNode? nodeValue;

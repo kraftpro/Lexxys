@@ -17,7 +17,7 @@ public static partial class XmlTools
 			return false;
 
 		if (node.Elements.Count == 0 && node.Attributes.Count == 0)
-			return TryGetValue(node.Value, returnType, out result);
+			return Strings.TryGetValue(node.Value, returnType, out result);
 
 		var collectionType = GetCollectionType(returnType);
 		if (collectionType != null && TryCollection(node, collectionType, ref result))
@@ -153,7 +153,7 @@ public static partial class XmlTools
 		if (attributes)
 		{
 			var attrib = node.Attributes.FirstOrDefault(o => String.Equals(o.Key, itemName, StringComparison.OrdinalIgnoreCase));
-			if (attrib.Value != null && TryGetValue(attrib.Value, type.Item, out var x))
+			if (attrib.Value != null && Strings.TryGetValue(attrib.Value, type.Item, out var x))
 				items.Add(x);
 		}
 
@@ -174,7 +174,7 @@ public static partial class XmlTools
 				var attrib1 = node.Attributes.FirstOrDefault(o => String.Equals(o.Key, itemName, StringComparison.OrdinalIgnoreCase));
 				if (attrib1.Value != null)
 				{
-					if (TryGetValue(attrib1.Value, itemType, out var x1))
+					if (Strings.TryGetValue(attrib1.Value, itemType, out var x1))
 						setter(x1);
 				}
 			}
@@ -320,11 +320,11 @@ public static partial class XmlTools
 			}
 			if (value is string s)
 			{
-				if (TryGetValue(s, type, out parameter))
+				if (Strings.TryGetValue(s, type, out parameter))
 					return true;
 
 				var types = GetCollectionType(type);
-				if (types != null && TryGetValue(s, types.Item, out var p) && CreateSimpleCollection(types, p, ref parameter))
+				if (types != null && Strings.TryGetValue(s, types.Item, out var p) && CreateSimpleCollection(types, p, ref parameter))
 					return true;
 
 				Log?.Trace($"{nameof(AttributedConstructor)}.{nameof(Invoke)}: Cannot parse parameter {name} of {type.Name} used to construct {_type.Name}.");
@@ -374,7 +374,7 @@ public static partial class XmlTools
 					return true;
 				}
 				if (value is string s)
-					return TryGetValue(s, type, out result);
+					return Strings.TryGetValue(s, type, out result);
 				if (value is XmlLiteNode x)
 					return TryGetValue(x, type, out result);
 				result = null;

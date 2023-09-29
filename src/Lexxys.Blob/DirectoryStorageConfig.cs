@@ -150,7 +150,7 @@ public class DirectoryStorageConfig
 	/// <returns></returns>
 	public string MakePath(long? index, long salt, string? extension)
 	{
-		if (!String.IsNullOrEmpty(extension) && extension![0] != '.')
+		if (extension is { Length: >0 } && extension[0] != '.')
 			extension = "." + extension;
 		if (index.GetValueOrDefault() <= 0)
 			return $"{TemporaryFolder}{PathSeparator}{Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)}{extension}";

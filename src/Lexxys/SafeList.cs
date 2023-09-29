@@ -10,17 +10,7 @@ namespace Lexxys
 	public class SafeList<T>: ISafeList<T>
 	{
 		private readonly List<T> _list;
-		private readonly T _emptyValue = default!;
-
-		public SafeList()
-		{
-			_list = new List<T>();
-		}
-
-		public SafeList(int count)
-		{
-			_list = new List<T>(count);
-		}
+		private readonly T _emptyValue;
 
 		public SafeList(T emptyValue)
 		{
@@ -28,18 +18,13 @@ namespace Lexxys
 			_emptyValue = emptyValue;
 		}
 
-		public SafeList(int count, T emptyValue)
+		public SafeList(T emptyValue, int count)
 		{
 			_list = new List<T>(count);
 			_emptyValue = emptyValue;
 		}
 
-		public SafeList(IEnumerable<T> data)
-		{
-			_list = new List<T>(data);
-		}
-
-		public SafeList(IEnumerable<T> data, T emptyValue)
+		public SafeList(T emptyValue, IEnumerable<T> data)
 		{
 			_list = new List<T>(data);
 			_emptyValue = emptyValue;

@@ -1,7 +1,5 @@
 ﻿using System.Collections;
-
-// ReSharper disable VariableHidesOuterVariable
-// ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+using System.Diagnostics.CodeAnalysis;
 
 namespace Lexxys;
 
@@ -17,11 +15,13 @@ public class CommandDefinitionCollection: IEnumerable<CommandDefinition>
 	/// Construct a new <see cref="CommandDefinitionCollection"/> instance with the specified <see cref="StringComparison"/> as a command names comparison rule.
 	/// Adds a default, no-name command.
 	/// </summary>
+	/// <param name="parent">The parent command where this collection is defined.</param>
 	/// <param name="comparison"><see cref="StringComparison"/> rule to compare command names.</param>
-	public CommandDefinitionCollection(StringComparison comparison)
+	public CommandDefinitionCollection(CommandDefinition parent, StringComparison comparison)
 	{
+		Command = parent ?? throw new ArgumentNullException(nameof(parent));
 		_comparison = comparison;
-		_commands = new List<CommandDefinition> { new(String.Empty, null, comparison) };
+		_commands = new List<CommandDefinition>();
 	}
 
 	/// <summary>
@@ -31,11 +31,18 @@ public class CommandDefinitionCollection: IEnumerable<CommandDefinition>
 	/// <param name="comparison"><see cref="StringComparison"/> rule to compare command names.</param>
 	internal CommandDefinitionCollection(CommandDefinitionCollection other, StringComparison comparison)
 	{
+		if (other is null)
+			throw new ArgumentNullException(nameof(other));
+
+		Command = other.Command;
 		_comparison = comparison;
 		_commands = new List<CommandDefinition>(other._commands.Select(o => new CommandDefinition(o, comparison)));
 	}
 
-	// public CommandDefinition this[string name] => _commands[name];
+	/// <summary>
+	/// The parent command where this collection is defined.
+	/// </summary>
+	public CommandDefinition Command { get; }
 
 	/// <summary>
 	/// Number or commands in the collection.
@@ -58,7 +65,7 @@ public class CommandDefinitionCollection: IEnumerable<CommandDefinition>
 		_commands.Add(command);
 		return this;
 	}
-	
+
 	/// <summary>
 	/// Gets or creates a command with the specified <paramref name="name"/> and <paramref name="description"/>.
 	/// </summary>
@@ -72,22 +79,26 @@ public class CommandDefinitionCollection: IEnumerable<CommandDefinition>
 			throw new ArgumentNullException(nameof(name));
 		var command = _commands.Find(o => String.Equals(o.Name, name, _comparison));
 		if (command is null)
-			_commands.Add(command = new CommandDefinition(name, description));
+			_commands.Add(command = new CommandDefinition(Command, name, description));
 		return command;
 	}
 
-	/// <summary>
-	/// Returns the default, no-name command.
-	/// </summary>
-	public CommandDefinition Default => _commands[0];
+	///// <summary>
+	///// Returns the default, no-name command.
+	///// </summary>
+	//public CommandDefinition Default => _commands[0];
 
 	/// <summary>
 	/// Returns the command with the specified <paramref name="name"/> or <c>null</c> if not found.
 	/// </summary>
 	/// <param name="name">Name to find the command.</param>
+	/// <param name="result">The command found or <c>null</c>.</param>
 	/// <returns></returns>
-	public CommandDefinition? TryGetCommand(string name)
-		=> _commands.Find(o => String.Equals(o.Name, name, _comparison));
+	public bool TryGetCommand(string? name, [MaybeNullWhen(false)] out CommandDefinition result)
+	{
+		result = _commands.Find(o => String.Equals(o.Name, name, _comparison));
+		return result != null;
+	}
 
 	/// <inheritdoc/>
 	public IEnumerator<CommandDefinition> GetEnumerator() => _commands.GetEnumerator();

@@ -33,7 +33,7 @@ public sealed class SystemConfigurationProvider: IConfigProvider
 			throw new ArgumentNullException(nameof(key));
 
 		string value = ConfigurationManager.AppSettings[key];
-		if (value != null && XmlTools.TryGetValue(value, objectType, out object? result))
+		if (value != null && Strings.TryGetValue(value, objectType, out object? result))
 			return result;
 		if (key.StartsWith("connection.", StringComparison.OrdinalIgnoreCase) && objectType == typeof(string))
 			return ConfigurationManager.ConnectionStrings[key.Substring(11)];
@@ -54,7 +54,7 @@ public sealed class SystemConfigurationProvider: IConfigProvider
 			var result = new List<T>();
 			foreach (string value in values)
 			{
-				if (XmlTools.TryGetValue(value, typeof(T), out object? x))
+				if (Strings.TryGetValue(value, typeof(T), out object? x))
 				{
 					result.Add((T)x!);
 				}

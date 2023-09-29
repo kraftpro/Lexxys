@@ -24,9 +24,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Blob", "src\Lexxys.B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Legacy", "src\Lexxys.Legacy\Lexxys.Legacy.csproj", "{0E740ACB-4EB2-4AF5-80E7-66E344D4B21F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lexxys.Validation", "src\Lexxys.Validation\Lexxys.Validation.csproj", "{FAD43837-92C3-485E-9BAF-525A8EE1CD4B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Validation", "src\Lexxys.Validation\Lexxys.Validation.csproj", "{FAD43837-92C3-485E-9BAF-525A8EE1CD4B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lexxys.Arguments.Tests", "test\Lexxys.Arguments.Tests\Lexxys.Arguments.Tests.csproj", "{0DADCA3E-FC4C-433F-9DD5-F0535CE37A6F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Argument.Tests", "test\Lexxys.Arguments.Tests\Lexxys.Argument.Tests.csproj", "{0DADCA3E-FC4C-433F-9DD5-F0535CE37A6F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

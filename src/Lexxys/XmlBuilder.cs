@@ -12,6 +12,8 @@ using System.Xml;
 
 namespace Lexxys;
 
+using System.Xml.Linq;
+
 using Xml;
 
 /// <summary>
@@ -94,8 +96,7 @@ public abstract class XmlBuilder
 
 	private string PreferName(string name) => XmlConvert.EncodeName(Rename(name));
 
-	[return: NotNullIfNotNull(nameof(value))]
-	private string? Rename(string? value) => Strings.ToNamingRule(value, NamingRule);
+	private string Rename(string value) => Strings.ToNamingRule(value, NamingRule);
 
 	private static string ReferenceValue(object value) => $"^[{value}]";
 
@@ -132,6 +133,22 @@ public abstract class XmlBuilder
 			Text("/>");
 		else
 			Text("</").Text(s).Text('>');
+		_state = State.Value;
+		return this;
+	}
+
+	/// <summary>
+	/// Switches to the inner Xml elements.
+	/// </summary>
+	/// <returns></returns>
+	public XmlBuilder ToInnerElements()
+	{
+		if (_elements.Count == 0)
+			return this;
+		if (_state == State.Attribute)
+			Text("\"\">");
+		if (_state == State.Element)
+			Text('>');
 		_state = State.Value;
 		return this;
 	}
@@ -584,7 +601,7 @@ public abstract class XmlBuilder
 		string? s = XmlTools.Convert(value);
 		if (s != null)
 			return AppendItem(name, s);
-		return Element(name).Object(value).End();
+		return Element(name).ComplexObject(value).End();
 	}
 
 	#endregion
@@ -1054,13 +1071,18 @@ public abstract class XmlBuilder
 		if (xmlValue != null)
 			return AppendValue(xmlValue);
 
+		return ComplexObject(value, elements);
+	}
+
+	private XmlBuilder ComplexObject(object value, bool elements = false)
+	{
 		if (_visited.Contains(value))
 			return Value(ReferenceValue(value));
 		_visited.Add(value);
 
 		if (value is IEnumerable enumerable)
 		{
-			var itemName = Rename("Item")!;
+			var itemName = Rename("item")!;
 			foreach (var item in enumerable)
 			{
 				if (item is IDumpXml dumpXml)

@@ -1,25 +1,14 @@
-﻿using System.Collections;
-using System.Linq;
-using System.Text;
-
-using Lexxys;
-
-// ReSharper disable VariableHidesOuterVariable
-// ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-
-namespace Lexxys;
+﻿namespace Lexxys;
 
 /// <summary>
 /// Builder for <see cref="Arguments"/> class.
 /// </summary>
 public class ArgumentsBuilder
 {
-	private CommandDefinitionCollection _commands;
-	private CommandDefinition _selected;
-	private StringComparison _comparison;
+	private CommandDefinition _current;
 
 	private bool _allowSlash;				// true if slash is a switch prefix
-	private bool _strictDdName;				// true if all arguments longer than 1 character must start with --. otherwise - is allowed for any parameter with value.
+	private bool _strictDoubleDash;			// true if all arguments longer than 1 character must start with --. otherwise - is allowed for any parameter with value.
 	private bool _combineOptions;			// true if short options can be combined (i.e. -abc is equivalent to -a -b -c), so all long options must start with --.
 
 	/*
@@ -47,6 +36,7 @@ public class ArgumentsBuilder
 	private bool _allowUnknown;				// true if unknown parameters are allowed
 	private bool _doubleDashSeparator;		// true if double dash is a separator between options and positional parameters
 	private bool _ignoreNameSeparators;     // true if delimiters ('-', '_', and '.') in the parameter name must be trimmed before matching
+	private bool _splitPositional;		// true if positional parameters shouldn't be combined.
 
 
 	/// <summary>
@@ -54,7 +44,7 @@ public class ArgumentsBuilder
 	/// - Case-insensitive command and parameter names.<br/>
 	/// - Don't allow slash as a parameter prefix.<br/>
 	/// - Double dash doesn't require for long arguments.<br/>
-	/// - Combine short options (i.e., abc is equivalent to -a -b -c).<br/>
+	/// - Combine short options (i.e., -abc is equivalent to -a -b -c).<br/>
 	/// - Colon, equal sing, and blank are separators between the argument name and value.<br/>
 	/// - Double dash is a separator between the command options and positional parameters.<br/>
 	/// - Consider delimiters ('-', '_', and '.') in the parameter name while matching.<br/>
@@ -67,9 +57,10 @@ public class ArgumentsBuilder
 	/// <param name="colonSeparator">True if colon is a separator between parameter name and value.</param>
 	/// <param name="equalSeparator">True if equal sign is a separator between parameter name and value.</param>
 	/// <param name="blankSeparator">True if blank is a separator between parameter name and value.</param>
-	/// <param name="doubleDashSeparator">True if unknown parameters are allowed.</param>
-	/// <param name="ignoreNameSeparators">True if double dash is a separator between options and positional parameters.</param>
-	/// <param name="allowUnknown">True if delimiters ('-', '_', and '.') in the parameter name must be trimmed before matching.</param>
+	/// <param name="doubleDashSeparator">True if double dash is a separator between options and positional parameters.</param>
+	/// <param name="ignoreNameSeparators">True if delimiters ('-', '_', and '.') in the parameter name must be trimmed before matching.</param>
+	/// <param name="allowUnknown">True if unknown parameters are allowed.</param>
+	/// <param name="splitPositional">True if the last positional parameters shouldn't be combined.</param>
 	public ArgumentsBuilder(
 		bool ignoreCase = false,
 		bool allowSlash = false,
@@ -78,16 +69,16 @@ public class ArgumentsBuilder
 		bool colonSeparator = true,
 		bool equalSeparator = true,
 		bool blankSeparator = true,
-		bool doubleDashSeparator = true,
+		bool doubleDashSeparator = false,
 		bool ignoreNameSeparators = false,
-		bool allowUnknown = false)
+		bool allowUnknown = false,
+		bool splitPositional = false)
 	{
-		_comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal;
-		_commands = new CommandDefinitionCollection(_comparison);
-		_selected = _commands.Default;
+		Root = new CommandDefinition(null, String.Empty, comparison: ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+		_current = Root;
 
 		_allowSlash = allowSlash;
-		_strictDdName = strictDoubleDash;
+		_strictDoubleDash = strictDoubleDash;
 		_combineOptions = combineOptions;
 		_colonSeparator = colonSeparator;
 		_equalSeparator = equalSeparator;
@@ -95,11 +86,10 @@ public class ArgumentsBuilder
 		_doubleDashSeparator = doubleDashSeparator;
 		_ignoreNameSeparators = ignoreNameSeparators;
 		_allowUnknown = allowUnknown;
+		_splitPositional = splitPositional;
 	}
-	
-	internal CommandDefinitionCollection Commands => _commands;
 
-	internal StringComparison Comparison => _comparison;
+	public CommandDefinition Root { get; }
 
 	/// <summary>
 	/// Indicates that a slash is a legal option prefix.
@@ -109,7 +99,7 @@ public class ArgumentsBuilder
 	/// <summary>
 	/// Indicates that all arguments longer than one character MUST start with a double dash character.
 	/// </summary>
-	public bool HasStrictDoubleDashNameRule => _strictDdName;
+	public bool HasStrictDoubleDashNameRule => _strictDoubleDash;
 
 	/// <summary>
 	/// Indicates that single character options can be combined (i.e. -abc is equivalent to -a -b -c).
@@ -147,6 +137,11 @@ public class ArgumentsBuilder
 	public bool IgnoreNameSeparators => _ignoreNameSeparators;
 	
 	/// <summary>
+	/// Indicates that the last positional parameters shouldn't be combined.
+	/// </summary>
+	public bool SplitPositional => _splitPositional;
+	
+	/// <summary>
 	/// Selects Windows style command line arguments:<br/>
 	/// - Slash is a legal option prefix.<br/>
 	/// - Don't combine short options (i.e. -abc is not equivalent to -a -b -c).<br/>
@@ -158,8 +153,8 @@ public class ArgumentsBuilder
 		_allowSlash = true;
 		_combineOptions = false;
 		_doubleDashSeparator = false;
-		if (_comparison != StringComparison.OrdinalIgnoreCase)
-			_commands = new CommandDefinitionCollection(_commands, _comparison = StringComparison.OrdinalIgnoreCase);
+		if (_current.Comparison != StringComparison.OrdinalIgnoreCase)
+			_current = new CommandDefinition(_current, StringComparison.OrdinalIgnoreCase);
 		return this;
 	}
 
@@ -172,9 +167,9 @@ public class ArgumentsBuilder
 	public ArgumentsBuilder UnixStyle()
 	{
 		_colonSeparator = false;
-		_strictDdName = true;
-		if (_comparison != StringComparison.Ordinal)
-			_commands = new CommandDefinitionCollection(_commands, _comparison = StringComparison.Ordinal);
+		_strictDoubleDash = true;
+		if (_current.Comparison != StringComparison.Ordinal)
+			_current = new CommandDefinition(_current, StringComparison.Ordinal);
 		return this;
 	}
 
@@ -184,8 +179,8 @@ public class ArgumentsBuilder
 	/// <returns></returns>
 	public ArgumentsBuilder IgnoreCase()
 	{
-		if (_comparison != StringComparison.OrdinalIgnoreCase)
-			_commands = new CommandDefinitionCollection(_commands, _comparison = StringComparison.OrdinalIgnoreCase);
+		if (_current.Comparison != StringComparison.OrdinalIgnoreCase)
+			_current = new CommandDefinition(_current, StringComparison.OrdinalIgnoreCase);
 		return this;
 	}
 
@@ -205,7 +200,7 @@ public class ArgumentsBuilder
 	/// <returns></returns>
 	public ArgumentsBuilder StrictLongName()
 	{
-		_strictDdName = true;
+		_strictDoubleDash = true;
 		return this;
 	}
 
@@ -250,12 +245,12 @@ public class ArgumentsBuilder
 	}
 
 	/// <summary>
-	/// Disables double dash as a separator between command options and positional parameters.
+	/// Enables double dash as a separator between command options and positional parameters.
 	/// </summary>
 	/// <returns></returns>
-	public ArgumentsBuilder DisablePositionalParameterDelimiter()
+	public ArgumentsBuilder EnablePositionalParameterDelimiter()
 	{
-		_doubleDashSeparator = false;
+		_doubleDashSeparator = true;
 		return this;
 	}
 
@@ -273,9 +268,19 @@ public class ArgumentsBuilder
 	/// Allows to collect not defined parameters.
 	/// </summary>
 	/// <returns></returns>
-	public ArgumentsBuilder AllowUnknownParameters()
+	public ArgumentsBuilder EnableUnknownParameters()
 	{
 		_allowUnknown = true;
+		return this;
+	}
+	
+	/// <summary>
+	/// Specifies that the last positional parameters shouldn't be combined.
+	/// </summary>
+	/// <returns></returns>
+	public ArgumentsBuilder SeparatePositionalParameters()
+	{
+		_splitPositional = false;
 		return this;
 	}
 
@@ -285,9 +290,21 @@ public class ArgumentsBuilder
 	/// <param name="name">Name of the command or <c>null</c></param>
 	/// <param name="description">Description for the new command</param>
 	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
-	public ArgumentsBuilder Command(string? name = null, string? description = null)
+	public ArgumentsBuilder BeginCommand(string name, string? description = null)
 	{
-		_selected = _commands.GetOrCreate(name ?? String.Empty, description);
+		if (name is null) throw new ArgumentNullException(nameof(name));
+		_current = new CommandDefinition(_current, name, description);
+		return this;
+	}
+
+	/// <summary>
+	/// Ends the current command and returns to the parent command.
+	/// </summary>
+	/// <returns></returns>
+	/// <exception cref="InvalidOperationException"></exception>
+	public ArgumentsBuilder EndCommand()
+	{
+		_current = _current.Parent ?? throw new InvalidOperationException("There is no command to end.");
 		return this;
 	}
 
@@ -301,7 +318,7 @@ public class ArgumentsBuilder
 	{
 		if (parameter is null)
 			throw new ArgumentNullException(nameof(parameter));
-		_selected.Add(parameter);
+		_current.Add(parameter);
 		return this;
 	}
 
@@ -312,14 +329,13 @@ public class ArgumentsBuilder
 	/// <param name="abbrev">An optional abbreviation for the parameter.</param>
 	/// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
 	/// <param name="description">An optional parameter description for the usage message.</param>
-	/// <param name="positional">Indicates that this is a positional parameter.</param>
-	/// <param name="valueRequired">Indicates that a parameter value is required</param>
+	/// <param name="collection">Indicates that this parameter is a collection.</param>
 	/// <param name="required">Indicates that this is a required parameter.</param>
 	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public ArgumentsBuilder Parameter(string name, string? abbrev = null, string? valueName = null, string? description = null, bool positional = false, bool valueRequired = false, bool required = false)
+	public ArgumentsBuilder Parameter(string name, string? abbrev = null, string? valueName = null, string? description = null, bool collection = false, bool required = false)
 	{
-		_selected.Add(new ParameterDefinition(name, valueRequired ? ParameterValueType.Required: ParameterValueType.Optional, abbrev == null ? null: new[] { abbrev }, valueName, description, positional, required));
+		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null : new[] { abbrev }, valueName, description: description, collection: collection, required: required));
 		return this;
 	}
 
@@ -330,50 +346,26 @@ public class ArgumentsBuilder
 	/// <param name="abbrev">Abbreviations for the parameter.</param>
 	/// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
 	/// <param name="description">An optional parameter description for the usage message.</param>
-	/// <param name="positional">Indicates that this is a positional parameter.</param>
-	/// <param name="valueRequired">Indicates that a parameter value is required</param>
+	/// <param name="collection">Indicates that this parameter is a collection.</param>
 	/// <param name="required">Indicates that this is a required parameter.</param>
 	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public ArgumentsBuilder Parameter(string name, string[] abbrev, string? valueName = null, string? description = null, bool positional = false, bool valueRequired = false, bool required = false)
+	public ArgumentsBuilder Parameter(string name, string[] abbrev, string? valueName = null, string? description = null, bool collection = false, bool required = false)
 	{
-		_selected.Add(new ParameterDefinition(name, valueRequired ? ParameterValueType.Required: ParameterValueType.Optional, abbrev, valueName, description, positional, required));
+		_current.Add(new ParameterDefinition(_current, name, abbrev, valueName, description: description, collection: collection, required: required));
 		return this;
 	}
 
-	// /// <summary>
-	// /// Adds a parameter to the current command.
-	// /// </summary>
-	// /// <typeparam name="T">Type of the parameter value.</typeparam>
-	// /// <param name="name">Name of the parameter.</param>
-	// /// <param name="abbrev">An optional abbreviation for the parameter.</param>
-	// /// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
-	// /// <param name="description">An optional parameter description for the usage message.</param>
-	// /// <param name="positional">Indicates that this is a positional parameter.</param>
-	// /// <param name="required">Indicates that this is a required parameter.</param>
-	// /// <returns>The <see cref="ArgumentsBuilder"/></returns>
-	// public ArgumentsBuilder Parameter<T>(string name, string? abbrev = null, string? valueName = null, string? description = null, bool positional = false, bool required = false)
-	// {
-	// 	_selected.Add(new ParameterDefinition(name, typeof(T), abbrev == null ? null: new[] { abbrev }, valueName, description, positional, required));
-	// 	return this;
-	// }
-	//
-	// /// <summary>
-	// /// Adds a parameter to the current command.
-	// /// </summary>
-	// /// <typeparam name="T">Type of the parameter value.</typeparam>
-	// /// <param name="name">Name of the parameter.</param>
-	// /// <param name="abbrev">Abbreviations for the parameter.</param>
-	// /// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
-	// /// <param name="description">An optional parameter description for the usage message.</param>
-	// /// <param name="positional">Indicates that this is a positional parameter.</param>
-	// /// <param name="required">Indicates that this is a required parameter.</param>
-	// /// <returns>The <see cref="ArgumentsBuilder"/></returns>
-	// public ArgumentsBuilder Parameter<T>(string name, string[] abbrev, string? valueName = null, string? description = null, bool positional = false, bool required = false)
-	// {
-	// 	_selected.Add(new ParameterDefinition(name, typeof(T), abbrev, valueName, description, positional, required));
-	// 	return this;
-	// }
+	/// <summary>
+	/// Adds help parameter to the current command.
+	/// </summary>
+	/// <param name="description">An optional description for the usage command (default: "show help and exit")</param>
+	/// <returns></returns>
+	public ArgumentsBuilder Help(string? description = null)
+	{
+		_current.Add(new ParameterDefinition(_current, "help", new[] { "\r?", "h" }, description: description ?? "show help and exit", toggle: true));
+		return this;
+	}
 
 	/// <summary>
 	/// Adds a <see cref="bool"/> parameter to the current command.
@@ -384,7 +376,7 @@ public class ArgumentsBuilder
 	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
 	public ArgumentsBuilder Switch(string name, string? abbrev = null, string? description = null)
 	{
-		_selected.Add(new ParameterDefinition(name, ParameterValueType.None, abbrev == null ? null: new[] { abbrev }, null, description, false, false));
+		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null : new[] { abbrev }, description: description, toggle: true));
 		return this;
 	}
 
@@ -397,40 +389,7 @@ public class ArgumentsBuilder
 	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
 	public ArgumentsBuilder Switch(string name, string[] abbrev, string? description = null)
 	{
-		_selected.Add(new ParameterDefinition(name, ParameterValueType.None, abbrev, null, description, false, false));
-		return this;
-	}
-
-	/// <summary>
-	/// Adds a multi-value parameter (parameter of type <see cref="string"/>[]) to the current command.
-	/// </summary>
-	/// <param name="name">Name of the parameter.</param>
-	/// <param name="abbrev">An optional abbreviation for the parameter.</param>
-	/// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
-	/// <param name="description">An optional parameter description for the usage message.</param>
-	/// <param name="positional">Indicates that this is a positional parameter.</param>
-	/// <param name="valueRequired">Indicates that a parameter value is required</param>
-	/// <param name="required">Indicates that this is a required parameter.</param>
-	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
-	public ArgumentsBuilder Array(string name, string? abbrev = null, string? description = null, string? valueName = null, bool positional = false, bool valueRequired = false, bool required = false)
-	{
-		_selected.Add(new ParameterDefinition(name, ParameterValueType.Collection | (valueRequired ? ParameterValueType.Required: ParameterValueType.Optional), abbrev == null ? null: new[] { abbrev }, valueName, description, positional, required));
-		return this;
-	}
-
-	/// <summary>
-	/// Adds a multi-value parameter (parameter of type <see cref="string"/>[]) to the current command.
-	/// </summary>
-	/// <param name="name">Name of the parameter.</param>
-	/// <param name="abbrev">Abbreviations for the parameter.</param>
-	/// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
-	/// <param name="description">An optional parameter description for the usage message.</param>
-	/// <param name="valueRequired">Indicates that a parameter value is required</param>
-	/// <param name="required">Indicates that this is a required parameter.</param>
-	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
-	public ArgumentsBuilder Array(string name, string[] abbrev, string? description = null, string? valueName = null, bool valueRequired = false, bool required = false)
-	{
-		_selected.Add(new ParameterDefinition(name, ParameterValueType.Collection | (valueRequired ? ParameterValueType.Required: ParameterValueType.Optional), abbrev, valueName, description, false, required));
+		_current.Add(new ParameterDefinition(_current, name, abbrev, description: description, toggle: true));
 		return this;
 	}
 
@@ -440,25 +399,12 @@ public class ArgumentsBuilder
 	/// <param name="name">Name of the parameter.</param>
 	/// <param name="description">An optional parameter description for the usage message.</param>
 	/// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
+	/// <param name="collection">Indicates that this is a multi-value parameter.</param>
 	/// <param name="required">Indicates that this is a required parameter.</param>
 	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
-	public ArgumentsBuilder Positional(string name, string? description = null, string? valueName = null, bool required = false)
+	public ArgumentsBuilder Positional(string name, string? description = null, string? valueName = null, bool collection = false, bool required = false)
 	{
-		_selected.Add(new ParameterDefinition(name, ParameterValueType.None, null, valueName, description, true, required));
-		return this;
-	}
-
-	/// <summary>
-	/// Adds a positional multi-value parameter (parameter of type <see cref="string"/>[]) to the current command.
-	/// </summary>
-	/// <param name="name">Name of the parameter.</param>
-	/// <param name="description">An optional parameter description for the usage message.</param>
-	/// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
-	/// <param name="required">Indicates that this is a required parameter.</param>
-	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
-	public ArgumentsBuilder PositionalArray(string name, string? description = null, string? valueName = null, bool required = false)
-	{
-		_selected.Add(new ParameterDefinition(name, ParameterValueType.Collection, null, valueName, description, true, required));
+		_current.Add(new ParameterDefinition(_current, name, null, valueName, description: description, positional: true, collection: collection, required: required));
 		return this;
 	}
 

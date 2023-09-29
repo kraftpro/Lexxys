@@ -171,7 +171,7 @@ public class XsdLiteValue
 
 	public bool IsMatch(string? value)
 	{
-		return value is { Length: >0 } ? XmlTools.TryGetValue(value, ValueType, out var _): IsNullable;
+		return value is { Length: >0 } ? Strings.TryGetValue(value, ValueType, out var _): IsNullable;
 	}
 
 	/// <summary>
@@ -185,7 +185,7 @@ public class XsdLiteValue
 		if (node == null || node.IsEmpty)
 			return null;
 
-		Type type = XmlTools.GetType(node["type"] ?? node.Value, typeof(void));
+		Type type = Strings.GetType(node["type"] ?? node.Value, typeof(void));
 		return type == typeof(void) ? null:
 			node["nullable"] == null ? new XsdLiteValue(type): new XsdLiteValue(type, node["nullable"].AsBoolean(false));
 	}

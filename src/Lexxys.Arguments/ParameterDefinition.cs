@@ -10,19 +10,26 @@ namespace Lexxys;
 /// </summary>
 public class ParameterDefinition
 {
+	public const char HiddenPrefix = '\r';
+
 	/// <summary>
 	/// Creates a new instance of <see cref="ParameterDefinition"/>.
 	/// </summary>
+	/// <param name="command">The command this parameter belongs to.</param>
 	/// <param name="name">Name of the parameter.</param>
 	/// <param name="abbreviations">An optional abbreviations for the parameter.</param>
-	/// <param name="type">Type of the parameter value (default <see cref="string"/>).</param>
 	/// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
 	/// <param name="description">An optional parameter description for the usage message.</param>
 	/// <param name="positional">Indicates that this is a positional parameter.</param>
 	/// <param name="required">Indicates that this is a required parameter.</param>
+	/// <param name="collection">Indicates that this is a collection parameter.</param>
+	/// <param name="toggle">Indicates that this is a switch parameter.</param>
+	/// <param name="unknown">Indicates that this is an unknown parameter.</param>
 	/// <exception cref="ArgumentNullException"></exception>
-	public ParameterDefinition(string name, ParameterValueType? type, string[]? abbreviations = null, string? valueName = null, string? description = null, bool positional = false, bool required = false)
+	public ParameterDefinition(CommandDefinition command, string name, string[]? abbreviations = null, string? valueName = null, string? description = null, bool positional = false, bool required = false, bool collection = false, bool toggle = false, bool unknown = false)
 	{
+		if (command is null)
+			throw new ArgumentNullException(nameof(command));
 		if (name is null)
 			throw new ArgumentNullException(nameof(name));
 
@@ -30,15 +37,15 @@ public class ParameterDefinition
 		Abbreviations = abbreviations;
 		ValueName = valueName;
 		Description = description;
-		Type = type ?? ParameterValueType.Optional;
+		Command = command;
 		IsPositional = positional;
 		IsRequired = required;
-	}
+		IsCollection = collection;
+		IsSwitch = toggle;
+		IsUnknown = unknown;
 
-	/// <summary>
-	/// Value of the command line argument.
-	/// </summary>
-	public string? Value { get; private set; }
+		static string FixName(string name) => name.Trim().Replace(' ', '-');
+	}
 
 	/// <summary>
 	/// Name of the parameter.
@@ -51,6 +58,11 @@ public class ParameterDefinition
 	public string[]? Abbreviations { get; }
 
 	/// <summary>
+	/// Tests if the parameter has any abbreviations.
+	/// </summary>
+	public bool HasAbbreviation => Abbreviations is not null && Abbreviations.Any(o => o.Length > 0 && o[0] != HiddenPrefix);
+
+	/// <summary>
 	/// Name of the parameter value to be displayed in the usage message.
 	/// </summary>
 	public string? ValueName { get; }
@@ -61,9 +73,9 @@ public class ParameterDefinition
 	public string? Description { get; }
 
 	/// <summary>
-	/// Type of the parameter value.
+	/// Reference to the command this parameter belongs to.
 	/// </summary>
-	public ParameterValueType Type { get; }
+	public CommandDefinition Command { get; }
 
 	/// <summary>
 	/// Indicates that this is a positional parameter.
@@ -76,61 +88,29 @@ public class ParameterDefinition
 	public bool IsRequired { get; }
 
 	/// <summary>
-	/// Indicates that this is a switch parameter (i.e. <see cref="bool"/> type).
-	/// </summary>
-	public bool IsSwitch => Type == ParameterValueType.None;
-
-	/// <summary>
 	/// Indicates that this is a collection parameter (i.e. <see cref="Array"/> type).
 	/// </summary>
-	public bool IsCollection => (Type & ParameterValueType.Collection) != 0;
+	public bool IsCollection { get; }
 
 	/// <summary>
-	/// Indicates that the parameter value is required.
+	/// Indicates that this is a switch parameter (i.e. <see cref="bool"/> type).
 	/// </summary>
-	public bool IsValueRequired => (Type & ParameterValueType.Required) != 0;
+	public bool IsSwitch { get; }
 
-	/// <summary>
-	/// Indicates that the parameter value is set.
-	/// </summary>
-	public bool IsSet => Value is not null;
-	
 	/// <summary>
 	/// Indicates that the parameter was not defined but founds in the arguments list.
 	/// </summary>
-	public bool IsUnknown => (Type & (ParameterValueType.Optional | ParameterValueType.Required)) == (ParameterValueType.Optional | ParameterValueType.Required);
-	
-	/// <summary>
-	/// Sets the value of the parameter.
-	/// </summary>
-	/// <param name="value">The value of the parameter</param>
-	/// <returns></returns>
-	public ParameterDefinition WithValue(string? value)
-	{
-		Value = value;
-		return this;
-	}
+	public bool IsUnknown { get; }
 
-	internal void AddValue(string? value)
+	internal StringBuilder GetParameterName(StringBuilder? text = null, char argumentDelimiter = '\0', bool longDash = false, bool excludeAbbreviation = false)
 	{
-		if (!IsCollection)
-			Value = value;
-		else if (Value is null)
-			Value = value;
-		else if (value is not null)
-			Value += $",{value}";
-	}
-	
-	internal string GetParameterName(char argumentDelimiter = '\0', bool longDash = false, bool excludeAbbreviation = false)
-	{
+		text ??= new StringBuilder();
 		if (IsPositional)
-			return ValueName ?? Name;
+			return text.Append(ValueName ?? Name);
 
-		var text = new StringBuilder();
-
-		if (!excludeAbbreviation && Abbreviations is { Length: > 0 })
+		if (!excludeAbbreviation && HasAbbreviation)
 		{
-			foreach (var a in Abbreviations)
+			foreach (var a in Abbreviations!.Where(o => o[0] != HiddenPrefix))
 			{
 				text.Append('-').Append(a).Append(", ");
 			}
@@ -140,25 +120,22 @@ public class ParameterDefinition
 			text.Append('-');
 		text.Append(Name);
 
-		if (Type == ParameterValueType.None || argumentDelimiter == '\0')
-			return text.ToString();
+		if (IsSwitch || argumentDelimiter == '\0')
+			return text;
 		text.Append(argumentDelimiter);
-		text.Append(ValueName is { Length: > 0 } ? $"<{ValueName}>" : "<value>");
+		text.Append(ValueName is { Length: >0 } ? $"<{ValueName}>" : $"<{Name}>");
 		if (IsCollection)
 			text.Append("[,<...>]");
-		return text.ToString();
+		return text;
 	}
-
-	internal bool IsMatch(string value, IEqualityComparer<string> comparer)
-		=> comparer.Equals(value, Name) || (Abbreviations != null && Array.FindIndex(Abbreviations, o => comparer.Equals(o, value)) >= 0);
-
-	internal bool IsMatch(string value, StringComparison comparison)
-		=> String.Equals(value, Name, comparison) || (Abbreviations != null && Array.FindIndex(Abbreviations, o => String.Equals(o, value, comparison)) >= 0);
 
 	internal bool IsSimilar(string value, StringComparison comparison, bool trimDelimiters)
 		=> IsSimilar(value.AsSpan(), Name.AsSpan(), Strings.SplitByCapitals(Name), 0, comparison, trimDelimiters);
 
-	internal static bool IsSimilar(ReadOnlySpan<char> value, ReadOnlySpan<char> name, IList<(int Index, int Length)> parts, int maskIndex, StringComparison comparison, bool trimDelimiters)
+    internal bool IsReverseSimilar(string value, StringComparison comparison, bool trimDelimiters)
+        => IsSimilar(Name.AsSpan(), value.AsSpan(), Strings.SplitByCapitals(value), 0, comparison, trimDelimiters);
+
+    private static bool IsSimilar(ReadOnlySpan<char> value, ReadOnlySpan<char> name, IList<(int Index, int Length)> parts, int maskIndex, StringComparison comparison, bool trimDelimiters)
 	{
 		if (value.Length == 0)
 			return maskIndex == parts.Count;
@@ -185,9 +162,9 @@ public class ParameterDefinition
 
 		static bool IsDelimiters(ReadOnlySpan<char> value)
 		{
-			for (int i = 0; i < value.Length; ++i)
+			foreach (var c in value)
 			{
-				if (!IsDelimiter(value[i]))
+				if (!IsDelimiter(c))
 					return false;
 			}
 			return true;
@@ -203,6 +180,4 @@ public class ParameterDefinition
 		static bool IsDelimiter(char value)
 			=> value is '-' or '_' or ' ';
 	}
-
-	private static string FixName(string name) => name.Trim().Replace(' ', '-');
 }

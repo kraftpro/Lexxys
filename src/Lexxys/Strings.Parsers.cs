@@ -3,11 +3,9 @@ using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
 
-#pragma warning disable CA1031 // Do not catch general exception types
+namespace Lexxys;
 
-namespace Lexxys.Xml;
-
-public static partial class XmlTools
+public static partial class Strings
 {
 	public static object? GetValue(string? value, Type type, object? defaultValue)
 	{
@@ -71,19 +69,19 @@ public static partial class XmlTools
 		if (IsNullValue(value))
 			return Factory.IsNullableType(returnType);
 
-		if (__stringConditionalConstructor.TryGetValue(returnType, out ValueParser? parser))
-			return parser(value, out result);
+		if (TryWellKnownConverter(value, returnType, out result))
+			return true;
 
 		if (returnType.IsEnum || returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Nullable<>) && returnType.GetGenericArguments()[0].IsEnum)
 		{
-			var (type1, type2) = NullableTypes(returnType);
-			__stringConditionalConstructor.TryAdd(type1!, (string x, out object? y) => TryGetEnum(x, type1, out y));
-			__stringConditionalConstructor.TryAdd(type2!, (string x, out object? y) => TryGetEnum(x, type1, out y));
+			var (regular, nullable) = NullableTypes(returnType);
+			__stringConditionalConstructor.TryAdd(regular!, (string x, out object? y) => TryGetEnum(x, regular, out y));
+			__stringConditionalConstructor.TryAdd(nullable!, (string x, out object? y) => TryGetEnum(x, regular, out y));
 
-			return TryGetEnum(value, type1, out result);
+			return TryGetEnum(value, regular, out result);
 		}
 
-		parser = GetTypeConverter(returnType) ?? GetExplicitConverter(returnType);
+		var parser = GetTypeConverter(returnType) ?? GetExplicitConverter(returnType);
 		if (parser != null)
 		{
 			var (type1, type2) = NullableTypes(returnType);
@@ -97,19 +95,20 @@ public static partial class XmlTools
 		return false;
 	}
 
-	private static (Type, Type?) NullableTypes(Type type)
+	internal static bool TryWellKnownConverter(string value, Type returnType, out object? result)
 	{
-		if (!type.IsValueType)
-			return (type, null);
-		if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-			return (type.GetGenericArguments()[0], type);
-		return (type, typeof(Nullable<>).MakeGenericType(type));
+		if (__stringConditionalConstructor.TryGetValue(returnType, out ValueParser? stringParser))
+			return stringParser(value, out result);
+		result = null;
+		return false;
 	}
 
 	private static bool IsNullValue(string? value)
 	{
 		value = value.TrimToNull();
-		return value == null || (value.Length == 4 || value.Length == 5) && (value.ToUpperInvariant() is "NULL" or "$NULL");
+		return value == null ||
+			value.Length == 4 && String.Equals(value, "NULL", StringComparison.OrdinalIgnoreCase) ||
+			value.Length == 5 && String.Equals(value, "$NULL", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private static ValueParser? GetTypeConverter(Type targetType)
@@ -389,8 +388,8 @@ public static partial class XmlTools
 		result = value;
 		return true;
 	}
-	private delegate bool ConcreteValueParser<T>(string value, [MaybeNullWhen(false)] out T result);
-	private delegate bool ValueParser(string value, out object? result);
+	internal delegate bool ConcreteValueParser<T>(string value, [MaybeNullWhen(false)] out T result);
+	internal delegate bool ValueParser(string value, out object? result);
 	private struct ParserPair
 	{
 		public readonly Type Type;

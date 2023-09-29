@@ -31,7 +31,7 @@ namespace Lexxys.Tests.Xml
 		[DataRow("", 3, "Zero", "One", "Two", null)]
 		public void GetIndexTest(string value, int index, params string[] items)
 		{
-			var actual = XmlTools.GetIndex(value, items);
+			var actual = Strings.GetIndex(value, items);
 			Assert.AreEqual(index, actual, value);
 		}
 
@@ -66,7 +66,7 @@ namespace Lexxys.Tests.Xml
 		{
 			bool success;
 			object actual;
-			success = XmlTools.TryGetEnum(value, enumType, out actual);
+			success = Strings.TryGetEnum(value, enumType, out actual);
 			Assert.AreEqual(expected, actual);
 			Assert.AreEqual(shouldSuccess, success);
 		}
@@ -127,7 +127,7 @@ namespace Lexxys.Tests.Xml
 				bool correct = dateFormat[0] == '+';
 				string date = dateFormat.Substring(1);
 				string format = date;
-				var actual = XmlTools.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+				var actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
 				if (!correct)
 				{
 					Assert.AreEqual(default(DateTimeOffset), actual, format);
@@ -137,7 +137,7 @@ namespace Lexxys.Tests.Xml
 					Assert.AreEqual(value.Date, actual.Date, format);
 
 					format = date + "THH:mm:ss";
-					actual = XmlTools.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
 					Assert.AreEqual(value.Date, actual.Date, format);
 					Assert.AreEqual(value.Hour, actual.Hour, format);
 					Assert.AreEqual(value.Minute, actual.Minute, format);
@@ -145,7 +145,7 @@ namespace Lexxys.Tests.Xml
 					Assert.AreEqual(DateTimeOffset.Now.Offset, actual.Offset, format);
 
 					format = date + "THH:mm:ss.fffffff";
-					actual = XmlTools.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
 					Assert.AreEqual(value.Date, actual.Date, format);
 					Assert.AreEqual(value.Hour, actual.Hour, format);
 					Assert.AreEqual(value.Minute, actual.Minute, format);
@@ -154,7 +154,7 @@ namespace Lexxys.Tests.Xml
 					Assert.AreEqual(DateTimeOffset.Now.Offset, actual.Offset, format);
 
 					format = date + "THH:mm:ss.fffffffK";
-					actual = XmlTools.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
 					Assert.AreEqual(value.Date, actual.Date, format);
 					Assert.AreEqual(value.Hour, actual.Hour, format);
 					Assert.AreEqual(value.Minute, actual.Minute, format);
@@ -168,19 +168,19 @@ namespace Lexxys.Tests.Xml
 					correct &= timeFormat[0] == '+';
 					string time = timeFormat.Substring(1);
 					format = date + "T" + time;
-					actual = XmlTools.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
 					if (!correct)
 						Assert.AreEqual(default(DateTimeOffset), actual, format);
 					else
 						Assert.AreEqual(value.Date, actual.Date, format);
 					format = date + "T" + time + " z";
-					actual = XmlTools.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
 					if (!correct)
 						Assert.AreEqual(default(DateTimeOffset), actual, format);
 					else
 						Assert.AreEqual(value.Date, actual.Date, format);
 					format = date + "T" + time + "zz";
-					actual = XmlTools.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
 					if (!correct)
 						Assert.AreEqual(default(DateTimeOffset), actual, format);
 					else
@@ -250,7 +250,7 @@ namespace Lexxys.Tests.Xml
 			if (value != null && __19Digiits.IsMatch(value))
 				return;
 			bool test = !IsEmpty(value) && __timespanRex.IsMatch(value!);
-			Assert.AreEqual(test, XmlTools.TryGetTimeSpan(value, out _));
+			Assert.AreEqual(test, Strings.TryGetTimeSpan(value, out _));
 		}
 		private static readonly Regex __timespanRex = new Regex(@"\A
 			([\0- ]*
@@ -420,7 +420,7 @@ namespace Lexxys.Tests.Xml
 			if (s.Length > 0)
 			{
 				var ms = text.ToString();
-				Assert.IsTrue(XmlTools.TryGetTimeSpan(s, out actual), s + " for " + ms);
+				Assert.IsTrue(Strings.TryGetTimeSpan(s, out actual), s + " for " + ms);
 				Assert.AreEqual(expected, actual, ms);
 			}
 		}
@@ -434,38 +434,38 @@ namespace Lexxys.Tests.Xml
 			x = Days(value).ToString(CultureInfo.InvariantCulture);
 			if (x.Length - x.IndexOf('.') - 1 < 19)
 			{
-				Assert.AreEqual(value, XmlTools.GetTimeSpan(Days(value) + "d"));
-				Assert.AreEqual(value, XmlTools.GetTimeSpan(Days(value) + " d"));
+				Assert.AreEqual(value, Strings.GetTimeSpan(Days(value) + "d"));
+				Assert.AreEqual(value, Strings.GetTimeSpan(Days(value) + " d"));
 			}
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(Hours(value) + "h"));
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(Mins(value) + "m"));
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(Secs(value) + "s"));
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(Millisecs(value) + "ms"));
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(Secs(value).ToString(CultureInfo.InvariantCulture)));
+			Assert.AreEqual(value, Strings.GetTimeSpan(Hours(value) + "h"));
+			Assert.AreEqual(value, Strings.GetTimeSpan(Mins(value) + "m"));
+			Assert.AreEqual(value, Strings.GetTimeSpan(Secs(value) + "s"));
+			Assert.AreEqual(value, Strings.GetTimeSpan(Millisecs(value) + "ms"));
+			Assert.AreEqual(value, Strings.GetTimeSpan(Secs(value).ToString(CultureInfo.InvariantCulture)));
 
 			TimeSpan d = TimeSpan.FromDays(value.Days);
 			TimeSpan h = TimeSpan.FromHours(value.Hours);
 			TimeSpan m = TimeSpan.FromMinutes(value.Minutes);
 
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(value.Days.ToString() + " " + Hours(value - d) + ":0:0"));
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(value.Days.ToString() + " " + value.Hours.ToString() + ":" + Mins(value - d - h) + ":0"));
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(value.Days.ToString() + " " + value.Hours.ToString() + ":" + value.Minutes.ToString() + ":" + Secs(value - d - h - m)));
+			Assert.AreEqual(value, Strings.GetTimeSpan(value.Days.ToString() + " " + Hours(value - d) + ":0:0"));
+			Assert.AreEqual(value, Strings.GetTimeSpan(value.Days.ToString() + " " + value.Hours.ToString() + ":" + Mins(value - d - h) + ":0"));
+			Assert.AreEqual(value, Strings.GetTimeSpan(value.Days.ToString() + " " + value.Hours.ToString() + ":" + value.Minutes.ToString() + ":" + Secs(value - d - h - m)));
 
 			TimeSpan hours = value - d;
-			Assert.AreEqual(hours, XmlTools.GetTimeSpan(hours.Hours.ToString() + ":" + Mins(hours - h) + ":0"));
-			Assert.AreEqual(hours, XmlTools.GetTimeSpan(hours.Hours.ToString() + ":" + hours.Minutes.ToString() + ":" + Secs(hours - h - m)));
+			Assert.AreEqual(hours, Strings.GetTimeSpan(hours.Hours.ToString() + ":" + Mins(hours - h) + ":0"));
+			Assert.AreEqual(hours, Strings.GetTimeSpan(hours.Hours.ToString() + ":" + hours.Minutes.ToString() + ":" + Secs(hours - h - m)));
 
 			TimeSpan minutes = hours - h;
-			Assert.AreEqual(minutes, XmlTools.GetTimeSpan(Mins(minutes) + ":0"));
-			Assert.AreEqual(minutes, XmlTools.GetTimeSpan(minutes.Minutes.ToString() + ":" + Secs(minutes - m)));
-			Assert.AreEqual(hours, XmlTools.GetTimeSpan(Mins(hours) + ":0"));
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(Mins(value) + ":0"));
+			Assert.AreEqual(minutes, Strings.GetTimeSpan(Mins(minutes) + ":0"));
+			Assert.AreEqual(minutes, Strings.GetTimeSpan(minutes.Minutes.ToString() + ":" + Secs(minutes - m)));
+			Assert.AreEqual(hours, Strings.GetTimeSpan(Mins(hours) + ":0"));
+			Assert.AreEqual(value, Strings.GetTimeSpan(Mins(value) + ":0"));
 
 			TimeSpan seconds = minutes - m;
-			Assert.AreEqual(seconds, XmlTools.GetTimeSpan(Secs(seconds).ToString(CultureInfo.InvariantCulture)));
-			Assert.AreEqual(minutes, XmlTools.GetTimeSpan(Secs(minutes).ToString(CultureInfo.InvariantCulture)));
-			Assert.AreEqual(hours, XmlTools.GetTimeSpan(Secs(hours).ToString(CultureInfo.InvariantCulture)));
-			Assert.AreEqual(value, XmlTools.GetTimeSpan(Secs(value).ToString(CultureInfo.InvariantCulture)));
+			Assert.AreEqual(seconds, Strings.GetTimeSpan(Secs(seconds).ToString(CultureInfo.InvariantCulture)));
+			Assert.AreEqual(minutes, Strings.GetTimeSpan(Secs(minutes).ToString(CultureInfo.InvariantCulture)));
+			Assert.AreEqual(hours, Strings.GetTimeSpan(Secs(hours).ToString(CultureInfo.InvariantCulture)));
+			Assert.AreEqual(value, Strings.GetTimeSpan(Secs(value).ToString(CultureInfo.InvariantCulture)));
 		}
 	}
 }

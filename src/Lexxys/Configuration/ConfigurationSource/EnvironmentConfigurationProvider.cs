@@ -25,7 +25,7 @@ class EnvironmentConfigurationProvider: IConfigProvider
 			throw new ArgumentNullException(nameof(reference));
 		if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
 			reference = reference.Substring(5);
-		return XmlTools.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out var result) ? result: null;
+		return Strings.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out var result) ? result: null;
 	}
 
 	public IReadOnlyList<T> GetList<T>(string reference)
@@ -35,7 +35,7 @@ class EnvironmentConfigurationProvider: IConfigProvider
 
 		if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
 			reference = reference.Substring(5);
-		if (XmlTools.TryGetValue<T>(Environment.GetEnvironmentVariable(reference), out var value))
+		if (Strings.TryGetValue<T>(Environment.GetEnvironmentVariable(reference), out var value))
 			return ReadOnly.Wrap(new[] { value! })!;
 		return Array.Empty<T>();
 	}
