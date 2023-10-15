@@ -13,9 +13,9 @@ internal class LocalFileConfigurationSource: IXmlConfigurationSource
 {
 	private const string LogSource = "Lexxys.Configuration.LocalFileConfigurationSource";
 	private readonly FileInfo _file;
-	private readonly Func<string, string, IReadOnlyList<XmlLiteNode>> _converter;
+	private readonly Func<string, string, IReadOnlyList<IXmlReadOnlyNode>> _converter;
 	private List<string>? _includes;
-	private IReadOnlyList<XmlLiteNode>? _content;
+	private IReadOnlyList<IXmlReadOnlyNode>? _content;
 	private readonly Uri _location;
 	private int _version;
 
@@ -24,6 +24,7 @@ internal class LocalFileConfigurationSource: IXmlConfigurationSource
 		_file = new FileInfo(location.LocalPath);
 		_location = location;
 		_converter = XmlConfigurationProvider.GetSourceConverter(_file.Extension, OptionHandler, parameters);
+		_version = 1;
 	}
 
 	#region IConfigurationSource
@@ -32,7 +33,7 @@ internal class LocalFileConfigurationSource: IXmlConfigurationSource
 
 	public Uri Location => _location;
 
-	public IReadOnlyList<XmlLiteNode> Content
+	public IReadOnlyList<IXmlReadOnlyNode> Content
 	{
 		get
 		{
@@ -86,15 +87,13 @@ internal class LocalFileConfigurationSource: IXmlConfigurationSource
 				Changed?.Invoke(sender ?? this, e);
 			}
 		}
-		#pragma warning disable CA1031 // Do not catch general exception types
 		catch (Exception flaw)
 		{
 			Config.LogConfigurationError(LogSource, flaw.Add("fileName", _file.FullName));
 		}
-		#pragma warning restore CA1031 // Do not catch general exception types
 	}
 
-	private IEnumerable<XmlLiteNode>? OptionHandler(ref TextToXmlConverter converter, string option, IReadOnlyCollection<string>? parameters)
+	private IEnumerable<IXmlReadOnlyNode>? OptionHandler(ref TextToXmlConverter converter, string option, IReadOnlyCollection<string>? parameters)
 	{
 		if (option != "include")
 		{

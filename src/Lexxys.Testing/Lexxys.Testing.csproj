@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>net7.0;net6.0;net472</TargetFrameworks>
     <LangVersion>latest</LangVersion>
-    <!--<EnablePreviewFeatures>true</EnablePreviewFeatures>-->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AllowUnsafe>true</AllowUnsafe>
     <!-- version format: major.minor.revision[-beta+MMDD.i] -->
@@ -15,12 +16,7 @@
     <Description>Testing Support Library</Description>
     <Copyright>Copyright © 2001-2016</Copyright>
     <Authors>Kraft Pro Utilities</Authors>
-    <AssemblyName>Lexxys.Testing</AssemblyName>
-    <RootNamespace>Lexxys.Testing</RootNamespace>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <NoPackageAnalysis>true</NoPackageAnalysis>
-    <AnalysisLevel>9999</AnalysisLevel>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -28,13 +24,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Lexxys\Lexxys.csproj" />
+    <Content Include="Resources.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Resources.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <ProjectReference Include="..\Lexxys\Lexxys.csproj" />
   </ItemGroup>
 
 </Project>

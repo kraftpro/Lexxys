@@ -27,7 +27,7 @@
 //		private const int LITERAL = 11;
 //		private const int FOLDED = 12;
 
-//		private YamlParser(CharStream stream, string? sourceName)
+//		private YamlParser(in CharStream stream, string? sourceName)
 //		{
 //			SourceName = sourceName;
 //			Scanner = new YamlTokenScanner(stream,
@@ -56,7 +56,7 @@
 //		class YamlTokenScanner: TokenScanner
 //		{
 //			private readonly OneBackFilter _push;
-//			public YamlTokenScanner(CharStream stream, params LexicalTokenRule[] rules) : base(stream, rules)
+//			public YamlTokenScanner(in CharStream stream, params LexicalTokenRule[] rules) : base(stream, rules)
 //			{
 //				_push = new OneBackFilter();
 //				SetFilter(new IndentFilter());

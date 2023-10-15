@@ -228,6 +228,21 @@ public static class CollectionExtensions
 		};
 	}
 
+	public static IList<TOut> ConvertAll<TIn, TOut>(this IList<TIn> value, Func<TIn, TOut> convert)
+	{
+		if (value is null)
+			throw new ArgumentNullException(nameof(value));
+		if (convert is null)
+			throw new ArgumentNullException(nameof(convert));
+
+		var result = new TOut[value.Count];
+		for (int i = 0; i < result.Length; i++)
+		{
+			result[i] = convert(value[i]);
+		}
+		return result;
+	}
+
 	public static IReadOnlyList<TOut> ConvertAll<TIn, TOut>(this IReadOnlyList<TIn> value, Func<TIn, TOut> convert)
 	{
 		if (value is null)

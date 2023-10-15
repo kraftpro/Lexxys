@@ -19,45 +19,41 @@ public class ConfigurationException: InvalidOperationException
 	{
 	}
 
-	public ConfigurationException(XmlLiteNode? config)
+	public ConfigurationException(IXmlReadOnlyNode? config)
 	{
 		if (config != null)
 			base.Data[DicNodeName] = config.ToString();
 	}
 
-	public ConfigurationException(string? message)
-		: base(message)
+	public ConfigurationException(string? message): base(message)
 	{
 	}
 
-	public ConfigurationException(string key, Type? type)
-		: base(SR.ConfigValueNotFound(key, type))
+	public ConfigurationException(string key, Type? type): base(SR.ConfigValueNotFound(key, type))
 	{
 	}
 
-	public ConfigurationException(string? message, XmlLiteNode? config)
-		: base(message)
+	public ConfigurationException(string? message, IXmlReadOnlyNode? config): base(message)
 	{
 		if (config != null)
 			base.Data[DicNodeName] = config.ToString();
 	}
 
-	public ConfigurationException(string? message, Exception? exception)
-		: base(message, exception)
+	public ConfigurationException(string? message, Exception? exception): base(message, exception)
 	{
 	}
 
-	public ConfigurationException(string? message, XmlLiteNode? config, Exception? exception)
-		: base(message, exception)
+	public ConfigurationException(string? message, IXmlReadOnlyNode? config, Exception? exception): base(message, exception)
 	{
 		if (config != null)
 			base.Data[DicNodeName] = config.ToString();
 	}
 
-	protected ConfigurationException(SerializationInfo info, StreamingContext context)
-		: base(info, context)
+#if !NET8_0_OR_GREATER
+	protected ConfigurationException(SerializationInfo info, StreamingContext context): base(info, context)
 	{
 	}
+#endif
 }
 
 

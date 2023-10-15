@@ -7,7 +7,7 @@
 
 namespace Lexxys.Tests.Tokenizer
 {
-	using Testing;
+	using Lexxys.Testing;
 	using Lexxys.Tokenizer;
 
 	/// <summary>
@@ -72,10 +72,10 @@ namespace Lexxys.Tests.Tokenizer
 				index = __r.Next(__streamBuffer.Length);
 			return new CharStream(__streamBuffer[index % __streamBuffer.Length]);
 		}
-		private static string[] __streamBuffer = new string[]
-		{
+		private static string[] __streamBuffer =
+		[
 			"ABCD\nEFGH\nIJKL\nMNOP\nQRS \nabcd\nefgh\nijkl\nmnop\nqrs \n"
-		};
+		];
 		private static Random __r = new Random();
 
 
@@ -306,7 +306,7 @@ namespace Lexxys.Tests.Tokenizer
 				CharStream cs = GetStream();
 				cs.Forward(__r.Next(cs.Length));
 				cs.Rewind();
-				Assert.AreEqual(CharPosition.Start, cs.GetChatPosition());
+				Assert.AreEqual(CharPosition.Start, cs.GetCharPosition());
 			}
 		}
 
@@ -320,10 +320,10 @@ namespace Lexxys.Tests.Tokenizer
 			{
 				CharStream cs = GetStream();
 				cs.Forward(__r.Next(cs.Length));
-				CharPosition expected = cs.GetChatPosition();
+				CharPosition expected = cs.GetCharPosition();
 				cs.Rewind();
 				cs.Move(expected.Position);
-				Assert.AreEqual(expected, cs.GetChatPosition());
+				Assert.AreEqual(expected, cs.GetCharPosition());
 			}
 		}
 

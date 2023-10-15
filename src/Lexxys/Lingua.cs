@@ -384,8 +384,8 @@ public static class Lingua
 
 		private static PluralRule[] GetInitialRules()
 		{
-			return new[]
-			{
+			return
+			[
 				new PluralRule(false, "", "",
 					"about", "above", "across", "after", "against", "amid", "amidst", "among", "around", "as", "at", "athwart", "atop",
 					"barring", "before", "behind", "below", "beneath", "beside", "besides", "between", "betwixt", "beyond", "but", "by",
@@ -683,7 +683,7 @@ public static class Lingua
 					".*y"),
 				new PluralRule(false, "z", "zzes",
 					".*[^z]z"),
-			};
+			];
 		}
 
 		private struct PluralRule
@@ -797,7 +797,7 @@ public static class Lingua
 					string s = ww[j]!;
 					string w = s.Substring(0, s.Length - rr[i].SingularEnding.Length);
 					ww[j] = w;
-					if (w.IndexOfAny(new[] { '.', '[' }) < 0)
+					if (w.IndexOfAny(['.', '[']) < 0)
 					{
 						string p = w + rr[i].PluralEnding;
 						if (rr[i].Classical)
@@ -1081,9 +1081,9 @@ public static class Lingua
 			{"twelve", "twelfth"},
 		};
 		private static readonly Regex __nthRex = new Regex(@"(ty|one|two|three|five|eight|nine|twelve|[a-z])(?=\s*\Z|\s+point)", RegexOptions.IgnoreCase);
-		private static readonly string[] __unit = { "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine" };
-		private static readonly string[] __teen = { "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen" };
-		private static readonly string[] __ten = { "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety" };
-		private static readonly string[] __mill = { "", " thousand", " million", " billion", " trillion", " quadrillion", " quintillion", " sextillion", " septillion", " octillion", " nonillion", " decillion" };
+		private static readonly string[] __unit = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+		private static readonly string[] __teen = ["ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+		private static readonly string[] __ten = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+		private static readonly string[] __mill = ["", " thousand", " million", " billion", " trillion", " quadrillion", " quintillion", " sextillion", " septillion", " octillion", " nonillion", " decillion"];
 	}
 }

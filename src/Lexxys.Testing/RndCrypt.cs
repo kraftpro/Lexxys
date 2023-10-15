@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace Lexxys.Testing;
@@ -16,7 +15,7 @@ public class RndCrypt: IRand
 	public void NextBytes(byte[] buffer) => _generator.GetBytes(buffer);
 
 	/// <inheritdoc/>
-	public unsafe int NextInt()
+	public int NextInt()
 	{
 #if NET7_0_OR_GREATER
 		int val = 0;

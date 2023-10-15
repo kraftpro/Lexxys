@@ -6,10 +6,9 @@
 //
 using System.Globalization;
 
-#pragma warning disable CA2225 // Operator overloads have named alternates
-
 namespace Lexxys;
 
+[Serializable]
 public readonly struct VoteScore: IEquatable<VoteScore>, IComparable<VoteScore>
 {
 	//private const float MaxScoreValue = 1.0f;

@@ -6,8 +6,6 @@
 //
 using System.Collections;
 
-#pragma warning disable CA1710 // Identifiers should have correct suffix
-
 namespace Lexxys;
 
 /// <summary>

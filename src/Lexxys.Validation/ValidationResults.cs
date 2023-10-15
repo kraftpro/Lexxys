@@ -12,97 +12,82 @@ using System.Collections;
 namespace Lexxys.Validation;
 
 
-public class ValidationResults: IEnumerable<ValidationResultsItem>
+public readonly struct ValidationResults: IEnumerable<ValidationResultsItem>
 {
 	public const char ErrorSeparator = ';';
 	public const char FieldSeparator = ':';
-	public static readonly ValidationResults Empty = new ValidationResults(ReadOnly.ListValueWrap<ValidationResultsItem>.Empty);
+	public static readonly ValidationResults Empty = new ValidationResults();
 
-	private readonly ReadOnly.ListValueWrap<ValidationResultsItem> _items;
+	private readonly ValidationResultsItem[]? _items;
 
-	private ValidationResults(ReadOnly.ListValueWrap<ValidationResultsItem> items)
-	{
-		_items = items;
-	}
+	private ValidationResults(ValidationResultsItem[] items) => _items = items.Length > 0 ? items : null;
 
 	public static ValidationResults Create(string? field)
 	{
 		field = CleanName(field);
-		if (field == null)
-			return Empty;
+		if (field == null) return Empty;
 
-		if (field.Contains(ErrorSeparator))
-			throw new ArgumentOutOfRangeException(nameof(field), field, null);
+		if (field.Contains(ErrorSeparator)) throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
-		return new ValidationResults(ReadOnly.ValueWrap(new[] { new ValidationResultsItem(field) }));
+		return new ValidationResults([new ValidationResultsItem(field)]);
 	}
 
 	public static ValidationResults Create(string? field, string? message)
 	{
 		field = CleanName(field);
 		message = CleanMessage(message);
-		if (field == null && message == null)
-			return Empty;
+		if (field == null && message == null) return Empty;
 
-		if (field != null && field.Contains(ErrorSeparator))
-			throw new ArgumentOutOfRangeException(nameof(field), field, null);
+		if (field != null && field.Contains(ErrorSeparator)) throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
-		return new ValidationResults(ReadOnly.ValueWrap(new[] { new ValidationResultsItem(field ?? "", message) }));
+		return new ValidationResults([new ValidationResultsItem(field ?? "", message)]);
 	}
 
 	public static ValidationResults Create(string? field, ErrorInfo? errorInfo)
 	{
 		field = CleanName(field);
-		if (field == null)
-			return Empty;
+		if (field == null) return Empty;
 
-		if (field.Contains(ErrorSeparator))
-			throw new ArgumentOutOfRangeException(nameof(field), field, null);
+		if (field.Contains(ErrorSeparator)) throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
-		return new ValidationResults(ReadOnly.ValueWrap(new[] { new ValidationResultsItem(field, null, errorInfo) }));
+		return new ValidationResults([new ValidationResultsItem(field, null, errorInfo)]);
 	}
 
 	public static ValidationResults Create(string? field, ErrorInfo? errorInfo, string? message)
 	{
 		field = CleanName(field);
 		message = CleanMessage(message);
-		if (field == null && message == null)
-			return Empty;
+		if (field == null && message == null) return Empty;
 
-		if (field != null && field.Contains(ErrorSeparator))
-			throw new ArgumentOutOfRangeException(nameof(field), field, null);
+		if (field != null && field.Contains(ErrorSeparator)) throw new ArgumentOutOfRangeException(nameof(field), field, null);
 
-		return new ValidationResults(ReadOnly.ValueWrap(new[] { new ValidationResultsItem(field ?? "", message, errorInfo) }));
+		return new ValidationResults([new ValidationResultsItem(field ?? "", message, errorInfo)]);
 	}
 
 	public static ValidationResults Create(ValidationResultsItem value)
 	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
-		return new ValidationResults(ReadOnly.ValueWrap(new[] { value }));
+		if (value == null) throw new ArgumentNullException(nameof(value));
+		return new ValidationResults([value]);
 	}
 
-	public static ValidationResults Create(params ValidationResults?[]? value)
+	public static ValidationResults Create(params ValidationResults[]? value)
 	{
-		if (value == null || value.Length == 0)
-			return Empty;
+		if (value == null || value.Length == 0) return Empty;
 
 		List<ValidationResultsItem>? items = null;
-		for (int i = 0; i < value.Length; ++i)
+		foreach (var item in value)
 		{
-			var item = value[i];
-			if (item == null || item.Success) continue;
+			if (item.Success) continue;
 			if (items == null)
-				items = new List<ValidationResultsItem>(item._items);
+				items = new List<ValidationResultsItem>(item._items!);
 			else
-				items.AddRange(item._items);
+				items.AddRange(item._items!);
 		}
 
-		return items == null ? Empty :
-			new ValidationResults(ReadOnly.ValueWrap(items));
+		return items == null ? Empty: new ValidationResults(items.ToArray());
 	}
 
-	public static ValidationResults Create(IEnumerable<ValidationResults?>? value)
+	public static ValidationResults Create(IEnumerable<ValidationResults>? value)
 	{
 		if (value == null)
 			return Empty;
@@ -110,169 +95,132 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 		List<ValidationResultsItem>? items = null;
 		foreach (var item in value)
 		{
-			if (item == null || item.Success) continue;
+			if (item.Success) continue;
 			if (items == null)
-				items = new List<ValidationResultsItem>(item._items);
+				items = new List<ValidationResultsItem>(item._items!);
 			else
-				items.AddRange(item._items);
+				items.AddRange(item._items!);
 		}
-		return items == null ? Empty : new ValidationResults(ReadOnly.ValueWrap(items));
+		return items == null ? Empty: new ValidationResults(items.ToArray());
 	}
 
-	public static ValidationResults Assert(bool success, ValidationResults value)
-	{
-		return success ? Empty : value;
-	}
+	public static ValidationResults Assert(bool success, ValidationResults value) => success ? Empty : value;
 
-	public static ValidationResults Assert(bool success, string field)
-	{
-		return success ? Empty : Create(field);
-	}
+	public static ValidationResults Assert(bool success, string field) => success ? Empty : Create(field);
 
-	public static ValidationResults Assert(bool success, string field, string message)
-	{
-		return success ? Empty : Create(field, message);
-	}
+	public static ValidationResults Assert(bool success, string field, string message) => success ? Empty : Create(field, message);
 
-	public static ValidationResults Assert(bool success, string field, ErrorInfo errorInfo)
-	{
-		return success ? Empty : Create(field, errorInfo);
-	}
+	public static ValidationResults Assert(bool success, string field, ErrorInfo errorInfo) => success ? Empty : Create(field, errorInfo);
 
-	public static ValidationResults Assert(bool success, string field, ErrorInfo errorInfo, string message)
-	{
-		return success ? Empty : Create(field, errorInfo, message);
-	}
+	public static ValidationResults Assert(bool success, string field, ErrorInfo errorInfo, string message) => success ? Empty : Create(field, errorInfo, message);
 
-	public static ValidationResults AssertNotNull<T>(T? value, string field)
-	{
-		return value is not null ? Empty : Create(field, ErrorInfo.NullValue());
-	}
+	public static ValidationResults AssertNotNull<T>(T? value, string field) => value is not null ? Empty : Create(field, ErrorInfo.NullValue());
 
-	public static ValidationResults AssertNull<T>(T? value, string field)
-	{
-		return value is null ? Empty : Create(field, ErrorInfo.OutOfRange(value));
-	}
+	public static ValidationResults AssertNull<T>(T? value, string field) => value is null ? Empty : Create(field, ErrorInfo.OutOfRange(value));
 
 	public static ValidationResults Parse(string? value)
 	{
 		List<ValidationResultsItem>? items = ParseItems(value);
-		return items == null ? Empty : new ValidationResults(ReadOnly.ValueWrap(items));
+		return items == null ? Empty: new ValidationResults(items.ToArray());
 	}
 
-	public int Length => _items.Count;
+	public int Length => _items?.Length ?? 0;
 
-	public IReadOnlyCollection<ValidationResultsItem> Items => _items;
+	public IReadOnlyCollection<ValidationResultsItem> Items => _items ?? Array.Empty<ValidationResultsItem>();
 
-	public bool Success => _items.Count == 0;
+	public bool Success => _items is null;
 
-	public ValidationResults Add(ValidationResults? value)
+	public ValidationResults Add(ValidationResults value)
 	{
-		if (value == null || value.Success)
-			return this;
-		if (Success)
-			return value;
+		if (value._items is null) return this;
+		if (_items is null) return value;
 
-		var items = new ValidationResultsItem[_items.Count + value._items.Count];
+		var items = new ValidationResultsItem[_items.Length + value._items.Length];
 		_items.CopyTo(items, 0);
-		value._items.CopyTo(items, _items.Count);
+		value._items.CopyTo(items, _items.Length);
 
-		return new ValidationResults(ReadOnly.ValueWrap(items));
+		return new ValidationResults(items);
 	}
 
 	public ValidationResults Add(ValidationResultsItem? value)
 	{
-		if (value == null)
-			return this;
-		if (Success)
-			return Create(value);
+		if (value == null) return this;
+		if (_items is null) return Create(value);
 
-		var items = new ValidationResultsItem[_items.Count + 1];
+		var items = new ValidationResultsItem[_items.Length + 1];
 		_items.CopyTo(items, 0);
 		items[items.Length - 1] = value;
-		return new ValidationResults(ReadOnly.ValueWrap(items));
+		return new ValidationResults(items);
 	}
 
 	public ValidationResults Add(string? value)
 	{
-		if (Success)
-			return Parse(value);
+		if (_items is null) return Parse(value);
 
 		List<ValidationResultsItem>? items = ParseItems(value);
-		if (items == null)
-			return this;
+		if (items == null) return this;
 
-		var tmp = new ValidationResultsItem[_items.Count + items.Count];
+		var tmp = new ValidationResultsItem[_items.Length + items.Count];
 		_items.CopyTo(tmp, 0);
-		items.CopyTo(tmp, _items.Count);
-		return new ValidationResults(ReadOnly.ValueWrap(tmp));
+		items.CopyTo(tmp, _items.Length);
+		return new ValidationResults(tmp);
 	}
 
-	public ValidationResults AndAlso(ValidationResults value)
-	{
-		return Success ? this : Add(value);
-	}
+	public ValidationResults AndAlso(ValidationResults value) => Success ? this: Add(value);
 
-	public ValidationResults AndAlso(string? value)
-	{
-		return Success ? this : Add(Create(value));
-	}
+	public ValidationResults AndAlso(string? value) => Success ? this: Add(Create(value));
 
 	public ValidationResults WithPrefix(string? value)
 	{
-		if (Success)
-			return this;
+		if (_items is null) return this;
 		value = CleanName(value);
-		if (value == null)
-			return this;
+		if (value == null) return this;
 
-		var items = new ValidationResultsItem[_items.Count];
+		var items = new ValidationResultsItem[_items.Length];
 		_items.CopyTo(items, 0);
 
 		for (int i = 0; i < items.Length; ++i)
 		{
 			items[i] = items[i].WithField(value + items[i].Field);
 		}
-		return new ValidationResults(ReadOnly.ValueWrap(items));
+		return new ValidationResults(items);
 	}
 
 	public ValidationResults WithMessage(string message, bool replace = false)
 	{
 		var msg = CleanMessage(message);
-		if (msg == null)
-			return this;
+		if (msg == null) return this;
+		if (_items is null) return this;
 
-		var items = new ValidationResultsItem[_items.Count];
+		var items = new ValidationResultsItem[_items.Length];
 
-		for (int i = 0; i < _items.Count; ++i)
+		for (int i = 0; i < _items.Length; ++i)
 		{
 			if (replace || _items[i].Message == null)
 				items[i] = _items[i].WithMassage(msg);
 		}
-		return new ValidationResults(ReadOnly.ValueWrap(items));
+		return new ValidationResults(items);
 	}
 
 	public ValidationResults WithMessage(string field, string message, bool replace = false)
 	{
+		if (_items is null) return this;
 		string[]? fields = SplitName(field, out int n);
-		if (fields == null || n == 0)
-			return this;
+		if (fields == null || n == 0) return this;
 		var msg = CleanMessage(message);
-		if (msg == null)
-			return this;
+		if (msg == null) return this;
 
 		int[] ii = new int[n];
 		bool found = false;
 		for (int i = 0; i < ii.Length; i++)
 		{
 			var f = fields[i];
-			ii[i] = _items.FindIndex(o => o.Field == f);
+			ii[i] = _items!.FindIndex(o => o.Field == f);
 			found |= ii[i] >= 0;
 		}
-		if (!found)
-			return this;
+		if (!found) return this;
 
-		var items = new ValidationResultsItem[_items.Count];
+		var items = new ValidationResultsItem[_items!.Length];
 		_items.CopyTo(items, 0);
 		for (int i = 0; i < ii.Length; i++)
 		{
@@ -281,15 +229,15 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 				if (replace || items[j].Message == null)
 					items[j] = items[i].WithMassage(msg);
 		}
-		return new ValidationResults(ReadOnly.ValueWrap(items));
+		return new ValidationResults(items);
 	}
 
-	public ValidationResults Remove(ValidationResults? value)
+	public ValidationResults Remove(ValidationResults value)
 	{
-		if (Success || value == null || value.Success)
+		if (_items is null || value._items is null)
 			return this;
 
-		var items = new List<ValidationResultsItem>(_items.Count);
+		var items = new List<ValidationResultsItem>(_items.Length);
 		var subs = value._items;
 		foreach (var item in _items)
 		{
@@ -297,80 +245,66 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 			if (subs.All(o => o.Field != field))
 				items.Add(item);
 		}
-		return items.Count == _items.Count ? this :
-			items.Count == 0 ? Empty : new ValidationResults(ReadOnly.ValueWrap(items));
+		return items.Count == _items.Length ? this:
+			items.Count == 0 ? default: new ValidationResults(items.ToArray());
 	}
 
-	public ValidationResults Remove(ValidationResultsItem? value)
+	public ValidationResults Remove(ValidationResultsItem value)
 	{
-		if (Success || value == null)
-			return this;
+		if (_items is null || value == null) return this;
+		if (!_items!.Contains(value)) return this;
+		if (_items!.Length == 1) return default;
 
-		if (!_items.Contains(value))
-			return this;
-		if (_items.Count == 1)
-			return Empty;
-		var items = new List<ValidationResultsItem>(_items.Count - 1);
+		var items = new List<ValidationResultsItem>(_items.Length - 1);
 		foreach (var item in _items)
 		{
 			if (item != value)
 				items.Add(item);
 		}
-		return new ValidationResults(ReadOnly.ValueWrap(items));
+		return new ValidationResults(items.ToArray());
 	}
 
 	public ValidationResults Remove(Func<ValidationResultsItem, bool> predicate)
 	{
-		if (predicate == null)
-			throw new ArgumentNullException(nameof(predicate));
-
-		if (Success)
-			return this;
+		if (predicate == null) throw new ArgumentNullException(nameof(predicate));
+		if (_items is null) return this;
 
 		var items = new List<ValidationResultsItem>(_items.Where(o => !predicate(o)));
-		return items.Count == _items.Count ? this :
-			items.Count == 0 ? Empty : new ValidationResults(ReadOnly.ValueWrap(items));
+		return items.Count == _items.Length ? this: items.Count == 0 ? default: new ValidationResults(items.ToArray());
 	}
 
 	public ValidationResults Remove(string? value)
 	{
-		if (Success)
-			return this;
+		if (_items is null) return this;
 		value = CleanName(value);
-		if (value == null)
-			return this;
+		if (value == null) return this;
 
-		if (value.Contains(ErrorSeparator))
-			throw new ArgumentOutOfRangeException(nameof(value), value, null);
+		if (value.Contains(ErrorSeparator)) throw new ArgumentOutOfRangeException(nameof(value), value, null);
 
-		var items = new List<ValidationResultsItem>(_items.Count - 1);
+		var items = new List<ValidationResultsItem>(_items.Length - 1);
 		foreach (var item in _items)
 		{
 			if (item.Field != value)
 				items.Add(item);
 		}
-		return items.Count == _items.Count ? this :
-			items.Count == 0 ? Empty : new ValidationResults(ReadOnly.ValueWrap(items));
+		return items.Count == _items.Length ? this: 
+			items.Count == 0 ? default: new ValidationResults(items.ToArray());
 	}
 
 	public ValidationResults Replace(string? source, string? target)
 	{
 		source = CleanName(source);
 		target = CleanName(target);
-		if (source == null)
-			return this;
+		if (source == null) return this;
 
-		if (target == null)
-			return Remove(source);
+		if (target == null) return Remove(source);
 
-		if (source.Contains(ErrorSeparator))
-			throw new ArgumentOutOfRangeException(nameof(source), source, null);
-		if (target.Contains(ErrorSeparator))
-			throw new ArgumentOutOfRangeException(nameof(target), target, null);
+		if (source.Contains(ErrorSeparator)) throw new ArgumentOutOfRangeException(nameof(source), source, null);
+		if (target.Contains(ErrorSeparator)) throw new ArgumentOutOfRangeException(nameof(target), target, null);
 
-		var items = new ValidationResultsItem[_items.Count];
+		var items = new ValidationResultsItem[_items!.Length];
 		bool found = false;
-		for (int i = 0; i < _items.Count; ++i)
+		for (int i = 0; i < _items.Length; ++i)
 		{
 			if (_items[i].Field == source)
 			{
@@ -382,51 +316,39 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 				items[i] = _items[i];
 			}
 		}
-		return found ? new ValidationResults(ReadOnly.ValueWrap(items)) : this;
+		return found ? new ValidationResults(items): this;
 	}
 
-	public bool HasError()
-	{
-		return !Success;
-	}
+	public bool HasError() => !Success;
 
 	public bool HasError(string? field)
 	{
+		if (_items is null) return false;
 		field = CleanName(field);
-		if (field == null)
-			return false;
-		if (field.IndexOf(ErrorSeparator) < 0)
-			return _items.FindIndex(o => o.Field == field) >= 0;
+		if (field == null) return false;
+		if (field.IndexOf(ErrorSeparator) < 0) return _items.FindIndex(o => o.Field == field) >= 0;
 
 		var fields = ParseItems(field);
-		return fields == null || fields.All(o => _items.Any(p => p.Field == o.Field));
+		var items = _items!;
+		return fields == null || fields.All(o => items.Any(p => p.Field == o.Field));
 	}
 
-	public bool HasMessage()
-	{
-		return _items.Any(o => o.Message != null);
-	}
+	public bool HasMessage() => _items != null && _items.Any(o => o.Message != null);
 
 	public bool Contains(string? value)
 	{
+		if (_items == null) return false;
 		value = CleanName(value);
 		return value != null && _items.Any(o => o.Field == value);
 	}
 
-	public bool ContainsAny(IEnumerable<string>? fields)
-	{
-		return fields != null && fields.Any(Contains);
-	}
+	public bool ContainsAny(IEnumerable<string>? fields) => fields != null && fields.Any(Contains);
 
-	public bool ContainsAll(IEnumerable<string>? fields)
-	{
-		return fields == null || fields.All(Contains);
-	}
+	public bool ContainsAll(IEnumerable<string>? fields) => fields == null || fields.All(Contains);
 
 	public bool ContainsAny(IEnumerable<ValidationResultsItem>? value)
 	{
-		if (value == null)
-			return false;
+		if (_items is null || value is null) return false;
 		foreach (var item in value)
 		{
 			string field = item.Field;
@@ -438,8 +360,7 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 
 	public bool ContainsAll(IEnumerable<ValidationResultsItem>? value)
 	{
-		if (value == null)
-			return false;
+		if (_items is null || value is null) return false;
 		foreach (var item in value)
 		{
 			string field = item.Field;
@@ -451,8 +372,7 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 
 	public void Invariant(string? source = null, Func<string>? dump = null)
 	{
-		if (Success)
-			return;
+		if (_items is null) return;
 		Exception flaw = InvariantException(source);
 		if (dump != null)
 			flaw.Add("Dump", dump());
@@ -461,8 +381,7 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 
 	public void Invariant(string? source, params object?[]? data)
 	{
-		if (Success)
-			return;
+		if (_items is null) return;
 		Exception flaw = InvariantException(source);
 		if (data is { Length: > 0 })
 		{
@@ -478,8 +397,7 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 
 	public void Invariant(string? source, params ErrorAttrib[]? data)
 	{
-		if (Success)
-			return;
+		if (_items is null) return;
 		Exception flaw = InvariantException(source);
 		if (data != null)
 		{
@@ -491,30 +409,20 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 		throw flaw;
 	}
 
-	public Exception InvariantException(string? source = null)
-	{
-		return new InvalidOperationException(SR.CheckInvariantFailed(this, source));
-	}
+	public Exception InvariantException(string? source = null) => new InvalidOperationException(SR.CheckInvariantFailed(this, source));
 
-	public IEnumerator<ValidationResultsItem> GetEnumerator()
-	{
-		return _items.GetEnumerator();
-	}
+	public IEnumerator<ValidationResultsItem> GetEnumerator() => ((IReadOnlyCollection<ValidationResultsItem>?)_items ?? Array.Empty<ValidationResultsItem>()).GetEnumerator();
 
-	IEnumerator IEnumerable.GetEnumerator()
-	{
-		return _items.GetEnumerator();
-	}
+	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 	public override string ToString()
 	{
-		if (Success)
-			return "";
+		if (_items is null) return "";
 
 		var text = new StringBuilder();
-		var tmp = new ValidationResultsItem[_items.Count];
+		var tmp = new ValidationResultsItem[_items.Length];
 		_items.CopyTo(tmp, 0);
-		Array.Sort(tmp, (p, q) => { int k = String.Compare(p.Field, q.Field, StringComparison.OrdinalIgnoreCase); return k == 0 ? String.Compare(p.Message, q.Message, StringComparison.OrdinalIgnoreCase) : k; });
+		Array.Sort(tmp, (p, q) => { int k = String.Compare(p.Field, q.Field, StringComparison.OrdinalIgnoreCase); return k == 0 ? String.Compare(p.Message, q.Message, StringComparison.OrdinalIgnoreCase): k; });
 		string? fld = null;
 		string? msg = null;
 		foreach (var item in tmp)
@@ -535,64 +443,29 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 		return text.Append(ErrorSeparator).ToString();
 	}
 
-	public static explicit operator ValidationResults(string value)
-	{
-		return Create(value);
-	}
+	public static explicit operator ValidationResults(string value) => Create(value);
 
-	public static ValidationResults operator +(ValidationResults? left, ValidationResults? right)
-	{
-		return left != null ? left.Add(right) : right ?? Empty;
-	}
+	public static ValidationResults operator +(ValidationResults left, ValidationResults right) => left.Add(right);
 
-	public static ValidationResults operator +(ValidationResults? left, ValidationResultsItem? right)
-	{
-		return left != null ? left.Add(right) :
-			right != null ? Create(right) : Empty;
-	}
+	public static ValidationResults operator +(ValidationResults left, ValidationResultsItem right) => left.Add(right);
 
-	public static ValidationResults operator +(ValidationResults? left, string? right)
-	{
-		return left != null ? left.Add(right) :
-			right != null ? Parse(right) : Empty;
-	}
+	public static ValidationResults operator +(ValidationResults left, string? right) => left.Add(right);
 
-	public static ValidationResults operator -(ValidationResults? left, string? right)
-	{
-		return left == null ? Empty : left.Remove(right);
-	}
+	public static ValidationResults operator -(ValidationResults left, string? right) => left.Remove(right);
 
-	public static ValidationResults operator -(ValidationResults? left, ValidationResults? right)
-	{
-		return left == null ? Empty : left.Remove(right);
-	}
+	public static ValidationResults operator -(ValidationResults left, ValidationResults right) => left.Remove(right);
 
-	public static ValidationResults operator &(ValidationResults? left, ValidationResults? right)
-	{
-		return left != null ? left.Add(right) : right ?? Empty;
-	}
+	public static ValidationResults operator &(ValidationResults left, ValidationResults right) => left.Success ? right: left.Add(right);
 
-	public static bool operator true(ValidationResults? value)
-	{
-		return value == null || value.Success;
-	}
+	public static bool operator true(ValidationResults value) => value.Success;
 
-	public static bool operator false(ValidationResults? value)
-	{
-		return value is { Success: false };
-	}
+	public static bool operator false(ValidationResults value) => !value.Success;
 
-	private static string? CleanName(string? value)
-	{
-		return value == null || (value = value.Trim(__nameWhiteSpace)).Length == 0 ? null : value.ToUpperInvariant();
-	}
-	private static readonly char[] __nameWhiteSpace = { ErrorSeparator, ' ', '\t', '\n', '\r', '\f' };
+	private static string? CleanName(string? value) => value == null || (value = value.Trim(__nameWhiteSpace)).Length == 0 ? null : value.ToUpperInvariant();
+	private static readonly char[] __nameWhiteSpace = [ErrorSeparator, ' ', '\t', '\n', '\r', '\f'];
 
-	private static string? CleanMessage(string? value)
-	{
-		return value == null || (value = value.Trim(__messageWhiteSpace)).Length == 0 ? null : value;
-	}
-	private static readonly char[] __messageWhiteSpace = { FieldSeparator, ErrorSeparator, ' ', '\t', '\n', '\r', '\f' };
+	private static string? CleanMessage(string? value) => value == null || (value = value.Trim(__messageWhiteSpace)).Length == 0 ? null : value;
+	private static readonly char[] __messageWhiteSpace = [FieldSeparator, ErrorSeparator, ' ', '\t', '\n', '\r', '\f'];
 
 	private static string[]? SplitName(string? value, out int length)
 	{
@@ -605,7 +478,7 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 		if (value.IndexOf(ErrorSeparator) < 0)
 		{
 			length = 1;
-			return new[] { value };
+			return [value];
 		}
 
 		string[] result = value.Split(__itemSeparators, StringSplitOptions.RemoveEmptyEntries);
@@ -619,7 +492,7 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 		length = k;
 		return result;
 	}
-	private static readonly char[] __itemSeparators = { ErrorSeparator };
+	private static readonly char[] __itemSeparators = [ErrorSeparator];
 
 	private static List<ValidationResultsItem>? ParseItems(string? value)
 	{
@@ -666,7 +539,7 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 					if (fld.Length > 0)
 						result.Add(new ValidationResultsItem(fld));
 				}
-				return result.Count == 0 ? null : result;
+				return result.Count == 0 ? null: result;
 			}
 			if (message)
 			{
@@ -692,11 +565,8 @@ public class ValidationResults: IEnumerable<ValidationResultsItem>
 	Break2:
 		if (fld != null)
 			result.Add(new ValidationResultsItem(fld));
-		return result.Count == 0 ? null : result;
+		return result.Count == 0 ? null: result;
 	}
 
-	public ValidationException ValidationException()
-	{
-		return new ValidationException(SR.ValidationFailed(this));
-	}
+	public ValidationException ValidationException() => new ValidationException(SR.ValidationFailed(this));
 }

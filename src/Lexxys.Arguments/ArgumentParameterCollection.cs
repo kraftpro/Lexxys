@@ -57,15 +57,17 @@ public class ArgumentParameterCollection: IReadOnlyCollection<ArgumentParameter>
 		return ParameterDefinitionFindResult.Found;							// Parameter was added
 	}
 
-    public string? Value(string name) => TryGet(name, out var value) ? value.Value.StringValue: null;
+    public string? Value(string name) => TryGet(name, out var value) ? value!.Value.StringValue: null;
 
 	public bool Switch(string name) => Strings.GetBoolean(Value(name), false);
 
 	public T Value<T>(string name, T defaultValue) => Strings.GetValue(Value(name), defaultValue);
 
-	public string[] Collection(string name) => TryGet(name, out var value) ? value.Value.ArrayValue ?? Array.Empty<string>(): Array.Empty<string>();
+	public string[] Collection(string name) => TryGet(name, out var value) ? value?.Value.ArrayValue ?? Array.Empty<string>() : Array.Empty<string>();
 
-    public T[] Collection<T>(string name, T defaultItem) => Array.ConvertAll(Collection(name), o => Strings.GetValue(o, defaultItem));
+	public T[] Collection<T>(string name, T defaultItem) => Array.ConvertAll(Collection(name), o => Strings.GetValue(o, defaultItem));
+
+    public IEnumerable<ParameterValue> Positional => _parameters.Values.Where(o => o.Definition.IsPositional).Select(o => o.Value);
 
     public bool TryGet(string name, [NotNullWhen(true)] out ArgumentParameter? value, bool auto = false, bool ignoreDelimiters = false)
 	{

@@ -2,8 +2,6 @@
 using System.Text;
 using System.Xml;
 
-#pragma warning disable CA1307 // Specify StringComparison for clarity
-
 namespace Lexxys.Xml;
 
 public static partial class XmlTools

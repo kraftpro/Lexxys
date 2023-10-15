@@ -11,7 +11,7 @@ namespace Lexxys.Tests.Xml
 	using Lexxys.Xml;
 	// ReSharper disable UnusedMember.Local
 
-	//[TestClass()]
+	[TestClass()]
 	public class SyntaxRuleCollectionTest
 	{
 		#region Private Accessors
@@ -23,8 +23,8 @@ namespace Lexxys.Tests.Xml
 
 			public SyntaxRuleCollection()
 			{
-				PrivateObject root = new PrivateObject(typeof(TextToXmlConverter));
-				_o = new PrivateObject(root, "_syntaxRules");
+				var x = new TextToXmlConverter();
+				_o = new PrivateObject(x.GetSyntaxRuleCollectionForTest());
 				_list = (IList)_o.GetField("_rule");
 			}
 
@@ -39,14 +39,14 @@ namespace Lexxys.Tests.Xml
 				return obj == null ? null: new SyntaxRuleCollection(obj);
 			}
 
-			public void Add(string path, string pattern, bool ignoreCase, string[] attribs)
+			public void Add(string path, string pattern, bool ignoreCase, List<string> attribs)
 			{
 				_o.Invoke("Add", path, pattern, ignoreCase, attribs);
 			}
 
-			public SyntaxRuleCollection GetApplicatbleRules(string root)
+			public SyntaxRuleCollection GetApplicableRules(string root)
 			{
-				return SyntaxRuleCollection.Create(_o.Invoke("GetApplicatbleRules", root));
+				return SyntaxRuleCollection.Create(_o.Invoke("GetApplicableRules", root));
 			}
 
 			public SyntaxRule Find(string root)
@@ -112,11 +112,11 @@ namespace Lexxys.Tests.Xml
 			SyntaxRule r;
 			SyntaxRuleCollection rr;
 
-			rules.Add("a/b", "x/y/Z", true, new[] { "p", "q" });
+			rules.Add("a/b", "x/y/Z", true, new List<string> { "p", "q" });
 
 			foreach (var item in new[] { "a/b/x/y", "a/B/X/Y", "/A/B/X/Y/" })
 			{
-				rr = rules.GetApplicatbleRules(item);
+				rr = rules.GetApplicableRules(item);
 				Assert.IsNotNull(rr, item);
 
 				r = rules.Find(item);
@@ -131,14 +131,14 @@ namespace Lexxys.Tests.Xml
 
 			foreach (var item in new[] { "a/b", "a", "a/b/x/", "a/b/x/y/z" })
 			{
-				rr = rules.GetApplicatbleRules(item);
+				rr = rules.GetApplicableRules(item);
 				Assert.IsNull(rr, item);
 
 				r = rules.Find(item);
 				Assert.IsNull(r, item);
 			}
 
-			rules.Add("a/b", "*/y/Z1", true, new[] { "p1", "q1" });
+			rules.Add("a/b", "*/y/Z1", true, new List<string> { "p1", "q1" });
 			Assert.AreEqual(2, rules.Count);
 			r = rules[1];
 			Assert.IsNotNull(r);
@@ -146,7 +146,7 @@ namespace Lexxys.Tests.Xml
 			Assert.AreEqual(@"\Aa/b/([^/]*)/y\z", r.Pattern);
 			Assert.AreEqual("Z1", r.NodeName);
 
-			rr = rules.GetApplicatbleRules("a/b/x/y");
+			rr = rules.GetApplicableRules("a/b/x/y");
 			Assert.AreEqual(2, rr.Count);
 
 			r = rr.Find("a/b/x/yyy");
@@ -156,7 +156,7 @@ namespace Lexxys.Tests.Xml
 			Assert.IsNull(r.Pattern);
 			Assert.AreEqual("a/b/x1/y", r.FixedPath);
 
-			rules.Add("a/b/(*)", "*/Z1", true, new[] { "p1", "q1" });
+			rules.Add("a/b/(*)", "*/Z1", true, new List<string> { "p1", "q1" });
 			Assert.AreEqual(3, rules.Count);
 			r = rules[2];
 			Assert.IsNotNull(r);
@@ -164,9 +164,9 @@ namespace Lexxys.Tests.Xml
 			Assert.AreEqual(@"\Aa/b/[^/]*/([^/]*)\z", r.Pattern);
 			Assert.AreEqual("Z1", r.NodeName);
 
-			rr = rules.GetApplicatbleRules("a/b/x/y");
+			rr = rules.GetApplicableRules("a/b/x/y");
 			Assert.AreEqual(2, rr.Count);
-			rr = rules.GetApplicatbleRules("a/b/x1/y");
+			rr = rules.GetApplicableRules("a/b/x1/y");
 			Assert.AreEqual(2, rr.Count);
 
 			r = rr.Find("a/bb/xx/yy");

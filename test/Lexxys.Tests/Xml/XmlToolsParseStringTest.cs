@@ -108,20 +108,20 @@ namespace Lexxys.Tests.Xml
 		private void ParseDateTimeOffsetTest(DateTimeOffset value)
 		{
 			string[] dateFormats =
-			{
+			[
 				"+yyyy-MM-dd",
 				"+yyyyMMdd",
 				"--yyyy-MM-dd",
 				"-yyyyMM-dd",
 				"-yyyy-MMdd",
-			};
+			];
 			string[] timeFormats =
-			{
+			[
 				"+HH:mm:ss",
 				"+HHmmss",
 				"-HH:mmss",
 				"-HH:mm:0ss",
-			};
+			];
 			foreach (var dateFormat in dateFormats)
 			{
 				bool correct = dateFormat[0] == '+';

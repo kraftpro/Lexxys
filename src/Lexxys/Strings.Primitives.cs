@@ -510,7 +510,6 @@ public static partial class Strings
 	[DebuggerDisplay("Number = {_left},{_right}; Scale={_scale}; Point={_point}")]
 	private struct NumberScale
 	{
-#pragma warning disable CA2207 // Initialize value type static fields inline
 		private int _width;
 		private long _left;
 		private long _right;
@@ -1032,7 +1031,7 @@ public static partial class Strings
 #endif
 	}
 #if !NETCOREAPP
-	private static readonly char[] __enumSeparators = new[] { ',' };
+	private static readonly char[] __enumSeparators = [','];
 #endif
 
 	[return: NotNullIfNotNull(nameof(defaultValue))]

@@ -44,7 +44,7 @@ public class ArgumentsBuilder
 	/// - Case-insensitive command and parameter names.<br/>
 	/// - Don't allow slash as a parameter prefix.<br/>
 	/// - Double dash doesn't require for long arguments.<br/>
-	/// - Combine short options (i.e., -abc is equivalent to -a -b -c).<br/>
+	/// - Don't combine short options (i.e., -abc is equivalent to -a -b -c).<br/>
 	/// - Colon, equal sing, and blank are separators between the argument name and value.<br/>
 	/// - Double dash is a separator between the command options and positional parameters.<br/>
 	/// - Consider delimiters ('-', '_', and '.') in the parameter name while matching.<br/>
@@ -54,25 +54,25 @@ public class ArgumentsBuilder
 	/// <param name="allowSlash">True if slash is a switch prefix.</param>
 	/// <param name="strictDoubleDash">True if all arguments longer than 1 character must start with --. otherwise - is allowed for any parameter with value.</param>
 	/// <param name="combineOptions">True if short options can be combined (i.e. -abc is equivalent to -a -b -c), so all long options must start with --.</param>
-	/// <param name="colonSeparator">True if colon is a separator between parameter name and value.</param>
-	/// <param name="equalSeparator">True if equal sign is a separator between parameter name and value.</param>
-	/// <param name="blankSeparator">True if blank is a separator between parameter name and value.</param>
 	/// <param name="doubleDashSeparator">True if double dash is a separator between options and positional parameters.</param>
 	/// <param name="ignoreNameSeparators">True if delimiters ('-', '_', and '.') in the parameter name must be trimmed before matching.</param>
 	/// <param name="allowUnknown">True if unknown parameters are allowed.</param>
 	/// <param name="splitPositional">True if the last positional parameters shouldn't be combined.</param>
+	/// <param name="colonSeparator">True if colon is a separator between parameter name and value.</param>
+	/// <param name="equalSeparator">True if equal sign is a separator between parameter name and value.</param>
+	/// <param name="blankSeparator">True if blank is a separator between parameter name and value.</param>
 	public ArgumentsBuilder(
 		bool ignoreCase = false,
 		bool allowSlash = false,
 		bool strictDoubleDash = false,
-		bool combineOptions = true,
-		bool colonSeparator = true,
-		bool equalSeparator = true,
-		bool blankSeparator = true,
+		bool combineOptions = false,
 		bool doubleDashSeparator = false,
 		bool ignoreNameSeparators = false,
 		bool allowUnknown = false,
-		bool splitPositional = false)
+		bool splitPositional = false,
+		bool colonSeparator = true,
+		bool equalSeparator = true,
+		bool blankSeparator = true)
 	{
 		Root = new CommandDefinition(null, String.Empty, comparison: ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 		_current = Root;
@@ -335,7 +335,7 @@ public class ArgumentsBuilder
 	/// <exception cref="ArgumentNullException"></exception>
 	public ArgumentsBuilder Parameter(string name, string? abbrev = null, string? valueName = null, string? description = null, bool collection = false, bool required = false)
 	{
-		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null : new[] { abbrev }, valueName, description: description, collection: collection, required: required));
+		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null : [abbrev], valueName, description: description, collection: collection, required: required));
 		return this;
 	}
 
@@ -363,7 +363,7 @@ public class ArgumentsBuilder
 	/// <returns></returns>
 	public ArgumentsBuilder Help(string? description = null)
 	{
-		_current.Add(new ParameterDefinition(_current, "help", new[] { "\r?", "h" }, description: description ?? "show help and exit", toggle: true));
+		_current.Add(new ParameterDefinition(_current, "help", ["\r?", "h"], description: description ?? "show help and exit", toggle: true));
 		return this;
 	}
 
@@ -376,7 +376,7 @@ public class ArgumentsBuilder
 	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
 	public ArgumentsBuilder Switch(string name, string? abbrev = null, string? description = null)
 	{
-		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null : new[] { abbrev }, description: description, toggle: true));
+		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null : [abbrev], description: description, toggle: true));
 		return this;
 	}
 
@@ -413,5 +413,11 @@ public class ArgumentsBuilder
 	/// </summary>
 	/// <param name="args">Command line arguments.</param>
 	/// <returns></returns>
-	public Arguments Build(IEnumerable<string> args) => new(args, this);
+	public Arguments Build(IEnumerable<string> args) => new Arguments(args, this);
+
+#if NET7_0_OR_GREATER
+
+	public Arguments<T> Built<T>(IEnumerable<string> args) where T: ICliOption<T> => new Arguments<T>(args, this);
+
+#endif
 }

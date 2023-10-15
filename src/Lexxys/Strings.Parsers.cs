@@ -174,7 +174,7 @@ public static partial class Strings
 
 	private static ValueParser? GetExplicitConverter(Type type)
 	{
-		MethodInfo? parser = type.GetMethod("TryParse", BindingFlags.Static | BindingFlags.Public, null, new[] { typeof(string), type.MakeByRefType() }, null);
+		MethodInfo? parser = type.GetMethod("TryParse", BindingFlags.Static | BindingFlags.Public, null, [typeof(string), type.MakeByRefType()], null);
 		if (parser != null)
 			return Tgv(parser, type, Factory.IsNullableType(type));
 
@@ -407,7 +407,7 @@ public static partial class Strings
 		}
 	}
 	private static readonly ParserPair[] __stringTypedParsers =
-	{
+	[
 		ParserPair.New<bool>(TryGetBoolean),
 		ParserPair.New<byte>(Byte.TryParse),
 		ParserPair.New<sbyte>(SByte.TryParse),
@@ -426,7 +426,7 @@ public static partial class Strings
 		ParserPair.New<Guid>(TryGetGuid),
 		ParserPair.New<Type>(TryGetType),
 		ParserPair.New<string>(TryParseString),
-	};
+	];
 	private static readonly ConcurrentDictionary<Type, ValueParser> __stringConditionalConstructor = new ConcurrentDictionary<Type, ValueParser>
 		(
 			__stringTypedParsers.Select(o => new KeyValuePair<Type, ValueParser>(o.Type, Tgv(o.Method, o.Type)))

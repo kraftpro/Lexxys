@@ -8,6 +8,7 @@ using System.Text;
 
 namespace Lexxys.Tokenizer;
 
+[Serializable]
 public class StringTokenRule: LexicalTokenRule
 {
 	public const char NoEscape = Char.MaxValue;

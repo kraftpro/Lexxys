@@ -25,7 +25,7 @@ public static class Factory
 	public const string ConfigurationSynonyms = ConfigurationRoot + ".synonyms.*";
 
 	public static readonly object Void = new object();
-	public static readonly object[] NoArgs = Array.Empty<object>();
+	public static readonly object[] NoArgs = [];
 #if NETFRAMEWORK && DEBUG
 	public static readonly DebugInfoGenerator DebugInfo = DebugInfoGenerator.CreatePdbGenerator();
 #endif
@@ -94,7 +94,7 @@ public static class Factory
 		}
 		return ss.ToArray();
 	}
-	private static readonly string[] DefaultSystemAssemblyNames = { "CppCodeProvider", "WebDev.", "SMDiagnostics", "mscor", "vshost", "System", "Microsoft", "Windows", "Presentation", "netstandard" };
+	private static readonly string[] DefaultSystemAssemblyNames = ["CppCodeProvider", "WebDev.", "SMDiagnostics", "mscor", "vshost", "System", "Microsoft", "Windows", "Presentation", "netstandard"];
 
 	private static bool IsSystemAssembly(Assembly asm)
 	{
@@ -251,21 +251,10 @@ public static class Factory
 
 	public static IEnumerable<Type> Types(Type type, bool cacheResults = false)
 	{
-		if (type == null)
-			throw new ArgumentNullException(nameof(type));
-
-		return cacheResults ?
-			type.IsInterface ?
-				__foundTypesA.GetOrAdd(type, key =>
-					ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && Array.IndexOf(t.GetInterfaces(), key) >= 0)))!
-					):
-				__foundTypesA.GetOrAdd(type, key =>
-					ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && key.IsAssignableFrom(t))))!
-					):
-
-			type.IsInterface ?
-				DomainAssemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && Array.IndexOf(t.GetInterfaces(), type) >= 0)):
-				DomainAssemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && type.IsAssignableFrom(t)));
+		if (type == null) throw new ArgumentNullException(nameof(type));
+		return cacheResults ? __foundTypesA.GetOrAdd(type, t => ReadOnly.WrapCopy(
+			DomainAssemblies.SelectMany(asm => asm.SelectTypes(o => !o.IsInterface && !o.IsAbstract && t.IsAssignableFrom(o))))!):
+			DomainAssemblies.SelectMany(asm => asm.SelectTypes(o => !o.IsInterface && !o.IsAbstract && type.IsAssignableFrom(o)));
 	}
 
 	private static IEnumerable<Type> SelectTypes(this Assembly assembly, Func<Type, bool>? predicate)
@@ -299,49 +288,31 @@ public static class Factory
 
 	public static IEnumerable<Type> Classes(Type type, IEnumerable<Assembly> assemblies)
 	{
-		if (type == null)
-			throw new ArgumentNullException(nameof(type));
-		if (assemblies == null)
-			throw new ArgumentNullException(nameof(assemblies));
+		if (type is null) throw new ArgumentNullException(nameof(type));
+		if (assemblies is null) throw new ArgumentNullException(nameof(assemblies));
 
 		return type.IsInterface ?
-			assemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && !t.IsAbstract && Array.IndexOf(t.GetInterfaces(), type) >= 0)):
-			assemblies.SelectMany(asm => asm.SelectTypes(t => !t.IsInterface && !t.IsAbstract && type.IsAssignableFrom(t)));
+			assemblies.SelectMany(asm => asm.SelectTypes(t => t is { IsInterface: false, IsAbstract: false } && Array.IndexOf(t.GetInterfaces(), type) >= 0)):
+			assemblies.SelectMany(asm => asm.SelectTypes(t => t is { IsInterface: false, IsAbstract: false } && type.IsAssignableFrom(t)));
 	}
 
 	public static IEnumerable<MethodInfo> Constructors(Type type, string? methodName, params Type[]? types)
 	{
-		if (type == null)
-			throw new ArgumentNullException(nameof(type));
+		if (type is null) throw new ArgumentNullException(nameof(type));
+		if (methodName is not { Length: > 0 }) throw new ArgumentNullException(nameof(methodName));
 
 		types ??= Type.EmptyTypes;
-		return String.IsNullOrEmpty(methodName) ?
-			Factory.Types(type)
-				.SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => ConstructorPredicate(m, type, types))):
-			Factory.Types(type)
-				.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null)!)
-				.Where(m => m != null && type.IsAssignableFrom(m.ReturnType));
-
-		static bool ConstructorPredicate(MethodInfo method, Type returnType, Type[] parameterType)
-		{
-			if (!returnType.IsAssignableFrom(method.ReturnType))
-				return false;
-			ParameterInfo[] pp = method.GetParameters();
-			if (pp.Length != parameterType.Length)
-				return false;
-			for (int i = 0; i < pp.Length; ++i)
-			{
-				if (!pp[i].ParameterType.IsAssignableFrom(parameterType[i]))
-					return false;
-			}
-			return true;
-		}
+		return Factory.Types(type)
+			.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null)!)
+			.Where(m => m != null && type.IsAssignableFrom(m.ReturnType));
 	}
 
 	public static Type? GetType(string? typeName)
 	{
 		return typeName == null || (typeName = typeName.Trim()).Length == 0 ? null: GetSynonym(typeName) ?? GetTypeInternal(typeName);
 	}
+
+	public static Type? ParseTypeName(string typeName) => TypeNameParser.Parse(typeName);
 
 	public static void ResetSynonyms()
 	{
@@ -469,13 +440,13 @@ public static class Factory
 
 	#region Type name parser
 
-	ref struct TypeNameParser
+	private readonly ref struct TypeNameParser
 	{
 		/*
 
-		full_name			:= shortname ('@' assembly | [ ',' assembly [ ',' option ]* ])
+		full_name			:= short_name ('@' assembly | [ ',' assembly [ ',' option ]* ])
 
-		short_name			:= dottedname [ generic_definition ] [ nullable_suffix ] pointer_suffix* array_suffix*
+		short_name			:= dotted_name [ generic_definition ] [ nullable_suffix ] pointer_suffix* array_suffix*
 		dotted_name			:= NAME ('.' NAME)*
 		nullable_suffix		:= '?'
 		pointer_suffix		:= '*'
@@ -503,8 +474,8 @@ public static class Factory
 		private const int EQUAL = 10;
 		private const int AT = 11;
 
-		private static readonly LexicalTokenRule[] __rules = new LexicalTokenRule[]
-		{
+		private static readonly LexicalTokenRule[] __rules =
+		[
 			new WhiteSpaceTokenRule(),
 			new NameTokenRule().WithNameRecognition(
 				nameStart: o => o == '$' || o == '_' || Char.IsLetter(o),
@@ -525,7 +496,7 @@ public static class Factory
 				.Add(QUESTION, "?")
 				.Add(EQUAL, "=")
 				.Add(AT, "@"),
-		};
+		];
 
 		public static Type? Parse(string? value)
 		{
@@ -538,14 +509,13 @@ public static class Factory
 		private readonly TokenScanner _scanner;
 		private readonly OneBackFilter _back;
 
-		private TypeNameParser(bool fake)
+		private TypeNameParser(bool _)
 		{
 			_back = new OneBackFilter();
-			_scanner = new TokenScanner(new ITokenFilter[] { _back }, __rules);
+			_scanner = new TokenScanner([_back], __rules);
 		}
 
-
-		private TypeTree? Parse(ref CharStream stream, bool fullName)
+		private TypePartsTree? Parse(ref CharStream stream, bool fullName)
 		{
 			var t = _scanner.Next(ref stream);
 			if (!t.Is(LexicalTokenType.IDENTIFIER))
@@ -556,7 +526,7 @@ public static class Factory
 			bool nullable = false;
 			int pointer = 0;
 			List<int>? rank = null;
-			List<TypeTree>? parameters = null;
+			List<TypePartsTree>? parameters = null;
 
 			t = _scanner.Next(ref stream);
 			if (t.Is(LexicalTokenType.SEQUENCE, GENERIC_SUFFIX))
@@ -661,7 +631,7 @@ public static class Factory
 				assembly = t.GetString(stream);
 				_scanner.Next(ref stream);
 			}
-			var tree = new TypeTree(
+			var tree = new TypePartsTree(
 				name: name,
 				assembly: assembly,
 				pointerCount: pointer,
@@ -673,12 +643,12 @@ public static class Factory
 			return tree;
 		}
 
-		private List<TypeTree>? ParseParameters(ref CharStream stream, int terminal)
+		private List<TypePartsTree>? ParseParameters(ref CharStream stream, int terminal)
 		{
 			bool fullName = _scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, OPEN_SQRBRC);
 			if (!fullName)
 				_back.Back();
-			TypeTree? item = Parse(ref stream, fullName);
+			TypePartsTree? item = Parse(ref stream, fullName);
 			if (item == null)
 				return null;
 			if (fullName)
@@ -687,7 +657,7 @@ public static class Factory
 				else
 					_scanner.Next(ref stream);
 
-			List<TypeTree> parameters = new List<TypeTree> { item };
+			List<TypePartsTree> parameters = [item];
 
 			while (_back.Value.Is(LexicalTokenType.SEQUENCE, COMMA))
 			{
@@ -719,18 +689,18 @@ public static class Factory
 		// type?[]
 		// type?*
 		// type?*[]
-		public class TypeTree
+		public class TypePartsTree
 		{
-			public string Name { get; }
-			public string? Assembly { get; }
-			public int PointerCount { get; }
-			public bool IsNullable { get; }
-			public IReadOnlyList<int> ArrayRank { get; }
-			public int GenericsCount { get; }
-			public IReadOnlyList<TypeTree> Parameters { get; }
-			public IReadOnlyDictionary<string, string> Options { get; }
+			private string Name { get; }
+			private string? Assembly { get; }
+			private int PointerCount { get; }
+			private bool IsNullable { get; }
+			private IReadOnlyList<int> ArrayRank { get; }
+			private int GenericsCount { get; }
+			private IReadOnlyList<TypePartsTree> Parameters { get; }
+			private IReadOnlyDictionary<string, string> Options { get; }
 
-			public TypeTree(string name, string? assembly = null, int pointerCount = 0, bool isNullable = false, IReadOnlyList<int>? arrayRank = null, int genericsCount = 0, IReadOnlyList<TypeTree>? parameters = null, IReadOnlyDictionary<string, string>? options = null)
+			public TypePartsTree(string name, string? assembly = null, int pointerCount = 0, bool isNullable = false, IReadOnlyList<int>? arrayRank = null, int genericsCount = 0, IReadOnlyList<TypePartsTree>? parameters = null, IReadOnlyDictionary<string, string>? options = null)
 			{
 				Name = name;
 				Assembly = assembly;
@@ -738,15 +708,15 @@ public static class Factory
 				IsNullable = isNullable;
 				ArrayRank = arrayRank ?? Array.Empty<int>();
 				GenericsCount = genericsCount;
-				Parameters = parameters ?? Array.Empty<TypeTree>();
+				Parameters = parameters ?? Array.Empty<TypePartsTree>();
 				Options = options ?? ReadOnly.Empty<string, string>();
 			}
 
-			public bool IsGeneric => Parameters.Count > 0 || GenericsCount > 0;
-			public int GenericParametersCount => Parameters.Count > 0 ? Parameters.Count: GenericsCount;
-			public bool HasAssemblyReference => !String.IsNullOrEmpty(Assembly);
+			private bool IsGeneric => Parameters.Count > 0 || GenericsCount > 0;
+			private int GenericParametersCount => Parameters.Count > 0 ? Parameters.Count: GenericsCount;
+			private bool HasAssemblyReference => !String.IsNullOrEmpty(Assembly);
 
-			public StringBuilder BaseName(StringBuilder text, bool alter = false)
+			private StringBuilder BaseName(StringBuilder text, bool alter = false)
 			{
 				if (text is null)
 					throw new ArgumentNullException(nameof(text));
@@ -784,7 +754,7 @@ public static class Factory
 				text.Append('*', PointerCount);
 				foreach (var item in ArrayRank)
 				{
-					text.Append('[').Append(',', item - 1).Append(']');
+					text.Append('[').Append(',', Math.Max(0, item - 1)).Append(']');
 				}
 				if (!HasAssemblyReference)
 					return text;
@@ -849,31 +819,23 @@ public static class Factory
 						return null;
 					parameters[i] = p;
 				}
-				#pragma warning disable CA1031 // Do not catch general exception types
+
 				try { return type.MakeGenericType(parameters); } catch { return null; }
-				#pragma warning restore CA1031 // Do not catch general exception types
 			}
 		}
 	}
 
 	#endregion
 
-	private static Type? GetTypeInternal(string typeName)
-	{
-		Contract.Requires(!String.IsNullOrEmpty(typeName));
-		return Type.GetType(typeName, false, true) ?? TypeNameParser.Parse(typeName);
-	}
+	private static Type? GetTypeInternal(string typeName) => Type.GetType(typeName, false, true) ?? TypeNameParser.Parse(typeName);
 
 	public static Type? GetType(string? typeName, IEnumerable<Assembly>? assemblies)
 	{
 		if (typeName is not { Length: >0 })
 			return null;
-		Debug.Assert(typeName != null);
 
 		var type = Type.GetType(typeName, false, true);
-#pragma warning disable CS8604 // Possible null reference argument.
 		return type != null || assemblies == null ? type: FindType(typeName, assemblies);
-#pragma warning restore CS8604 // Possible null reference argument.
 	}
 
 	private static Type? FindType(string typeName, IEnumerable<Assembly> assemblies)
@@ -1189,9 +1151,7 @@ public static class Factory
 
 			if (Object.ReferenceEquals(xa, ya))
 				return true;
-			if (xa is null || xa.Length == 0)
-				return ya is null || ya.Length == 0;
-			if (ya is null || ya.Length != xa.Length)
+			if (ya.Length != xa.Length)
 				return false;
 
 			for (int i = 0; i < xa.Length; ++i)
@@ -1297,7 +1257,7 @@ public static class Factory
 			method = __conversionMethod[Type.GetTypeCode(Enum.GetUnderlyingType(parameterType))];
 			cvt = Expression.Convert(
 				Expression.Call(
-					typeof(Enum).GetMethod("ToObject", new[] { typeof(Type), method.ReturnType })!,
+					typeof(Enum).GetMethod("ToObject", [typeof(Type), method.ReturnType])!,
 					Expression.Constant(parameterType, typeof(Type)),
 					Expression.Convert(parameter, method.ReturnType, method)),
 				parameterType);
@@ -1308,7 +1268,7 @@ public static class Factory
 		}
 		else
 		{
-			method = parameterType.GetMethod("FromObject", new[] { typeof(object) });
+			method = parameterType.GetMethod("FromObject", [typeof(object)]);
 			cvt = method == null
 				? Expression.Convert(parameter, parameterType)
 				: Expression.Convert(Expression.Call(method, parameter), parameterType);

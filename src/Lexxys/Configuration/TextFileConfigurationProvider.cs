@@ -58,7 +58,7 @@ static class TextConfigurationParser
 		return xml.Count == 1 && String.Equals(xml[0].Name, "configuration", StringComparison.OrdinalIgnoreCase) ? Collect(xml[0].Elements): Collect(xml);
 	}
 
-	private static IDictionary<string, string?> Collect(IEnumerable<XmlLiteNode> xmlItems)
+	private static IDictionary<string, string?> Collect(IEnumerable<IXmlReadOnlyNode> xmlItems)
 	{
 		var map = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 		foreach (var xml in xmlItems)
@@ -68,7 +68,7 @@ static class TextConfigurationParser
 		return map;
 	}
 
-	private static void ScanNode(XmlLiteNode xml, string? node, Dictionary<string, string?> map)
+	private static void ScanNode(IXmlReadOnlyNode xml, string? node, Dictionary<string, string?> map)
 	{
 		if (node != null)
 		{

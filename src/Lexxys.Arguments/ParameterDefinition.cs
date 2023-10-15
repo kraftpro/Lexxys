@@ -34,8 +34,8 @@ public class ParameterDefinition
 			throw new ArgumentNullException(nameof(name));
 
 		Name = FixName(name);
-		Abbreviations = abbreviations;
-		ValueName = valueName;
+		Abbreviations = abbreviations ?? [];
+		ValueName = valueName.TrimToNull();
 		Description = description;
 		Command = command;
 		IsPositional = positional;
@@ -55,12 +55,12 @@ public class ParameterDefinition
 	/// <summary>
 	/// Abbreviations of the parameter.
 	/// </summary>
-	public string[]? Abbreviations { get; }
+	public string[] Abbreviations { get; }
 
 	/// <summary>
 	/// Tests if the parameter has any abbreviations.
 	/// </summary>
-	public bool HasAbbreviation => Abbreviations is not null && Abbreviations.Any(o => o.Length > 0 && o[0] != HiddenPrefix);
+	public bool HasAbbreviation => Abbreviations.Any(o => o.Length > 0 && o[0] != HiddenPrefix);
 
 	/// <summary>
 	/// Name of the parameter value to be displayed in the usage message.
@@ -105,25 +105,26 @@ public class ParameterDefinition
 	internal StringBuilder GetParameterName(StringBuilder? text = null, char argumentDelimiter = '\0', bool longDash = false, bool excludeAbbreviation = false)
 	{
 		text ??= new StringBuilder();
-		if (IsPositional)
-			return text.Append(ValueName ?? Name);
-
-		if (!excludeAbbreviation && HasAbbreviation)
+		if (!IsPositional)
 		{
-			foreach (var a in Abbreviations!.Where(o => o[0] != HiddenPrefix))
+			if (!excludeAbbreviation)
 			{
-				text.Append('-').Append(a).Append(", ");
+				foreach (var a in Abbreviations.Where(o => o[0] != HiddenPrefix))
+				{
+					text.Append('-').Append(a).Append(", ");
+				}
 			}
-		}
-		text.Append('-');
-		if (longDash && Name.Length > 1)
 			text.Append('-');
-		text.Append(Name);
+			if (longDash && Name.Length > 1)
+				text.Append('-');
+			text.Append(Name);
 
-		if (IsSwitch || argumentDelimiter == '\0')
-			return text;
-		text.Append(argumentDelimiter);
-		text.Append(ValueName is { Length: >0 } ? $"<{ValueName}>" : $"<{Name}>");
+			if (IsSwitch || argumentDelimiter == '\0')
+				return text;
+			text.Append(argumentDelimiter);
+		}
+
+		text.Append('<').Append(ValueName is null ? Name: ValueName).Append('>');
 		if (IsCollection)
 			text.Append("[,<...>]");
 		return text;
@@ -132,10 +133,10 @@ public class ParameterDefinition
 	internal bool IsSimilar(string value, StringComparison comparison, bool trimDelimiters)
 		=> IsSimilar(value.AsSpan(), Name.AsSpan(), Strings.SplitByCapitals(Name), 0, comparison, trimDelimiters);
 
-    internal bool IsReverseSimilar(string value, StringComparison comparison, bool trimDelimiters)
-        => IsSimilar(Name.AsSpan(), value.AsSpan(), Strings.SplitByCapitals(value), 0, comparison, trimDelimiters);
+	internal bool IsReverseSimilar(string value, StringComparison comparison, bool trimDelimiters)
+		=> IsSimilar(Name.AsSpan(), value.AsSpan(), Strings.SplitByCapitals(value), 0, comparison, trimDelimiters);
 
-    private static bool IsSimilar(ReadOnlySpan<char> value, ReadOnlySpan<char> name, IList<(int Index, int Length)> parts, int maskIndex, StringComparison comparison, bool trimDelimiters)
+	private static bool IsSimilar(ReadOnlySpan<char> value, ReadOnlySpan<char> name, IList<(int Index, int Length)> parts, int maskIndex, StringComparison comparison, bool trimDelimiters)
 	{
 		if (value.Length == 0)
 			return maskIndex == parts.Count;

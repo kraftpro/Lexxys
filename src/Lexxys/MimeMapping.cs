@@ -693,7 +693,7 @@ public static class MimeMapping
 			#endregion
 		};
 
-		XmlLiteNode node = Config.Current.GetValue(ConfigSection, XmlLiteNode.Empty).Value;
+		IXmlReadOnlyNode node = Config.Current.GetValue(ConfigSection, XmlFragBuilder.EmptyReadOnly).Value;
 
 		foreach (var item in node.Where("map"))
 		{
@@ -708,8 +708,7 @@ public static class MimeMapping
 
 		foreach (var mapping in mappings.ToList())
 		{
-			if (!mappings.ContainsKey(mapping.Value))
-				mappings.Add(mapping.Value, mapping.Key);
+			mappings.TryAdd(mapping.Value, mapping.Key);
 		}
 		return ReadOnly.Wrap(mappings)!;
 	}

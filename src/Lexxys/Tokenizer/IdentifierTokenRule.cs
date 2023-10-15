@@ -7,6 +7,7 @@
 
 namespace Lexxys.Tokenizer;
 
+[Serializable]
 public class IdentifierTokenRule: LexicalTokenRule
 {
 	private readonly Dictionary<string, LexicalTokenType> _keywords;

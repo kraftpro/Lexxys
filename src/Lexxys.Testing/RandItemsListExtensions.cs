@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Lexxys.Testing;
+﻿namespace Lexxys.Testing;
 
 /// <summary>
 /// Extension methods for collections of the random generators.

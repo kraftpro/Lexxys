@@ -22,7 +22,7 @@ namespace Lexxys.Tests.Xml
 					<Name>Name of item</Name>
 				</root>
 				""";
-			var x = XmlLiteNode.FromXml(xml);
+			var x = XmlTools.FromXml(xml);
 			var success = XmlTools.TryGetValue<SerializeByAttrib>(x, out var result);
 			Assert.IsTrue(success);
 			Assert.AreEqual(123, result.Id);
@@ -35,7 +35,7 @@ namespace Lexxys.Tests.Xml
 		[DataRow("""<x name="Name value"><value>Value value</value></x>""")]
 		public void TryReflection1(string xml)
 		{
-			var x = XmlLiteNode.FromXml(xml);
+			var x = XmlTools.FromXml(xml);
 			var success = XmlTools.TryGetValue<NameValueClassProp>(x, out var result);
 			Assert.IsTrue(success);
 			Assert.AreEqual("Name value", result.Name);
@@ -55,7 +55,7 @@ namespace Lexxys.Tests.Xml
 		[DataRow("""<x name="Name value" />""")]
 		public void TryReflection2(string xml)
 		{
-			var x = XmlLiteNode.FromXml(xml);
+			var x = XmlTools.FromXml(xml);
 			var success = XmlTools.TryGetValue<NameValueClassConstruct>(x, out var result);
 			Assert.IsTrue(success);
 			Assert.AreEqual("Name value", result.Name);
@@ -80,7 +80,7 @@ namespace Lexxys.Tests.Xml
 		[DataRow("""<x name="Name value" value="Value value" />""")]
 		public void TryReflection3(string xml)
 		{
-			var x = XmlLiteNode.FromXml(xml);
+			var x = XmlTools.FromXml(xml);
 			var result = XmlTools.GetValue(x, new { Name = "", Value = "" });
 			Assert.IsNotNull(result);
 			Assert.AreEqual("Name value", result.Name);
@@ -97,7 +97,7 @@ namespace Lexxys.Tests.Xml
 		[DataRow("""<x name="Name value"><values><value>One</value><value>Two</value><value>Three</value></values></x>""")]
 		public void TryReflection4_Arrays(string xml)
 		{
-			var x = XmlLiteNode.FromXml(xml);
+			var x = XmlTools.FromXml(xml);
 			var result = XmlTools.GetValue(x, new { Name = "", Value = Array.Empty<string>() });
 			Assert.IsNotNull(result);
 			Assert.AreEqual("Name value", result.Name);
@@ -114,7 +114,7 @@ namespace Lexxys.Tests.Xml
 		[DataRow("""<x name="Name value"><value><item>One</item><item>Two</item><item>Three</item></value></x>""")]
 		public void TryReflection4_Lists(string xml)
 		{
-			var x = XmlLiteNode.FromXml(xml);
+			var x = XmlTools.FromXml(xml);
 			var result = XmlTools.GetValue(x, new { Name = "", Value = new List<string>() });
 			Assert.IsNotNull(result);
 			Assert.AreEqual("Name value", result.Name);

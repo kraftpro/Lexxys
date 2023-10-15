@@ -64,7 +64,7 @@ namespace Lexxys.Tests.Xml
 		{
 			var actual = JsonToXmlConverter.Convert(source, "Schedule", forceAttributes: force);
 			Assert.IsNotNull(actual);
-			XmlLiteNode expected = XmlLiteNode.FromXml(target, true);
+			IXmlReadOnlyNode expected = XmlTools.FromXml(target, true);
 			Assert.AreEqual(expected, actual, source);
 		}
 	}

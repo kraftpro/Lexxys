@@ -6,11 +6,13 @@
 //
 using System.Buffers;
 using System.Collections;
+using System.Diagnostics;
 using System.Text;
 
-#pragma warning disable CA2225 // Operator overloads have named alternates
-
 namespace Lexxys;
+
+[DebuggerDisplay("Count = {Count}")]
+[Serializable]
 public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<FlagSet>
 {
 	private const char NameDelimiter = ':';
@@ -40,7 +42,7 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 
 	public static string? Clean(string? item)
 	{
-		if (string.IsNullOrEmpty(item))
+		if (String.IsNullOrEmpty(item))
 			return default;
 		
 		var s = item.AsSpan();
@@ -57,6 +59,7 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 			while (IsBlankOrDelimiter(s[--i])) { }
 			s = s.Slice(0, i + 1);
 		}
+		
 		static bool IsBlankOrDelimiter(char c)
 			=> IsBlank(c) || c is NameDelimiter or GroupDelimiter;
 		static bool IsBlank(char c)
@@ -208,9 +211,10 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 
 		using IEnumerator<string> a = _set.GetEnumerator();
 		using IEnumerator<string> b = other._set.GetEnumerator();
+		var comparer = _set.Comparer;
 		while (a.MoveNext() && b.MoveNext())
 		{
-			if (!String.Equals(a.Current, b.Current, StringComparison.OrdinalIgnoreCase))
+			if (comparer.Compare(a.Current, b.Current) != 0)
 				return false;
 		}
 		return true;

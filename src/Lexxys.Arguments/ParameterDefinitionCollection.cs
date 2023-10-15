@@ -85,14 +85,16 @@ public class ParameterDefinitionCollection: IReadOnlyList<ParameterDefinition>
 	{
 		if (parameter is null) throw new ArgumentNullException(nameof(parameter));
 
-		if (_parameters.Contains(parameter))
-			return;
+		if (_parameters.Contains(parameter)) return;
+
 		var pd = _parameters.FindExact(parameter.Name, _comparison);
-		if (pd != null)
-			throw new ArgumentException($"Parameter with name '{parameter.Name}' already exists.", nameof(parameter));
-		foreach (var abbr in parameter.Abbreviations ?? Array.Empty<string>())
+		if (pd != null) throw new ArgumentException($"Parameter with name '{parameter.Name}' already exists.", nameof(parameter));
+
+		foreach (var abbr in parameter.Abbreviations)
+		{
 			if (_parameters.FindExact(abbr, _comparison) != null)
 				throw new ArgumentException($"Parameter with abbreviation '{abbr}' already exists.", nameof(parameter));
+		}
 		_parameters.Add(parameter);
 	}
 

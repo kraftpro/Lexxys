@@ -15,44 +15,40 @@ namespace Lexxys;
 [Serializable]
 public class SyntaxException: Exception
 {
-	public SyntaxException()
-		: base(SR.SyntaxException())
+	public SyntaxException(): base(SR.SyntaxException())
 	{
 	}
 
-	public SyntaxException(string? message)
-		: base(message ?? SR.SyntaxException())
+	public SyntaxException(string? message): base(message ?? SR.SyntaxException())
 	{
 	}
 
-	public SyntaxException(string? message, Exception? exception)
-		: base(message ?? SR.SyntaxException(), exception)
+	public SyntaxException(string? message, Exception? exception): base(message ?? SR.SyntaxException(), exception)
 	{
 	}
 
-	public SyntaxException(string? message, string? file, int line, int column)
-		: base(message ?? SR.SyntaxException())
+	public SyntaxException(string? message, string? file, int line, int column): base(message ?? SR.SyntaxException())
 	{
 		Line = line;
 		Column = column;
 		File = file;
 	}
 
-	public SyntaxException(string? message, string? file, int line, int column, Exception? exception)
-		: base(message ?? SR.SyntaxException(), exception)
+	public SyntaxException(string? message, string? file, int line, int column, Exception? exception): base(message ?? SR.SyntaxException(), exception)
 	{
 		Line = line;
 		Column = column;
 		File = file;
 	}
 
-	protected SyntaxException(SerializationInfo info, StreamingContext context)
-		: base(info, context)
+#if !NET8_0_OR_GREATER
+	protected SyntaxException(SerializationInfo info, StreamingContext context): base(info, context)
 	{
 		File = (string?)info.GetValue("file", typeof(string));
 		Line = (int?)info.GetValue("line", typeof(int)) ?? 0;
 		Column = (int?)info.GetValue("column", typeof(int)) ?? 0;
 	}
+#endif
 
 	public string? File { get; }
 	public int Line { get; }
@@ -71,6 +67,7 @@ public class SyntaxException: Exception
 		}
 	}
 
+#if !NET8_0_OR_GREATER
 #if !NETCOREAPP
 	[SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
 #endif
@@ -83,6 +80,7 @@ public class SyntaxException: Exception
 		info.AddValue("line", Line);
 		info.AddValue("column", Column);
 	}
+#endif
 }
 
 

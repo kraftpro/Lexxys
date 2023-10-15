@@ -21,8 +21,14 @@ public static class ExceptionExtensions
 		if (exception is null)
 			throw new ArgumentNullException(nameof(exception));
 		name ??= "item";
-		if (value != null && !value.GetType().IsSerializable)
-			value = value.ToString();
+		var val = value switch
+		{
+			IDump idump => idump.Dump(),
+			IDumpJson jdump => jdump.ToJson(),
+			IDumpXml xdump => xdump.ToXml(),
+			null => null,
+			_ => value.ToString(),
+		};
 		if (exception.Data.Contains(name))
 		{
 			string name0 = name;
@@ -30,12 +36,12 @@ public static class ExceptionExtensions
 			do
 			{
 				var v = exception.Data[name];
-				if (Object.Equals(value, v))
+				if (Object.Equals(val, v))
 					return exception;
 				name = $"{name0}.{++k}";
 			} while (exception.Data.Contains(name));
 		}
-		exception.Data[name] = value;
+		exception.Data[name] = val;
 		return exception;
 	}
 

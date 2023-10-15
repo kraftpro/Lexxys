@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Lexxys.Testing;
+﻿namespace Lexxys.Testing;
 
 /// <summary>
 /// Implementation of <see cref="IRand"/> using regular pseudo-random number generator.

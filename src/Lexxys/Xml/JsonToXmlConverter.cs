@@ -9,7 +9,7 @@ namespace Lexxys.Xml;
 
 public static class JsonToXmlConverter
 {
-	public static XmlLiteNode Convert(string text, string rootName, bool ignoreCase = false, bool forceAttributes = false, string? sourceName = null)
+	public static IXmlReadOnlyNode Convert(string text, string rootName, bool ignoreCase = false, bool forceAttributes = false, string? sourceName = null)
 	{
 		if (text is null)
 			throw new ArgumentNullException(nameof(text));
@@ -20,7 +20,7 @@ public static class JsonToXmlConverter
 			.ToXml(rootName, ignoreCase, forceAttributes);
 	}
 
-	public static IReadOnlyList<XmlLiteNode> Convert(string text, bool ignoreCase = false, bool forceAttributes = false, string? sourceName = null)
+	public static IReadOnlyList<IXmlReadOnlyNode> Convert(string text, bool ignoreCase = false, bool forceAttributes = false, string? sourceName = null)
 	{
 		if (text is null)
 			throw new ArgumentNullException(nameof(text));

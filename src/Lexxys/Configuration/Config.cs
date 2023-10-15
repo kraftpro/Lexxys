@@ -71,8 +71,8 @@ public static class Config
 		if (Path.IsPathRooted(path) || directories == null)
 		{
 			if (matched)
-				return File.Exists(path) ? new[] { new Uri(path) }: Array.Empty<Uri>();
-			return CollectFiles(path) ?? Array.Empty<Uri>();
+				return File.Exists(path) ? [new Uri(path)]: [];
+			return CollectFiles(path) ?? [];
 		}
 
 		foreach (var dir in directories)
@@ -80,7 +80,7 @@ public static class Config
 			if (matched)
 			{
 				if (File.Exists(Path.Combine(dir, path)))
-					return new[] { new Uri(Path.Combine(dir, path)) };
+					return [new Uri(Path.Combine(dir, path))];
 			}
 			else
 			{
@@ -89,7 +89,7 @@ public static class Config
 					return files;
 			}
 		}
-		return Array.Empty<Uri>();
+		return [];
 
 		static Uri[]? CollectFiles(string path)
 		{
@@ -98,8 +98,9 @@ public static class Config
 				i = path.LastIndexOf('/');
 			if (i < 0)
 				return null;
-			if (Directory.Exists(path.Substring(0, i)))
-				return Array.ConvertAll(Directory.GetFiles(path.Substring(0, i), path.Substring(i + 1) + ".config.*"), o => new Uri(o));
+			var dir = path.Substring(0, i);
+			if (Directory.Exists(dir))
+				return Array.ConvertAll(Directory.GetFiles(dir, path.Substring(i + 1) + ".config.*"), o => new Uri(o));
 			return null;
 		}
 	}
@@ -117,6 +118,6 @@ public static class Config
 			return (xx[0], new[] { xx[1] });
 		return (xx[0], xx.Skip(1).ToList());
 	}
-	private static readonly char[] SpaceSeparator = new[] { ' ' };
+	private static readonly char[] SpaceSeparator = [' '];
 
 }

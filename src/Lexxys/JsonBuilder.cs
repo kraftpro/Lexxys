@@ -45,8 +45,14 @@ public abstract class JsonBuilder
 	/// </summary>
 	public NamingCaseRule NamingRule { get; set; } = NamingCaseRule.PreferCamelCase;
 
+	/// <summary>
+	/// Indicates whether the current position is inside an object.
+	/// </summary>
 	public bool InObject => _state == State.Object || _state == State.Value && (_elements.Count == 0 || _elements.Peek() != ']');
 
+	/// <summary>
+	/// Indicates whether the current position is inside an array.
+	/// </summary>
 	public bool InArray => !InObject;
 
 	/// <summary>
@@ -61,6 +67,11 @@ public abstract class JsonBuilder
 	/// <param name="value">The <see cref="Char"/> value to write.</param>
 	protected abstract void Text(char value);
 
+	/// <summary>
+	/// Sets the <see cref="NamingRule"/> for the JSON items.
+	/// </summary>
+	/// <param name="namingRule">Items naming rule</param>
+	/// <returns></returns>
 	public JsonBuilder WithNamingRule(NamingCaseRule namingRule)
 	{
 		NamingRule = namingRule;
@@ -74,7 +85,7 @@ public abstract class JsonBuilder
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	protected virtual void Value(string? value)
 	{
-		Text(value == null ? NullValue : Strings.EscapeCsString(value));
+		Text(value == null ? NullValue: Strings.EscapeCsString(value));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -176,7 +187,7 @@ public abstract class JsonBuilder
 			switch (cn.GetTypeCode())
 			{
 				case TypeCode.Boolean:
-					return (bool)value ? "true" : "false";
+					return (bool)value ? "true": "false";
 				case TypeCode.DBNull:
 				case TypeCode.Empty:
 					return NullValue;
@@ -236,7 +247,7 @@ public abstract class JsonBuilder
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private string ForceName(string name)
 	{
-		return (NamingRule & NamingCaseRule.Force) == 0 ? name: Strings.ToNamingRule(name, NamingRule)!;
+		return (NamingRule & NamingCaseRule.Force) == 0 ? name: Strings.ToNamingRule(name, NamingRule);
 	}
 
 	/// <summary>
@@ -588,7 +599,7 @@ public abstract class JsonBuilder
 		Type type = value.GetType();
 		foreach (var item in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetField))
 		{
-			Item(Strings.ToNamingRule(item.Name, NamingRule)!).Val(item.GetValue(value));
+			Item(Strings.ToNamingRule(item.Name, NamingRule)).Val(item.GetValue(value));
 		}
 		foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
 		{
@@ -601,9 +612,12 @@ public abstract class JsonBuilder
 			try
 			{
 				object? v = item.GetValue(value);
-				Item(Strings.ToNamingRule(item.Name, NamingRule)!).Val(v);
+				Item(Strings.ToNamingRule(item.Name, NamingRule)).Val(v);
 			}
-			catch { }
+			catch
+			{
+				// Ignore possible exceptions in the property getter
+			}
 		}
 		return End();
 	}
@@ -800,6 +814,11 @@ public abstract class JsonBuilder
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public JsonBuilder ItemObj(string name, object? value) => value == null ? this: Item(name).ValObj(value);
 
+	/// <summary>
+	/// Writes value using <see cref="IDumpJson"/> implementation.
+	/// </summary>
+	/// <param name="value">The value to write</param>
+	/// <returns></returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public JsonBuilder Content(IDumpJson? value)
 	{
@@ -841,7 +860,12 @@ public abstract class JsonBuilder
 		return new JsonStringBuilder(buffer);
 	}
 
-	public static string ToJson(object value)
+	/// <summary>
+	/// Converts <paramref name="value"/> to JSON string.
+	/// </summary>
+	/// <param name="value">The object value</param>
+	/// <returns></returns>
+	public static string ToJson(object? value)
 	{
 		return new JsonStringBuilder(new StringBuilder()).Val(value).ToString()!;
 	}
@@ -970,7 +994,7 @@ public class JsonStreamBuilder: JsonBuilder
 	/// <inheritdoc />
 	protected override void Value(string? value)
 	{
-		_writer.Write(value == null ? NullValue : Strings.EscapeCsString(value));
+		_writer.Write(value == null ? NullValue: Strings.EscapeCsString(value));
 	}
 
 	/// <inheritdoc />
@@ -986,13 +1010,13 @@ public class JsonStreamBuilder: JsonBuilder
 /// </summary>
 public class JsonUtf8Builder: JsonBuilder
 {
-	private new static readonly byte[] NullValue = { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
+	private new static readonly byte[] NullValue = [(byte)'n', (byte)'u', (byte)'l', (byte)'l'];
 	private readonly MemoryStream _buffer;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="JsonUtf8Builder"/> class.
 	/// </summary>
-	public JsonUtf8Builder() : this(null)
+	public JsonUtf8Builder(): this(null)
 	{
 	}
 

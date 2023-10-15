@@ -180,7 +180,7 @@ Setting
 
 			}
 
-			public static Setting2 Create(XmlLiteNode node)
+			public static Setting2 Create(IXmlReadOnlyNode node)
 			{
 				if (node == null)
 					return null;
@@ -191,7 +191,7 @@ Setting
 					StringItem = Strings.GetString(node.Element("StringItem").Value, null),
 					IntBasedItem = new IntConvertable(Strings.GetInt32(node.Element("IntBasedItem").Value, 0))
 				};
-				XmlLiteNode xx = node.Element("IntArray");
+				var xx = node.Element("IntArray");
 				if (!xx.IsEmpty)
 				{
 					var tmp = new List<int>();

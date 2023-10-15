@@ -14,8 +14,6 @@ namespace Lexxys.Data;
 
 class DataContextImplementation: IDisposable
 {
-	#pragma warning disable CA1031 // Do not catch general exception types
-
 	private static readonly TimeSpan TimeSyncInterval = new TimeSpan(1, 0, 0);
 	private static readonly ConcurrentDictionary<string, (DateTime Stamp, long Offset)> _timeSyncMap = new ConcurrentDictionary<string, (DateTime, long)>();
 
@@ -438,9 +436,7 @@ class DataContextImplementation: IDisposable
 		if ((statement = statement.Trim()).Length == 0)
 			throw new ArgumentNullException(nameof(statement));
 		var c = _connection.CreateCommand();
-		#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
 		c.CommandText = statement;
-		#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
 		if (_transaction != null)
 			c.Transaction = _transaction;
 		return c;
@@ -512,7 +508,6 @@ class DataAudit
 			--_lockTiming;
 	}
 
-#pragma warning disable CA1822 // Mark members as static.  We want to keep it non static for future use.
 	public long Start()
 	{
 		return WatchTimer.Start();

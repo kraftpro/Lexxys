@@ -35,7 +35,7 @@ namespace Lexxys
 		{
 			return String.Format(Culture, "Invalid format of the value: \"{0}\"", value);
 		}
-		internal static string FormatException(string value, Type valueType)
+		internal static string FormatException(string? value, Type valueType)
 		{
 			return String.Format(Culture, "Invalid format of {1} value: \"{0}\"", value, valueType);
 		}
@@ -47,7 +47,7 @@ namespace Lexxys
 		{
 			return String.Format(Culture, "Cannot parse value: \"{0}\"", value);
 		}
-		internal static string CannotParseValue(string value, Type valueType)
+		internal static string CannotParseValue(string? value, Type valueType)
 		{
 			return String.Format(Culture, "Cannot parse value {1}: \"{0}\"", value, valueType);
 		}
@@ -192,7 +192,7 @@ namespace Lexxys
 		{
 			return WatchTimer.ToString(timeValue) + " (+" + WatchTimer.ToString(timeOffset) + ")\n" + Strings.CutIndents(query.Split(Nls, StringSplitOptions.RemoveEmptyEntries), 4, "\n");
 		}
-		private static readonly char[] Nls = { '\r', '\n' };
+		private static readonly char[] Nls = ['\r', '\n'];
 
 		public static Func<string> DC_InitConnectionString(string connection)
 		{

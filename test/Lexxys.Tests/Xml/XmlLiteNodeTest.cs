@@ -11,8 +11,6 @@ using Lexxys.Xml;
 
 namespace Lexxys.Tests.Xml
 {
-
-
 	/// <summary>
 	///This is a test class for XmlLiteNodeTest and is intended
 	///to contain all XmlLiteNodeTest Unit Tests
@@ -52,7 +50,7 @@ namespace Lexxys.Tests.Xml
 
 		#region Data Tables
 		private static readonly string[] Xml =
-		{
+		[
 			"""
 			<root>
 				Root Value1
@@ -64,7 +62,7 @@ namespace Lexxys.Tests.Xml
 				Root Value3
 			</root>
 			"""
-		};
+		];
 		#endregion
 
 		/// <summary>
@@ -74,7 +72,7 @@ namespace Lexxys.Tests.Xml
 		public void XmlLiteNodeXmlReaderConstructorTest()
 		{
 			var rdr = XmlReader.Create(new StringReader(Xml[0]));
-			var target = XmlLiteNode.FromXml(rdr, ignoreCase: false);
+			var target = XmlTools.FromXml(rdr, ignoreCase: false);
 			Assert.AreEqual("root", target.Name);
 			Assert.AreEqual("\n\tRoot Value1\n\tRoot Value2\n\tRoot Value3", target.Value);
 			Assert.AreEqual(0, target.Attributes.Count);
@@ -111,13 +109,13 @@ namespace Lexxys.Tests.Xml
 			{
 				for (int i = 0; i < Xml.Length; ++i)
 				{
-					XmlLiteNode expected;
-					XmlLiteNode actual;
+					IXmlReadOnlyNode expected;
+					IXmlReadOnlyNode actual;
 					using (var rdr = XmlReader.Create(new StringReader(Xml[i])))
-						expected = XmlLiteNode.FromXml(rdr, ignoreCase);
+						expected = XmlTools.FromXml(rdr, ignoreCase);
 
 					using (var rdr = XmlReader.Create(new StringReader(Xml[i])))
-						actual = new XmlLiteNode(new XPathDocument(rdr).CreateNavigator(), ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+						actual = XmlLiteNode.FromXml(new XPathDocument(rdr).CreateNavigator(), ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
 					Assert.AreEqual(expected.ToString(), actual.ToString());
 				}
@@ -131,8 +129,8 @@ namespace Lexxys.Tests.Xml
 		[TestMethod()]
 		public void IsCaseSensitiveTest()
 		{
-			var c1 = XmlLiteNode.FromXml(XmlReader.Create(new StringReader(Xml[0])), true);
-			var c2 = XmlLiteNode.FromXml(XmlReader.Create(new StringReader(Xml[0])), false);
+			var c1 = XmlTools.FromXml(XmlReader.Create(new StringReader(Xml[0])), true);
+			var c2 = XmlTools.FromXml(XmlReader.Create(new StringReader(Xml[0])), false);
 			Assert.AreEqual(c1, c2);
 			Assert.AreEqual(StringComparer.OrdinalIgnoreCase, c1.Comparer);
 			Assert.AreEqual(StringComparer.Ordinal, c2.Comparer);

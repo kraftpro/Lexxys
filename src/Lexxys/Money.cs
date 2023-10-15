@@ -12,9 +12,6 @@ using System.Runtime.Serialization;
 using System.Numerics;
 #endif
 
-#pragma warning disable CA2225 // Operator overloads have named alternates
-#pragma warning disable CA1051 // Do not declare visible instance fields
-
 namespace Lexxys;
 
 using Xml;
@@ -199,7 +196,7 @@ public readonly struct Money:
 				.Add(nameof(basket2), basket2);
 		var first = Create((long)Math.Round(value), _currency);
 		var second = Create(_value - first._value, _currency);
-		return new[] { first, second };
+		return [first, second];
 	}
 
 	/// <summary>
@@ -230,7 +227,7 @@ public readonly struct Money:
 		var first = Create((long)Math.Round(value), _currency);
 		var second = Create((long)Math.Round((_value - first._value) * basket2 / (total - basket1)), _currency);
 		var third = Create(_value - first._value - second._value, _currency);
-		return new[] { first, second, third };
+		return [first, second, third];
 	}
 
 	/// <summary>
@@ -243,7 +240,7 @@ public readonly struct Money:
 		if (baskets == null)
 			throw new ArgumentNullException(nameof(baskets));
 		if (baskets.Length < 2)
-			return baskets.Length == 0 ? Array.Empty<Money>() : new[] { this };
+			return baskets.Length == 0 ? [] : [this];
 
 		double total = 0;
 		for (int i = 0; i < baskets.Length; i++)
@@ -280,8 +277,8 @@ public readonly struct Money:
 		switch (count)
 		{
 			case < 0: throw new ArgumentOutOfRangeException(nameof(count), count, null);
-			case 0: return Array.Empty<Money>();
-			case 1: return new[] { this };
+			case 0: return [];
+			case 1: return [this];
 		}
 
 		var result = new Money[count];
@@ -1259,7 +1256,7 @@ public readonly struct Money:
 
 #endif
 
-	private static readonly Currency[] __internalCurrencies = { Currency.Empty, Currency.Usd, Currency.Eur, Currency.Rub, Currency.Uzs };
+	private static readonly Currency[] __internalCurrencies = [Currency.Empty, Currency.Usd, Currency.Eur, Currency.Rub, Currency.Uzs];
 
 	public static explicit operator Money(int value) => new Money(value);
 
@@ -1654,7 +1651,7 @@ public sealed class Currency
 	}
 
 	/// <summary>
-	/// Creates a new currency or returns an exising one.
+	/// Creates a new currency or returns an existing one.
 	/// </summary>
 	/// <param name="code">Three-letters ISO 4217 currency code (i.e "EUR").</param>
 	/// <param name="precision">Number of significant digits after the decimal point in range from 0 to 9.</param>

@@ -6,10 +6,9 @@
 //
 using System.Text;
 
-#pragma warning disable CA1716 // Identifiers should not match keywords
-
 namespace Lexxys;
 
+[Serializable]
 public class Schedule: IDump, IDumpJson, IDumpXml, IEquatable<Schedule>
 {
 	public const string Type = "none";
@@ -69,66 +68,36 @@ public class Schedule: IDump, IDumpJson, IDumpXml, IEquatable<Schedule>
 
 	public virtual StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 	{
-		if (text is null)
-			throw new ArgumentNullException(nameof(text));
-
+		if (text is null) throw new ArgumentNullException(nameof(text));
 		return Reminder.ToString(text, provider);
 	}
 
-	public override bool Equals(object? obj)
-	{
-		return obj is Schedule sc && Equals(sc);
-	}
+	public override bool Equals(object? obj) => obj is Schedule sc && Equals(sc);
 
-	public override int GetHashCode()
-	{
-		var h1 = ScheduleType.GetHashCode();
-		var h2 = Reminder.GetHashCode();
-		return HashCode.Join(h1, h2);
-	}
+	public override int GetHashCode() => HashCode.Join(ScheduleType.GetHashCode(), Reminder.GetHashCode());
 
-	public virtual bool Equals(Schedule? other)
-	{
-		if (other is null)
-			return false;
-		if (ReferenceEquals(this, other))
-			return true;
-		if (ScheduleType != other.ScheduleType)
-			return false;
-		if (!Reminder.Equals(other.Reminder))
-			return false;
-		return true;
-	}
+	public virtual bool Equals(Schedule? other) =>
+		other is not null && (
+			ReferenceEquals(this, other) ||
+			ScheduleType == other.ScheduleType && Reminder.Equals(other.Reminder));
 
-	public static bool operator ==(Schedule? left, Schedule? right)
-	{
-		return left?.Equals(right) ?? right is null;
-	}
+	public static bool operator ==(Schedule? left, Schedule? right) => left?.Equals(right) ?? right is null;
 
-	public static bool operator !=(Schedule? left, Schedule? right)
-	{
-		return !(left == right);
-	}
+	public static bool operator !=(Schedule? left, Schedule? right) => !(left == right);
 
 	public virtual DumpWriter DumpContent(DumpWriter writer)
 	{
-		if (writer is null)
-			throw new ArgumentNullException(nameof(writer));
-
+		if (writer is null) throw new ArgumentNullException(nameof(writer));
 		return writer
 			.Item("TypeScheduleType", ScheduleType)
 			.Then("Reminder", Reminder);
 	}
 
-#pragma warning disable CA1033 // Interface methods should be callable by child types
 	string IDumpXml.XmlElementName => "schedule";
-#pragma warning restore CA1033 // Interface methods should be callable by child types
 
 	public virtual XmlBuilder ToXmlContent(XmlBuilder builder)
 	{
-		if (builder is null)
-			throw new ArgumentNullException(nameof(builder));
-
+		if (builder is null) throw new ArgumentNullException(nameof(builder));
 		builder.Item("type", ScheduleType);
 		if (!Reminder.IsEmpty)
 			builder.Element("reminder").Value(Reminder).End();
@@ -137,38 +106,29 @@ public class Schedule: IDump, IDumpJson, IDumpXml, IEquatable<Schedule>
 
 	public virtual JsonBuilder ToJsonContent(JsonBuilder json)
 	{
-		if (json is null)
-			throw new ArgumentNullException(nameof(json));
-
+		if (json is null) throw new ArgumentNullException(nameof(json));
 		json.Item("type").Val(ScheduleType);
 		if (!Reminder.IsEmpty)
 			json.Item("reminder").Val(Reminder);
 		return json;
 	}
 
-	public static Schedule? FromXml(Xml.XmlLiteNode? xml)
+	public static Schedule? FromXml(Xml.IXmlReadOnlyNode? xml)
 	{
-		if (xml == null || xml.IsEmpty)
-			return null;
-		return xml["type"] switch
-		{
-			Type => new Schedule(ScheduleReminder.FromXml(xml.Element("reminder"))),
-			DailySchedule.Type => DailySchedule.FromXml(xml),
-			WeeklySchedule.Type => WeeklySchedule.FromXml(xml),
-			MonthlySchedule.Type => MonthlySchedule.FromXml(xml),
-			_ => throw new ArgumentOutOfRangeException(nameof(xml), xml, null)
-		};
+		return xml == null || xml.IsEmpty ? null:
+			xml["type"] switch
+			{
+				Type => new Schedule(ScheduleReminder.FromXml(xml.Element("reminder"))),
+				DailySchedule.Type => DailySchedule.FromXml(xml),
+				WeeklySchedule.Type => WeeklySchedule.FromXml(xml),
+				MonthlySchedule.Type => MonthlySchedule.FromXml(xml),
+				_ => throw new ArgumentOutOfRangeException(nameof(xml), xml, null)
+			};
 	}
 
-	public static Schedule? FromXml(string xml)
-	{
-		return FromXml(Xml.XmlLiteNode.FromXml(xml));
-	}
+	public static Schedule? FromXml(string xml) => FromXml(Xml.XmlTools.FromXml(xml));
 
-	public static Schedule? FromJson(string json)
-	{
-		return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
-	}
+	public static Schedule? FromJson(string json) => FromXml(Xml.XmlTools.FromJson(json, "schedule", forceAttributes: true));
 }
 
 

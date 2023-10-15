@@ -14,8 +14,8 @@ internal class StringConfigurationSource : IXmlConfigurationSource
 {
 	private const string LogSource = "Lexxys.Configuration.StringConfigurationSource";
 	private List<string>? _includes;
-	private IReadOnlyList<XmlLiteNode>? _content;
-	private readonly Func<string, string?, IReadOnlyList<XmlLiteNode>> _converter;
+	private IReadOnlyList<IXmlReadOnlyNode>? _content;
+	private readonly Func<string, string?, IReadOnlyList<IXmlReadOnlyNode>> _converter;
 	private readonly string _type;
 	private readonly string _text;
 	private int _version;
@@ -54,11 +54,11 @@ internal class StringConfigurationSource : IXmlConfigurationSource
 
 	public int Version => _version;
 
-	public IReadOnlyList<XmlLiteNode> Content
+	public IReadOnlyList<IXmlReadOnlyNode> Content
 	{
 		get
 		{
-			IReadOnlyList<XmlLiteNode>? content = _content;
+			IReadOnlyList<IXmlReadOnlyNode>? content = _content;
 			if (content == null)
 			{
 				if (Interlocked.CompareExchange(ref _content, _converter(_text, null), null) == null)
@@ -93,15 +93,13 @@ internal class StringConfigurationSource : IXmlConfigurationSource
 				Changed?.Invoke(sender ?? this, e);
 			}
 		}
-#pragma warning disable CA1031 // Do not catch general exception types
 		catch (Exception flaw)
 		{
 			Config.LogConfigurationError(LogSource, flaw);
 		}
-#pragma warning restore CA1031 // Do not catch general exception types
 	}
 
-	private IEnumerable<XmlLiteNode>? OptionHandler(ref TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters)
+	private IEnumerable<IXmlReadOnlyNode>? OptionHandler(ref TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters)
 	{
 		if (option != "include")
 		{

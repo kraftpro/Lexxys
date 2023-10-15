@@ -18,10 +18,10 @@ namespace Lexxys.Tests
 		}
 
 		[TestMethod]
-		[DataRow(null, null)]
 		[DataRow("", "")]
 		[DataRow(" (  ", "(")]
-		[DataRow("( ( )", "(")]
+        [DataRow("( ( )", "(")]
+        [DataRow("( ( .   ) )", ".")]
 		public void RemoveExtraBracesTest(string original, string expected)
 		{
 			var value = Strings.RemoveExtraBraces(original);
@@ -136,24 +136,24 @@ namespace Lexxys.Tests
 			var actual = Strings.CutIndents(lines, 4);
 			Assert.AreEqual(expected, actual);
 
-			lines = new[]
-			{
+			lines =
+			[
 				"  select",
 				"\t\t\t1,",
 				"\t\t\t2,",
 				"\t\t\t3",
 				"\tfrom Here"
-			};
+			];
 			expected = String.Join(Environment.NewLine, lines.Select(o => o.Substring(1).Replace("\t", "  "))).TrimStart();
 			actual = Strings.CutIndents(lines, 2);
 			Assert.AreEqual(expected, actual);
 
-			lines = new[]
-			{
+			lines =
+			[
 				"  select",
 				"\t\t1,",
 				"\tfrom Here"
-			};
+			];
 			expected = "select" + Environment.NewLine +
 				"      1," + Environment.NewLine +
 				"  from Here";

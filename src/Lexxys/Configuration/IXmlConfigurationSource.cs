@@ -17,7 +17,7 @@ public interface IXmlConfigurationSource
 
 	event EventHandler<ConfigurationEventArgs>? Changed;
 
-	IReadOnlyList<XmlLiteNode> Content { get; }
+	IReadOnlyList<IXmlReadOnlyNode> Content { get; }
 }
 
 

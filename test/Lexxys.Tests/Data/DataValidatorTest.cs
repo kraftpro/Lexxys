@@ -18,7 +18,7 @@ namespace Lexxys.Tests.Data
 	public class DataValidatorTest
 	{
 		private readonly string[] goodURLs =
-		{
+		[
 			"http://www.lostand.com:8081/master/login?name=Ivan&pass=12%34_Sdf$#top",
 			"HttpS://admin:pass@lostand.uz",
 			"foo.com",
@@ -34,10 +34,10 @@ namespace Lexxys.Tests.Data
 			"192.169.1.1",
 			"172.15.254.254",
 			"172.32.0.1",
-		};
+		];
 
 		private readonly string[] badURLs =
-		{
+		[
 			"http://www.lostandcontoso.com:80810/Chapter/login?name=Ivan&pass=12%34_Sdf$#top",
 			"HttpS://admin:pass@lostandcontoso.u",
 			"admin:pass@contoso.com",
@@ -60,7 +60,7 @@ namespace Lexxys.Tests.Data
 			"22",
 			"121.65.77.1234",
 			"121.65.a.10",
-		};
+		];
 
 		[TestMethod]
 		public void TestHttpUrl()

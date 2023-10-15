@@ -11,9 +11,6 @@ using System.Text;
 using System.Xml;
 
 namespace Lexxys;
-
-using System.Xml.Linq;
-
 using Xml;
 
 /// <summary>
@@ -90,7 +87,7 @@ public abstract class XmlBuilder
 	private string ForceName(string name)
 	{
 		if (((int)NamingRule & 8) != 0)
-			name = Rename(name)!;
+			name = Rename(name);
 		return XmlConvert.EncodeName(name);
 	}
 
@@ -1082,7 +1079,7 @@ public abstract class XmlBuilder
 
 		if (value is IEnumerable enumerable)
 		{
-			var itemName = Rename("item")!;
+			var itemName = Rename("item");
 			foreach (var item in enumerable)
 			{
 				if (item is IDumpXml dumpXml)

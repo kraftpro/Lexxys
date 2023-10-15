@@ -1,7 +1,5 @@
 ﻿using System.Collections;
 
-#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
-
 namespace Lexxys
 {
 	/// <summary>
@@ -26,6 +24,7 @@ namespace Lexxys
 	/// Collection of the entities with tracking insertion and deletion operations.
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
+	[Serializable]
 	public class SynchronizedCollection<T>: IList<T>, IReadOnlyList<T>
 	{
 		private readonly List<MarkedItem> _items;

@@ -10,6 +10,7 @@ namespace Lexxys.Tokenizer;
 /// <summary>
 /// Represents a lexical token produced by TokenScanner.
 /// </summary>
+[Serializable]
 public readonly struct LexicalToken
 {
 	public delegate object? Getter(LexicalTokenType token, ReadOnlySpan<char> buffer);

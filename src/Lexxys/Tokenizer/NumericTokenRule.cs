@@ -6,9 +6,6 @@
 //
 using System.Text;
 
-#pragma warning disable CA1720 // Identifier contains type name
-#pragma warning disable CA1008 // Enums should have zero value
-
 namespace Lexxys.Tokenizer;
 
 [Flags]
@@ -34,6 +31,7 @@ public enum NumericTokenStyles
 /// <summary>
 /// A <see cref="LexicalTokenRule"/> for numerical values.
 /// </summary>
+[Serializable]
 public class NumericTokenRule: LexicalTokenRule
 {
 	private const char DecimalPoint = '.';

@@ -1,8 +1,4 @@
-﻿using System;
-
-using Lexxys;
-
-namespace Lexxys.Testing;
+﻿namespace Lexxys.Testing;
 
 // ReSharper disable all
 
@@ -174,11 +170,11 @@ public class RndKnuth: IRand
 	/// <inheritdoc/>
 	public int NextInt()
 	{
-		var x = ran_arr_buf[ran_arr_ptr++];
+		var x = ran_arr_buf[ran_arr_ptr];
 		if (x < 0)
 			x = CycleLong();
 		else
-			++ranf_arr_ptr;
+			++ran_arr_ptr;
 		return x;
 	}
 

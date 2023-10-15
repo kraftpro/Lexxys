@@ -16,7 +16,7 @@ public class LogRecordJsonFormatter: ILogRecordFormatter
 	{
 	}
 
-	public LogRecordJsonFormatter(XmlLiteNode config): this(config["namingRule"].AsEnum(NamingCaseRule.None))
+	public LogRecordJsonFormatter(IXmlReadOnlyNode config): this(config["namingRule"].AsEnum(NamingCaseRule.None))
 	{
 	}
 

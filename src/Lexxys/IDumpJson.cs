@@ -18,18 +18,15 @@ public static class ToJsonExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static JsonBuilder ToJson(this IDumpJson? obj, JsonBuilder json)
 	{
-		if (json is null)
-			throw new ArgumentNullException(nameof(json));
+		if (json is null) throw new ArgumentNullException(nameof(json));
 		return obj?.ToJsonContent(json.Obj()).End() ?? json;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static StringBuilder ToJson(this IDumpJson? obj, StringBuilder text)
 	{
-		if (text is null)
-			throw new ArgumentNullException(nameof(text));
-		if (obj == null)
-			return text;
+		if (text is null) throw new ArgumentNullException(nameof(text));
+		if (obj == null) return text;
 		obj.ToJson(new JsonStringBuilder(text)).Flush();
 		return text;
 	}

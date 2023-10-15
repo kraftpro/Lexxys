@@ -256,13 +256,11 @@ public class XmlToTextConverter
 		{
 			if (text[text.Length - 1] <= ' ')
 			{
-#pragma warning disable CA1307 // Specify StringComparison for clarity
 				if (text.IndexOf('\'') < 0)
 					return "'" + text + "'";
 				if (text.IndexOf('"') < 0)
 					return "\"" + text + "\"";
 				return "'" + text.Replace("'", "''") + "'";
-#pragma warning restore CA1307 // Specify StringComparison for clarity
 			}
 			if (text[0] <= ' ')
 			{

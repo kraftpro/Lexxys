@@ -8,32 +8,42 @@ using System.Text;
 
 namespace Lexxys.Tests.Xml
 {
-	using Testing;
+	using Lexxys.Testing;
 	using Lexxys.Xml;
 
 	[TestClass]
 	public class XmlLiteSelectorTest
 	{
-		[TestMethod]
+        public TestContext TestContext { get; set; }
+
+        [TestMethod]
 		public void XmlLiteNodeSelectTest()
 		{
 			string text = "<root>" + RandomXml(15, 10, 3) + "</root>";
 			var source = "source: " + text;
-			XmlLiteNode xml = XmlLiteNode.FromXml(text);
-			var xx = XmlLiteNode.Select("*", xml);
-			var aa = xx.ToArray();
-			Assert.AreEqual(1, aa.Length, source);
-			Assert.AreEqual(xml.ToString(), aa[0].ToString(), source);
-			xx = XmlLiteNode.Select("*.node1", xml);
-			aa = xx.ToArray();
-			Assert.IsTrue(aa.All(o => o.Name == "node1"), source);
-			xx = XmlLiteNode.Select("**.node1", xml);
-			var bb = xx.ToArray();
-			Assert.IsTrue(bb.All(o => o.Name == "node1"), source);
-			Assert.IsTrue(aa.Length <= bb.Length);
-			xx = XmlLiteNode.Select("**.node1.**.node2", xml);
-			aa = xx.ToArray();
-			Assert.IsTrue(aa.All(o => o.Name == "node2"), source);
+			try
+			{
+                var xml = XmlTools.FromXml(text);
+                var xx = XmlNodeSelector.Select("*", xml.Elements);
+                var aa = xx.ToArray();
+                Assert.AreEqual(1, aa.Length, source);
+				Assert.AreEqual(xml.Elements[0].ToString(), aa[0].ToString(), source);
+                xx = XmlNodeSelector.Select("*.node1", xml.Elements);
+                aa = xx.ToArray();
+                Assert.IsTrue(aa.All(o => o.Name == "node1"), source);
+                xx = XmlNodeSelector.Select("**.node1", xml.Elements);
+                var bb = xx.ToArray();
+                Assert.IsTrue(bb.All(o => o.Name == "node1"), source);
+                Assert.IsTrue(aa.Length <= bb.Length);
+                xx = XmlNodeSelector.Select("**.node1.**.node2", xml.Elements);
+                aa = xx.ToArray();
+                Assert.IsTrue(aa.All(o => o.Name == "node2"), source);
+            }
+            catch
+			{
+				TestContext.WriteLine(source);
+                throw;
+			}
 		}
 
 		private string RandomXml(int depth, int nodes, int attribs)
@@ -46,7 +56,7 @@ namespace Lexxys.Tests.Xml
 			if (depth == 0)
 				return text;
 
-			int n = Rand.Int(nodes);
+            int n = Rand.Int(nodes);
 			int a = _r.Next(attribs);
 			int k = Rand.Int(n) + 1;
 			text.Append(Environment.NewLine);

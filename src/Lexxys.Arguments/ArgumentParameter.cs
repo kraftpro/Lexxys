@@ -4,13 +4,13 @@ public class ArgumentParameter
 {
 	public ArgumentParameter(ParameterDefinition definition)
 	{
-		Definition = definition;
+		Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 		Value = new ParameterValue();
 	}
 
 	public ArgumentParameter(ParameterDefinition definition, ParameterValue value)
 	{
-		Definition = definition;
+		Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 		Value = value;
 	}
 

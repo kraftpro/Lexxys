@@ -7,6 +7,7 @@
 
 namespace Lexxys.Tokenizer;
 
+[Serializable]
 public class SequenceTokenRule: LexicalTokenRule
 {
 	private bool _isSorted;

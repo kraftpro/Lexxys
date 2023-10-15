@@ -30,7 +30,7 @@ public static class IniToXmlConverter
 		return builder.ToString();
 	}
 
-	public static List<XmlLiteNode> ConvertLite(string source, bool ignoreCase = false)
+	public static List<IXmlReadOnlyNode> ConvertLite(string source, bool ignoreCase = false)
 	{
 		if (source is null)
 			throw new ArgumentNullException(nameof(source));
@@ -50,14 +50,8 @@ public static class IniToXmlConverter
 
 	private class XmlStringBuilder: Builder
 	{
-		private readonly StringBuilder _text;
-		private readonly HashSet<string> _attr;
-
-		public XmlStringBuilder()
-		{
-			_text = new StringBuilder();
-			_attr = new HashSet<string>();
-		}
+		private readonly StringBuilder _text = new();
+		private readonly HashSet<string> _attr = new();
 
 		public override void Element(string name)
 		{
@@ -109,13 +103,13 @@ public static class IniToXmlConverter
 	private class XmlLiteBuilder: Builder
 	{
 		private string? _name;
-		private readonly List<XmlLiteNode> _nodes;
+		private readonly List<IXmlReadOnlyNode> _nodes;
 		private readonly Dictionary<string, string> _attr;
 		private readonly bool _ignoreCase;
 
 		public XmlLiteBuilder(bool ignoreCase)
 		{
-			_nodes = new List<XmlLiteNode>();
+			_nodes = new List<IXmlReadOnlyNode>();
 			_attr = new Dictionary<string, string>();
 			_ignoreCase = ignoreCase;
 		}
@@ -164,7 +158,7 @@ public static class IniToXmlConverter
 			return name;
 		}
 
-		public List<XmlLiteNode> Nodes => _nodes;
+		public List<IXmlReadOnlyNode> Nodes => _nodes;
 	}
 
 	private static void Convert(Builder builder, string source)
@@ -216,9 +210,9 @@ public static class IniToXmlConverter
 		}
 		builder.Finish();
 	}
-	private static readonly char[] __eol = { '\n', '\r' };
-	private static readonly char[] __eob = { '\n', '\r', ']' };
-	private static readonly char[] __eoe = { '\n', '\r', '=' };
+	private static readonly char[] __eol = ['\n', '\r'];
+	private static readonly char[] __eob = ['\n', '\r', ']'];
+	private static readonly char[] __eoe = ['\n', '\r', '='];
 }
 
 

@@ -19,6 +19,7 @@ public enum ScheduleWeekType
 	Last
 }
 
+[Serializable]
 public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 {
 	public const int ScheduleLastDay = 31;
@@ -33,8 +34,7 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 
 	public MonthlySchedule(ScheduleWeekType week, DayOfWeek weekDay, IEnumerable<int>? monthList = null, ScheduleReminder? reminder = null) : base(Type, reminder)
 	{
-		if (week == ScheduleWeekType.None)
-			throw new ArgumentOutOfRangeException(nameof(week), week, null);
+		if (week == ScheduleWeekType.None) throw new ArgumentOutOfRangeException(nameof(week), week, null);
 
 		Week = week;
 		WeekDay = weekDay;
@@ -43,8 +43,7 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 
 	private static IReadOnlyList<int> Months(IEnumerable<int>? monthList)
 	{
-		if (monthList == null)
-			return AllMonths;
+		if (monthList == null) return AllMonths;
 		var ss = new SortedSet<int>(monthList.Where(o => o is >= 1 and <= 12)).ToList();
 		return ss.Count == 0 || ss.Count == 12 ? AllMonths : ReadOnly.Wrap(ss)!;
 	}
@@ -105,8 +104,7 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 
 	public override StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 	{
-		if (text is null)
-			throw new ArgumentNullException(nameof(text));
+		if (text is null) throw new ArgumentNullException(nameof(text));
 
 		var format = (DateTimeFormatInfo?)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
 		text.Append("the ");
@@ -135,35 +133,24 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 		return text;
 	}
 
-	public bool Equals(MonthlySchedule? other)
-	{
-		if (other is null)
-			return false;
-		if (ReferenceEquals(this, other))
-			return true;
-		return Day == other.Day && Week == other.Week && WeekDay == other.WeekDay && Comparer.Equals(MonthList, other.MonthList);
-	}
+	public bool Equals(MonthlySchedule? other) =>
+		other is not null && (
+			ReferenceEquals(this, other) ||
+			Day == other.Day &&
+			Week == other.Week &&
+			WeekDay == other.WeekDay &&
+			Comparer.Equals(MonthList, other.MonthList));
 
-	public override bool Equals(Schedule? other)
-	{
-		return other is MonthlySchedule ms && Equals(ms);
-	}
+	public override bool Equals(Schedule? other) => other is MonthlySchedule ms && Equals(ms);
 
-	public override bool Equals(object? obj)
-	{
-		return obj is MonthlySchedule ms && Equals(ms);
-	}
+	public override bool Equals(object? obj) => obj is MonthlySchedule ms && Equals(ms);
 
 	public override int GetHashCode()
-	{
-		return HashCode.Join(HashCode.Join(base.GetHashCode(), Day.GetHashCode(), Week.GetHashCode()), MonthList);
-	}
+		=> HashCode.Join(HashCode.Join(base.GetHashCode(), Day.GetHashCode(), Week.GetHashCode()), MonthList);
 
 	public override DumpWriter DumpContent(DumpWriter writer)
 	{
-		if (writer is null)
-			throw new ArgumentNullException(nameof(writer));
-
+		if (writer is null) throw new ArgumentNullException(nameof(writer));
 		return base.DumpContent(writer)
 			.Then("Day", Day)
 			.Then("Week", Week)
@@ -173,8 +160,7 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 
 	public override XmlBuilder ToXmlContent(XmlBuilder builder)
 	{
-		if (builder is null)
-			throw new ArgumentNullException(nameof(builder));
+		if (builder is null) throw new ArgumentNullException(nameof(builder));
 
 		builder.Item("type", ScheduleType);
 		if (Week == ScheduleWeekType.None)
@@ -196,8 +182,7 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 
 	public override JsonBuilder ToJsonContent(JsonBuilder json)
 	{
-		if (json is null)
-			throw new ArgumentNullException(nameof(json));
+		if (json is null) throw new ArgumentNullException(nameof(json));
 
 		json.Item("type").Val(ScheduleType);
 		if (Week == ScheduleWeekType.None)
@@ -217,14 +202,12 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 		return json;
 	}
 
-	public new static MonthlySchedule FromXml(Xml.XmlLiteNode xml)
+	public new static MonthlySchedule FromXml(Xml.IXmlReadOnlyNode xml)
 	{
-		if (xml is null)
-			throw new ArgumentNullException(nameof(xml));
-		if (xml.IsEmpty)
-			throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
-		if (xml["type"] != Type)
-			throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
+		if (xml is null) throw new ArgumentNullException(nameof(xml));
+		if (xml.IsEmpty) throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
+		if (xml["type"] != Type) throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
+
 		IEnumerable<int>? months = xml["months"] != null ?
 			xml["months"]?.Split(',').Select(o => o.AsInt32(0)):
 			xml.Element("months").Elements.Select(o => o.Value.AsInt32());
@@ -236,10 +219,8 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 
 	public new static MonthlySchedule FromJson(string json)
 	{
-		if (json is not { Length: > 0 })
-			throw new ArgumentNullException(nameof(json));
-
-		return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
+		if (json is not { Length: > 0 }) throw new ArgumentNullException(nameof(json));
+		return FromXml(Xml.JsonToXmlConverter.Convert(json, "schedule", forceAttributes: true));
 	}
 }
 

@@ -214,6 +214,12 @@ public static class StringExtensions
 			left.Substring(0, leftIndex) + delimiter + right.Substring(rightIndex);
 	}
 
+#if !NET8_0_OR_GREATER
+	public static bool StartsWith(this string? value, char c) => value != null && value.Length > 0 && value[0] == c;
+
+	public static bool EndsWith(this string? value, char c) => value != null && value.Length > 0 && value[value.Length - 1] == c;
+#endif
+
 	#region String as Value
 
 	public static byte AsByte(this string value)

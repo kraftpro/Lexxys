@@ -7,8 +7,6 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1810 // Initialize reference type static fields inline
-
 namespace Lexxys;
 
 public static class WatchTimer

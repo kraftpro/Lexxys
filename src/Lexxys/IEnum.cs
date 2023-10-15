@@ -5,8 +5,6 @@
 // You may use this code under the terms of the MIT license
 //
 
-#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
-
 namespace Lexxys;
 
 public interface IEnum

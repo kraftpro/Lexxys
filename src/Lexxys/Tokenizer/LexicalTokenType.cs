@@ -7,13 +7,12 @@
 using System.Diagnostics.Contracts;
 using System.Collections.Concurrent;
 
-#pragma warning disable CA1720 // Identifier contains type name
-
 namespace Lexxys.Tokenizer;
 
 /// <summary>
 /// The type of the lexical token
 /// </summary>
+[Serializable]
 public class LexicalTokenType
 {
 	private static readonly ConcurrentDictionary<(short, short), LexicalTokenType> _lexicalTokenTypes = new();

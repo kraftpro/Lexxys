@@ -16,30 +16,25 @@ public class DataSourceException: Exception
 	{
 	}
 
-	public DataSourceException(string? message)
-		: base(message)
+	public DataSourceException(string? message): base(message)
 	{
 	}
 
-	public DataSourceException(string? message, string? connectionInfo)
-		: base(message)
+	public DataSourceException(string? message, string? connectionInfo): base(message)
 	{
 		base.Data["connection"] = connectionInfo;
 	}
 
-	public DataSourceException(string? message, Exception? exception)
-		: base(message, exception)
+	public DataSourceException(string? message, Exception? exception): base(message, exception)
 	{
 	}
 
-	public DataSourceException(string? message, string? connectionInfo, Exception? exception)
-		: base(message, exception)
+	public DataSourceException(string? message, string? connectionInfo, Exception? exception): base(message, exception)
 	{
 		base.Data["connection"] = connectionInfo;
 	}
 
-	public DataSourceException(string? message, string? connectionInfo, string? statement, Exception? exception)
-		: base(message, exception)
+	public DataSourceException(string? message, string? connectionInfo, string? statement, Exception? exception): base(message, exception)
 	{
 		if (connectionInfo is { Length: >0 })
 			base.Data["connection"] = connectionInfo;
@@ -47,8 +42,7 @@ public class DataSourceException: Exception
 		base.Data["statement"] = statement;
 	}
 
-	public DataSourceException(string? message, string? connectionInfo, string? statement, IEnumerable<DbParameter>? dbParameters, Exception? exception)
-		: base(message, exception)
+	public DataSourceException(string? message, string? connectionInfo, string? statement, IEnumerable<DbParameter>? dbParameters, Exception? exception): base(message, exception)
 	{
 		if (connectionInfo is { Length: >0 })
 			base.Data["connection"] = connectionInfo;
@@ -64,10 +58,11 @@ public class DataSourceException: Exception
 		}
 	}
 
-	protected DataSourceException(SerializationInfo info, StreamingContext context)
-		: base(info, context)
+#if !NET8_0_OR_GREATER
+	protected DataSourceException(SerializationInfo info, StreamingContext context): base(info, context)
 	{
 	}
+#endif
 }
 
 

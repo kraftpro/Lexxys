@@ -28,7 +28,7 @@ public static class DataRecordExtensions
 		if (record is null)
 			throw new ArgumentNullException(nameof(record));
 
-		var buffer = new byte[record.GetBytes(position, 0, null, 0, 0)];
+		var buffer = new byte[record.GetBytes(position, 0, null!, 0, 0)];
 		record.GetBytes(position, 0, buffer, 0, buffer.Length);
 		return buffer;
 	}

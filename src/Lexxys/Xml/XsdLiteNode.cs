@@ -7,6 +7,7 @@
 
 namespace Lexxys.Xml;
 
+[Serializable]
 public class XsdLiteNode
 {
 	public XsdLiteNode(string name, XsdLiteValue value, int minCount, int maxCount, IEnumerable<KeyValuePair<string, XsdLiteValue>>? attribute, IEnumerable<XsdLiteNode>? descendant)
@@ -62,7 +63,7 @@ public class XsdLiteNode
 	}
 
 	/// <summary>
-	/// Construct the object from XmlLiteNode
+	/// Construct the object from IXmlReadOnlyNode
 	///	sample:
 	///		element
 	///			:name	Company
@@ -99,7 +100,7 @@ public class XsdLiteNode
 	/// </summary>
 	/// <param name="node"></param>
 	/// <returns></returns>
-	public static XsdLiteNode? FromXml(XmlLiteNode? node)
+	public static XsdLiteNode? FromXml(IXmlReadOnlyNode? node)
 	{
 		if (node == null || node.IsEmpty)
 			return null;
@@ -146,6 +147,7 @@ public class XsdLiteNode
 	}
 }
 
+[Serializable]
 public class XsdLiteValue
 {
 	public Type ValueType { get; }
@@ -180,7 +182,7 @@ public class XsdLiteValue
 	/// </summary>
 	/// <param name="node"></param>
 	/// <returns></returns>
-	public static XsdLiteValue? FromXml(XmlLiteNode? node)
+	public static XsdLiteValue? FromXml(IXmlReadOnlyNode? node)
 	{
 		if (node == null || node.IsEmpty)
 			return null;

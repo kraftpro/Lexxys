@@ -9,29 +9,67 @@ using System.Text;
 
 namespace Lexxys;
 
+/// <summary>
+/// String tools.
+/// </summary>
 public static partial class Strings
 {
+	/// <summary>
+	/// Escapes string for use in C#/JavaScript.
+	/// </summary>
+	/// <param name="value">The string to escape.</param>
+	/// <returns></returns>
 	public static string EscapeCsString(string value)
 		=> EscapeCsString(new StringBuilder(), value.AsSpan(), '"').ToString();
 
+	/// <summary>
+	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// </summary>
+	/// <param name="value">The string to escape.</param>
+	/// <param name="marker">Strings merger.</param>
+	/// <returns></returns>
 	public static string EscapeCsString(string value, char marker)
 		=> EscapeCsString(new StringBuilder(), value.AsSpan(), marker).ToString();
 
+	/// <summary>
+	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// </summary>
+	/// <param name="text">The string builder to append the result.</param>
+	/// <param name="value">The string to escape.</param>
+	/// <param name="marker">Strings merger.</param>
+	/// <returns></returns>
 	public static StringBuilder EscapeCsString(StringBuilder text, string value, char marker = '"')
 		=> EscapeCsString(text, value.AsSpan(), marker);
 
+	/// <summary>
+	/// Escapes string for use in C#/JavaScript.
+	/// </summary>
+	/// <param name="value">The string to escape.</param>
+	/// <returns></returns>
 	public static string EscapeCsString(ReadOnlySpan<char> value)
 		=> EscapeCsString(value, '"');
 
+	/// <summary>
+	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// </summary>
+	/// <param name="value">The string to escape.</param>
+	/// <param name="marker">Strings merger.</param>
+	/// <returns></returns>
 	public static string EscapeCsString(ReadOnlySpan<char> value, char marker)
 		=> EscapeCsString(new StringBuilder(), value, marker).ToString();
 
+	/// <summary>
+	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// </summary>
+	/// <param name="text">The string builder to append the result.</param>
+	/// <param name="value">The string to escape.</param>
+	/// <param name="marker">Strings merger.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
 	public static StringBuilder EscapeCsString(StringBuilder text, ReadOnlySpan<char> value, char marker = '"')
 	{
-		if (text == null)
-			throw new ArgumentNullException(nameof(text));
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
+		if (text == null) throw new ArgumentNullException(nameof(text));
+		if (value == null) throw new ArgumentNullException(nameof(value));
 
 		if (marker != '\0')
 			text.Append(marker);
@@ -98,6 +136,13 @@ public static partial class Strings
 		return text;
 	}
 
+	/// <summary>
+	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// </summary>
+	/// <param name="text">The <see cref="TextWriter"/> to append the result.</param>
+	/// <param name="value">The string to escape.</param>
+	/// <param name="marker">Strings merger.</param>
+	/// <exception cref="ArgumentNullException"></exception>
 	public static void EscapeCsString(TextWriter text, ReadOnlySpan<char> value, char marker = '"')
 	{
 		if (text == null)
@@ -170,96 +215,101 @@ public static partial class Strings
 			text.Write(marker);
 	}
 
-	public static IEnumerable<char> EscapeCsCharArray(IEnumerable<char> value, char marker = '"')
-	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
+	// public static IEnumerable<char> EscapeCsCharArray(IEnumerable<char> value, char marker = '"')
+	// {
+	// 	if (value == null)
+	// 		throw new ArgumentNullException(nameof(value));
+	//
+	// 	if (marker != '\0')
+	// 		yield return marker;
+	// 	foreach (char c in value)
+	// 	{
+	// 		if (c < ' ' || c == 127)
+	// 		{
+	// 			switch (c)
+	// 			{
+	// 				case '\n':
+	// 					yield return '\\';
+	// 					yield return 'n';
+	// 					break;
+	// 				case '\r':
+	// 					yield return '\\';
+	// 					yield return 'r';
+	// 					break;
+	// 				case '\t':
+	// 					yield return '\\';
+	// 					yield return 't';
+	// 					break;
+	// 				case '\f':
+	// 					yield return '\\';
+	// 					yield return 'f';
+	// 					break;
+	// 				case '\v':
+	// 					yield return '\\';
+	// 					yield return 'v';
+	// 					break;
+	// 				case '\a':
+	// 					yield return '\\';
+	// 					yield return 'a';
+	// 					break;
+	// 				case '\b':
+	// 					yield return '\\';
+	// 					yield return 'b';
+	// 					break;
+	// 				case '\0':
+	// 					yield return '\\';
+	// 					yield return '0';
+	// 					break;
+	// 				default:
+	// 					yield return '\\';
+	// 					yield return 'x';
+	// 					yield return '0';
+	// 					yield return '0';
+	// 					yield return __hex[(c & 0xF0) >> 4];
+	// 					yield return __hex[c & 0xF];
+	// 					break;
+	// 			}
+	// 		}
+	// 		else if (c >= '\xd800')
+	// 		{
+	// 			yield return '\\';
+	// 			yield return 'x';
+	// 			yield return __hex[(c & 0xF000) >> 12];
+	// 			yield return __hex[(c & 0xF00) >> 8];
+	// 			yield return __hex[(c & 0xF0) >> 4];
+	// 			yield return __hex[c & 0xF];
+	// 		}
+	// 		else if (c == marker)
+	// 		{
+	// 			yield return '\\';
+	// 			yield return marker;
+	// 		}
+	// 		else if (c == '\\')
+	// 		{
+	// 			yield return '\\';
+	// 			yield return '\\';
+	// 		}
+	// 		else
+	// 		{
+	// 			yield return c;
+	// 		}
+	// 	}
+	// 	if (marker != '\0')
+	// 		yield return marker;
+	// }
+	private static readonly char[] __hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
 
-		if (marker != '\0')
-			yield return marker;
-		foreach (char c in value)
-		{
-			if (c < ' ' || c == 127)
-			{
-				switch (c)
-				{
-					case '\n':
-						yield return '\\';
-						yield return 'n';
-						break;
-					case '\r':
-						yield return '\\';
-						yield return 'r';
-						break;
-					case '\t':
-						yield return '\\';
-						yield return 't';
-						break;
-					case '\f':
-						yield return '\\';
-						yield return 'f';
-						break;
-					case '\v':
-						yield return '\\';
-						yield return 'v';
-						break;
-					case '\a':
-						yield return '\\';
-						yield return 'a';
-						break;
-					case '\b':
-						yield return '\\';
-						yield return 'b';
-						break;
-					case '\0':
-						yield return '\\';
-						yield return '0';
-						break;
-					default:
-						yield return '\\';
-						yield return 'x';
-						yield return '0';
-						yield return '0';
-						yield return __hex[(c & 0xF0) >> 4];
-						yield return __hex[c & 0xF];
-						break;
-				}
-			}
-			else if (c >= '\xd800')
-			{
-				yield return '\\';
-				yield return 'x';
-				yield return __hex[(c & 0xF000) >> 12];
-				yield return __hex[(c & 0xF00) >> 8];
-				yield return __hex[(c & 0xF0) >> 4];
-				yield return __hex[c & 0xF];
-			}
-			else if (c == marker)
-			{
-				yield return '\\';
-				yield return marker;
-			}
-			else if (c == '\\')
-			{
-				yield return '\\';
-				yield return '\\';
-			}
-			else
-			{
-				yield return c;
-			}
-		}
-		if (marker != '\0')
-			yield return marker;
-	}
-	private static readonly char[] __hex = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-
+	/// <summary>
+	/// Escapes string for use in C#/JavaScript using the specified strings marker and appends the result to the specified UTF8 stream.
+	/// </summary>
+	/// <param name="stream">The <see cref="Stream"/> to append the result.</param>
+	/// <param name="value">The string to escape.</param>
+	/// <param name="marker">Strings merger.</param>
+	/// <exception cref="ArgumentNullException"></exception>
 	public static void EscapeUtf8CsString(Stream stream, ReadOnlySpan<char> value, char marker = '"')
 	{
-		if (stream == null)
-			throw new ArgumentNullException(nameof(stream));
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
+		if (stream == null) throw new ArgumentNullException(nameof(stream));
+		if (value == null) throw new ArgumentNullException(nameof(value));
 
 		byte[] buffer = ArrayPool<byte>.Shared.Rent(value.Length * 6 + 10);
 		int i = 0;
@@ -351,12 +401,17 @@ public static partial class Strings
 			return i;
 		}
 	}
-	private static readonly byte[] __hexB = { (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f' };
+	private static readonly byte[] __hexB = [(byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f'];
 
+	/// <summary>
+	/// Removes extra braces from the string.
+	/// </summary>
+	/// <param name="value"></param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
 	public static string RemoveExtraBraces(string value)
 	{
-		if (value is null)
-			throw new ArgumentNullException(nameof(value));
+		if (value is null) throw new ArgumentNullException(nameof(value));
 		
 		var str = value.AsSpan().Trim();
 		while (str.Length > 1 && str[0] == '(' && str[str.Length - 1] == ')')
@@ -366,8 +421,18 @@ public static partial class Strings
 		return str.Length == value.Length ? value: str.ToString();
 	}
 
+	/// <summary>
+	/// Splits the string <paramref name="identifier"/> by capital nad/or nod word letters.
+	/// </summary>
+	/// <param name="identifier">The string to split.</param>
+	/// <returns></returns>
 	public static IList<(int Index, int Length)> SplitByCapitals(string? identifier) => SplitByCapitals(identifier.AsSpan());
 
+	/// <summary>
+	/// Splits the string <paramref name="identifier"/> by capital nad/or nod word letters.
+	/// </summary>
+	/// <param name="identifier">The string to split.</param>
+	/// <returns></returns>
 	public static IList<(int Index, int Length)> SplitByCapitals(ReadOnlySpan<char> identifier)
 	{
 		if (identifier.Length == 0)
@@ -415,40 +480,57 @@ public static partial class Strings
 		return ss;
 	}
 
-	public static IList<(int Index, int Length)> SplitByWordBound(string? value, int width, int count = 0, bool openBrace = false)
+	/// <summary>
+	/// Splits the string <paramref name="value"/> by word bound for the specified <paramref name="width"/>.
+	/// </summary>
+	/// <param name="value">The string to split.</param>
+	/// <param name="width">Paragraph width.</param>
+	/// <param name="count">Maximum number of lines or zero.</param>
+	/// <param name="openBrace">Allow open brace being the last character of the line.</param>
+	/// <returns></returns>
+	public static IList<(int Index, int Length)> SplitByWordBound(string? value, int width, int count = 0, bool openBrace = false) => SplitByWordBound(value.AsSpan(), width, count, openBrace);
+
+	/// <summary>
+	/// Splits the string <paramref name="value"/> by word bound for the specified <paramref name="width"/>.
+	/// </summary>
+	/// <param name="value">The string to split.</param>
+	/// <param name="width">Paragraph width.</param>
+	/// <param name="count">Maximum number of lines or zero.</param>
+	/// <param name="openBrace">Allow open brace being the last character of the line.</param>
+	/// <returns></returns>
+	public static IList<(int Index, int Length)> SplitByWordBound(ReadOnlySpan<char> value, int width, int count = 0, bool openBrace = false)
 	{
-		var span = value.AsSpan();
-		if (count == 1 || span.Length <= width)
-			return span.Length == 0 ? Array.Empty<(int, int)>(): new[] { (0, span.Length) };
+		if (count == 1 || value.Length <= width)
+			return value.Length == 0 ? Array.Empty<(int, int)>(): new[] { (0, value.Length) };
 
 		var list = new List<(int, int)>();
 		int ix = 0;
-		while (span.Length > 0)
+		while (value.Length > 0)
 		{
-			while (span.Length > 0 && Char.IsWhiteSpace(span[0]))
+			while (value.Length > 0 && Char.IsWhiteSpace(value[0]))
 			{
-				span = span.Slice(1);
+				value = value.Slice(1);
 				++ix;
 			}
 			if (list.Count == count - 1)
 			{
-				if (span.Length > 0)
-					list.Add((ix, span.Length));
+				if (value.Length > 0)
+					list.Add((ix, value.Length));
 				break;
 			}
 
-			int bound = GetBound(span, width, openBrace);
+			int bound = GetBound(value, width, openBrace);
 			if (bound > 0)
 			{
 				int i;
 				for (i = 0; i < bound; ++i)
 				{
-					if (!Char.IsWhiteSpace(span[bound - (i + 1)]))
+					if (!Char.IsWhiteSpace(value[bound - (i + 1)]))
 						break;
 				}
 				if (bound > i)
 					list.Add((ix, bound - i));
-				span = span.Slice(bound);
+				value = value.Slice(bound);
 				ix += bound;
 			}
 		}
@@ -482,32 +564,63 @@ public static partial class Strings
 		}
 		return width;
 	}
-	private static readonly char[] CrLf = {'\n', '\r'};
+	private static readonly char[] CrLf = ['\n', '\r'];
 
-	public static string ToTitleCase(string value)
+	/// <summary>
+	/// Converts the first character of the string to upper case and the rest of string to the lower case.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static unsafe string ToTitleCase(string value) => value is null ? throw new ArgumentNullException(nameof(value)): ToTitleCase(value.AsSpan());
+
+	/// <summary>
+	/// Converts the first character of the string to upper case and the rest of string to the lower case.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static unsafe string ToTitleCase(ReadOnlySpan<char> value)
 	{
-		if (value is null)
-			throw new ArgumentNullException(nameof(value));
 		if (value.Length == 0)
-			return value;
-		var a = new char[value.Length];
+			return String.Empty;
+		Span<char> a = value.Length < Tools.MaxStackAllocSize ? stackalloc char[value.Length]: new char[value.Length];
 		a[0] = Char.ToUpperInvariant(value[0]);
-		value.AsSpan(1).ToLowerInvariant(a.AsSpan(1));
-		return new String(a);
+		value.Slice(1).ToLowerInvariant(a.Slice(1));
+		return a.ToString();
 	}
 
-	public static string ToCamelCase(string value)
+	/// <summary>
+	/// Converts the specified string <paramref name="value"/> to the camel case naming convention.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static string ToCamelCase(string value) => value is null ? throw new ArgumentNullException(nameof(value)): ToCamelCase(value.AsSpan());
+
+	/// <summary>
+	/// Converts the specified string <paramref name="value"/> to the camel case naming convention.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static string ToPascalCase(string value) => value is null ? throw new ArgumentNullException(nameof(value)): ToPascalCase(value.AsSpan());
+
+	/// <summary>
+	/// Converts the specified string <paramref name="value"/> to the camel case naming convention.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static string ToCamelCase(ReadOnlySpan<char> value)
 	{
-		if (value is null)
-			throw new ArgumentNullException(nameof(value));
 		if (value.Length == 0)
-			return value;
+			return String.Empty;
 
 		bool upper = false;
-		var v = value.AsSpan();
-		var ax = new char[v.Length].AsSpan();
-		v.ToLowerInvariant(ax);
-		foreach (var (index, length) in SplitByCapitals(v))
+		var ax = new char[value.Length].AsSpan();
+		value.ToLowerInvariant(ax);
+		foreach (var (index, length) in SplitByCapitals(value))
 		{
 			var f = ax[index];
 			if (length == 1 && f == '_')
@@ -520,42 +633,63 @@ public static partial class Strings
 		return ax.ToString();
 	}
 
-	public static string ToPascalCase(string value)
+	/// <summary>
+	/// Converts the specified string <paramref name="value"/> to the pascal case naming convention.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static string ToPascalCase(ReadOnlySpan<char> value)
 	{
-		if (value is null)
-			throw new ArgumentNullException(nameof(value));
 		if (value.Length == 0)
-			return value;
+			return String.Empty;
 
-		var v = value.AsSpan();
-		var ax = new char[v.Length].AsSpan();
-		v.ToLowerInvariant(ax);
-		foreach (var (index, _) in SplitByCapitals(v))
+		var ax = new char[value.Length].AsSpan();
+		value.ToLowerInvariant(ax);
+		foreach (var (index, _) in SplitByCapitals(value))
 		{
 			ax[index] = Char.ToUpperInvariant(ax[index]);
 		}
 		return ax.ToString();
 	}
 
-	public static string ToDashed(string value, bool pascalCase, char[]? dash = null)
-	{
-		if (value is null)
-			throw new ArgumentNullException(nameof(value));
-		if (value.Length == 0)
-			return value;
+	public delegate void Converter(ReadOnlySpan<char> span, Span<char> buffer);
 
-		if (dash is null || dash.Length == 0)
+	
+	/// <summary>
+	/// Converts the specified string <paramref name="value"/> to the names separated by the specified dash.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <param name="convert">Converts the word to the desired case.</param>
+	/// <param name="dash">Dash characters. The first character is used as a separator.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static string ToDashed(string value, Converter? convert, char[]? dash = null) => value is null ? throw new ArgumentNullException(nameof(value)): ToDashed(value.AsSpan(), convert, dash);
+
+	/// <summary>
+	/// Converts the specified string <paramref name="value"/> to the names separated by the specified dash.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <param name="convert">Converts the word to the desired case.</param>
+	/// <param name="dash">Dash characters. The first character is used as a separator.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static string ToDashed(ReadOnlySpan<char> value, Converter? convert, char[]? dash = null)
+	{
+		if (value.Length == 0)
+			return String.Empty;
+
+		if (dash is not { Length: >0 })
 			dash = __dashes;
 
 		var c = dash[0];
 
 		var ix = 0;
-		var ss = value.AsSpan();
-		var buffer = ArrayPool<char>.Shared.Rent(ss.Length * 2);
+		var buffer = ArrayPool<char>.Shared.Rent(value.Length * 2);
 		var ax = buffer.AsSpan();
-		foreach (var (index, length) in SplitByCapitals(ss))
+		foreach (var (index, length) in SplitByCapitals(value))
 		{
-			var s = ss.Slice(index, length).Trim(dash);
+			var s = value.Slice(index, length).Trim(dash);
 			if (s.Length == 0 || (s.Length == 1 && s[0] == '_'))
 				continue;
 			if (ix > 0)
@@ -563,47 +697,81 @@ public static partial class Strings
 				ax[ix] = c;
 				++ix;
 			}
-			if (pascalCase)
-			{
-				ax[ix] = Char.ToUpperInvariant(s[0]);
-				s.Slice(1).ToLowerInvariant(ax.Slice(ix + 1));
-			}
-			else
-			{
+			if (convert == null)
 				s.CopyTo(ax.Slice(ix));
-			}
+			else
+				convert(s, ax.Slice(ix));
 			ix += length;
 		}
 		var result = ax.Slice(0, ix).ToString();
 		ArrayPool<char>.Shared.Return(buffer);
 		return result;
 	}
-	private static readonly char[] __dashes = new[] { '-' };
+	private static readonly char[] __dashes = ['-'];
 
-	public static string ToNamingRule(string value, NamingCaseRule rule)
+	public static string ToNamingRule(string value, NamingCaseRule rule) => value is null ? throw new ArgumentNullException(nameof(value)): ToNamingRule(value.AsSpan(), rule); 
+	
+	public static string ToNamingRule(ReadOnlySpan<char> value, NamingCaseRule rule)
 	{
-		if (value is null)
-			throw new ArgumentNullException(nameof(value));
-		if (value.Length == 0)
-			return value;
+		if (value.Length == 0) return String.Empty;
 
-		return (rule & ~NamingCaseRule.Force) switch
+		char[]? delimiter = (rule & NamingCaseRule.Separators) switch
 		{
-			NamingCaseRule.PreferLowerCase => value.ToLowerInvariant(),
-			NamingCaseRule.PreferCamelCase => Strings.ToCamelCase(value),
-			NamingCaseRule.PreferPascalCase => Strings.ToPascalCase(value),
-			NamingCaseRule.PreferUpperCase => value.ToUpperInvariant(),
-			NamingCaseRule.PreferLowerCaseWithDashes => Strings.ToDashed(value, false, __dashChars).ToLowerInvariant(),
-			NamingCaseRule.PreferPascalCaseWithDashes => Strings.ToDashed(value, true, __dashChars),
-			NamingCaseRule.PreferUpperCaseWithDashes => Strings.ToDashed(value, false, __dashChars).ToUpperInvariant(),
-			NamingCaseRule.PreferLowerCaseWithUnderscores => Strings.ToDashed(value, false, __underscoreChars).ToLowerInvariant(),
-			NamingCaseRule.PreferPascalCaseWithUnderscores => Strings.ToDashed(value, true, __underscoreChars),
-			NamingCaseRule.PreferUpperCaseWithUnderscores => Strings.ToDashed(value, false, __underscoreChars).ToUpperInvariant(),
-			_ => value,
+			NamingCaseRule.Underscore => __underscoreChars,
+			NamingCaseRule.Dash => __dashChars,
+			NamingCaseRule.Dot => __dotChars,
+			_ => null
 		};
+
+		return (rule & ~(NamingCaseRule.Force | NamingCaseRule.Separators)) switch
+		{
+			NamingCaseRule.PreferLowerCase => delimiter is null ? ToLowerString(value): Strings.ToDashed(value, ToLower, delimiter),
+			NamingCaseRule.PreferCamelCase => delimiter is null ? Strings.ToCamelCase(value): FirstCharToLower(Strings.ToDashed(value, ToPascal, delimiter)),
+			NamingCaseRule.PreferPascalCase => delimiter is null ? Strings.ToPascalCase(value): Strings.ToDashed(value, ToPascal, delimiter),
+			NamingCaseRule.PreferUpperCase => delimiter is null ? ToUpperString(value): Strings.ToDashed(value, ToUpper, delimiter),
+			_ => value.ToString(),
+		};
+		
+		static void ToLower(ReadOnlySpan<char> span, Span<char> buffer) => span.ToLowerInvariant(buffer);
+
+		static void ToUpper(ReadOnlySpan<char> span, Span<char> buffer) => span.ToUpperInvariant(buffer);
+		
+		static void ToPascal(ReadOnlySpan<char> span, Span<char> buffer)
+		{
+			span.ToLowerInvariant(buffer);
+			buffer[0] = Char.ToUpperInvariant(buffer[0]);
+		}
+
+		static string ToLowerString(ReadOnlySpan<char> span)
+		{
+			Span<char> buffer = span.Length < Tools.MaxStackAllocSize ? stackalloc char[span.Length]: new char[span.Length];
+			span.ToLowerInvariant(buffer);
+			return buffer.ToString();
+		}
+
+		static string ToUpperString(ReadOnlySpan<char> span)
+		{
+			Span<char> buffer = span.Length < Tools.MaxStackAllocSize ? stackalloc char[span.Length]: new char[span.Length];
+			span.ToUpperInvariant(buffer);
+			return buffer.ToString();
+		}
+
+		static string FirstCharToLower(string value)
+		{
+			if (value is not { Length: > 0 } || Char.IsLower(value[0]))
+				return value;
+#if NET5_0_OR_GREATER
+			var s = value.AsSpan();
+			Span<char> buffer = [Char.ToLowerInvariant(s[0])];
+			return String.Concat(buffer, s.Slice(1));
+#else
+			return value.Substring(0, 1).ToLowerInvariant() + value.Substring(1);
+#endif
+		}
 	}
-	private static readonly char[] __dashChars = new[] { '-', '_' };
-	private static readonly char[] __underscoreChars = new[] { '_', '-' };
+	private static readonly char[] __dashChars = ['-', '_', '.'];
+	private static readonly char[] __underscoreChars = ['_', '-', '.'];
+	private static readonly char[] __dotChars = ['.', '_', '-'];
 
 	public static string Ellipsis(string value, int length, string? pad = null)
 	{
@@ -668,7 +836,7 @@ public static partial class Strings
 			}
 		}
 	}
-	private static readonly char[] __hexDigits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	private static readonly char[] __hexDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
 
 	public static void ToHexCharArray(byte[] bitsValue, int offset, int length, char[] hexValue, int outOffset)
 	{
@@ -741,21 +909,20 @@ public static partial class Strings
 		if (value.Length == 0)
 			return "";
 		var text = new StringBuilder(value.Length * 9);
-		for (int i = 0; i < value.Length; ++i)
+		foreach (var b in value)
 		{
-			text.Append(__bits[value[i] >> 4]).Append(__bits[value[i] & 0x0F]).Append(' ');
+			text.Append(__bits[b >> 4]).Append(__bits[b & 0x0F]).Append(' ');
 		}
 		--text.Length;
 		return text.ToString();
 	}
-
 	private static readonly string[] __bits =
-	{
+	[
 		"0000", "0001", "0010", "0011",
 		"0100", "0101", "0110", "0111",
 		"1000", "1001", "1010", "1011",
 		"1100", "1101", "1110", "1111",
-	};
+	];
 
 	public static string CutIndents(ReadOnlySpan<string?> source, int tabSize = 4, string? newLine = null)
 	{
@@ -777,43 +944,43 @@ public static partial class Strings
 
 		int indent = Int32.MaxValue; // source[source.Length - 1].Length;
 
-		for (int i = 0; i < source.Length; ++i)
+		foreach (var t in source)
 		{
-			var s = source[i].AsSpan();
+			var s = t.AsSpan();
 			if (s.IsWhiteSpace())
 				continue;
 			int column = 0;
-			for (int j = 0; j < s.Length; ++j)
+			foreach (var c in s)
 			{
-				if (s[j] == '\t')
+				if (c == '\t')
 					column += tabSize - (column % tabSize);
-				else if (s[j] == ' ')
+				else if (c == ' ')
 					++column;
 				else
 					break;
 				if (column >= indent)
 					break;
 			}
-			if (column < indent)
-			{
-				indent = column;
-				if (indent == 0)
-					break;
-			}
+			if (column >= indent)
+				continue;
+
+			indent = column;
+			if (indent == 0)
+				break;
 		}
 
-		if (indent == 0 || indent == Int32.MaxValue)
+		if (indent is 0 or Int32.MaxValue)
 		{
-			for (int i = 0; i < source.Length; ++i)
+			foreach (var s in source)
 			{
-				result.Append(source[i].AsSpan().TrimEnd()).Append(newLine);
+				result.Append(s.AsSpan().TrimEnd()).Append(newLine);
 			}
 			return result.ToString(0, result.Length - newLine.Length);
 		}
 
-		for (int i = 0; i < source.Length; ++i)
+		foreach (var t in source)
 		{
-			var s = source[i].AsSpan().TrimEnd();
+			var s = t.AsSpan().TrimEnd();
 			if (s.Length == 0)
 			{
 				result.Append(newLine);
@@ -837,7 +1004,6 @@ public static partial class Strings
 
 		return result.ToString(0, result.Length - newLine.Length);
 	}
-
 
 	public static string CutIndents(ReadOnlySpan<char> text, int tabSize = 4)
 	{
@@ -945,172 +1111,4 @@ public static partial class Strings
 			result.Append(value.Slice(j));
 		}
 	}
-
-	//public static unsafe string EncodeUrl(string value)
-	//{
-	//	if (value == null)
-	//		throw new ArgumentNullException(nameof(value));
-
-	//	fixed (char* str = value)
-	//	{
-	//		char* s = str;
-	//		char* e = s + value.Length;
-	//		bool space = false;
-	//		int count5 = 0;
-	//		int count2 = 0;
-	//		while (s != e)
-	//		{
-	//			char c = *s;
-	//			if (c > 0x007F)
-	//			{
-	//				if (c > 0x07FF)
-	//					count5 += 2;
-	//				else
-	//					count5 += 1;
-	//			}
-	//			else if (!IsSafeUrlChar(c))
-	//			{
-	//				if (c == ' ')
-	//					space = true;
-	//				else
-	//					++count2;
-	//			}
-	//			++s;
-	//		}
-	//		if (count2 == 0 && count5 == 0 && !space)
-	//			return value;
-
-	//		char[] buffer = new char[value.Length + count2 * 2 + count5 * 5];
-	//		byte* temp = stackalloc byte[3];
-	//		int i = 0;
-
-	//		for (s = str; s != e; ++s)
-	//		{
-	//			char c = *s;
-	//			if (IsSafeUrlChar(c))
-	//			{
-	//				buffer[i++] = c;
-	//			}
-	//			else if (c > 127)
-	//			{
-	//				int count = Encoding.UTF8.GetBytes(s, 1, temp, 3);
-	//				for (int j = 0; j < count; ++j)
-	//				{
-	//					buffer[i++] = '%';
-	//					buffer[i++] = __hexDigits[temp[j] >> 4];
-	//					buffer[i++] = __hexDigits[temp[j] & 15];
-	//				}
-	//			}
-	//			else if (c != ' ')
-	//			{
-	//				buffer[i++] = '%';
-	//				buffer[i++] = __hexDigits[c >> 4];
-	//				buffer[i++] = __hexDigits[c & 15];
-	//			}
-	//			else
-	//			{
-	//				buffer[i++] = '+';
-	//			}
-	//		}
-	//		return new String(buffer);
-	//	}
-
-	//	static bool IsSafeUrlChar(char value)
-	//	{
-	//		if ((value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z') || (value >= '0' && value <= '9'))
-	//			return true;
-	//		return value switch
-	//		{
-	//			'(' or ')' or '*' or '-' or '.' or ':' or '_' or '!' or '~' => true,
-	//			_ => false,
-	//		};
-	//	}
-	//}
-
-	//public static unsafe string DecodeUrl(string value)
-	//{
-	//	if (value == null)
-	//		throw new ArgumentNullException(nameof(value));
-
-	//	int i = value.IndexOf('%');
-	//	value = value.Replace('+', ' ');
-	//	if (i < 0)
-	//		return value;
-	//	var text = new StringBuilder(value.Length);
-	//	text.Append(value, 0, i);
-	//	char[] buffer = new char[value.Length];
-	//	byte* temp = stackalloc byte[value.Length / 3];
-	//	fixed (char* str = value)
-	//	{
-	//		fixed (char* buf = buffer)
-	//		{
-	//			value.CopyTo(0, buffer, 0, i);
-	//			char* s = str + i;
-	//			char* e = str + value.Length;
-	//			char* b = buf + i;
-	//			while (s != e)
-	//			{
-	//				char c = *s++;
-	//				if (c != '%')
-	//				{
-	//					*b++ = c;
-	//				}
-	//				else
-	//				{
-	//					int x = Unpack(s, e);
-	//					if (x < 0)
-	//					{
-	//						*b++ = '%';
-	//					}
-	//					else if (x < 128)
-	//					{
-	//						s += 2;
-	//						*b++ = (char)x;
-	//					}
-	//					else
-	//					{
-	//						s += 2;
-	//						temp[0] = (byte)x;
-	//						int j = 1;
-	//						while (s != e && *s == '%' && (x = Unpack(s + 1, e)) >= 0)
-	//						{
-	//							temp[j++] = (byte)x;
-	//							s += 3;
-	//						}
-	//						b += Encoding.UTF8.GetChars(temp, j, b, j);
-	//					}
-	//				}
-	//			}
-	//			return new String(buf, 0, (int)(b - buf));
-	//		}
-	//	}
-	//}
-
-	//private static unsafe int Unpack(char* s, char* e)
-	//{
-	//	if (s == e)
-	//		return -1;
-	//	char a = *s++;
-	//	if (s == e)
-	//		return -1;
-	//	char b = *s;
-	//	int x;
-	//	if (a >= '0' && a <= '9')
-	//		x = (a - '0') << 4;
-	//	else if (a >= 'A' && a <= 'F')
-	//		x = (a - ('A' - 10)) << 4;
-	//	else if (a >= 'a' && a <= 'f')
-	//		x = (a - ('a' - 10)) << 4;
-	//	else
-	//		return -1;
-	//	if (b >= '0' && b <= '9')
-	//		x += b - '0';
-	//	else if (b >= 'A' && b <= 'F')
-	//		x += b - ('A' - 10);
-	//	else if (b >= 'a' && b <= 'f')
-	//		x += b - ('a' - 10);
-	//	else
-	//		return -1;
-	//	return x;
-	//}
 }

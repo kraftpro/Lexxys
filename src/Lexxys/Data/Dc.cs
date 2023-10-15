@@ -10,10 +10,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Logging;
 
-#pragma warning disable CA1305 // Specify IFormatProvider
-#pragma warning disable CA1307 // Specify StringComparison
+using Lexxys.Xml;
+
+using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Data;
 
@@ -777,9 +777,9 @@ public static class Dc
 		return here;
 	}
 
-	internal static List<Xml.XmlLiteNode> XmlMapper(DbCommand cmd)
+	internal static List<Xml.IXmlReadOnlyNode> XmlMapper(DbCommand cmd)
 	{
-		var result = new List<Xml.XmlLiteNode>();
+		var builder = XmlFragBuilder.Create<IXmlReadOnlyNode>();
 		using (var reader = cmd.ExecuteReader())
 		{
 			do
@@ -793,17 +793,17 @@ public static class Dc
 					for (int i = 0; i < width; ++i)
 					{
 						if (!reader.IsDBNull(i))
-							result.AddRange(Xml.XmlLiteNode.FromXmlFragment(reader.GetString(i)));
+							builder.Xml(reader.GetString(i));
 					}
 				}
 			} while (reader.NextResult());
 		}
-		return result;
+		return builder.Build();
 	}
 
-	internal static async Task<List<Xml.XmlLiteNode>> XmlMapperAsync(DbCommand cmd)
+	internal static async Task<List<Xml.IXmlReadOnlyNode>> XmlMapperAsync(DbCommand cmd)
 	{
-		var result = new List<Xml.XmlLiteNode>();
+		var builder = XmlFragBuilder.Create<IXmlReadOnlyNode>();
 		using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
 		{
 			do
@@ -817,12 +817,12 @@ public static class Dc
 					for (int i = 0; i < width; ++i)
 					{
 						if (!await reader.IsDBNullAsync(i).ConfigureAwait(false))
-							result.AddRange(Xml.XmlLiteNode.FromXmlFragment(reader.GetString(i)));
+							builder.Xml(reader.GetString(i));
 					}
 				}
 			} while (await reader.NextResultAsync().ConfigureAwait(false));
 		}
-		return result;
+		return builder.Build();
 	}
 
 	private static class AnonymousType<T>

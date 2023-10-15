@@ -38,7 +38,7 @@ class DatabaseConfigurationSource: IXmlConfigurationSource
 
 	public int Version => 1;
 
-	public IReadOnlyList<XmlLiteNode> Content { get; }
+	public IReadOnlyList<IXmlReadOnlyNode> Content { get; }
 
 	public event EventHandler<ConfigurationEventArgs>? Changed
 	{

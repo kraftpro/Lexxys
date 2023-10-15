@@ -7,6 +7,7 @@
 
 namespace Lexxys;
 
+[Serializable]
 public static class Vote
 {
 	public static Vote<T> New<T>(T value, VoteScore score)

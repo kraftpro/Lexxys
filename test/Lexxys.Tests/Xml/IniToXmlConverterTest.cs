@@ -22,8 +22,8 @@ namespace Lexxys.Tests.Xml
 		[TestMethod()]
 		public void ConvertIniToXmlTest()
 		{
-			string[] tables = new string[]
-			{
+			string[] tables =
+			[
 @"[s_A] ; comment
 a=1
 b = 2
@@ -31,14 +31,14 @@ b = 2
 ",
 @"<s_A a='1' b='2'/>",
 
-			};
+			];
 
 			for (int i = 1; i < tables.Length; i += 2)
 			{
 				string xml = IniToXmlConverter.Convert(tables[i - 1]);
 				Assert.IsNotNull(xml);
-				XmlLiteNode actual = XmlLiteNode.FromXml(xml, true);
-				XmlLiteNode expected = XmlLiteNode.FromXml(tables[i], true);
+				IXmlReadOnlyNode actual = XmlTools.FromXml(xml, true);
+				IXmlReadOnlyNode expected = XmlTools.FromXml(tables[i], true);
 				Assert.AreEqual(expected, actual, tables[i-1]);
 			}
 		}

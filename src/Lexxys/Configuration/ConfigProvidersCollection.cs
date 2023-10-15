@@ -25,6 +25,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 
 	public ConfigProvidersCollection()
 	{
+		_version = 1;
 		Factory.AssemblyLoad += FactoryAssemblyLoad;
 
 		void FactoryAssemblyLoad(object? sender, AssemblyLoadEventArgs e)
@@ -69,9 +70,9 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 
 		object? value = null;
 		var providers = _providers;
-		for (int i = 0; i < providers.Count; ++i)
+		foreach (IConfigProvider item in providers)
 		{
-			value = providers[i].GetValue(key, objectType);
+			value = item.GetValue(key, objectType);
 			if (value != null)
 				break;
 		}
@@ -89,9 +90,9 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		IReadOnlyList<T>? temp = null;
 		List<T>? list = null;
 		var providers = _providers;
-		for (int i = 0; i < providers.Count; ++i)
+		foreach (IConfigProvider item in providers)
 		{
-			IReadOnlyList<T> x = providers[i].GetList<T>(key);
+			IReadOnlyList<T> x = item.GetList<T>(key);
 			if (x.Count <= 0) continue;
 			if (temp == null)
 				temp = x;
@@ -240,7 +241,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 			Initialize();
 
 		var result = new List<IConfigProvider?>();
-		var files = !location.IsAbsoluteUri || location.IsFile ? Config.GetLocalFiles(location.IsAbsoluteUri ? location.LocalPath: location.OriginalString, ConfigurationDirectories): new[] { location };
+		var files = !location.IsAbsoluteUri || location.IsFile ? Config.GetLocalFiles(location.IsAbsoluteUri ? location.LocalPath: location.OriginalString, ConfigurationDirectories): [location];
 		foreach (var file in files)
 		{
 			try
@@ -274,31 +275,41 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		return result;
 	}
 
-	private static IConfigProvider? TryCreateProvider(Uri location, IReadOnlyCollection<string>? parameters)
+	internal static IConfigProvider? TryCreateProvider(Uri location, IReadOnlyCollection<string>? parameters)
+		=> TryCreateInstance<IConfigProvider>(__methodNames, __locationType2, [location, parameters]);
+	private static readonly Type[] __locationType2 = [typeof(Uri), typeof(IReadOnlyCollection<string>)];
+	private static readonly string[] __methodNames = ["Create", "TryCreate"];
+
+
+	private static T? TryCreateInstance<T>(string[] methods, Type[] parametersType, object?[]? parameters)
 	{
-		if (location == null)
-			throw new ArgumentNullException(nameof(location));
-
-		var arguments = new object?[] { location, parameters };
-
-		foreach (var constructor in Factory.Constructors(typeof(IConfigProvider), "TryCreate", __locationType2))
+		foreach (var method in GetConstructors(methods, parametersType))
 		{
 			try
 			{
-				var obj = constructor.Invoke(null, arguments);
-				if (obj is IConfigProvider source)
-					return source;
+				var obj = method.Invoke(null, parameters);
+				if (obj is T result)
+					return result;
 			}
-			#pragma warning disable CA1031 // Do not catch general exception types
 			catch (Exception flaw)
 			{
-				Config.LogConfigurationError($"{nameof(TryCreateProvider)} from {location}", flaw);
+				Config.LogConfigurationError($"{nameof(TryCreateInstance)}, {String.Join(", ", methods)}({DumpWriter.Create().Dump(parameters)})", flaw);
 			}
-			#pragma warning restore CA1031 // Do not catch general exception types
 		}
-		return null;
+		return default;
+
+		static List<MethodInfo> GetConstructors(string[] methods, Type[] parametersType)
+			=> MethodsCache<T>.Cache ??= Factory.Types(typeof(T))
+				.SelectMany(t => methods
+					.Select(m => t.GetMethod(m, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, parametersType, null)!)
+					.Where(o => o != null && typeof(T).IsAssignableFrom(o.ReturnType)))
+				.ToList();
 	}
-	private static readonly Type[] __locationType2 = { typeof(Uri), typeof(IReadOnlyCollection<string>) };
+
+	private static class MethodsCache<T>
+	{
+		public static List<MethodInfo>? Cache;
+	}
 
 	private int AddProvider(IConfigProvider provider, int position)
 	{
@@ -345,30 +356,27 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 
 		static (string Location, IReadOnlyCollection<string>? Parameters) SplitOptions(string value)
 		{
-			if (value is null)
-				throw new ArgumentNullException(nameof(value));
+			if (value is null) throw new ArgumentNullException(nameof(value));
+			
 			value = value.Trim();
 			var xx = value.Split(SpaceSeparator, StringSplitOptions.RemoveEmptyEntries);
-			if (xx.Length == 1)
-				return (value, null);
-			if (xx.Length == 2)
-				return (xx[0], new[] { xx[1] });
-			return (xx[0], xx.Skip(1).ToList());
+			return xx.Length switch
+			{
+				1 => (value, null),
+				2 => (xx[0], new[] { xx[1] }),
+				_ => (xx[0], xx.Skip(1).ToList())
+			};
 		}
 	}
-	private static readonly char[] SpaceSeparator = new[] { ' ' };
+	private static readonly char[] SpaceSeparator = [' '];
 
 	private void OnChanged(object? sender, ConfigurationEventArgs e)
 	{
-		if (!_initialized)
-			return;
+		if (!_initialized) return;
+
 		Interlocked.Increment(ref _version);
-		if (sender != null)
-		{
-			var cs = sender as IXmlConfigurationSource;
-			if (cs != null)
-				LogConfigurationEvent(LogSource, SR.ConfigurationChanged(cs));
-		}
+		if (sender is IXmlConfigurationSource cs)
+			LogConfigurationEvent(LogSource, SR.ConfigurationChanged(cs));
 		Changed?.Invoke(sender, e);
 		_log = null;
 	}
@@ -478,15 +486,39 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 #endif
 	}
 #if NETFRAMEWORK
-	private static readonly char[] __separators = { ',', ';', ' ', '\t', '\n', '\r' };
+	private static readonly char[] __separators = [',', ';', ' ', '\t', '\n', '\r'];
 #endif
 
-	private static Uri? GetConfigurationLocation(Assembly? asm)
+	private static Uri? GetConfigurationLocation(Assembly? assembly)
 	{
-		string? name;
-		if (asm == null || asm.IsDynamic || String.IsNullOrEmpty(name = asm.Location))
-			return null;
-		return new Uri(Path.ChangeExtension(name, null));
+		if (assembly is null || assembly.IsDynamic || String.IsNullOrEmpty(assembly.Location)) return null;
+		if (!TryConfigFile(assembly, out var name) && !TryMetadata(assembly, out name)) return null;
+
+		var path = String.IsNullOrEmpty(name) ?
+			Path.ChangeExtension(assembly.Location, null):
+			Path.Combine(Path.GetDirectoryName(assembly.Location) ?? String.Empty, name);
+		return new Uri(path);
+
+		static bool TryConfigFile(Assembly assembly, out string? name)
+		{
+			if (!assembly.IsDefined(typeof(ConfigFileAttribute), false))
+			{
+				name = null;
+				return false;
+			}
+			var a = assembly.GetCustomAttributes(typeof(ConfigFileAttribute), false)
+				.OfType<ConfigFileAttribute>().FirstOrDefault();
+			name = a?.Name;
+			return a != null;
+		}
+
+		static bool TryMetadata(Assembly assembly, out string? name)
+		{
+			var a = assembly.GetCustomAttributes(typeof(AssemblyMetadataAttribute), false)
+				.OfType<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == "ConfigFile");
+			name = a?.Value;
+			return a != null;
+		}
 	}
 
 	private static IEnumerable<Uri> GetInitialConfigurationsLocations()
@@ -504,7 +536,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 			}
 		}
 #endif
-		cc.AddRange(Factory.DomainAssemblies.Select(GetConfigurationLocation).Where(o => o != null)!);
+		cc.AddRange(AppDomain.CurrentDomain.GetAssemblies().Select(GetConfigurationLocation).Where(o => o != null)!);
 
 		var locator = new Uri("file:///" + Lxx.HomeDirectory + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile);
 		cc.Add(locator);

@@ -45,7 +45,7 @@ public class ErrorInfo
 	/// <param name="reference">Referenced entity</param>
 	/// <returns></returns>
 	public static ErrorInfo BadReference<T>(T value, string reference) =>
-		new ErrorInfo(ErrorCode.BadReference, ErrorDataType.Object, new[] { new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(reference), reference) });
+		new ErrorInfo(ErrorCode.BadReference, ErrorDataType.Object, [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(reference), reference)]);
 
 	/// <summary>
 	/// Foreign key reference for the specified <paramref name="value"/> not found.
@@ -54,7 +54,7 @@ public class ErrorInfo
 	/// <param name="value">Reference value</param>
 	/// <returns></returns>
 	public static ErrorInfo BadReference<T>(T value) =>
-		new ErrorInfo(ErrorCode.BadReference, ErrorDataType.Object, new[] { new ErrorAttrib(nameof(value), value) });
+		new ErrorInfo(ErrorCode.BadReference, ErrorDataType.Object, [new ErrorAttrib(nameof(value), value)]);
 
 	/// <summary>
 	/// The value is not unique.
@@ -64,7 +64,7 @@ public class ErrorInfo
 	/// <param name="dataType"><see cref="ErrorDataType"/> of the value</param>
 	/// <returns></returns>
 	public static ErrorInfo NotUniqueValue<T>(T value, ErrorDataType dataType) =>
-		new ErrorInfo(ErrorCode.NotUniqueValue, dataType, new[] { new ErrorAttrib(nameof(value), value) });
+		new ErrorInfo(ErrorCode.NotUniqueValue, dataType, [new ErrorAttrib(nameof(value), value)]);
 
 	/// <summary>
 	/// The value is not unique.
@@ -73,7 +73,7 @@ public class ErrorInfo
 	/// <param name="value">The value</param>
 	/// <returns></returns>
 	public static ErrorInfo NotUniqueValue<T>(T value) =>
-		new ErrorInfo(ErrorCode.NotUniqueValue, ErrorDataType.Object, new[] { new ErrorAttrib(nameof(value), value) });
+		new ErrorInfo(ErrorCode.NotUniqueValue, ErrorDataType.Object, [new ErrorAttrib(nameof(value), value)]);
 
 	/// <summary>
 	/// The value is out of the specified range.
@@ -85,10 +85,10 @@ public class ErrorInfo
 	/// <param name="max">Maximum possible value or null</param>
 	/// <returns></returns>
 	public static ErrorInfo OutOfRange<T>(T value, ErrorDataType dataType, T? min = default, T? max = default) =>
-		new ErrorInfo(ErrorCode.OutOfRange, dataType, min == null && max == null ? new[] { new ErrorAttrib(nameof(value), value) } :
-			min == null ? new[] { new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(max), max) } :
-			max == null ? new[] { new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min) } :
-			new[] { new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min), new ErrorAttrib(nameof(max), max) });
+		new ErrorInfo(ErrorCode.OutOfRange, dataType, min == null && max == null ? [new ErrorAttrib(nameof(value), value)] :
+			min == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(max), max)] :
+			max == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min)] :
+			[new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min), new ErrorAttrib(nameof(max), max)]);
 
 	/// <summary>
 	/// The value is out of the specified range.
@@ -111,10 +111,10 @@ public class ErrorInfo
 	/// <param name="max">Maximum possible value size or null</param>
 	/// <returns></returns>
 	public static ErrorInfo SizeOutOfRange<T>(T value, ErrorDataType dataType, int? max = default, int? min = default) =>
-		new ErrorInfo(ErrorCode.OutOfRange, dataType, min == null && max == null ? new[] { new ErrorAttrib(nameof(value), value) } :
-			min == null ? new[] { new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(max), max) } :
-			max == null ? new[] { new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min) } :
-			new[] { new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min), new ErrorAttrib(nameof(max), max) });
+		new ErrorInfo(ErrorCode.OutOfRange, dataType, min == null && max == null ? [new ErrorAttrib(nameof(value), value)] :
+			min == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(max), max)] :
+			max == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min)] :
+			[new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min), new ErrorAttrib(nameof(max), max)]);
 
 	/// <summary>
 	/// The value is out of the specified range.
@@ -135,7 +135,7 @@ public class ErrorInfo
 	/// <param name="dataType"><see cref="ErrorDataType"/> of the value</param>
 	/// <returns></returns>
 	public static ErrorInfo BadFormat<T>(T value, ErrorDataType dataType) =>
-		new ErrorInfo(ErrorCode.BadFormat, dataType, new[] { new ErrorAttrib(nameof(value), value) });
+		new ErrorInfo(ErrorCode.BadFormat, dataType, [new ErrorAttrib(nameof(value), value)]);
 
 	/// <summary>
 	/// Invalid format of the value.
@@ -144,7 +144,7 @@ public class ErrorInfo
 	/// <param name="value">The value</param>
 	/// <returns></returns>
 	public static ErrorInfo BadFormat<T>(T value) =>
-		new ErrorInfo(ErrorCode.BadFormat, ErrorDataType.Object, new[] { new ErrorAttrib(nameof(value), value) });
+		new ErrorInfo(ErrorCode.BadFormat, ErrorDataType.Object, [new ErrorAttrib(nameof(value), value)]);
 
 
 	public static string? FormatMessage(IEnumerable<string> templates, IEnumerable<ErrorAttrib>? parameters, string? field = default)

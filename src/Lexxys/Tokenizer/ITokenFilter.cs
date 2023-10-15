@@ -21,6 +21,7 @@ public interface ITokenParser
 }
 
 
+[Serializable]
 public static class TokenFilter
 {
 	public static ITokenFilter Create(Func<LexicalToken, bool> predicate) => new Filter(predicate);
@@ -50,6 +51,7 @@ public static class TokenFilter
 	}
 }
 
+[Serializable]
 public class PushFilter: ITokenFilter
 {
 	private readonly Stack<LexicalToken> _stack = new Stack<LexicalToken>();
@@ -64,6 +66,7 @@ public class PushFilter: ITokenFilter
 	public void Reset() => _stack.Clear();
 }
 
+[Serializable]
 public class OneBackFilter: ITokenFilter
 {
 	private bool _back;
@@ -104,6 +107,7 @@ public class OneBackFilter: ITokenFilter
 	}
 }
 
+[Serializable]
 public class IndentFilter: ITokenFilter
 {
 	private readonly Stack<int> _indent = new Stack<int>();
@@ -143,7 +147,7 @@ public class IndentFilter: ITokenFilter
 			_indent.Pop();
 			return new LexicalToken(LexicalTokenType.UNDENT, _last.Position, 0);
 		}
-		CharPosition at = stream.GetChatPosition(token.Position, _last);
+		CharPosition at = stream.GetCharPosition(token.Position, _last);
 		if (_indent.Count == 0)
 			_indent.Push(at.Position);
 		var line = _last.Line;
@@ -174,6 +178,7 @@ public class IndentFilter: ITokenFilter
 	}
 }
 
+[Serializable]
 public class NthBackFilter: ITokenFilter
 {
 	private readonly LexicalToken[] _trace;

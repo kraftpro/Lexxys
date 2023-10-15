@@ -33,17 +33,17 @@ public static class Tools
 	/// </remarks>
 	public static (long Numerator, long Denominator, double Precision) ToRational(double value, double precision = 0, int maxWidth = 0)
 	{
-		if (double.IsNaN(value))
-			return (0L, 0L, double.NaN);
-		if (double.IsPositiveInfinity(value))
-			return (1L, 0L, double.PositiveInfinity);
-		if (double.IsNegativeInfinity(value))
-			return (-1L, 0L, double.PositiveInfinity);
+		if (Double.IsNaN(value))
+			return (0L, 0L, Double.NaN);
+		if (Double.IsPositiveInfinity(value))
+			return (1L, 0L, Double.PositiveInfinity);
+		if (Double.IsNegativeInfinity(value))
+			return (-1L, 0L, Double.PositiveInfinity);
 
 		if (maxWidth <= 0)
 			maxWidth = 20;
-		if (precision < double.Epsilon)
-			precision = double.Epsilon;
+		if (precision < Double.Epsilon)
+			precision = Double.Epsilon;
 		bool neg = false;
 		if (value < 0)
 		{
@@ -153,7 +153,7 @@ public static class Tools
 		if (!value.GetType().IsEnum)
 			return value;
 
-		return (Type.GetTypeCode(Enum.GetUnderlyingType(value.GetType()))) switch
+		return Type.GetTypeCode(Enum.GetUnderlyingType(value.GetType())) switch
 		{
 			TypeCode.Byte => (byte)value,
 			TypeCode.Char => (char)value,
@@ -164,7 +164,7 @@ public static class Tools
 			TypeCode.UInt16 => (ushort)value,
 			TypeCode.UInt32 => (uint)value,
 			TypeCode.UInt64 => (ulong)value,
-			_ => (int)value,
+			_ => (int)value
 		};
 	}
 
@@ -175,8 +175,8 @@ public static class Tools
 		if (values.Length <= 1)
 			return values.Length == 0 ? new BitArray(0): new BitArray(1, true);
 
-		int mi = int.MaxValue;
-		int ma = int.MinValue;
+		int mi = Int32.MaxValue;
+		int ma = Int32.MinValue;
 		for (int i = 0; i < values.Length; ++i)
 		{
 			if (mi > values[i])

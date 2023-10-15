@@ -50,7 +50,7 @@ namespace Lexxys.Tests.Xml
 						item (i = 1)
 						item (i = 2)
 				"), new B());
-			Assert.AreEqual(new B("One Name", new [] { new A(i:1), new A(i:2) }), actual);
+			Assert.AreEqual(new B("One Name", [new A(i:1), new A(i:2)]), actual);
 		}
 
 		public class B
@@ -111,7 +111,7 @@ namespace Lexxys.Tests.Xml
 			public override string ToString() => DumpWriter.ToString(this);
 		}
 
-		private static XmlLiteNode X(string value) => TextToXmlConverter.ConvertLite(value).Single();
+		private static IXmlReadOnlyNode X(string value) => TextToXmlConverter.ConvertLite(value).Single();
 
 	}
 }

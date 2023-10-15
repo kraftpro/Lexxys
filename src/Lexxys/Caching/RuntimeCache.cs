@@ -9,8 +9,6 @@ using System.Runtime.Caching;
 
 namespace Lexxys;
 
-#pragma warning disable CA1720 // Identifier contains type name
-
 /// <summary>
 /// Represent a set of methods to work with in-local memory cache.
 /// </summary>

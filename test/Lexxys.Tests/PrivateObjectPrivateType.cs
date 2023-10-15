@@ -1,4 +1,4 @@
-#if NETCOREAPP || NETCOREAPP
+#if !NETFRAMEWORK
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
@@ -41,7 +41,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
             }
 
             // Split The access string
-            string[] arr = memberToAccess.Split(new char[] { '.' });
+            string[] arr = memberToAccess.Split(['.']);
 
             for (int i = 0; i < arr.Length; i++)
             {
@@ -494,7 +494,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         /// <param name="value">value to set</param>
         public void SetField(string name, BindingFlags bindingFlags, object value)
         {
-            this.InvokeHelper(name, BindingFlags.SetField | bindingFlags, new object[] { value }, CultureInfo.InvariantCulture);
+            this.InvokeHelper(name, BindingFlags.SetField | bindingFlags, [value], CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -536,7 +536,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         /// <param name="value">value to set</param>
         public void SetFieldOrProperty(string name, BindingFlags bindingFlags, object value)
         {
-            this.InvokeHelper(name, BindingFlags.SetField | BindingFlags.SetProperty | bindingFlags, new object[] { value }, CultureInfo.InvariantCulture);
+            this.InvokeHelper(name, BindingFlags.SetField | BindingFlags.SetProperty | bindingFlags, [value], CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -680,7 +680,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
             string[] arr = access.Split('.');
             foreach (string str in arr)
             {
-                if ((str.Length == 0) || (str.IndexOfAny(new char[] { ' ', '\t', '\n' }) != -1))
+                if ((str.Length == 0) || (str.IndexOfAny([' ', '\t', '\n']) != -1))
                 {
                     throw new ArgumentException("Access string has invalid syntax.");
                 }
@@ -1169,7 +1169,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         /// <param name="value">Arguement to the invocation</param>
         public void SetStaticField(string name, BindingFlags bindingFlags, object value)
         {
-            this.InvokeHelperStatic(name, BindingFlags.SetField | bindingFlags | BindingFlags.Static, new[] { value }, CultureInfo.InvariantCulture);
+            this.InvokeHelperStatic(name, BindingFlags.SetField | bindingFlags | BindingFlags.Static, [value], CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -1211,7 +1211,7 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting
         /// <param name="value">Value to be set to field or property</param>
         public void SetStaticFieldOrProperty(string name, BindingFlags bindingFlags, object value)
         {
-            this.InvokeHelperStatic(name, BindingFlags.SetField | BindingFlags.SetProperty | bindingFlags | BindingFlags.Static, new[] { value }, CultureInfo.InvariantCulture);
+            this.InvokeHelperStatic(name, BindingFlags.SetField | BindingFlags.SetProperty | bindingFlags | BindingFlags.Static, [value], CultureInfo.InvariantCulture);
         }
 
         /// <summary>

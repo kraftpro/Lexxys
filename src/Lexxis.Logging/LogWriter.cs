@@ -45,7 +45,7 @@ public abstract class LogWriter: ILogWriter
 
 	protected internal ILogRecordFormatter Formatter { get; private set; }
 
-	public static ILogWriter? FromXml(XmlLiteNode? node)
+	public static ILogWriter? FromXml(IXmlReadOnlyNode? node)
 	{
 		if (node == null || node.IsEmpty)
 			return null;
@@ -59,7 +59,7 @@ public abstract class LogWriter: ILogWriter
 		return null;
 	}
 
-	private static LogWriter? CreateLogWriter(string className, string? name, XmlLiteNode node)
+	private static LogWriter? CreateLogWriter(string className, string? name, IXmlReadOnlyNode node)
 	{
 		LogWriter? writer = null;
 		try
@@ -67,8 +67,8 @@ public abstract class LogWriter: ILogWriter
 			Type? type = Factory.GetType(className) ??
 				(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
 			if (type != null && typeof(LogWriter).IsAssignableFrom(type))
-				writer = Factory.TryGetConstructor(type, new[] { typeof(string), typeof(XmlLiteNode) })?
-					.Invoke(new object?[] { name, node }) as LogWriter;
+				writer = Factory.TryGetConstructor(type, new[] { typeof(string), typeof(IXmlReadOnlyNode) })?
+					.Invoke([name, node]) as LogWriter;
 			if (writer == null)
 				SystemLog.WriteErrorMessage(LogSource, SR.LOG_CannotCreateLogWriter(name, className));
 		}

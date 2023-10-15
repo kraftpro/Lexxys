@@ -8,21 +8,19 @@ using System.Buffers.Text;
 using System.Collections;
 using System.Text;
 
-#pragma warning disable CA1002 // Do not expose generic lists
-#pragma warning disable CA1307 // Specify StringComparison
-
 namespace Lexxys;
 
 using Xml;
 
+[Serializable]
 public abstract class JsonItem
 {
 	protected const string NullValue = "null";
 	protected const string TrueValue = "true";
 	protected const string FalseValue = "false";
-	protected static readonly byte[] NullBytes = new[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
-	protected static readonly byte[] TrueBytes = new[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
-	protected static readonly byte[] FalseBytes = new[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
+	protected static readonly byte[] NullBytes = [(byte)'n', (byte)'u', (byte)'l', (byte)'l'];
+	protected static readonly byte[] TrueBytes = [(byte)'t', (byte)'r', (byte)'u', (byte)'e'];
+	protected static readonly byte[] FalseBytes = [(byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e'];
 
 
 	public IReadOnlyList<JsonPair> Attributes { get; }
@@ -57,18 +55,18 @@ public abstract class JsonItem
 		Attributes = attributes ?? _noAttributes;
 	}
 
-	public abstract XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false);
+	public abstract IXmlReadOnlyNode ToXml(string name, bool ignoreCase = false, bool attributes = false);
 
-	protected XmlLiteNode ToXml(string name, string? value, bool ignoreCase, IEnumerable<XmlLiteNode>? properties)
+	protected IXmlReadOnlyNode ToXml(string name, string? value, bool ignoreCase, IEnumerable<IXmlReadOnlyNode>? properties)
 	{
 		if (name is null)
 			throw new ArgumentNullException(nameof(name));
 
 		return Attributes.Count == 0 ?
-			new XmlLiteNode(name, value, ignoreCase, null, properties?.ToList()):
+			new XmlLiteNode(name, value, ignoreCase, null, properties):
 			new XmlLiteNode(name, value, ignoreCase,
-			Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")).ToList(),
-			properties?.ToList());
+				Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")),
+				properties);
 	}
 
 	public virtual StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
@@ -149,6 +147,7 @@ public abstract class JsonItem
 	public override string ToString() => ToString(new StringBuilder()).ToString();
 }
 
+[Serializable]
 public readonly struct JsonPair: IEquatable<JsonPair>
 {
 	public string Name { get; }
@@ -203,7 +202,7 @@ public readonly struct JsonPair: IEquatable<JsonPair>
 		else
 			Item.Write(stream);
 	}
-	private static readonly byte[] NullBytes = new[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
+	private static readonly byte[] NullBytes = [(byte)'n', (byte)'u', (byte)'l', (byte)'l'];
 
 	public string ToString(bool format, bool pair = false)
 	{
@@ -232,6 +231,7 @@ public readonly struct JsonPair: IEquatable<JsonPair>
 }
 
 
+[Serializable]
 public class JsonScalar: JsonItem
 {
 	public static readonly JsonScalar Null = new JsonScalar(null);
@@ -313,12 +313,12 @@ public class JsonScalar: JsonItem
 
 	public byte[] BytesValue => Value switch
 	{
-		null => Array.Empty<byte>(),
+		null => [],
 		byte[] v => v,
-		_ => Array.Empty<byte>()
+		_ => []
 	};
 
-	public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false) => ToXml(name, XmlTools.Convert(Value), ignoreCase, null);
+	public override IXmlReadOnlyNode ToXml(string name, bool ignoreCase = false, bool attributes = false) => ToXml(name, XmlTools.Convert(Value), ignoreCase, null);
 
 	public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 	{
@@ -567,9 +567,10 @@ public class JsonScalar: JsonItem
 	}
 	private const byte Colon = (byte)':';
 	private const byte Quote = (byte)'"';
-	private static readonly byte[] ZeroTime = { (byte)'P', (byte)'T', (byte)'0', (byte)'S' };
+	private static readonly byte[] ZeroTime = [(byte)'P', (byte)'T', (byte)'0', (byte)'S'];
 }
 
+[Serializable]
 public class JsonMap: JsonItem, IEnumerable<JsonPair>
 {
 	public IReadOnlyList<JsonPair> Properties { get; }
@@ -605,10 +606,10 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 		Properties = properties;
 	}
 
-	public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
+	public override IXmlReadOnlyNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
 	{
 		var attribs = Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")).ToList();
-		var properties = new List<XmlLiteNode>();
+		var properties = new List<IXmlReadOnlyNode>();
 		if (Properties.Count > 0)
 		{
 			foreach (var prop in Properties)
@@ -692,6 +693,7 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 	IEnumerator IEnumerable.GetEnumerator() => Properties.GetEnumerator();
 }
 
+[Serializable]
 public class JsonArray: JsonItem, IEnumerable<JsonItem>
 {
 	private const string XmlItemName = "item";
@@ -728,7 +730,7 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 		Items = items;
 	}
 
-	public override XmlLiteNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
+	public override IXmlReadOnlyNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
 	{
 		return ToXml(name, null, ignoreCase, Items.Select(o => (o ?? JsonScalar.Null).ToXml(XmlItemName, ignoreCase, attributes)));
 	}

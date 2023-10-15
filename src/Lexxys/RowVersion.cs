@@ -8,6 +8,7 @@ using System.Globalization;
 
 namespace Lexxys
 {
+	[Serializable]
 	public readonly struct RowVersion: IEquatable<RowVersion>, IComparable<RowVersion>, IComparable
 	{
 		public RowVersion(long value)
@@ -45,7 +46,6 @@ namespace Lexxys
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
 			if (value.Length != sizeof(long))
-				#pragma warning disable CA2208 // Instantiate argument exceptions correctly
 				throw new ArgumentOutOfRangeException(nameof(value) + ".Length", value.Length, null);
 
 			fixed (byte* p = value)

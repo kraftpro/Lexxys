@@ -264,12 +264,9 @@ namespace Lexxys
 		{
 			if (sessionId is not { Length: 24 })
 				return false;
-			Debug.Assert(sessionId != null);
 
 			int q = HashCode(sessionId, 21) & 0xFFFF;
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
 			int k = (CharToBits(sessionId[21]) | (CharToBits(sessionId[22]) << 6) | (CharToBits(sessionId[23]) << 12));
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
 			return ((k >> 2) == q);
 		}
 

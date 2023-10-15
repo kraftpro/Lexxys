@@ -3,7 +3,8 @@
   <PropertyGroup>
     <!--<TargetFramework>net7.0</TargetFramework>-->
     <!--<TargetFrameworks>net7.0;net6.0;net472;netcoreapp3.1</TargetFrameworks>-->
-    <TargetFrameworks>net7.0;net6.0;net472</TargetFrameworks>
+    <!--<TargetFrameworks>net8.0;net7.0;net6.0;net472</TargetFrameworks>-->
+    <TargetFrameworks>net8.0;net6.0;net472</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -13,13 +14,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.6" />
-    <PackageReference Include="MSTest" Version="3.1.1" />
+    <AssemblyMetadata Include="ConfigFile" Value="test.config.txt" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.9" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lexxis.Logging\Lexxys.Logging.csproj" />
-    <ProjectReference Include="..\..\src\Lexxys.Arguments\Lexxys.Arguments.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Testing\Lexxys.Testing.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Validation\Lexxys.Validation.csproj" />
     <ProjectReference Include="..\..\src\Lexxys\Lexxys.csproj" />
@@ -31,13 +38,13 @@
 
   <ItemGroup>
     <None Update="application.config.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="test.config.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="test.db.config.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

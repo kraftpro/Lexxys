@@ -52,7 +52,7 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// Returns a <see cref="IBlobInfo"/> for the specified <paramref name="location"/> or null if the blob does not exist.
 	/// </summary>
 	/// <param name="location">The file location.</param>
-	/// <param name="cancellationToken">Cancelation token.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"><paramref name="location"/> is null.</exception>
 	public Task<IBlobInfo?> GetFileInfoAsync(Uri location, CancellationToken cancellationToken = default)
@@ -89,7 +89,7 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// <param name="location">The file location.</param>
 	/// <param name="stream">The stream to save.</param>
 	/// <param name="overwrite">If true, the existing blob will be overwritten.</param>
-	/// <param name="cancellationToken">Cancelation token.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <exception cref="ArgumentNullException">location or stream is null.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">location is not a valid file location.</exception>
 	public async Task SaveFileAsync(Uri location, Stream stream, bool overwrite,
@@ -104,6 +104,9 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 
 		var path = GetPath(location);
 		CreateDirectory(path);
+		#if !NETFRAMEWORK
+		await 
+		#endif
 		using var file = File.Open(path, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.Write);
 		int bufferSize = stream.CanSeek ? (int)Math.Min(DefaultBufferSize, stream.Length): DefaultBufferSize;
 		await stream.CopyToAsync(file, bufferSize, cancellationToken).ConfigureAwait(false);
@@ -138,7 +141,7 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// </summary>
 	/// <param name="source">Source file location.</param>
 	/// <param name="destination">Destination file location.</param>
-	/// <param name="cancellationToken">Cancelation token.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <exception cref="ArgumentNullException">The <paramref name="source"/> or <paramref name="destination"/> is null.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="source"/> or <paramref name="destination"/> is not a valid file location.</exception>
 	public async Task CopyFileAsync(Uri source, Uri destination, CancellationToken cancellationToken = default)
@@ -156,7 +159,13 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 		var path2 = GetPath(destination);
 		CreateDirectory(path2);
 
+		#if !NETFRAMEWORK
+		await 
+		#endif
 		using var sourceStream = new FileStream(path1, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan);
+		#if !NETFRAMEWORK
+		await 
+		#endif
 		using var destinationStream = new FileStream(path2, FileMode.Create, FileAccess.Write, FileShare.None, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan);
 		int bufferSize = sourceStream.CanSeek ? (int)Math.Min(DefaultBufferSize, sourceStream.Length): DefaultBufferSize;
 		await sourceStream.CopyToAsync(destinationStream, bufferSize, cancellationToken).ConfigureAwait(false);
@@ -198,7 +207,7 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// </summary>
 	/// <param name="source">Source file location.</param>
 	/// <param name="destination">Destination file location.</param>
-	/// <param name="cancellationToken">Cancelation token.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <exception cref="ArgumentNullException">The <paramref name="source"/> or <paramref name="destination"/> is null.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="source"/> or <paramref name="destination"/> is not a valid file location.</exception>
 	public Task MoveFileAsync(Uri source, Uri destination, CancellationToken cancellationToken = default)
@@ -229,7 +238,7 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// Deletes a file at the specified <paramref name="location"/>.
 	/// </summary>
 	/// <param name="location">A file location</param>
-	/// <param name="cancellationToken">Cancelation token.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <exception cref="ArgumentNullException">The <paramref name="location"/> is null.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="location"/> is not a valid file location.</exception>
 	public Task DeleteFileAsync(Uri location, CancellationToken cancellationToken = default)

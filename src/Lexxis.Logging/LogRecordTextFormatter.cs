@@ -233,10 +233,10 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			}
 		}
 	}
-	private static readonly string[] __severity1 = new[] { "O", "E", "W", "I", "D", "T" };
-	private static readonly string[] __severity3 = new[] { "Out", "Err", "Wrn", "Inf", "Dbg", "Trc" };
-	private static readonly string[] __severity4 = new[] { "Outp", "Fail", "Warn", "Info", "Dbug", "Trce" };
-	private static readonly string[] __severity5 = new[] { "Output", "Error", "Warning", "Information", "Debug", "Trace" };
+	private static readonly string[] __severity1 = ["O", "E", "W", "I", "D", "T"];
+	private static readonly string[] __severity3 = ["Out", "Err", "Wrn", "Inf", "Dbg", "Trc"];
+	private static readonly string[] __severity4 = ["Outp", "Fail", "Warn", "Info", "Dbug", "Trce"];
+	private static readonly string[] __severity5 = ["Output", "Error", "Warning", "Information", "Debug", "Trace"];
 
 	private static void AppendTimeStamp(TextWriter writer, DateTime date, bool useDate)
 	{

@@ -7,1348 +7,1194 @@
 using System.Collections;
 using System.Diagnostics;
 
-#pragma warning disable CA1716 // Identifiers should not match keywords
-#pragma warning disable CA1034 // Nested types should not be visible
-#pragma warning disable CA1710 // Identifiers should have correct suffix
-// ReSharper disable RedundantToStringCall
+namespace Lexxys;
 
-namespace Lexxys
+public interface ISafeList<T>: IList<T>
 {
-	public interface ISafeList<T>: IList<T>
-	{
-	}
+}
 
-	public interface ISafeDictionary<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
-	{
-	}
+public interface ISafeDictionary<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
+{
+}
 
 #if !NET6_0_OR_GREATER
 
-	public interface IReadOnlySet<T>: IReadOnlyCollection<T>
-	{
-		bool Contains(T item);
-		bool IsProperSubsetOf(IEnumerable<T> other);
-		bool IsProperSupersetOf(IEnumerable<T> other);
-		bool IsSubsetOf(IEnumerable<T> other);
-		bool IsSupersetOf(IEnumerable<T> other);
-		bool Overlaps(IEnumerable<T> other);
-		bool SetEquals(IEnumerable<T> other);
-	}
+public interface IReadOnlySet<T>: IReadOnlyCollection<T>
+{
+	bool Contains(T item);
+	bool IsProperSubsetOf(IEnumerable<T> other);
+	bool IsProperSupersetOf(IEnumerable<T> other);
+	bool IsSubsetOf(IEnumerable<T> other);
+	bool IsSupersetOf(IEnumerable<T> other);
+	bool Overlaps(IEnumerable<T> other);
+	bool SetEquals(IEnumerable<T> other);
+}
 
 #endif
 
-	public interface IWrappedCollection<T>: IReadOnlyCollection<T>, ICollection<T>, ICollection
+public interface IWrappedCollection<T>: IReadOnlyCollection<T>, ICollection<T>, ICollection
+{
+	new int Count { get; }
+}
+
+public interface IWrappedList<T>: IReadOnlyList<T>, IList<T>, IWrappedCollection<T>
+{
+	new int Count { get; }
+	new T this[int index] { get; }
+}
+
+public interface IWrappedSafeList<T>: IReadOnlyList<T>, ISafeList<T>, IWrappedCollection<T>
+{
+	new T this[int index] { get; }
+}
+
+public interface IWrappedSet<T>: IReadOnlySet<T>, ISet<T>, IWrappedCollection<T>
+{
+	new bool Contains(T item);
+	new bool IsSubsetOf(IEnumerable<T> items);
+	new bool IsSupersetOf(IEnumerable<T> items);
+	new bool IsProperSubsetOf(IEnumerable<T> items);
+	new bool IsProperSupersetOf(IEnumerable<T> items);
+	new bool Overlaps(IEnumerable<T> items);
+	new bool SetEquals(IEnumerable<T> items);
+}
+
+public interface IWrappedDictionary<TKey, TValue>: ISafeDictionary<TKey, TValue>, IDictionary, IWrappedCollection<KeyValuePair<TKey, TValue>> where TKey: notnull
+{
+	new void Clear();
+	new bool IsReadOnly { get; }
+	new bool ContainsKey(TKey key);
+	new TValue this[TKey key] { get; }
+	new IWrappedCollection<TKey> Keys { get; }
+	new IWrappedCollection<TValue> Values { get; }
+	new bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
+	new IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator();
+}
+
+public static class ReadOnly
+{
+	#region Empty Collections
+
+	public static IWrappedList<T> Empty<T>() => EmptyCollectionInstance<T>.ListValue;
+
+	public static IWrappedDictionary<TKey, TValue> Empty<TKey, TValue>() where TKey: notnull => EmptyDictionaryInstance<TKey, TValue>.DictionaryValue;
+
+	public static IWrappedSafeList<T> EmptySafe<T>() => EmptyCollectionInstance<T>.SafeListValue;
+
+	public static ISafeDictionary<TKey, TValue> EmptySafe<TKey, TValue>() where TKey: notnull => EmptyDictionaryInstance<TKey, TValue>.SafeDictionaryValue;
+
+	public static IWrappedSet<T> EmptySet<T>() => EmptyCollectionInstance<T>.SetValue;
+
+	private static class EmptyCollectionInstance<T>
 	{
-		new int Count { get; }
+		public static readonly IWrappedList<T> ListValue = new ReadOnlyArrayWrap<T>([]);
+		public static readonly IWrappedSafeList<T> SafeListValue = new ReadOnlySafeListWrap<T>(new EmptySafeListInstance<T>());
+		public static readonly IWrappedSet<T> SetValue = new ReadOnlySetWrap<T>(new SortedSet<T>());
+	}
+	private static class EmptyDictionaryInstance<TKey, TValue> where TKey: notnull
+	{
+		public static readonly IWrappedDictionary<TKey, TValue> DictionaryValue = new ReadOnlyDictionaryWrap<TKey, TValue>(new SortedList<TKey, TValue>());
+		public static readonly ISafeDictionary<TKey, TValue> SafeDictionaryValue = new ReadOnlyDictionaryWrap<TKey, TValue>(new SortedList<TKey, TValue>());
 	}
 
-	public interface IWrappedList<T>: IReadOnlyList<T>, IList<T>, IWrappedCollection<T>
+
+	#endregion
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedDictionary<TKey, TValue>? Wrap<TKey, TValue>(IDictionary<TKey, TValue>? value) where TKey: notnull
+		=> value == null ? null: new ReadOnlyDictionaryWrap<TKey, TValue>(value);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedDictionary<TKey, TValue>? WrapCopy<TKey, TValue>(IDictionary<TKey, TValue>? value) where TKey: notnull
+		=> value == null ? null:
+			value.Count == 0 ? Empty<TKey, TValue>(): new ReadOnlyDictionaryWrap<TKey, TValue>(new Dictionary<TKey, TValue>(value));
+
+	public static IWrappedList<T> WrapValue<T>(params T[]? value)
+		=> value == null || value.Length == 0 ? Empty<T>(): new ReadOnlyArrayWrap<T>(value);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedList<T>? Wrap<T>(T[]? value)
+		=> value == null ? null: value.Length == 0 ? Empty<T>(): new ReadOnlyArrayWrap<T>(value);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedList<T>? Wrap<T>(T[]? value, int offset, int count = -1)
+		=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyArrayFragmentWrap<T>(value, offset, count);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedList<T>? Wrap<T>(IList<T>? value)
+		=> value == null ? null: new ReadOnlyListWrap<T>(value);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedList<T>? Wrap<T>(IList<T>? value, int offset, int count = -1)
+		=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyListFragmentWrap<T>(value, offset, count);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedSafeList<T>? Wrap<T>(ISafeList<T>? value)
+		=> value == null ? null: new ReadOnlySafeListWrap<T>(value);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedSafeList<T>? Wrap<T>(ISafeList<T>? value, int offset, int count = -1)
+		=> value == null ? null: count == 0 ? EmptySafe<T>(): new ReadOnlySafeListFragmentWrap<T>(value, offset, count);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedCollection<T>? Wrap<T>(ICollection<T>? value)
+		=> value == null ? null: (IWrappedCollection<T>)new ReadOnlyCollectionWrap<T>(value);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedList<T>? WrapCopy<T>(ICollection<T>? value)
 	{
-		new int Count { get; }
-		new T this[int index] { get; }
+		if (value == null)
+			return null;
+		if (value.Count == 0)
+			return Empty<T>();
+		var items = new T[value.Count];
+		value.CopyTo(items, 0);
+		return new ReadOnlyArrayWrap<T>(items);
 	}
 
-	public interface IWrappedSafeList<T>: IReadOnlyList<T>, ISafeList<T>, IWrappedCollection<T>
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IEnumerable<T>? Wrap<T>(IEnumerable<T>? value)
+		=> value == null ? null: (IEnumerable<T>)new ReadOnlyEnumerableWrap<T>(value);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedList<T>? WrapCopy<T>(IEnumerable<T>? value)
 	{
-		new T this[int index] { get; }
+		if (value == null)
+			return null;
+		if (value is ICollection<T> collection)
+			return WrapCopy(collection);
+		return new ReadOnlyListWrap<T>(new List<T>(value));
 	}
 
-	public interface IWrappedSet<T>: IReadOnlySet<T>, ISet<T>, IWrappedCollection<T>
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedSet<T>? Wrap<T>(ISet<T>? value)
+		=> value == null ? null: new ReadOnlySetWrap<T>(value);
+
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IWrappedSet<T>? WrapCopy<T>(ISet<T>? value)
+		=> value == null ? null: value.Count == 0 ? EmptySet<T>(): new ReadOnlySetWrap<T>(new HashSet<T>(value));
+
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IReadOnlyList<T>? ReWrap<T>(IReadOnlyList<T>? value)
+		=> value == null ? null: new ReadOnlyListReWrap<T>(value);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IReadOnlyList<T>? ReWrap<T>(IReadOnlyList<T>? value, int offset, int count = -1)
+		=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyListFragmentReWrap<T>(value, offset, count);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IReadOnlyCollection<T>? ReWrap<T>(IReadOnlyCollection<T>? value)
+		=> value == null ? null: new ReadOnlyCollectionReWrap<T>(value);
+
+	[return: NotNullIfNotNull(nameof(value))]
+	public static IReadOnlyDictionary<TKey, TValue>? ReWrap<TKey, TValue>(IReadOnlyDictionary<TKey, TValue>? value)
+		=> value == null ? null: new ReadOnlyDictionaryReWrap<TKey, TValue>(value);
+
+	#region Implementation
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
+	[Serializable]
+	private class ReadOnlyDictionaryWrap<TKey, TValue>: IWrappedDictionary<TKey, TValue> where TKey: notnull
 	{
-		new bool Contains(T item);
-		new bool IsSubsetOf(IEnumerable<T> items);
-		new bool IsSupersetOf(IEnumerable<T> items);
-		new bool IsProperSubsetOf(IEnumerable<T> items);
-		new bool IsProperSupersetOf(IEnumerable<T> items);
-		new bool Overlaps(IEnumerable<T> items);
-		new bool SetEquals(IEnumerable<T> items);
+		private readonly IDictionary<TKey, TValue> _dictionary;
+
+		public ReadOnlyDictionaryWrap(IDictionary<TKey, TValue> dictionary) => _dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
+
+		public void Add(TKey key, TValue value) => throw new ReadOnlyException();
+
+		public bool ContainsKey(TKey key) => _dictionary.ContainsKey(key);
+
+		public IWrappedCollection<TKey> Keys => new ReadOnlyCollectionWrap<TKey>(_dictionary.Keys);
+		IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
+
+		ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
+
+		public bool Remove(TKey key) => throw new ReadOnlyException();
+
+		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _dictionary.TryGetValue(key, out value);
+
+		public IWrappedCollection<TValue> Values => new ReadOnlyCollectionWrap<TValue>(_dictionary.Values);
+
+		IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
+
+		ICollection<TValue> IDictionary<TKey, TValue>.Values => Values;
+
+		public TValue this[TKey key] { get => _dictionary[key]; set => throw new ReadOnlyException(); }
+
+		public void Add(KeyValuePair<TKey, TValue> item) => throw new ReadOnlyException();
+
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(KeyValuePair<TKey, TValue> item) => _dictionary.Contains(item);
+
+		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => _dictionary.CopyTo(array, arrayIndex);
+
+		public int Count => _dictionary.Count;
+
+		public bool IsReadOnly => true;
+
+		public bool Remove(KeyValuePair<TKey, TValue> item) => throw new ReadOnlyException();
+
+		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _dictionary.GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
+
+		public void Add(object key, object? value) => throw new ReadOnlyException();
+
+		public bool Contains(object key) => key is TKey k && ContainsKey(k);
+
+		IDictionaryEnumerator IDictionary.GetEnumerator() => _dictionary is IDictionary d ? d.GetEnumerator() : throw new NotImplementedException();
+
+		public bool IsFixedSize => true;
+
+		ICollection IDictionary.Keys => new ReadOnlyCollectionWrap<TKey>(_dictionary.Keys);
+
+		public void Remove(object key) => throw new ReadOnlyException();
+
+		ICollection IDictionary.Values => new ReadOnlyCollectionWrap<TValue>(_dictionary.Values);
+
+		public object? this[object key]
+		{
+			get => key is TKey index ? this[index]: throw new ReadOnlyException();
+			set => throw new ReadOnlyException();
+		}
+
+		public void CopyTo(Array array, int index)
+		{
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
+
+			if (_dictionary is ICollection collection)
+			{
+				collection.CopyTo(array, index);
+			}
+			else if (array is KeyValuePair<TKey, TValue>[] values)
+			{
+				_dictionary.CopyTo(values, index);
+			}
+			else
+			{
+				values = new KeyValuePair<TKey, TValue>[_dictionary.Count];
+				_dictionary.CopyTo(values, 0);
+				Array.Copy(values, 0, array, index, values.Length);
+			}
+		}
+
+		public bool IsSynchronized => (_dictionary as ICollection)?.IsSynchronized == true;
+
+		public object SyncRoot => (_dictionary as ICollection)?.SyncRoot ?? _dictionary;
+
+		public override int GetHashCode() => _dictionary.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyDictionaryWrap<TKey, TValue> other && _dictionary.Equals(other._dictionary);
+
+		public override string ToString() => "RO:" + _dictionary.ToString();
 	}
 
-	public interface IWrappedDictionary<TKey, TValue>: ISafeDictionary<TKey, TValue>, IDictionary, IWrappedCollection<KeyValuePair<TKey, TValue>> where TKey: notnull
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
+	[Serializable]
+	private class ReadOnlyDictionaryReWrap<TKey, TValue>: IReadOnlyDictionary<TKey, TValue>
 	{
-		new void Clear();
-		new bool IsReadOnly { get; }
-		new bool ContainsKey(TKey key);
-		new TValue this[TKey key] { get; }
-		new IWrappedCollection<TKey> Keys { get; }
-		new IWrappedCollection<TValue> Values { get; }
-		new bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
-		new IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator();
+		private readonly IReadOnlyDictionary<TKey, TValue> _dictionary;
+
+		public ReadOnlyDictionaryReWrap(IReadOnlyDictionary<TKey, TValue> dictionary) => _dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
+
+		public int Count => _dictionary.Count;
+
+		public bool ContainsKey(TKey key) => _dictionary.ContainsKey(key);
+
+		public TValue this[TKey key] => _dictionary[key];
+
+		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _dictionary.TryGetValue(key, out value);
+
+		public IEnumerable<TKey> Keys => _dictionary.Keys;
+
+		public IEnumerable<TValue> Values => _dictionary.Values;
+
+		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _dictionary.GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
+
+		public override int GetHashCode() => _dictionary.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyDictionaryReWrap<TKey, TValue> other && _dictionary.Equals(other._dictionary);
+
+		public override string ToString() => "RO:" + _dictionary.ToString();
 	}
 
-	public static class ReadOnly
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlyListWrap<T>: IWrappedList<T>
 	{
-		#region Empty Collections
+		private readonly IList<T> _list;
 
-		public static IWrappedList<T> Empty<T>() => EmptyCollectionInstance<T>.ListValue;
+		public ReadOnlyListWrap(IList<T> list) => _list = list ?? throw new ArgumentNullException(nameof(list));
 
-		public static IWrappedDictionary<TKey, TValue> Empty<TKey, TValue>() where TKey: notnull => EmptyDictionaryInstance<TKey, TValue>.DictionaryValue;
+		public int IndexOf(T item) => _list.IndexOf(item);
 
-		public static IWrappedSafeList<T> EmptySafe<T>() => EmptyCollectionInstance<T>.SafeListValue;
+		public void Insert(int index, T item) => throw new ReadOnlyException();
 
-		public static ISafeDictionary<TKey, TValue> EmptySafe<TKey, TValue>() where TKey: notnull => EmptyDictionaryInstance<TKey, TValue>.SafeDictionaryValue;
+		public void RemoveAt(int index) => throw new ReadOnlyException();
 
-		public static IWrappedSet<T> EmptySet<T>() => EmptyCollectionInstance<T>.SetValue;
+		public T this[int index] { get => _list[index]; set => throw new ReadOnlyException(); }
 
-		public static ListValueWrap<T> EmptyValue<T>() => ListValueWrap<T>.Empty;
+		public void Add(T item) => throw new ReadOnlyException();
 
-		private static class EmptyCollectionInstance<T>
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(T item) => _list.Contains(item);
+
+		public void CopyTo(T[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
+
+		public int Count => _list.Count;
+
+		public bool IsReadOnly => true;
+
+		public bool Remove(T item) => throw new ReadOnlyException();
+
+		public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
+
+		public void CopyTo(Array array, int index)
 		{
-			public static readonly IWrappedList<T> ListValue = new ReadOnlyArrayWrap<T>(Array.Empty<T>());
-			public static readonly IWrappedSafeList<T> SafeListValue = new ReadOnlySafeListWrap<T>(new EmptySafeListInstance<T>());
-			public static readonly IWrappedSet<T> SetValue = new ReadOnlySetWrap<T>(new SortedSet<T>());
-		}
-		private static class EmptyDictionaryInstance<TKey, TValue> where TKey: notnull
-		{
-			public static readonly IWrappedDictionary<TKey, TValue> DictionaryValue = new ReadOnlyDictionaryWrap<TKey, TValue>(new SortedList<TKey, TValue>());
-			public static readonly ISafeDictionary<TKey, TValue> SafeDictionaryValue = new ReadOnlyDictionaryWrap<TKey, TValue>(new SortedList<TKey, TValue>());
-		}
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
 
-
-		#endregion
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedDictionary<TKey, TValue>? Wrap<TKey, TValue>(IDictionary<TKey, TValue>? value) where TKey: notnull
-			=> value == null ? null: new ReadOnlyDictionaryWrap<TKey, TValue>(value);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedDictionary<TKey, TValue>? WrapCopy<TKey, TValue>(IDictionary<TKey, TValue>? value) where TKey: notnull
-			=> value == null ? null:
-				value.Count == 0 ? Empty<TKey, TValue>(): new ReadOnlyDictionaryWrap<TKey, TValue>(new Dictionary<TKey, TValue>(value));
-
-		public static IWrappedList<T> WrapValue<T>(params T[]? value)
-			=> value == null || value.Length == 0 ? Empty<T>(): new ReadOnlyArrayWrap<T>(value);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedList<T>? Wrap<T>(T[]? value)
-			=> value == null ? null: value.Length == 0 ? Empty<T>(): new ReadOnlyArrayWrap<T>(value);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedList<T>? Wrap<T>(T[]? value, int offset, int count = -1)
-			=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyArrayFragmentWrap<T>(value, offset, count);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedList<T>? Wrap<T>(IList<T>? value)
-			=> value == null ? null: new ReadOnlyListWrap<T>(value);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedList<T>? Wrap<T>(IList<T>? value, int offset, int count = -1)
-			=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyListFragmentWrap<T>(value, offset, count);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedSafeList<T>? Wrap<T>(ISafeList<T>? value)
-			=> value == null ? null: new ReadOnlySafeListWrap<T>(value);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedSafeList<T>? Wrap<T>(ISafeList<T>? value, int offset, int count = -1)
-			=> value == null ? null: count == 0 ? EmptySafe<T>(): new ReadOnlySafeListFragmentWrap<T>(value, offset, count);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedCollection<T>? Wrap<T>(ICollection<T>? value)
-			=> value == null ? null: (IWrappedCollection<T>)new ReadOnlyCollectionWrap<T>(value);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedList<T>? WrapCopy<T>(ICollection<T>? value)
-		{
-			if (value == null)
-				return null;
-			if (value.Count == 0)
-				return Empty<T>();
-			var items = new T[value.Count];
-			value.CopyTo(items, 0);
-			return new ReadOnlyArrayWrap<T>(items);
+			if (_list is ICollection xx)
+			{
+				xx.CopyTo(array, index);
+			}
+			else if (array is T[] values)
+			{
+				_list.CopyTo(values, index);
+			}
+			else
+			{
+				values = new T[_list.Count];
+				_list.CopyTo(values, 0);
+				Array.Copy(values, 0, array, index, values.Length);
+			}
 		}
 
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IEnumerable<T>? Wrap<T>(IEnumerable<T>? value)
-			=> value == null ? null: (IEnumerable<T>)new ReadOnlyEnumerableWrap<T>(value);
+		public bool IsSynchronized => (_list as ICollection)?.IsSynchronized == true;
 
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedList<T>? WrapCopy<T>(IEnumerable<T>? value)
+		public object SyncRoot => (_list as ICollection)?.SyncRoot ?? _list;
+
+		public override int GetHashCode() => _list.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyListWrap<T> other && _list.Equals(other._list);
+
+		public override string ToString() => "RO:" + _list.ToString();
+	}
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlyListReWrap<T>: IReadOnlyList<T>
+	{
+		private readonly IReadOnlyList<T> _list;
+
+		public ReadOnlyListReWrap(IReadOnlyList<T> list) => _list = list ?? throw new ArgumentNullException(nameof(list));
+
+		public T this[int index] => _list[index];
+
+		public int Count => _list.Count;
+
+		public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
+
+		public override int GetHashCode() => _list.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyListReWrap<T> other && _list.Equals(other._list);
+
+		public override string ToString() => "RO:" + _list.ToString();
+	}
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlySafeListWrap<T>: IWrappedSafeList<T>
+	{
+		private readonly ISafeList<T> _list;
+
+		public ReadOnlySafeListWrap(ISafeList<T> list) => _list = list ?? throw new ArgumentNullException(nameof(list));
+
+		public int IndexOf(T item) => _list.IndexOf(item);
+
+		public void Insert(int index, T item) => throw new ReadOnlyException();
+
+		public void RemoveAt(int index) => throw new ReadOnlyException();
+
+		public T this[int index] { get => _list[index]; set => throw new ReadOnlyException(); }
+
+		public void Add(T item) => throw new ReadOnlyException();
+
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(T item) => _list.Contains(item);
+
+		public void CopyTo(T[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
+
+		public int Count => _list.Count;
+
+		public bool IsReadOnly => true;
+
+		public bool Remove(T item) => throw new ReadOnlyException();
+
+		public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
+
+		public void CopyTo(Array array, int index)
 		{
-			if (value == null)
-				return null;
-			if (value is ICollection<T> collection)
-				return WrapCopy(collection);
-			return new ReadOnlyListWrap<T>(new List<T>(value));
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
+
+			if (_list is ICollection xx)
+			{
+				xx.CopyTo(array, index);
+			}
+			else if (array is T[] values)
+			{
+				_list.CopyTo(values, index);
+			}
+			else
+			{
+				values = new T[_list.Count];
+				_list.CopyTo(values, 0);
+				Array.Copy(values, 0, array, index, values.Length);
+			}
 		}
 
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedSet<T>? Wrap<T>(ISet<T>? value)
-			=> value == null ? null: new ReadOnlySetWrap<T>(value);
+		public bool IsSynchronized => (_list as ICollection)?.IsSynchronized == true;
 
+		public object SyncRoot => (_list as ICollection)?.SyncRoot ?? _list;
 
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IWrappedSet<T>? WrapCopy<T>(ISet<T>? value)
-			=> value == null ? null: value.Count == 0 ? EmptySet<T>(): new ReadOnlySetWrap<T>(new HashSet<T>(value));
+		public override int GetHashCode() => _list.GetHashCode();
 
+		public override bool Equals(object? obj) => obj is ReadOnlySafeListWrap<T> other && _list.Equals(other._list);
 
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IReadOnlyList<T>? ReWrap<T>(IReadOnlyList<T>? value)
-			=> value == null ? null: new ReadOnlyListReWrap<T>(value);
+		public override string ToString() => "RO:" + _list.ToString();
+	}
 
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IReadOnlyList<T>? ReWrap<T>(IReadOnlyList<T>? value, int offset, int count = -1)
-			=> value == null ? null: count == 0 ? Empty<T>(): new ReadOnlyListFragmentReWrap<T>(value, offset, count);
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlySafeListFragmentWrap<T>: IWrappedSafeList<T>
+	{
+		private readonly ISafeList<T> _list;
+		private readonly int _start;
+		private readonly int _end;
 
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IReadOnlyCollection<T>? ReWrap<T>(IReadOnlyCollection<T>? value)
-			=> value == null ? null: new ReadOnlyCollectionReWrap<T>(value);
-
-		[return: NotNullIfNotNull(nameof(value))]
-		public static IReadOnlyDictionary<TKey, TValue>? ReWrap<TKey, TValue>(IReadOnlyDictionary<TKey, TValue>? value)
-			=> value == null ? null: new ReadOnlyDictionaryReWrap<TKey, TValue>(value);
-
-
-		public static ListValueWrap<T> ValueWrap<T>(IReadOnlyList<T>? value)
-			=> value == null ? ListValueWrap<T>.Empty: new ListValueWrap<T>(value);
-
-		public static ListFragmentValueWrap<T> ValueWrap<T>(IReadOnlyList<T>? value, int offset, int count = -1)
-			=> value == null || count == 0 ? ListFragmentValueWrap<T>.Empty: new ListFragmentValueWrap<T>(value, offset, count);
-
-		public static CollectionValueWrap<T> ValueWrap<T>(IReadOnlyCollection<T>? value)
-			=> value == null ? CollectionValueWrap<T>.Empty: new CollectionValueWrap<T>(value);
-
-		public static DictionaryValueWrap<TKey, TValue> ValueWrap<TKey, TValue>(IReadOnlyDictionary<TKey, TValue>? value) where TKey: notnull
-			=> value == null ? DictionaryValueWrap<TKey, TValue>.Empty: new DictionaryValueWrap<TKey, TValue>(value);
-
-		#region Implementation
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
-		private class ReadOnlyDictionaryWrap<TKey, TValue>: IWrappedDictionary<TKey, TValue> where TKey: notnull
+		public ReadOnlySafeListFragmentWrap(ISafeList<T> list, int offset, int count)
 		{
-			private readonly IDictionary<TKey, TValue> _dictionary;
+			_list = list ?? throw new ArgumentNullException(nameof(list));
+			if (offset < 0)
+				offset = 0;
+			else if (offset >= list.Count)
+				offset = list.Count;
+			_start = offset;
 
-			public ReadOnlyDictionaryWrap(IDictionary<TKey, TValue> dictionary) => _dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
-
-			public void Add(TKey key, TValue value) => throw new ReadOnlyException();
-
-			public bool ContainsKey(TKey key) => _dictionary.ContainsKey(key);
-
-			public IWrappedCollection<TKey> Keys => new ReadOnlyCollectionWrap<TKey>(_dictionary.Keys);
-			IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
-
-			ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
-
-			public bool Remove(TKey key) => throw new ReadOnlyException();
-
-			public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _dictionary.TryGetValue(key, out value);
-
-			public IWrappedCollection<TValue> Values => new ReadOnlyCollectionWrap<TValue>(_dictionary.Values);
-
-			IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
-
-			ICollection<TValue> IDictionary<TKey, TValue>.Values => Values;
-
-			public TValue this[TKey key] { get => _dictionary[key]; set => throw new ReadOnlyException(); }
-
-			public void Add(KeyValuePair<TKey, TValue> item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(KeyValuePair<TKey, TValue> item) => _dictionary.Contains(item);
-
-			public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => _dictionary.CopyTo(array, arrayIndex);
-
-			public int Count => _dictionary.Count;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(KeyValuePair<TKey, TValue> item) => throw new ReadOnlyException();
-
-			public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _dictionary.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
-
-			public void Add(object key, object? value) => throw new ReadOnlyException();
-
-			public bool Contains(object key) => key is TKey k && ContainsKey(k);
-
-			IDictionaryEnumerator IDictionary.GetEnumerator()
+			if (count < 0)
 			{
-				return _dictionary is IDictionary d ? d.GetEnumerator(): throw new NotImplementedException();
+				_end = -1;
 			}
-
-			public bool IsFixedSize => true;
-
-			ICollection IDictionary.Keys => new ReadOnlyCollectionWrap<TKey>(_dictionary.Keys);
-
-			public void Remove(object key) => throw new ReadOnlyException();
-
-			ICollection IDictionary.Values => new ReadOnlyCollectionWrap<TValue>(_dictionary.Values);
-
-			public object? this[object key]
+			else
 			{
-				get => key is TKey index ? this[index]: throw new ReadOnlyException();
-				set => throw new ReadOnlyException();
+				_end = offset + count;
+				if (_end > list.Count)
+					_end = list.Count;
 			}
-
-			public void CopyTo(Array array, int index)
-			{
-				if (array == null)
-					throw new ArgumentNullException(nameof(array));
-
-				if (_dictionary is ICollection collection)
-				{
-					collection.CopyTo(array, index);
-				}
-				else if (array is KeyValuePair<TKey, TValue>[] values)
-				{
-					_dictionary.CopyTo(values, index);
-				}
-				else
-				{
-					values = new KeyValuePair<TKey, TValue>[_dictionary.Count];
-					_dictionary.CopyTo(values, 0);
-					Array.Copy(values, 0, array, index, values.Length);
-				}
-			}
-
-			public bool IsSynchronized => (_dictionary as ICollection)?.IsSynchronized == true;
-
-			public object SyncRoot => (_dictionary as ICollection)?.SyncRoot ?? _dictionary;
-
-			public override string ToString() => "RO:" + _dictionary.ToString();
 		}
 
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
-		private class ReadOnlyDictionaryReWrap<TKey, TValue>: IReadOnlyDictionary<TKey, TValue>
+		public int IndexOf(T item)
 		{
-			private readonly IReadOnlyDictionary<TKey, TValue> _dictionary;
-
-			public ReadOnlyDictionaryReWrap(IReadOnlyDictionary<TKey, TValue> dictionary) => _dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
-
-			public int Count => _dictionary.Count;
-
-			public bool ContainsKey(TKey key) => _dictionary.ContainsKey(key);
-
-			public TValue this[TKey key] => _dictionary[key];
-
-			public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _dictionary.TryGetValue(key, out value);
-
-			public IEnumerable<TKey> Keys => _dictionary.Keys;
-
-			public IEnumerable<TValue> Values => _dictionary.Values;
-
-			public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _dictionary.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
-
-			public override string ToString() => "RO:" + _dictionary.ToString();
+			int end = _end < 0 ? _list.Count: _end;
+			for (int i = _start; i < end; ++i)
+			{
+				if (Object.Equals(_list[i], item))
+					return i;
+			}
+			return -1;
 		}
 
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
-		public readonly struct DictionaryValueWrap<TKey, TValue>: IReadOnlyDictionary<TKey, TValue>, IEquatable<DictionaryValueWrap<TKey, TValue>> where TKey: notnull
+		public void Insert(int index, T item) => throw new ReadOnlyException();
+
+		public void RemoveAt(int index) => throw new ReadOnlyException();
+
+		public T this[int index]
 		{
-			public static readonly DictionaryValueWrap<TKey, TValue> Empty = new DictionaryValueWrap<TKey, TValue>(Empty<TKey, TValue>());
-
-			private readonly IReadOnlyDictionary<TKey, TValue> _dictionary;
-
-			public DictionaryValueWrap(IReadOnlyDictionary<TKey, TValue> dictionary) => _dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
-
-			public int Count => _dictionary.Count;
-
-			public bool ContainsKey(TKey key) => _dictionary.ContainsKey(key);
-
-			public TValue this[TKey key] => _dictionary[key];
-
-			public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _dictionary.TryGetValue(key, out value);
-
-			public IEnumerable<TKey> Keys => _dictionary.Keys;
-
-			public IEnumerable<TValue> Values => _dictionary.Values;
-
-			public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _dictionary.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
-
-			public override bool Equals(object? obj) => obj is DictionaryValueWrap<TKey, TValue> other && Equals(other);
-
-			public bool Equals(DictionaryValueWrap<TKey, TValue> other) => ReferenceEquals(_dictionary, other._dictionary);
-
-			public override int GetHashCode() => _dictionary.GetHashCode();
-
-			public static bool operator ==(DictionaryValueWrap<TKey, TValue> left, DictionaryValueWrap<TKey, TValue> right) => left.Equals(right);
-
-			public static bool operator !=(DictionaryValueWrap<TKey, TValue> left, DictionaryValueWrap<TKey, TValue> right) => !(left == right);
-
-			public override string ToString() => "RO:" + _dictionary.ToString();
+			get
+			{
+				int i = index + _start;
+				return i >= 0 && i < (_end < 0 ? _list.Count: _end) ? _list[i]: throw new ArgumentOutOfRangeException(nameof(index), index, null);
+			}
+			set => throw new ReadOnlyException();
 		}
 
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlyListWrap<T>: IWrappedList<T>
+		public void Add(T item) => throw new ReadOnlyException();
+
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(T item) => IndexOf(item) >= 0;
+
+		public void CopyTo(T[] array, int arrayIndex)
 		{
-			private readonly IList<T> _list;
+			int end = _end < 0 ? _list.Count: _end;
+			if (arrayIndex < 0 || array.Length - arrayIndex < end - _start)
+				throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, null);
 
-			public ReadOnlyListWrap(IList<T> list) => _list = list ?? throw new ArgumentNullException(nameof(list));
-
-			public int IndexOf(T item) => _list.IndexOf(item);
-
-			public void Insert(int index, T item) => throw new ReadOnlyException();
-
-			public void RemoveAt(int index) => throw new ReadOnlyException();
-
-			public T this[int index] { get => _list[index]; set => throw new ReadOnlyException(); }
-
-			public void Add(T item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(T item) => _list.Contains(item);
-
-			public void CopyTo(T[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
-
-			public int Count => _list.Count;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(T item) => throw new ReadOnlyException();
-
-			public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
-
-			public void CopyTo(Array array, int index)
+			for (int i = _start; i < end; ++i)
 			{
-				if (array == null)
-					throw new ArgumentNullException(nameof(array));
-
-				if (_list is ICollection xx)
-				{
-					xx.CopyTo(array, index);
-				}
-				else if (array is T[] values)
-				{
-					_list.CopyTo(values, index);
-				}
-				else
-				{
-					values = new T[_list.Count];
-					_list.CopyTo(values, 0);
-					Array.Copy(values, 0, array, index, values.Length);
-				}
+				array[i - _start] = _list[i];
 			}
-
-			public bool IsSynchronized => (_list as ICollection)?.IsSynchronized == true;
-
-			public object SyncRoot => (_list as ICollection)?.SyncRoot ?? _list;
-
-			public override string ToString() => "RO:" + _list.ToString();
 		}
 
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlyListReWrap<T>: IReadOnlyList<T>
+		public int Count => (_end < 0 ? _list.Count: _end) - _start;
+
+		public bool IsReadOnly => true;
+
+		public bool Remove(T item) => throw new ReadOnlyException();
+
+		public IEnumerator<T> GetEnumerator()
 		{
-			private readonly IReadOnlyList<T> _list;
-
-			public ReadOnlyListReWrap(IReadOnlyList<T> list) => _list = list ?? throw new ArgumentNullException(nameof(list));
-
-			public T this[int index] => _list[index];
-
-			public int Count => _list.Count;
-
-			public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
-
-			public override string ToString() => "RO:" + _list.ToString();
+			int end = (_end < 0 ? _list.Count: _end);
+			for (int i = _start; i < end; ++i)
+			{
+				yield return _list[i];
+			}
 		}
 
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		public readonly struct ListValueWrap<T>: IReadOnlyList<T>, IEquatable<ListValueWrap<T>>
+		IEnumerator IEnumerable.GetEnumerator()
 		{
-			public static readonly ListValueWrap<T> Empty = new ListValueWrap<T>(Array.Empty<T>());
-			private readonly IReadOnlyList<T> _list;
-
-			public ListValueWrap(IReadOnlyList<T> list) => _list = list ?? throw new ArgumentNullException(nameof(list));
-
-			public T this[int index]
+			int end = (_end < 0 ? _list.Count: _end);
+			for (int i = _start; i < end; ++i)
 			{
-				[MethodImpl(MethodImplOptions.AggressiveInlining)]
-				get => _list[index];
+				yield return _list[i];
 			}
-
-			public int Count
-			{
-				[MethodImpl(MethodImplOptions.AggressiveInlining)]
-				get => _list.Count;
-			}
-
-			public void CopyTo(T[] array, int index)
-			{
-				if (array is null)
-					throw new ArgumentNullException(nameof(array));
-				if (index < 0 || index + Count > array.Length)
-					throw new ArgumentOutOfRangeException(nameof(index), index, null);
-
-				if (_list is ICollection<T> collection)
-				{
-					collection.CopyTo(array, index);
-				}
-				else
-				{
-					for (int i = 0; i < Count; ++i)
-					{
-						array[index + i] = _list[i];
-					}
-				}
-			}
-
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
-
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
-
-			public override bool Equals(object? obj) => obj is ListValueWrap<T> other && Equals(other);
-
-			public bool Equals(ListValueWrap<T> other) => ReferenceEquals(_list, other._list);
-
-			public override int GetHashCode() => _list.GetHashCode();
-
-			public static bool operator ==(ListValueWrap<T> left, ListValueWrap<T> right) => left.Equals(right);
-
-			public static bool operator !=(ListValueWrap<T> left, ListValueWrap<T> right) => !(left == right);
-
-			public override string ToString() => "RO:" + _list.ToString();
 		}
 
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlySafeListWrap<T>: IWrappedSafeList<T>
+		public void CopyTo(Array array, int index)
 		{
-			private readonly ISafeList<T> _list;
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
+			int end = (_end < 0 ? _list.Count: _end);
+			if (index < 0 || array.Length - index < end - _start)
+				throw new ArgumentOutOfRangeException(nameof(index), index, null);
 
-			public ReadOnlySafeListWrap(ISafeList<T> list) => _list = list ?? throw new ArgumentNullException(nameof(list));
-
-			public int IndexOf(T item) => _list.IndexOf(item);
-
-			public void Insert(int index, T item) => throw new ReadOnlyException();
-
-			public void RemoveAt(int index) => throw new ReadOnlyException();
-
-			public T this[int index] { get => _list[index]; set => throw new ReadOnlyException(); }
-
-			public void Add(T item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(T item) => _list.Contains(item);
-
-			public void CopyTo(T[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
-
-			public int Count => _list.Count;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(T item) => throw new ReadOnlyException();
-
-			public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
-
-			public void CopyTo(Array array, int index)
+			for (int i = _start; i < end; ++i)
 			{
-				if (array == null)
-					throw new ArgumentNullException(nameof(array));
-
-				if (_list is ICollection xx)
-				{
-					xx.CopyTo(array, index);
-				}
-				else if (array is T[] values)
-				{
-					_list.CopyTo(values, index);
-				}
-				else
-				{
-					values = new T[_list.Count];
-					_list.CopyTo(values, 0);
-					Array.Copy(values, 0, array, index, values.Length);
-				}
+				array.SetValue(_list[i], i - _start);
 			}
-
-			public bool IsSynchronized => (_list as ICollection)?.IsSynchronized == true;
-
-			public object SyncRoot => (_list as ICollection)?.SyncRoot ?? _list;
-
-			public override string ToString() => "RO:" + _list.ToString();
 		}
 
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlySafeListFragmentWrap<T>: IWrappedSafeList<T>
-		{
-			private readonly ISafeList<T> _list;
-			private readonly int _start;
-			private readonly int _end;
+		public bool IsSynchronized => (_list as ICollection)?.IsSynchronized == true;
 
-			public ReadOnlySafeListFragmentWrap(ISafeList<T> list, int offset, int count)
-			{
-				_list = list ?? throw new ArgumentNullException(nameof(list));
-				if (offset < 0)
-					offset = 0;
-				else if (offset >= list.Count)
-					offset = list.Count;
-				_start = offset;
+		public object SyncRoot => (_list as ICollection)?.SyncRoot ?? _list;
 
-				if (count < 0)
-				{
-					_end = -1;
-				}
-				else
-				{
-					_end = offset + count;
-					if (_end > list.Count)
-						_end = list.Count;
-				}
-			}
+		public override int GetHashCode() => _list.GetHashCode();
 
-			public int IndexOf(T item)
-			{
-				int end = _end < 0 ? _list.Count: _end;
-				for (int i = _start; i < end; ++i)
-				{
-					if (Object.Equals(_list[i], item))
-						return i;
-				}
-				return -1;
-			}
+		public override bool Equals(object? obj) => obj is ReadOnlySafeListFragmentWrap<T> other && _list.Equals(other._list) && _start == other._start && _end == other._end;
 
-			public void Insert(int index, T item) => throw new ReadOnlyException();
-
-			public void RemoveAt(int index) => throw new ReadOnlyException();
-
-			public T this[int index]
-			{
-				get
-				{
-					int i = index + _start;
-					return i >= 0 && i < (_end < 0 ? _list.Count: _end) ? _list[i]: throw new ArgumentOutOfRangeException(nameof(index), index, null);
-				}
-				set => throw new ReadOnlyException();
-			}
-
-			public void Add(T item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(T item) => IndexOf(item) >= 0;
-
-			public void CopyTo(T[] array, int arrayIndex)
-			{
-				int end = _end < 0 ? _list.Count: _end;
-				if (arrayIndex < 0 || array.Length - arrayIndex < end - _start)
-					throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, null);
-
-				for (int i = _start; i < end; ++i)
-				{
-					array[i - _start] = _list[i];
-				}
-			}
-
-			public int Count => (_end < 0 ? _list.Count: _end) - _start;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(T item) => throw new ReadOnlyException();
-
-			public IEnumerator<T> GetEnumerator()
-			{
-				int end = (_end < 0 ? _list.Count: _end);
-				for (int i = _start; i < end; ++i)
-				{
-					yield return _list[i];
-				}
-			}
-
-			IEnumerator IEnumerable.GetEnumerator()
-			{
-				int end = (_end < 0 ? _list.Count: _end);
-				for (int i = _start; i < end; ++i)
-				{
-					yield return _list[i];
-				}
-			}
-
-			public void CopyTo(Array array, int index)
-			{
-				if (array == null)
-					throw new ArgumentNullException(nameof(array));
-				int end = (_end < 0 ? _list.Count: _end);
-				if (index < 0 || array.Length - index < end - _start)
-					throw new ArgumentOutOfRangeException(nameof(index), index, null);
-
-				for (int i = _start; i < end; ++i)
-				{
-					array.SetValue(_list[i], i - _start);
-				}
-			}
-
-			public bool IsSynchronized => (_list as ICollection)?.IsSynchronized == true;
-
-			public object SyncRoot => (_list as ICollection)?.SyncRoot ?? _list;
-
-			public override string ToString() => "RO:" + _list.ToString();
-		}
-
-		private class EmptySafeListInstance<T>: ISafeList<T>
-		{
-			public T this[int index]
-			{
-				get => default!;
-				set { }
-			}
-
-			public int IndexOf(T item) => -1;
-
-			public void Insert(int index, T item) => throw new ReadOnlyException();
-
-			public void RemoveAt(int index) => throw new ReadOnlyException();
-
-			public void Add(T item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(T item) => false;
-
-			public void CopyTo(T[] array, int arrayIndex)
-			{
-			}
-
-			public int Count => 0;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(T item) => throw new ReadOnlyException();
-
-			public IEnumerator<T> GetEnumerator() => Empty<T>().GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => Empty<T>().GetEnumerator();
-
-			public override string ToString() => "RO:" + base.ToString();
-		}
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlyCollectionWrap<T>: IWrappedCollection<T>
-		{
-			private readonly ICollection<T> _collection;
-
-			public ReadOnlyCollectionWrap(ICollection<T> collection) => _collection = collection ?? throw new ArgumentNullException(nameof(collection));
-
-			public void Add(T item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(T item) => _collection.Contains(item);
-
-			public void CopyTo(T[] array, int arrayIndex) => _collection.CopyTo(array, arrayIndex);
-
-			public int Count => _collection.Count;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(T item) => throw new ReadOnlyException();
-
-			public IEnumerator<T> GetEnumerator() => _collection.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _collection.GetEnumerator();
-
-			public void CopyTo(Array array, int index)
-			{
-				if (array == null)
-					throw new ArgumentNullException(nameof(array));
-
-				if (_collection is ICollection xx)
-				{
-					xx.CopyTo(array, index);
-				}
-				else if (array is T[] values)
-				{
-					_collection.CopyTo(values, index);
-				}
-				else
-				{
-					values = new T[_collection.Count];
-					_collection.CopyTo(values, 0);
-					Array.Copy(values, 0, array, index, values.Length);
-				}
-			}
-
-			public bool IsSynchronized => (_collection as ICollection)?.IsSynchronized == true;
-
-			public object SyncRoot => (_collection as ICollection)?.SyncRoot ?? _collection;
-
-			public override string ToString() => "RO:" + _collection.ToString();
-		}
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlyCollectionReWrap<T>: IReadOnlyCollection<T>
-		{
-			private readonly IReadOnlyCollection<T> _collection;
-
-			public ReadOnlyCollectionReWrap(IReadOnlyCollection<T> collection) => _collection = collection ?? throw new ArgumentNullException(nameof(collection));
-
-			public int Count => _collection.Count;
-
-			public IEnumerator<T> GetEnumerator() => _collection.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _collection.GetEnumerator();
-
-			public override string ToString() => "RO:" + _collection.ToString();
-		}
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		public readonly struct CollectionValueWrap<T>: IReadOnlyCollection<T>, IEquatable<CollectionValueWrap<T>>
-		{
-			public static readonly CollectionValueWrap<T> Empty = new CollectionValueWrap<T>(Array.Empty<T>());
-
-			private readonly IReadOnlyCollection<T> _collection;
-
-			public CollectionValueWrap(IReadOnlyCollection<T> collection) => _collection = collection ?? throw new ArgumentNullException(nameof(collection));
-
-			public int Count => _collection.Count;
-
-			public IEnumerator<T> GetEnumerator() => _collection.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _collection.GetEnumerator();
-
-			public override bool Equals(object? obj) => obj is CollectionValueWrap<T> other && Equals(other);
-
-			public bool Equals(CollectionValueWrap<T> other) => ReferenceEquals(_collection, other._collection);
-
-			public override int GetHashCode() => _collection.GetHashCode();
-
-			public static bool operator ==(CollectionValueWrap<T> left, CollectionValueWrap<T> right) => left.Equals(right);
-
-			public static bool operator !=(CollectionValueWrap<T> left, CollectionValueWrap<T> right) => !(left == right);
-
-			public override string ToString() => "RO:" + _collection.ToString();
-		}
-
-		private class ReadOnlyEnumerableWrap<T>: IEnumerable<T>
-		{
-			private readonly IEnumerable<T> _enumerable;
-
-			public ReadOnlyEnumerableWrap(IEnumerable<T> enumerable) => _enumerable = (enumerable?? throw new ArgumentNullException(nameof(enumerable))).AsEnumerable();
-
-			public IEnumerator<T> GetEnumerator() => _enumerable.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _enumerable.GetEnumerator();
-
-			public override string ToString() => "RO:" + _enumerable.ToString();
-		}
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlyArrayWrap<T>: IWrappedList<T>
-		{
-			private readonly T[] _array;
-
-			public ReadOnlyArrayWrap(T[] array) => _array = array ?? throw new ArgumentNullException(nameof(array));
-
-			public int IndexOf(T item) => Array.IndexOf(_array, item);
-
-			public void Insert(int index, T item) => throw new ReadOnlyException();
-
-			public void RemoveAt(int index) => throw new ReadOnlyException();
-
-			public T this[int index]
-			{
-				get => _array[index];
-				set => throw new ReadOnlyException();
-			}
-
-			public void Add(T item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(T item) => Array.IndexOf(_array, item) >= 0;
-
-			public void CopyTo(T[] array, int arrayIndex) => Array.Copy(_array, 0, array, arrayIndex, _array.Length);
-
-			public int Count => _array.Length;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(T item) => throw new ReadOnlyException();
-
-			public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)_array).GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _array.GetEnumerator();
-
-			public void CopyTo(Array array, int index) => Array.Copy(_array, 0, array, index, _array.Length);
-
-			public bool IsSynchronized => false;
-
-			public object SyncRoot => _array;
-
-			public override string ToString() => "RO:" + _array.ToString();
-		}
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlyArrayFragmentWrap<T>: IWrappedList<T>
-		{
-			private readonly T[] _array;
-			private readonly int _start;
-			private readonly int _end;
-
-			public ReadOnlyArrayFragmentWrap(T[] array, int offset, int count)
-			{
-				_array = array ?? throw new ArgumentNullException(nameof(array));
-				if (offset < 0)
-					offset = 0;
-				else if (offset >= array.Length)
-					offset = array.Length;
-				_start = offset;
-
-				if (count < 0)
-				{
-					_end = array.Length;
-				}
-				else
-				{
-					_end = offset + count;
-					if (_end > array.Length)
-						_end = array.Length;
-				}
-			}
-
-			public int IndexOf(T item)
-			{
-				int index = Array.IndexOf(_array, item, _start);
-				return index >= _end ? -1: index - _start;
-			}
-
-			public void Insert(int index, T item) => throw new ReadOnlyException();
-
-			public void RemoveAt(int index) => throw new ReadOnlyException();
-
-			public T this[int index]
-			{
-				get
-				{
-					if (index < 0 || index >= _end - _start)
-						throw new ArgumentOutOfRangeException(nameof(index), index, null);
-					return _array[index + _start];
-				}
-				set => throw new ReadOnlyException();
-			}
-
-			public void Add(T item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(T item)
-			{
-				int index = Array.IndexOf(_array, item, _start);
-				return index >= 0 && index < _end;
-			}
-
-			public void CopyTo(T[] array, int arrayIndex) => Array.Copy(_array, _start, array, arrayIndex, _end - _start);
-
-			public int Count => _end - _start;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(T item) => throw new ReadOnlyException();
-
-			public IEnumerator<T> GetEnumerator()
-			{
-				for (int i = _start; i < _end; ++i)
-				{
-					yield return _array[i];
-				}
-			}
-
-			IEnumerator IEnumerable.GetEnumerator()
-			{
-				for (int i = _start; i < _end; ++i)
-				{
-					yield return _array[i];
-				}
-			}
-
-			public void CopyTo(Array array, int index) => Array.Copy(_array, _start, array, index, _end - _start);
-
-			public bool IsSynchronized => false;
-
-			public object SyncRoot => _array;
-
-			public override string ToString() => $"RO({_start},{_end}):" + _array.ToString();
-		}
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlyListFragmentWrap<T>: IWrappedList<T>
-		{
-			private readonly IList<T> _list;
-			private readonly int _start;
-			private readonly int _end;
-
-			public ReadOnlyListFragmentWrap(IList<T> list, int offset, int count)
-			{
-				_list = list ?? throw new ArgumentNullException(nameof(list));
-				if (offset < 0)
-					offset = 0;
-				else if (offset >= list.Count)
-					offset = list.Count;
-				_start = offset;
-
-				if (count < 0)
-				{
-					_end = -1;
-				}
-				else
-				{
-					_end = offset + count;
-					if (_end > list.Count)
-						_end = list.Count;
-				}
-			}
-
-			public int IndexOf(T item)
-			{
-				int end = _end < 0 ? _list.Count: _end;
-				for (int i = _start; i < end; ++i)
-				{
-					if (Object.Equals(_list[i], item))
-						return i;
-				}
-				return -1;
-			}
-
-			public void Insert(int index, T item) => throw new ReadOnlyException();
-
-			public void RemoveAt(int index) => throw new ReadOnlyException();
-
-			public T this[int index]
-			{
-				get
-				{
-					int i = index + _start;
-					if (i < 0 || i >= (_end < 0 ? _list.Count: _end))
-						throw new ArgumentOutOfRangeException(nameof(index), index, null);
-					return _list[i];
-				}
-				set => throw new ReadOnlyException();
-			}
-
-			public void Add(T item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(T item) => IndexOf(item) >= 0;
-
-			public void CopyTo(T[] array, int arrayIndex)
-			{
-				int end = (_end < 0 ? _list.Count: _end);
-				if (arrayIndex < 0 || array.Length - arrayIndex < end - _start)
-					throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, null);
-
-				for (int i = _start; i < end; ++i)
-				{
-					array[i - _start] = _list[i];
-				}
-			}
-
-			public int Count => (_end < 0 ? _list.Count: _end) - _start;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(T item) => throw new ReadOnlyException();
-
-			public IEnumerator<T> GetEnumerator()
-			{
-				int end = (_end < 0 ? _list.Count: _end);
-				for (int i = _start; i < end; ++i)
-				{
-					yield return _list[i];
-				}
-			}
-
-			IEnumerator IEnumerable.GetEnumerator()
-			{
-				int end = (_end < 0 ? _list.Count: _end);
-				for (int i = _start; i < end; ++i)
-				{
-					yield return _list[i];
-				}
-			}
-
-			public void CopyTo(Array array, int index)
-			{
-				if (array == null)
-					throw new ArgumentNullException(nameof(array));
-				int end = (_end < 0 ? _list.Count: _end);
-				if (index < 0 || array.Length - index < end - _start)
-					throw new ArgumentOutOfRangeException(nameof(index), index, null);
-
-				for (int i = _start; i < end; ++i)
-				{
-					array.SetValue(_list[i], i - _start);
-				}
-			}
-
-			public bool IsSynchronized => (_list as ICollection)?.IsSynchronized == true;
-
-			public object SyncRoot => (_list as ICollection)?.SyncRoot ?? _list;
-
-			public override string ToString() => $"RO({_start},{_end}):" + _list.ToString();
-		}
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlyListFragmentReWrap<T>: IReadOnlyList<T>
-		{
-			private readonly IReadOnlyList<T> _list;
-			private readonly int _start;
-			private readonly int _end;
-
-			public ReadOnlyListFragmentReWrap(IReadOnlyList<T> list, int offset, int count)
-			{
-				_list = list ?? throw new ArgumentNullException(nameof(list));
-				if (offset < 0)
-					offset = 0;
-				else if (offset >= list.Count)
-					offset = list.Count;
-				_start = offset;
-
-				if (count < 0)
-				{
-					_end = -1;
-				}
-				else
-				{
-					_end = offset + count;
-					if (_end > list.Count)
-						_end = list.Count;
-				}
-			}
-
-			public T this[int index]
-			{
-				get
-				{
-					int i = index + _start;
-					if (i < 0 || i >= (_end < 0 ? _list.Count: _end))
-						throw new ArgumentOutOfRangeException(nameof(index), index, null);
-					return _list[i];
-				}
-			}
-
-			public int Count => (_end < 0 ? _list.Count: _end) - _start;
-
-			public IEnumerator<T> GetEnumerator()
-			{
-				int end = (_end < 0 ? _list.Count: _end);
-				for (int i = _start; i < end; ++i)
-				{
-					yield return _list[i];
-				}
-			}
-
-			IEnumerator IEnumerable.GetEnumerator()
-			{
-				int end = (_end < 0 ? _list.Count: _end);
-				for (int i = _start; i < end; ++i)
-				{
-					yield return _list[i];
-				}
-			}
-
-			public override string ToString() => $"RO({_start},{_end}):" + _list.ToString();
-		}
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		public readonly struct ListFragmentValueWrap<T>: IReadOnlyList<T>, IEquatable<ListFragmentValueWrap<T>>
-		{
-			public static readonly ListFragmentValueWrap<T> Empty = new ListFragmentValueWrap<T>(Array.Empty<T>(), 0, 0);
-
-			private readonly IReadOnlyList<T> _list;
-			private readonly int _start;
-			private readonly int _end;
-
-			public ListFragmentValueWrap(IReadOnlyList<T> list, int offset, int count)
-			{
-				_list = list ?? throw new ArgumentNullException(nameof(list));
-				if (offset < 0)
-					offset = 0;
-				else if (offset >= list.Count)
-					offset = list.Count;
-				_start = offset;
-
-				if (count < 0)
-				{
-					_end = -1;
-				}
-				else
-				{
-					_end = offset + count;
-					if (_end > list.Count)
-						_end = list.Count;
-				}
-			}
-
-			public T this[int index]
-			{
-				get
-				{
-					int i = index + _start;
-					if (i < 0 || i >= (_end < 0 ? _list.Count: _end))
-						throw new ArgumentOutOfRangeException(nameof(index), index, null);
-					return _list[i];
-				}
-			}
-
-			public int Count => (_end < 0 ? _list.Count: _end) - _start;
-
-			public IEnumerator<T> GetEnumerator()
-			{
-				int end = (_end < 0 ? _list.Count: _end);
-				for (int i = _start; i < end; ++i)
-				{
-					yield return _list[i];
-				}
-			}
-
-			IEnumerator IEnumerable.GetEnumerator()
-			{
-				int end = (_end < 0 ? _list.Count: _end);
-				for (int i = _start; i < end; ++i)
-				{
-					yield return _list[i];
-				}
-			}
-
-			public override string ToString() => $"RO({_start},{_end}):" + _list.ToString();
-
-			public override bool Equals(object? obj) => obj is ListFragmentValueWrap<T> other && Equals(other);
-
-			public bool Equals(ListFragmentValueWrap<T> other) => ReferenceEquals(_list, other._list) && _start == other._start && _end == other._end;
-
-			public override int GetHashCode() => (_list, _start, _end).GetHashCode();
-
-			public static bool operator ==(ListFragmentValueWrap<T> left, ListFragmentValueWrap<T> right) => left.Equals(right);
-
-			public static bool operator !=(ListFragmentValueWrap<T> left, ListFragmentValueWrap<T> right) => !(left == right);
-		}
-
-		[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-		[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
-		private class ReadOnlySetWrap<T>: IWrappedSet<T>
-		{
-			readonly ISet<T> _set;
-
-			public ReadOnlySetWrap(ISet<T> set) => _set = set ?? throw new ArgumentNullException(nameof(set));
-
-			public bool Add(T item) => throw new ReadOnlyException();
-
-			public void ExceptWith(IEnumerable<T> other) => throw new ReadOnlyException();
-
-			public void IntersectWith(IEnumerable<T> other) => throw new ReadOnlyException();
-
-			public bool IsProperSubsetOf(IEnumerable<T> other) => _set.IsProperSubsetOf(other);
-
-			public bool IsProperSupersetOf(IEnumerable<T> other) => _set.IsProperSupersetOf(other);
-
-			public bool IsSubsetOf(IEnumerable<T> other) => _set.IsSubsetOf(other);
-
-			public bool IsSupersetOf(IEnumerable<T> other) => _set.IsSupersetOf(other);
-
-			public bool Overlaps(IEnumerable<T> other) => _set.Overlaps(other);
-
-			public bool SetEquals(IEnumerable<T> other) => _set.SetEquals(other);
-
-			public void SymmetricExceptWith(IEnumerable<T> other) => throw new ReadOnlyException();
-
-			public void UnionWith(IEnumerable<T> other) => throw new ReadOnlyException();
-
-			void ICollection<T>.Add(T item) => throw new ReadOnlyException();
-
-			public void Clear() => throw new ReadOnlyException();
-
-			public bool Contains(T item) => _set.Contains(item);
-
-			public void CopyTo(T[] array, int arrayIndex) => _set.CopyTo(array, arrayIndex);
-
-			public int Count => _set.Count;
-
-			public bool IsReadOnly => true;
-
-			public bool Remove(T item) => throw new ReadOnlyException();
-
-			public IEnumerator<T> GetEnumerator() => _set.GetEnumerator();
-
-			IEnumerator IEnumerable.GetEnumerator() => _set.GetEnumerator();
-
-			public void CopyTo(Array array, int index)
-			{
-				if (array == null)
-					throw new ArgumentNullException(nameof(array));
-
-				if (_set is ICollection xx)
-				{
-					xx.CopyTo(array, index);
-				}
-				else if (array is T[] values)
-				{
-					_set.CopyTo(values, index);
-				}
-				else
-				{
-					values = new T[_set.Count];
-					_set.CopyTo(values, 0);
-					Array.Copy(values, 0, array, index, values.Length);
-				}
-			}
-
-			public bool IsSynchronized => (_set as ICollection)?.IsSynchronized == true;
-
-			public object SyncRoot => (_set as ICollection)?.SyncRoot ?? _set;
-
-			public override string ToString() => "RO:" + _set.ToString();
-		}
-
-		#endregion
+		public override string ToString() => $"RO({_start},{_end}):" + _list.ToString();
 	}
 
 	[Serializable]
-	public class ReadOnlyException: NotSupportedException
+	private class EmptySafeListInstance<T>: ISafeList<T>
 	{
-		public ReadOnlyException(): base(SR.ReadOnlyException())
+		public T this[int index]
+		{
+			get => default!;
+			set { }
+		}
+
+		public int IndexOf(T item) => -1;
+
+		public void Insert(int index, T item) => throw new ReadOnlyException();
+
+		public void RemoveAt(int index) => throw new ReadOnlyException();
+
+		public void Add(T item) => throw new ReadOnlyException();
+
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(T item) => false;
+
+		public void CopyTo(T[] array, int arrayIndex)
 		{
 		}
 
-		public ReadOnlyException(object value): base(SR.ReadOnlyException(value))
-		{
-		}
+		public int Count => 0;
 
-		public ReadOnlyException(object value, object item): base(SR.ReadOnlyException(value, item))
-		{
-		}
+		public bool IsReadOnly => true;
 
-		public ReadOnlyException(string message) : base(message)
-		{
-		}
+		public bool Remove(T item) => throw new ReadOnlyException();
 
-		public ReadOnlyException(string message, Exception innerException) : base(message, innerException)
-		{
-		}
+		public IEnumerator<T> GetEnumerator() => Empty<T>().GetEnumerator();
 
-		protected ReadOnlyException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext): base(serializationInfo, streamingContext)
-		{
-		}
+		IEnumerator IEnumerable.GetEnumerator() => Empty<T>().GetEnumerator();
+
+		public override string ToString() => "RO:" + base.ToString();
 	}
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlyCollectionWrap<T>: IWrappedCollection<T>
+	{
+		private readonly ICollection<T> _collection;
+
+		public ReadOnlyCollectionWrap(ICollection<T> collection) => _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+
+		public void Add(T item) => throw new ReadOnlyException();
+
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(T item) => _collection.Contains(item);
+
+		public void CopyTo(T[] array, int arrayIndex) => _collection.CopyTo(array, arrayIndex);
+
+		public int Count => _collection.Count;
+
+		public bool IsReadOnly => true;
+
+		public bool Remove(T item) => throw new ReadOnlyException();
+
+		public IEnumerator<T> GetEnumerator() => _collection.GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _collection.GetEnumerator();
+
+		public void CopyTo(Array array, int index)
+		{
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
+
+			if (_collection is ICollection xx)
+			{
+				xx.CopyTo(array, index);
+			}
+			else if (array is T[] values)
+			{
+				_collection.CopyTo(values, index);
+			}
+			else
+			{
+				values = new T[_collection.Count];
+				_collection.CopyTo(values, 0);
+				Array.Copy(values, 0, array, index, values.Length);
+			}
+		}
+
+		public bool IsSynchronized => (_collection as ICollection)?.IsSynchronized == true;
+
+		public object SyncRoot => (_collection as ICollection)?.SyncRoot ?? _collection;
+
+		public override int GetHashCode() => _collection.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyCollectionWrap<T> other && _collection.Equals(other._collection);
+
+		public override string ToString() => "RO:" + _collection.ToString();
+	}
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlyCollectionReWrap<T>: IReadOnlyCollection<T>
+	{
+		private readonly IReadOnlyCollection<T> _collection;
+
+		public ReadOnlyCollectionReWrap(IReadOnlyCollection<T> collection) => _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+
+		public int Count => _collection.Count;
+
+		public IEnumerator<T> GetEnumerator() => _collection.GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _collection.GetEnumerator();
+
+		public override int GetHashCode() => _collection.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyCollectionReWrap<T> other && _collection.Equals(other._collection);
+
+		public override string ToString() => "RO:" + _collection.ToString();
+	}
+
+	[Serializable]
+	private class ReadOnlyEnumerableWrap<T>: IEnumerable<T>
+	{
+		private readonly IEnumerable<T> _enumerable;
+
+		public ReadOnlyEnumerableWrap(IEnumerable<T> enumerable) => _enumerable = (enumerable?? throw new ArgumentNullException(nameof(enumerable))).AsEnumerable();
+
+		public IEnumerator<T> GetEnumerator() => _enumerable.GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _enumerable.GetEnumerator();
+
+		public override int GetHashCode() => _enumerable.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyEnumerableWrap<T> other && _enumerable.Equals(other._enumerable);
+
+		public override string ToString() => "RO:" + _enumerable.ToString();
+	}
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlyArrayWrap<T>: IWrappedList<T>
+	{
+		private readonly T[] _array;
+
+		public ReadOnlyArrayWrap(T[] array) => _array = array ?? throw new ArgumentNullException(nameof(array));
+
+		public int IndexOf(T item) => Array.IndexOf(_array, item);
+
+		public void Insert(int index, T item) => throw new ReadOnlyException();
+
+		public void RemoveAt(int index) => throw new ReadOnlyException();
+
+		public T this[int index]
+		{
+			get => _array[index];
+			set => throw new ReadOnlyException();
+		}
+
+		public void Add(T item) => throw new ReadOnlyException();
+
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(T item) => Array.IndexOf(_array, item) >= 0;
+
+		public void CopyTo(T[] array, int arrayIndex) => Array.Copy(_array, 0, array, arrayIndex, _array.Length);
+
+		public int Count => _array.Length;
+
+		public bool IsReadOnly => true;
+
+		public bool Remove(T item) => throw new ReadOnlyException();
+
+		public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)_array).GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _array.GetEnumerator();
+
+		public void CopyTo(Array array, int index) => Array.Copy(_array, 0, array, index, _array.Length);
+
+		public bool IsSynchronized => false;
+
+		public object SyncRoot => _array;
+
+		public override int GetHashCode() => _array.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyArrayWrap<T> other && _array.Equals(other._array);
+
+		public override string ToString() => "RO:" + _array.ToString();
+	}
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlyArrayFragmentWrap<T>: IWrappedList<T>
+	{
+		private readonly T[] _array;
+		private readonly int _start;
+		private readonly int _end;
+
+		public ReadOnlyArrayFragmentWrap(T[] array, int offset, int count)
+		{
+			_array = array ?? throw new ArgumentNullException(nameof(array));
+			if (offset < 0)
+				offset = 0;
+			else if (offset >= array.Length)
+				offset = array.Length;
+			_start = offset;
+
+			if (count < 0)
+			{
+				_end = array.Length;
+			}
+			else
+			{
+				_end = offset + count;
+				if (_end > array.Length)
+					_end = array.Length;
+			}
+		}
+
+		public int IndexOf(T item)
+		{
+			int index = Array.IndexOf(_array, item, _start);
+			return index >= _end ? -1: index - _start;
+		}
+
+		public void Insert(int index, T item) => throw new ReadOnlyException();
+
+		public void RemoveAt(int index) => throw new ReadOnlyException();
+
+		public T this[int index]
+		{
+			get
+			{
+				if (index < 0 || index >= _end - _start)
+					throw new ArgumentOutOfRangeException(nameof(index), index, null);
+				return _array[index + _start];
+			}
+			set => throw new ReadOnlyException();
+		}
+
+		public void Add(T item) => throw new ReadOnlyException();
+
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(T item)
+		{
+			int index = Array.IndexOf(_array, item, _start);
+			return index >= 0 && index < _end;
+		}
+
+		public void CopyTo(T[] array, int arrayIndex) => Array.Copy(_array, _start, array, arrayIndex, _end - _start);
+
+		public int Count => _end - _start;
+
+		public bool IsReadOnly => true;
+
+		public bool Remove(T item) => throw new ReadOnlyException();
+
+		public IEnumerator<T> GetEnumerator()
+		{
+			for (int i = _start; i < _end; ++i)
+			{
+				yield return _array[i];
+			}
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			for (int i = _start; i < _end; ++i)
+			{
+				yield return _array[i];
+			}
+		}
+
+		public void CopyTo(Array array, int index) => Array.Copy(_array, _start, array, index, _end - _start);
+
+		public bool IsSynchronized => false;
+
+		public object SyncRoot => _array;
+
+		public override int GetHashCode() => _array.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyArrayFragmentWrap<T> other && _array.Equals(other._array) && _start == other._start && _end == other._end;
+
+		public override string ToString() => $"RO({_start},{_end}):" + _array.ToString();
+	}
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlyListFragmentWrap<T>: IWrappedList<T>
+	{
+		private readonly IList<T> _list;
+		private readonly int _start;
+		private readonly int _end;
+
+		public ReadOnlyListFragmentWrap(IList<T> list, int offset, int count)
+		{
+			_list = list ?? throw new ArgumentNullException(nameof(list));
+			if (offset < 0)
+				offset = 0;
+			else if (offset >= list.Count)
+				offset = list.Count;
+			_start = offset;
+
+			if (count < 0)
+			{
+				_end = -1;
+			}
+			else
+			{
+				_end = offset + count;
+				if (_end > list.Count)
+					_end = list.Count;
+			}
+		}
+
+		public int IndexOf(T item)
+		{
+			int end = _end < 0 ? _list.Count: _end;
+			for (int i = _start; i < end; ++i)
+			{
+				if (Object.Equals(_list[i], item))
+					return i;
+			}
+			return -1;
+		}
+
+		public void Insert(int index, T item) => throw new ReadOnlyException();
+
+		public void RemoveAt(int index) => throw new ReadOnlyException();
+
+		public T this[int index]
+		{
+			get
+			{
+				int i = index + _start;
+				if (i < 0 || i >= (_end < 0 ? _list.Count: _end))
+					throw new ArgumentOutOfRangeException(nameof(index), index, null);
+				return _list[i];
+			}
+			set => throw new ReadOnlyException();
+		}
+
+		public void Add(T item) => throw new ReadOnlyException();
+
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(T item) => IndexOf(item) >= 0;
+
+		public void CopyTo(T[] array, int arrayIndex)
+		{
+			int end = (_end < 0 ? _list.Count: _end);
+			if (arrayIndex < 0 || array.Length - arrayIndex < end - _start)
+				throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, null);
+
+			for (int i = _start; i < end; ++i)
+			{
+				array[i - _start] = _list[i];
+			}
+		}
+
+		public int Count => (_end < 0 ? _list.Count: _end) - _start;
+
+		public bool IsReadOnly => true;
+
+		public bool Remove(T item) => throw new ReadOnlyException();
+
+		public IEnumerator<T> GetEnumerator()
+		{
+			int end = (_end < 0 ? _list.Count: _end);
+			for (int i = _start; i < end; ++i)
+			{
+				yield return _list[i];
+			}
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			int end = (_end < 0 ? _list.Count: _end);
+			for (int i = _start; i < end; ++i)
+			{
+				yield return _list[i];
+			}
+		}
+
+		public void CopyTo(Array array, int index)
+		{
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
+			int end = (_end < 0 ? _list.Count: _end);
+			if (index < 0 || array.Length - index < end - _start)
+				throw new ArgumentOutOfRangeException(nameof(index), index, null);
+
+			for (int i = _start; i < end; ++i)
+			{
+				array.SetValue(_list[i], i - _start);
+			}
+		}
+
+		public bool IsSynchronized => (_list as ICollection)?.IsSynchronized == true;
+
+		public object SyncRoot => (_list as ICollection)?.SyncRoot ?? _list;
+
+		public override int GetHashCode() => _list.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyListFragmentWrap<T> other && _list.Equals(other._list) && _start == other._start && _end == other._end;
+
+		public override string ToString() => $"RO({_start},{_end}):" + _list.ToString();
+	}
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlyListFragmentReWrap<T>: IReadOnlyList<T>
+	{
+		private readonly IReadOnlyList<T> _list;
+		private readonly int _start;
+		private readonly int _end;
+
+		public ReadOnlyListFragmentReWrap(IReadOnlyList<T> list, int offset, int count)
+		{
+			_list = list ?? throw new ArgumentNullException(nameof(list));
+			if (offset < 0)
+				offset = 0;
+			else if (offset >= list.Count)
+				offset = list.Count;
+			_start = offset;
+
+			if (count < 0)
+			{
+				_end = -1;
+			}
+			else
+			{
+				_end = offset + count;
+				if (_end > list.Count)
+					_end = list.Count;
+			}
+		}
+
+		public T this[int index]
+		{
+			get
+			{
+				int i = index + _start;
+				if (i < 0 || i >= (_end < 0 ? _list.Count: _end))
+					throw new ArgumentOutOfRangeException(nameof(index), index, null);
+				return _list[i];
+			}
+		}
+
+		public int Count => (_end < 0 ? _list.Count: _end) - _start;
+
+		public IEnumerator<T> GetEnumerator()
+		{
+			int end = (_end < 0 ? _list.Count: _end);
+			for (int i = _start; i < end; ++i)
+			{
+				yield return _list[i];
+			}
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			int end = (_end < 0 ? _list.Count: _end);
+			for (int i = _start; i < end; ++i)
+			{
+				yield return _list[i];
+			}
+		}
+
+		public override int GetHashCode() => _list.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlyListFragmentReWrap<T> other && _list.Equals(other._list) && _start == other._start && _end == other._end;
+
+		public override string ToString() => $"RO({_start},{_end}):" + _list.ToString();
+	}
+
+	[DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+	[DebuggerTypeProxy(typeof(CollectionDebugView<>))]
+	[Serializable]
+	private class ReadOnlySetWrap<T>: IWrappedSet<T>
+	{
+		readonly ISet<T> _set;
+
+		public ReadOnlySetWrap(ISet<T> set) => _set = set ?? throw new ArgumentNullException(nameof(set));
+
+		public bool Add(T item) => throw new ReadOnlyException();
+
+		public void ExceptWith(IEnumerable<T> other) => throw new ReadOnlyException();
+
+		public void IntersectWith(IEnumerable<T> other) => throw new ReadOnlyException();
+
+		public bool IsProperSubsetOf(IEnumerable<T> other) => _set.IsProperSubsetOf(other);
+
+		public bool IsProperSupersetOf(IEnumerable<T> other) => _set.IsProperSupersetOf(other);
+
+		public bool IsSubsetOf(IEnumerable<T> other) => _set.IsSubsetOf(other);
+
+		public bool IsSupersetOf(IEnumerable<T> other) => _set.IsSupersetOf(other);
+
+		public bool Overlaps(IEnumerable<T> other) => _set.Overlaps(other);
+
+		public bool SetEquals(IEnumerable<T> other) => _set.SetEquals(other);
+
+		public void SymmetricExceptWith(IEnumerable<T> other) => throw new ReadOnlyException();
+
+		public void UnionWith(IEnumerable<T> other) => throw new ReadOnlyException();
+
+		void ICollection<T>.Add(T item) => throw new ReadOnlyException();
+
+		public void Clear() => throw new ReadOnlyException();
+
+		public bool Contains(T item) => _set.Contains(item);
+
+		public void CopyTo(T[] array, int arrayIndex) => _set.CopyTo(array, arrayIndex);
+
+		public int Count => _set.Count;
+
+		public bool IsReadOnly => true;
+
+		public bool Remove(T item) => throw new ReadOnlyException();
+
+		public IEnumerator<T> GetEnumerator() => _set.GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _set.GetEnumerator();
+
+		public void CopyTo(Array array, int index)
+		{
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
+
+			if (_set is ICollection xx)
+			{
+				xx.CopyTo(array, index);
+			}
+			else if (array is T[] values)
+			{
+				_set.CopyTo(values, index);
+			}
+			else
+			{
+				values = new T[_set.Count];
+				_set.CopyTo(values, 0);
+				Array.Copy(values, 0, array, index, values.Length);
+			}
+		}
+
+		public bool IsSynchronized => (_set as ICollection)?.IsSynchronized == true;
+
+		public object SyncRoot => (_set as ICollection)?.SyncRoot ?? _set;
+
+		public override int GetHashCode() => _set.GetHashCode();
+
+		public override bool Equals(object? obj) => obj is ReadOnlySetWrap<T> other && _set.Equals(other._set);
+
+		public override string ToString() => "RO:" + _set.ToString();
+	}
+
+	#endregion
+}
+
+[Serializable]
+public class ReadOnlyException: NotSupportedException
+{
+	public ReadOnlyException(): base(SR.ReadOnlyException())
+	{
+	}
+
+	public ReadOnlyException(object value): base(SR.ReadOnlyException(value))
+	{
+	}
+
+	public ReadOnlyException(object value, object item): base(SR.ReadOnlyException(value, item))
+	{
+	}
+
+	public ReadOnlyException(string message) : base(message)
+	{
+	}
+
+	public ReadOnlyException(string message, Exception innerException) : base(message, innerException)
+	{
+	}
+
+#if !NET8_0_OR_GREATER
+    protected ReadOnlyException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext): base(serializationInfo, streamingContext)
+	{
+	}
+#endif
 }

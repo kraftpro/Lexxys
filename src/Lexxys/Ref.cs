@@ -6,12 +6,9 @@
 //
 using Microsoft.Extensions.Options;
 
-#pragma warning disable CA2225 // Operator overloads have named alternates
-#pragma warning disable CA1062 // Validate arguments of public methods
-#pragma warning disable CA1051 // Do not declare visible instance fields
-
 namespace Lexxys
 {
+	[Serializable]
 	public class Out<T>: IValue<T>
 	{
 		private readonly Func<T> _getter;
@@ -32,6 +29,7 @@ namespace Lexxys
 		public static implicit operator T(Out<T> value) => value.Value;
 	}
 
+	[Serializable]
 	public sealed class Ref<T>: Out<T>, IValueRef<T>
 	{
 		private readonly Action<T> _setter;
@@ -65,6 +63,7 @@ namespace Lexxys
 	}
 
 
+	[Serializable]
 	public class OptOut<T>: IValue<T>, IOptions<T> where T: class
 	{
 		internal readonly Func<T> _getter;
@@ -86,6 +85,7 @@ namespace Lexxys
 		public static implicit operator Out<T>(OptOut<T> value) => new Out<T>(value._getter);
 	}
 
+	[Serializable]
 	public sealed class OptRef<T>: OptOut<T> where T: class
 	{
 		private readonly Action<T> _setter;

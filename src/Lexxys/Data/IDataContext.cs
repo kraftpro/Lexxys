@@ -7,8 +7,6 @@
 using System.Data;
 using System.Data.Common;
 
-#pragma warning disable CA1003 // Use generic event handler instances
-
 namespace Lexxys.Data;
 
 public interface IDataContext: IDisposable

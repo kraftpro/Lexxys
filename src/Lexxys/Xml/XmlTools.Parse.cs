@@ -8,15 +8,15 @@ namespace Lexxys.Xml;
 
 public static partial class XmlTools
 {
-	public static T GetValue<T>(XmlLiteNode node)
+	public static T GetValue<T>(IXmlReadOnlyNode node)
 	{
 		if (node is null)
 			throw new ArgumentNullException(nameof(node));
 
-		return TryGetValue<T>(node, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString().Left(1024), typeof(T)));
+		return TryGetValue<T>(node, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString()?.Left(1024), typeof(T)));
 	}
 
-	public static T GetValue<T>(XmlLiteNode node, T defaultValue)
+	public static T GetValue<T>(IXmlReadOnlyNode node, T defaultValue)
 	{
 		if (node is null)
 			throw new ArgumentNullException(nameof(node));
@@ -24,7 +24,7 @@ public static partial class XmlTools
 		return TryGetValue<T>(node, out var result) ? result : defaultValue;
 	}
 
-	public static bool TryGetValue<T>(XmlLiteNode? node, [MaybeNullWhen(false)] out T result)
+	public static bool TryGetValue<T>(IXmlReadOnlyNode? node, [MaybeNullWhen(false)] out T result)
 	{
 		if (TryGetValue(node, typeof(T), out var temp))
 		{
@@ -35,15 +35,15 @@ public static partial class XmlTools
 		return false;
 	}
 
-	public static object? GetValue(XmlLiteNode node, Type returnType)
+	public static object? GetValue(IXmlReadOnlyNode node, Type returnType)
 	{
 		if (node is null)
 			throw new ArgumentNullException(nameof(node));
 
-		return TryGetValue(node, returnType, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString().Left(1024), returnType));
+		return TryGetValue(node, returnType, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString()?.Left(1024), returnType));
 	}
 
-	public static bool TryGetValue(XmlLiteNode? node, Type returnType, out object? result)
+	public static bool TryGetValue(IXmlReadOnlyNode? node, Type returnType, out object? result)
 	{
 		if (returnType is null)
 			throw new ArgumentNullException(nameof(returnType));
@@ -76,11 +76,11 @@ public static partial class XmlTools
 		}
 		catch (Exception e)
 		{
-			throw new FormatException(SR.CannotParseValue(node.ToString().Left(1024), returnType), e);
+			throw new FormatException(SR.CannotParseValue(node.ToString()?.Left(1024), returnType), e);
 		}
 	}
 
-	private static bool TryGetValueFromNode(XmlLiteNode node, Type returnType, out object? result)
+	private static bool TryGetValueFromNode(IXmlReadOnlyNode node, Type returnType, out object? result)
 	{
 		if (node.Attributes.Count == 0 && node.Elements.Count == 0 && Strings.TryWellKnownConverter(node.Value, returnType, out result))
 			return true;
@@ -109,21 +109,21 @@ public static partial class XmlTools
 		return TryReflection(node, returnType, out result);
 	}
 
-	private static bool TestFromXmlLite(XmlLiteNode node, Type returnType, ref object? value)
+	private static bool TestFromXmlLite(IXmlReadOnlyNode node, Type returnType, ref object? value)
 	{
 		var (regular, nullable) = Strings.NullableTypes(returnType);
 
-		var parser = GetFromXmlConstructor<XmlLiteNode>(regular) ?? GetFromXmlStaticConstructor<XmlLiteNode>(regular);
+		var parser = GetFromXmlConstructor<IXmlReadOnlyNode>(regular) ?? GetFromXmlStaticConstructor<IXmlReadOnlyNode>(regular);
 		if (parser == null)
 			return false;
 
-		__nodeConditionalConstructor.TryAdd(regular, (XmlLiteNode n, Type _, out object? r) =>
+		__nodeConditionalConstructor.TryAdd(regular, (IXmlReadOnlyNode n, Type _, out object? r) =>
 		{
 			r = parser(n);
 			return true;
 		});
 		if (nullable != null)
-			__nodeConditionalConstructor.TryAdd(nullable, (XmlLiteNode n, Type _, out object? r) =>
+			__nodeConditionalConstructor.TryAdd(nullable, (IXmlReadOnlyNode n, Type _, out object? r) =>
 			{
 				r = parser(n);
 				return true;
@@ -133,7 +133,7 @@ public static partial class XmlTools
 		return true;
 	}
 
-	private static bool TestFromXmlReader(XmlLiteNode node, Type returnType, ref object? value)
+	private static bool TestFromXmlReader(IXmlReadOnlyNode node, Type returnType, ref object? value)
 	{
 		var (regular, nullable) = Strings.NullableTypes(returnType);
 		var parser = GetFromXmlConstructor<XmlReader>(regular) ?? GetFromXmlStaticConstructor<XmlReader>(regular);
@@ -141,14 +141,14 @@ public static partial class XmlTools
 		if (parser == null)
 			return false;
 
-		__nodeConditionalConstructor.TryAdd(regular, (XmlLiteNode n, Type _, out object? r) =>
+		__nodeConditionalConstructor.TryAdd(regular, (IXmlReadOnlyNode n, Type _, out object? r) =>
 		{
 			using XmlReader rdr = n.ReadSubtree();
 			r = parser(rdr);
 			return true;
 		});
 		if (nullable != null)
-			__nodeConditionalConstructor.TryAdd(nullable, (XmlLiteNode n, Type _, out object? r) =>
+			__nodeConditionalConstructor.TryAdd(nullable, (IXmlReadOnlyNode n, Type _, out object? r) =>
 			{
 				using XmlReader rdr = n.ReadSubtree();
 				r = parser(rdr);
@@ -163,16 +163,16 @@ public static partial class XmlTools
 	private static Func<T, object>? GetFromXmlConstructor<T>(Type type)
 	{
 		Func<T, object>? result = null;
-		ConstructorInfo? ci = type.GetConstructor(new[] { typeof(T) });
+		ConstructorInfo? ci = type.GetConstructor([typeof(T)]);
 		if (ci != null)
 		{
 			try
 			{
-				ParameterExpression a = Expression.Parameter(typeof(object), "arg");
-				Expression e = Expression.Lambda<Func<T, object>>(Expression.New(ci, a), a);
+				ParameterExpression arg = Expression.Parameter(typeof(T), "arg");
+				Expression e = Expression.Lambda<Func<T, object>>(Expression.New(ci, arg), arg);
 				if (type.IsValueType)
 					e = Expression.TypeAs(e, typeof(object));
-				result = Expression.Lambda<Func<T, object>>(e).Compile();
+				result = Expression.Lambda<Func<T, object>>(e, arg).Compile();
 			}
 			catch (ArgumentException)
 			{
@@ -196,7 +196,7 @@ public static partial class XmlTools
 						ParameterInfo[] parameters = method.GetParameters();
 						if (parameters.Length == 1)
 						{
-							if (parameters[0].ParameterType == typeof(T))
+							if (parameters[0].ParameterType.IsAssignableFrom(typeof(T)))
 							{
 								ParameterExpression arg = Expression.Parameter(typeof(T), "arg");
 								Expression e = Expression.Call(method, arg);
@@ -215,7 +215,7 @@ public static partial class XmlTools
 		return null;
 	}
 
-	private static bool TestSerializer(XmlLiteNode node, Type returnType, ref object? result)
+	private static bool TestSerializer(IXmlReadOnlyNode node, Type returnType, ref object? result)
 	{
 		if (!returnType.IsPublic)
 			return false;
@@ -242,7 +242,7 @@ public static partial class XmlTools
 		}
 		return false;
 
-		static bool Parser(XmlLiteNode node, Type type, out object? result)
+		static bool Parser(IXmlReadOnlyNode node, Type type, out object? result)
 		{
 			try
 			{
@@ -264,7 +264,7 @@ public static partial class XmlTools
 	/// <summary>
 	/// Parse Key/Value pair
 	/// </summary>
-	/// <param name="node">XmlLiteNode to get value from</param>
+	/// <param name="node">IXmlReadOnlyNode to get value from</param>
 	/// <param name="returnType">Concrete type of KeyValue pair structure</param>
 	/// <param name="result">Parsed Value</param>
 	/// <returns>True if success</returns>
@@ -290,7 +290,7 @@ public static partial class XmlTools
 	///			key
 	///			value
 	/// </remarks>
-	private static bool TryKeyValuePair(XmlLiteNode node, Type returnType, out object? result)
+	private static bool TryKeyValuePair(IXmlReadOnlyNode node, Type returnType, out object? result)
 	{
 		if (node == null)
 			throw new ArgumentNullException(nameof(node));
@@ -309,8 +309,8 @@ public static partial class XmlTools
 
 		if (node.Attributes.Count == 0)
 		{
-			XmlLiteNode? nodeKey = node.FirstOrDefault("key");
-			XmlLiteNode? nodeValue = node.FirstOrDefault("value");
+			IXmlReadOnlyNode? nodeKey = node.FirstOrDefault("key");
+			IXmlReadOnlyNode? nodeValue = node.FirstOrDefault("value");
 			// <item><key>Key</key><value>Value</value></item>
 			if (node.Elements.Count == 2 && nodeKey != null && nodeValue != null)
 			{
@@ -363,7 +363,7 @@ public static partial class XmlTools
 			if (!Strings.TryGetValue(node["key"] ?? node.Name, keyType, out parsedKey))
 				return false;
 
-			XmlLiteNode? nodeValue;
+			IXmlReadOnlyNode? nodeValue;
 			// <... ><value>Value</value></...>
 			if (node.Elements.Count == 1 && (nodeValue = node.FirstOrDefault("value")) != null)
 			{
@@ -382,7 +382,7 @@ public static partial class XmlTools
 		return result != null;
 	}
 
-	private static bool TryNullable(XmlLiteNode node, Type returnType, out object? result)
+	private static bool TryNullable(IXmlReadOnlyNode node, Type returnType, out object? result)
 	{
 		if (node == null)
 			throw new ArgumentNullException(nameof(node));
@@ -399,9 +399,9 @@ public static partial class XmlTools
 		return TryGetValue(node, returnType.GetGenericArguments()[0], out result);
 	}
 
-	private delegate bool TryGetNodeValue(XmlLiteNode node, Type returnType, out object? result);
+	private delegate bool TryGetNodeValue(IXmlReadOnlyNode node, Type returnType, out object? result);
 
-	private static bool TryCopy(XmlLiteNode node, Type returnType, out object result)
+	private static bool TryCopy(IXmlReadOnlyNode node, Type returnType, out object result)
 	{
 		result = node;
 		return true;
@@ -410,7 +410,7 @@ public static partial class XmlTools
 	private static readonly ConcurrentDictionary<Type, TryGetNodeValue> __nodeConditionalConstructor = new ConcurrentDictionary<Type, TryGetNodeValue>(
 		new[]
 		{
-			new KeyValuePair<Type, TryGetNodeValue>(typeof(XmlLiteNode), TryCopy)
+			new KeyValuePair<Type, TryGetNodeValue>(typeof(IXmlReadOnlyNode), TryCopy)
 		});
 
 	private static readonly Dictionary<Type, TryGetNodeValue> __nodeGenericConstructor =

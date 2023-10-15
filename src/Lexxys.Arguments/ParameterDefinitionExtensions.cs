@@ -11,7 +11,7 @@ internal static class ParameterDefinitionExtensions
 
 		foreach (var p in parameters)
 		{
-			if (!abbreviationOnly && String.Equals(p.Name, name, comparison) || p.Abbreviations != null && p.Abbreviations.Any(o => String.Equals(o, name, comparison)))
+			if (!abbreviationOnly && String.Equals(p.Name, name, comparison) || p.Abbreviations.Any(o => String.Equals(o, name, comparison)))
 				return p;
 		}
 		return default;
@@ -24,19 +24,19 @@ internal static class ParameterDefinitionExtensions
 		foreach (var p in parameters)
 		{
 			var i = p.Definition;
-			if (String.Equals(i.Name, name, comparison) || i.Abbreviations != null && i.Abbreviations.Any(o => String.Equals(o, name, comparison)))
+			if (String.Equals(i.Name, name, comparison) || i.Abbreviations.Any(o => String.Equals(o, name, comparison)))
 				return i;
 		}
 		return default;
 	}
 
-    private static IReadOnlyList<ParameterDefinition> FindAuto(this IEnumerable<ParameterDefinition> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
+    private static List<ParameterDefinition> FindAuto(this IEnumerable<ParameterDefinition> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
         => parameters.Where(o => o.IsReverseSimilar(name, comparison, ignoreDelimiters)).ToList();
 
-    private static IReadOnlyList<ParameterDefinition> FindSimilar(this IEnumerable<ParameterDefinition> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
+    private static List<ParameterDefinition> FindSimilar(this IEnumerable<ParameterDefinition> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
 		=> parameters.Where(o => o.IsSimilar(name, comparison, ignoreDelimiters)).ToList();
 
-	private static IReadOnlyList<ArgumentParameter> FindSimilar(this IEnumerable<ArgumentParameter> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
+	private static List<ArgumentParameter> FindSimilar(this IEnumerable<ArgumentParameter> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
 		=> parameters.Where(o => o.Definition.IsSimilar(name, comparison, ignoreDelimiters)).ToList();
 
 	public static ParameterDefinitionFindResult TryFind(this IReadOnlyCollection<ParameterDefinition> parameters, string name, out ParameterDefinition? parameter, StringComparison comparison, bool auto = false, bool ignoreDelimiters = false)

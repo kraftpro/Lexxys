@@ -12,6 +12,7 @@ namespace Lexxys.Tokenizer;
 /// <summary>
 /// Represents a position in a text.
 /// </summary>
+[Serializable]
 public readonly struct CharPosition: IEquatable<CharPosition>
 {
 	public static readonly CharPosition Start = default;
@@ -166,5 +167,5 @@ public readonly struct CharPosition: IEquatable<CharPosition>
 		}
 		return (line, column + part.Length);
 	}
-	private static readonly char[] NewLineTokensArray = new[] { '\n', '\r', '\f', '\u2028', '\u2029' };
+	private static readonly char[] NewLineTokensArray = ['\n', '\r', '\f', '\u2028', '\u2029'];
 }

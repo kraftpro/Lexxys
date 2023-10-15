@@ -10,6 +10,7 @@ namespace Lexxys.Tokenizer;
 /// <summary>
 /// The rule used by <see cref="TokenScanner"/> to extract tokens.
 /// </summary>
+[Serializable]
 public abstract class LexicalTokenRule
 {
 	/// <summary>

@@ -7,12 +7,13 @@
 
 namespace Lexxys.Tokenizer;
 
+[Serializable]
 public class CommentsTokenRule: LexicalTokenRule
 {
 	private readonly string _beginning;
 	private readonly (string Start, string End)[] _startEnd;
 	private readonly int _startLength;
-	private static readonly (string, string)[] _cppComments = { ("//", "\n") };
+	private static readonly (string, string)[] _cppComments = [("//", "\n")];
 
 	public CommentsTokenRule(params (string, string)[]? startEnd)
 		: this(LexicalTokenType.COMMENT, startEnd)

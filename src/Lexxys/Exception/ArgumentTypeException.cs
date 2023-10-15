@@ -16,41 +16,35 @@ public class ArgumentTypeException: ArgumentException
 	{
 	}
 
-	public ArgumentTypeException(string paramName)
-		: base(SR.ArgumentWrongTypeException(paramName), paramName)
+	public ArgumentTypeException(string paramName): base(SR.ArgumentWrongTypeException(paramName), paramName)
 	{
 	}
 
-	public ArgumentTypeException(string? message, Exception? exception)
-		: base(message, exception)
+	public ArgumentTypeException(string? message, Exception? exception): base(message, exception)
 	{
 	}
 
-	public ArgumentTypeException(string paramName, Type actualType)
-		: base(SR.ArgumentWrongTypeException(paramName, actualType), paramName)
+	public ArgumentTypeException(string paramName, Type actualType): base(SR.ArgumentWrongTypeException(paramName, actualType), paramName)
 	{
 	}
 
-	public ArgumentTypeException(string paramName, Type actualType, Type expectedType)
-		: base(SR.ArgumentWrongTypeException(paramName, actualType, expectedType), paramName)
+	public ArgumentTypeException(string paramName, Type actualType, Type expectedType): base(SR.ArgumentWrongTypeException(paramName, actualType, expectedType), paramName)
 	{
 	}
 
-	public ArgumentTypeException(string? message, string paramName, Exception? innerException)
-		: base(message, paramName, innerException)
+	public ArgumentTypeException(string? message, string paramName, Exception? innerException): base(message, paramName, innerException)
 	{
 	}
 
-	public ArgumentTypeException(string? message, string paramName)
-		: base(message, paramName)
+	public ArgumentTypeException(string? message, string paramName): base(message, paramName)
 	{
 	}
 
-	protected ArgumentTypeException(SerializationInfo info, StreamingContext context)
-		: base(info, context)
+#if !NET8_0_OR_GREATER
+	protected ArgumentTypeException(SerializationInfo info, StreamingContext context): base(info, context)
 	{
 	}
-	 
+#endif	 
 }
 
 

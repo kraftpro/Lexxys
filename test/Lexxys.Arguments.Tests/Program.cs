@@ -1,7 +1,8 @@
 using Lexxys;
 using Lexxys.Argument.Tests;
+using Lexxys.Tests;
 
-using System.Security.Cryptography.X509Certificates;
+TestAttrib.Go();
 
 args = new[] { "-a=1", "-b=2", "-c:3" };
 
@@ -52,10 +53,11 @@ ArgumentsBuilder pp = new ArgumentsBuilder()
 	.Help()
 	.EnableUnknownParameters()
 	.SeparatePositionalParameters()
-    ;
+	;
 
 var aa = pp.Build(args.Union(new[]
-	{ "data.txt", "--input", "input.txt", "--output", "output.txt", "find", "replace", "--m-e", ".*", "--help", "data 2", "data 3", "data 4" }
+	//{ "data.txt", "--input", "input.txt", "--output", "output.txt", "find", "replace", "--m-e", ".*", "--help", "data 2", "data 3", "data 4" }
+	{ "data.txt", "--input", "input.txt", "--output", "output.txt" }
 	));
 
 Console.WriteLine("TestApp.exe " + String.Join(" ", aa.Args));
@@ -96,26 +98,48 @@ foreach (var item in aa.Parameters)
 }
 
 
-Console.WriteLine("LS");
+//Console.WriteLine("LS");
 
-aa = Parameters.LsParameters()
+//aa = Parameters.LsParameters()
+//	.UnixStyle()
+//	.Build(args.Union(new[] { "--help" }));
+
+//if (aa.HelpRequested)
+//{
+//	aa.Usage("TestApp", alignAbbreviation: true);
+//}
+//else if (aa.HasErrors)
+//{
+//	foreach (var item in aa.Errors)
+//	{
+//		Console.WriteLine(item);
+//	}
+//	aa.Usage("TestApp", brief: true, alignAbbreviation: true);
+//}
+
+//foreach (var item in aa.Parameters)
+//{
+//	Console.WriteLine($"{item.Name} = {item.Value}");
+//}
+
+aa = Parameters.ObjParameters()
 	.UnixStyle()
 	.Build(args.Union(new[] { "--help" }));
+aa.Usage("obj");
+aa.Usage("obj", alignAbbreviation: true);
 
-if (aa.HelpRequested)
-{
-	aa.Usage("TestApp", alignAbbreviation: true);
-}
-else if (aa.HasErrors)
-{
-	foreach (var item in aa.Errors)
+Console.WriteLine(DateOnly.FromDateTime(DateTime.Now).ToString("r"));
+
+#if NET7_0_OR_GREATER
+
+var options = new Arguments<SampleOption>(new[]
 	{
-		Console.WriteLine(item);
-	}
-	aa.Usage("TestApp", brief: true, alignAbbreviation: true);
-}
+		"-a:1",
+		"new", "-b=22",
+		"-i:input.txt"
+	});
+var opt = options.Option;
 
-foreach (var item in aa.Parameters)
-{
-	Console.WriteLine($"{item.Name} = {item.Value}");
-}
+Console.WriteLine("SampleOption:");
+
+#endif

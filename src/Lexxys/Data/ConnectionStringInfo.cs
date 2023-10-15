@@ -64,7 +64,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 	/// Creates new instance of <see cref="ConnectionStringInfo" /> and initializes it with the specified <paramref name="options"/>.
 	/// </summary>
 	/// <param name="options">Collection of key-value pairs of connection parameters.</param>
-	public ConnectionStringInfo(IEnumerable<KeyValuePair<string, string?>>? options)
+	public ConnectionStringInfo(IEnumerable<KeyValuePair<string, string>>? options)
 		: this(null, options)
 	{
 	}
@@ -126,7 +126,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 	/// </summary>
 	/// <param name="connectionString">Regular connection string.</param>
 	/// <param name="options">Collection of key-value pairs of connection parameters.</param>
-	public ConnectionStringInfo(ConnectionStringInfo? connectionString, IEnumerable<KeyValuePair<string, string?>>? options)
+	public ConnectionStringInfo(ConnectionStringInfo? connectionString, IEnumerable<KeyValuePair<string, string>>? options)
 		: this(connectionString)
 	{
 		if (options == null)
@@ -393,7 +393,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			static bool IdOledbCorrect(string value) => value[0] != '"' && value[0] != '\'' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[value.Length - 1]) && value.IndexOf(';') < 0;
 		}
 	}
-	private static readonly char[] __adoAny = new [] {';', '\'', '"'};
+	private static readonly char[] __adoAny = [';', '\'', '"'];
 
 	/// <summary>
 	/// Returns a string representation of the connection.
@@ -468,11 +468,11 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 	}
 
 	/// <summary>
-	/// Creates a new connection string from the specified <see cref="XmlLiteNode"/>.
+	/// Creates a new connection string from the specified <see cref="IXmlReadOnlyNode"/>.
 	/// </summary>
-	/// <param name="config"><see cref="XmlLiteNode"/> configuration node.</param>
+	/// <param name="config"><see cref="IXmlReadOnlyNode"/> configuration node.</param>
 	/// <returns></returns>
-	public static ConnectionStringInfo? Create(XmlLiteNode? config)
+	public static ConnectionStringInfo? Create(IXmlReadOnlyNode? config)
 	{
 		if (config == null || config.IsEmpty)
 			return null;
@@ -487,11 +487,11 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			config.Attributes.Count <= 0 ? that : new ConnectionStringInfo(that, config.Attributes);
 	}
 
-	private static IList<KeyValuePair<string, string?>> ParseParameters(string value)
+	private static IList<KeyValuePair<string, string>> ParseParameters(string value)
 	{
 		if (String.IsNullOrWhiteSpace(value))
-			return Array.Empty<KeyValuePair<string, string?>>();
-		var parameters = new List<KeyValuePair<string, string?>>();
+			return Array.Empty<KeyValuePair<string, string>>();
+		var parameters = new List<KeyValuePair<string, string>>();
 		var p = value.AsSpan();
 		while (p.Length > 0)
 		{
@@ -513,7 +513,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 					name = p.Slice(0, j).Trim().ToString();
 				}
 				if (name.Length > 0)
-					parameters.Add(new KeyValuePair<string, string?>(name, null));
+					parameters.Add(new KeyValuePair<string, string>(name, String.Empty));
 				p = p.Slice(j + 1);
 				continue;
 			}
@@ -524,7 +524,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			if (p.Length == 0 || p[0] == ';')
 			{
 				if (name.Length > 0)
-					parameters.Add(new KeyValuePair<string, string?>(name, null));
+					parameters.Add(new KeyValuePair<string, string>(name, String.Empty));
 				if (p.Length > 0)
 					p = p.Slice(1);
 				continue;
@@ -536,11 +536,11 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			if (j < 0)
 			{
 				if (name.Length > 0)
-					parameters.Add(new KeyValuePair<string, string?>(name, val));
+					parameters.Add(new KeyValuePair<string, string>(name, val));
 				return parameters;
 			}
 			if (name.Length > 0)
-				parameters.Add(new KeyValuePair<string, string?>(name, val));
+				parameters.Add(new KeyValuePair<string, string>(name, val));
 			p = p.Slice(j + 1);
 		}
 		return parameters;
@@ -552,7 +552,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 				if (!Char.IsWhiteSpace(p[i]))
 					return p.Slice(i);
 			}
-			return ReadOnlySpan<char>.Empty;
+			return [];
 		}
 
 		static (int Length, string Value) ParseValue(ReadOnlySpan<char> p)

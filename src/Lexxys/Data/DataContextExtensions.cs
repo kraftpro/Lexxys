@@ -9,8 +9,6 @@ using System.Data.Common;
 
 using Lexxys;
 
-#pragma warning disable CA1002 // Do not expose generic lists
-
 namespace Lexxys.Data;
 
 public static class DataContextExtensions
@@ -196,9 +194,9 @@ public static class DataContextExtensions
 	public static Task<bool> ReadXmlTextAsync(this IDataContext context, TextWriter text, string query, params DataParameter[] parameters)
 		=> MapAsync((context ?? throw new ArgumentNullException(nameof(context))), o => Dc.XmlTextMapperAsync(text, o), query, parameters);
 
-	public static List<Xml.XmlLiteNode> ReadXml(this IDataContext context, string query, params DataParameter[] parameters)
+	public static List<Xml.IXmlReadOnlyNode> ReadXml(this IDataContext context, string query, params DataParameter[] parameters)
 		=> Map((context ?? throw new ArgumentNullException(nameof(context))), Dc.XmlMapper, query, parameters);
 
-	public static Task<List<Xml.XmlLiteNode>> ReadXmlAsync(this IDataContext context, string query, params DataParameter[] parameters)
+	public static Task<List<Xml.IXmlReadOnlyNode>> ReadXmlAsync(this IDataContext context, string query, params DataParameter[] parameters)
 		=> MapAsync((context ?? throw new ArgumentNullException(nameof(context))), Dc.XmlMapperAsync, query, parameters);
 }

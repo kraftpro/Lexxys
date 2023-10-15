@@ -2,9 +2,6 @@
 
 using Microsoft.Extensions.Logging;
 
-#pragma warning disable CA1027 // Mark enums with FlagsAttribute
-#pragma warning disable CA1033 // Interface methods should be callable by child types
-
 namespace Lexxys;
 
 public enum LogType

@@ -15,6 +15,7 @@ public enum BusinessDayShiftType
 	Forward = 2,
 }
 
+[Serializable]
 public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<ScheduleReminder>
 {
 	public static readonly ScheduleReminder Empty = new ScheduleReminder();
@@ -34,7 +35,11 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 
 	public ScheduleReminder(TimeSpan reminder = default, bool remindInBusinessDays = false, BusinessDayShiftType shiftToBusinessDay = BusinessDayShiftType.None)
 	{
-		Value = reminder < TimeSpan.Zero ? TimeSpan.Zero : new TimeSpan(reminder.Ticks - (reminder.Ticks >= TimeSpan.TicksPerDay ? reminder.Ticks % TimeSpan.TicksPerHour: reminder.Ticks % TimeSpan.TicksPerMinute));
+		Value = reminder < TimeSpan.Zero ? TimeSpan.Zero:
+			new TimeSpan(reminder.Ticks -
+				(reminder.Ticks >= TimeSpan.TicksPerDay ?
+					reminder.Ticks % TimeSpan.TicksPerHour:
+					reminder.Ticks % TimeSpan.TicksPerMinute));
 		RemindInBusinessDays = remindInBusinessDays;
 		ShiftToBusinessDay = shiftToBusinessDay;
 	}
@@ -47,8 +52,7 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 	/// <returns>Date and time when for the specified reminder</returns>
 	public DateTime? Remind(DateTime? scheduledTime, Func<DateTime, bool>? businessDay = null)
 	{
-		if (scheduledTime == null)
-			return null;
+		if (scheduledTime == null) return null;
 		var nextDate = scheduledTime.GetValueOrDefault();
 		if (ShiftToBusinessDay != BusinessDayShiftType.None && businessDay != null)
 		{
@@ -80,15 +84,11 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 
 	public bool IsEmpty => ShiftToBusinessDay == BusinessDayShiftType.None && Value == TimeSpan.Zero;
 
-	public override string ToString()
-	{
-		return ToString(new StringBuilder(), null).ToString();
-	}
+	public override string ToString() => ToString(new StringBuilder(), null).ToString();
 
 	public StringBuilder ToString(StringBuilder text, IFormatProvider? provider)
 	{
-		if (text is null)
-			throw new ArgumentNullException(nameof(text));
+		if (text is null) throw new ArgumentNullException(nameof(text));
 
 		if (ShiftToBusinessDay != BusinessDayShiftType.None)
 		{
@@ -96,50 +96,37 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 				.Append(ShiftToBusinessDay == BusinessDayShiftType.Backward ? "prior" : "after")
 				.Append(" the scheduled date");
 		}
-
-		if (Value > TimeSpan.Zero)
-		{
-			text.Append("; ");
-			if (Value.Days > 0)
-				text.Append(Lingua.NumWord(Value.Days))
-					.Append(' ')
-					.Append(RemindInBusinessDays ? "business day": "calendar day").Append(Value.Days == 1 ? "": "s");
-			if (Value.Hours > 0)
-				text.Append(Value.Days == 0 ? "": Value.Minutes > 0 ? ", ": " and ")
-					.Append(Value.Hours)
-					.Append(" hour").Append(Value.Hours > 1 ? "s": "");
-			if (Value.Minutes > 0)
-				text.Append(Value is { Days: 0, Hours: 0 } ? "": " and ")
-					.Append(Value.Minutes)
-					.Append(" minute").Append(Value.Minutes > 1 ? "s" : "");
-			text.Append(" before the ").Append(ShiftToBusinessDay == BusinessDayShiftType.None ? "scheduled ": "").Append(Value is { Hours: 0, Minutes: 0 } ? "date": "time");
-		}
+		if (Value <= TimeSpan.Zero) return text;
+		
+		text.Append("; ");
+		if (Value.Days > 0)
+			text.Append(Lingua.NumWord(Value.Days))
+				.Append(' ')
+				.Append(RemindInBusinessDays ? "business day": "calendar day").Append(Value.Days == 1 ? "": "s");
+		if (Value.Hours > 0)
+			text.Append(Value.Days == 0 ? "": Value.Minutes > 0 ? ", ": " and ")
+				.Append(Value.Hours)
+				.Append(" hour").Append(Value.Hours > 1 ? "s": "");
+		if (Value.Minutes > 0)
+			text.Append(Value is { Days: 0, Hours: 0 } ? "": " and ")
+				.Append(Value.Minutes)
+				.Append(" minute").Append(Value.Minutes > 1 ? "s" : "");
+		text.Append(" before the ").Append(ShiftToBusinessDay == BusinessDayShiftType.None ? "scheduled ": "").Append(Value is { Hours: 0, Minutes: 0 } ? "date": "time");
 		return text;
 	}
 
-	public bool Equals(ScheduleReminder? other)
-	{
-		if (other is null)
-			return false;
-		if (ReferenceEquals(this, other))
-			return true;
-		return Value == other.Value && RemindInBusinessDays == other.RemindInBusinessDays && ShiftToBusinessDay == other.ShiftToBusinessDay;
-	}
+	public bool Equals(ScheduleReminder? other) =>
+		other is not null && (
+			ReferenceEquals(this, other) ||
+			Value == other.Value && RemindInBusinessDays == other.RemindInBusinessDays && ShiftToBusinessDay == other.ShiftToBusinessDay);
 
-	public override bool Equals(object? obj)
-	{
-		return obj is ScheduleReminder reminder && Equals(reminder);
-	}
+	public override bool Equals(object? obj) => obj is ScheduleReminder reminder && Equals(reminder);
 
-	public override int GetHashCode()
-	{
-		return HashCode.Join(Value.GetHashCode(), RemindInBusinessDays.GetHashCode(), ShiftToBusinessDay.GetHashCode());
-	}
+	public override int GetHashCode() => HashCode.Join(Value.GetHashCode(), RemindInBusinessDays.GetHashCode(), ShiftToBusinessDay.GetHashCode());
 
 	public DumpWriter DumpContent(DumpWriter writer)
 	{
-		if (writer is null)
-			throw new ArgumentNullException(nameof(writer));
+		if (writer is null) throw new ArgumentNullException(nameof(writer));
 		return writer
 			.Text("Value=").Dump(Value)
 			.Text(",RemindInBusinessDays=").Dump(RemindInBusinessDays)
@@ -150,9 +137,7 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 
 	public XmlBuilder ToXmlContent(XmlBuilder builder)
 	{
-		if (builder is null)
-			throw new ArgumentNullException(nameof(builder));
-
+		if (builder is null) throw new ArgumentNullException(nameof(builder));
 		if (Value != TimeSpan.Zero)
 		{
 			builder.Item("value", Value);
@@ -166,9 +151,7 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 
 	public JsonBuilder ToJsonContent(JsonBuilder json)
 	{
-		if (json is null)
-			throw new ArgumentNullException(nameof(json));
-
+		if (json is null) throw new ArgumentNullException(nameof(json));
 		if (Value != TimeSpan.Zero)
 		{
 			json.Item("value").Val(Value);
@@ -180,17 +163,12 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 		return json;
 	}
 
-	public static ScheduleReminder Create(TimeSpan reminder = default, bool remindInBusinessDays = false, BusinessDayShiftType shiftToBusinessDay = BusinessDayShiftType.None)
-	{
-		if (reminder <= TimeSpan.Zero && shiftToBusinessDay == BusinessDayShiftType.None)
-			return Empty;
-		return new ScheduleReminder(reminder, remindInBusinessDays, shiftToBusinessDay);
-	}
+	public static ScheduleReminder Create(TimeSpan reminder = default, bool remindInBusinessDays = false, BusinessDayShiftType shiftToBusinessDay = BusinessDayShiftType.None) =>
+		reminder <= TimeSpan.Zero && shiftToBusinessDay == BusinessDayShiftType.None ? Empty:
+			new ScheduleReminder(reminder, remindInBusinessDays, shiftToBusinessDay);
 
-	public static ScheduleReminder FromXml(Xml.XmlLiteNode? xml)
-	{
-		return xml == null || xml.IsEmpty ? Empty:
+	public static ScheduleReminder FromXml(Xml.IXmlReadOnlyNode? xml) =>
+		xml == null || xml.IsEmpty ? Empty:
 			new ScheduleReminder(xml["value"].AsTimeSpan(default), xml["businessDays"].AsBoolean(false), xml["shift"].AsEnum(default(BusinessDayShiftType)));
-	}
 }
 

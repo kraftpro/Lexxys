@@ -18,18 +18,15 @@ public static class DumpXmlExtensions
 {
 	public static XmlBuilder ToXml(this IDumpXml? obj, XmlBuilder xml)
 	{
-		if (xml is null)
-			throw new ArgumentNullException(nameof(xml));
+		if (xml is null) throw new ArgumentNullException(nameof(xml));
 		obj?.ToXmlContent(xml.Element(obj.XmlElementName)).End();
 		return xml;
 	}
 
 	public static StringBuilder ToXml(this IDumpXml? obj, StringBuilder text)
 	{
-		if (text is null)
-			throw new ArgumentNullException(nameof(text));
-		if (obj == null)
-			return text;
+		if (text is null) throw new ArgumentNullException(nameof(text));
+		if (obj == null) return text;
 		obj.ToXml(new XmlStringBuilder(text));
 		return text;
 	}

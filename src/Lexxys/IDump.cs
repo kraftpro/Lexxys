@@ -48,7 +48,6 @@ public static class DumpExtensions
 		return text;
 	}
 
-
 	#region Dump with name
 
 	public static DumpWriter Dump(this IDump? obj, DumpWriter writer, string name)

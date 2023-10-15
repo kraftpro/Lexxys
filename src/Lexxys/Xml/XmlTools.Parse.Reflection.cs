@@ -4,13 +4,11 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
-#pragma warning disable CA1307 // Specify StringComparison
-
 namespace Lexxys.Xml;
 
 public static partial class XmlTools
 {
-	private static bool TryReflection(XmlLiteNode? node, Type returnType, out object? result)
+	private static bool TryReflection(IXmlReadOnlyNode? node, Type returnType, out object? result)
 	{
 		result = null;
 		if (node == null)
@@ -43,7 +41,7 @@ public static partial class XmlTools
 						continue;
 					attribs = false;
 				}
-				if (item.IsInitOnly)
+				if (item.IsInitOnly || item.IsLiteral)
 				{
 					var value = item.GetValue(obj);
 					if (value != null)
@@ -84,7 +82,7 @@ public static partial class XmlTools
 
 		return true;
 
-		static (List<string>? Extra, Dictionary<string, object> Args) CollectArguments(XmlLiteNode node)
+		static (List<string>? Extra, Dictionary<string, object> Args) CollectArguments(IXmlReadOnlyNode node)
 		{
 			var args = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 			List<string>? extra = null;
@@ -94,7 +92,7 @@ public static partial class XmlTools
 				args[item.Key] = item.Value;
 			}
 			// Collect elements.
-			foreach (XmlLiteNode item in node.Elements)
+			foreach (IXmlReadOnlyNode item in node.Elements)
 			{
 				if (!args.TryGetValue(item.Name, out var arg))
 				{
@@ -104,7 +102,7 @@ public static partial class XmlTools
 				{
 					if (arg is IList<object> list)
 						list.Add(item);
-					else if (arg is XmlLiteNode)
+					else if (arg is IXmlReadOnlyNode)
 						args[item.Name] = new List<object> { arg, item };
 					else
 						(extra ??= new List<string>()).Add(item.Name);
@@ -133,7 +131,7 @@ public static partial class XmlTools
 		}
 	}
 
-	private static void SetFieldValue(XmlLiteNode node, string itemName, Type itemType, Func<object?> getter, Action<object?>? setter, bool attributes)
+	private static void SetFieldValue(IXmlReadOnlyNode node, string itemName, Type itemType, Func<object?> getter, Action<object?>? setter, bool attributes)
 	{
 		var type = GetCollectionType(itemType);
 		if (type == null)
@@ -143,7 +141,7 @@ public static partial class XmlTools
 			return;
 		}
 
-		List<XmlLiteNode>? elems = null;
+		List<IXmlReadOnlyNode>? elems = null;
 		foreach (var item in node.Elements)
 		{
 			if (String.Equals(item.Name, itemName, StringComparison.OrdinalIgnoreCase))
@@ -167,7 +165,7 @@ public static partial class XmlTools
 
 		return;
 
-		static void SetSimpleValue(XmlLiteNode node, string itemName, Type itemType, Action<object?> setter, bool attributes)
+		static void SetSimpleValue(IXmlReadOnlyNode node, string itemName, Type itemType, Action<object?> setter, bool attributes)
 		{
 			if (attributes)
 			{
@@ -184,7 +182,7 @@ public static partial class XmlTools
 				setter(x);
 		}
 
-		static IReadOnlyCollection<KeyValuePair<string, string>>? CollectItems(string itemName, CollectionType type, List<XmlLiteNode> elems, List<object?> items)
+		static IReadOnlyCollection<KeyValuePair<string, string>>? CollectItems(string itemName, CollectionType type, List<IXmlReadOnlyNode> elems, List<object?> items)
 		{
 			if (elems.Count > 1)
 			{
@@ -228,7 +226,7 @@ public static partial class XmlTools
 	/// Create an instance of the specified <paramref name="type"/>.
 	/// </summary>
 	/// <param name="type">Type of the class to be created.</param>
-	/// <param name="arguments">List of arguments of type <see cref="String"/>, <see cref="XmlLiteNode"/>, or <see cref="List{XmlLiteNode}"/>.</param>
+	/// <param name="arguments">List of arguments of type <see cref="String"/>, <see cref="IXmlReadOnlyNode"/>, or <see cref="List{IXmlReadOnlyNode}"/>.</param>
 	/// <returns></returns>
 	private static (IReadOnlyCollection<string>? Missings, object? Value) TryConstruct(Type type, Dictionary<string, object> arguments)
 	{
@@ -281,7 +279,7 @@ public static partial class XmlTools
 		/// <summary>
 		/// Tries to invoke the constructor and create a required object.
 		/// </summary>
-		/// <param name="arguments">List of arguments of type String, XmlLiteNode, or List&lt;String or XmlLiteNode&gt;.</param>
+		/// <param name="arguments">List of arguments of type String, IXmlReadOnlyNode, or List&lt;String or IXmlReadOnlyNode&gt;.</param>
 		/// <returns></returns>
 		/// <exception cref="ArgumentNullException"></exception>
 		public object? Invoke(Dictionary<string, object> arguments)
@@ -330,7 +328,7 @@ public static partial class XmlTools
 				Log?.Trace($"{nameof(AttributedConstructor)}.{nameof(Invoke)}: Cannot parse parameter {name} of {type.Name} used to construct {_type.Name}.");
 				return false;
 			}
-			if (value is XmlLiteNode x)
+			if (value is IXmlReadOnlyNode x)
 			{
 				if (TryGetValue(x, type, out parameter))
 					return true;
@@ -375,7 +373,7 @@ public static partial class XmlTools
 				}
 				if (value is string s)
 					return Strings.TryGetValue(s, type, out result);
-				if (value is XmlLiteNode x)
+				if (value is IXmlReadOnlyNode x)
 					return TryGetValue(x, type, out result);
 				result = null;
 				return false;
@@ -491,7 +489,7 @@ public static partial class XmlTools
 					Log?.Trace($"{nameof(AttributedConstructor)}.{nameof(Create)}: Cannot find a constructor for {type.Name} and arguments: {String.Join(", ", arguments.Keys)}");
 					return null;
 				}
-				parameters = Array.Empty<ParameterInfo>();
+				parameters = [];
 			}
 			Debug.Assert(parameters != null);
 
@@ -538,9 +536,8 @@ public static partial class XmlTools
 				object? value = null;
 				if (parameter.ParameterType == typeof(DateTime))
 					return default(DateTime);
-				#pragma warning disable CA1031 // Do not catch general exception types
-				try { value = parameter.DefaultValue; } catch { }
-				#pragma warning restore CA1031 // Do not catch general exception types
+				try { value = parameter.DefaultValue; } catch { /* ignore */ }
+
 				return value ?? Factory.DefaultValue(parameter.ParameterType);
 			}
 		}
@@ -548,7 +545,7 @@ public static partial class XmlTools
 
 	private static bool AppendItems(object collection, CollectionType type, IReadOnlyList<object?> items)
 	{
-		MethodInfo? add = type.Collection.GetMethod("Add", new[] { type.Item });
+		MethodInfo? add = type.Collection.GetMethod("Add", [type.Item]);
 		if (add == null)
 			return false;
 
@@ -613,7 +610,7 @@ public static partial class XmlTools
 		}
 	}
 
-	private static bool TryCollection(XmlLiteNode node, CollectionType collectionType, ref object? result)
+	private static bool TryCollection(IXmlReadOnlyNode node, CollectionType collectionType, ref object? result)
 	{
 		var itemName = GetItemName(node);
 		if (itemName == null)
@@ -644,7 +641,7 @@ public static partial class XmlTools
 
 		return CreateCollection(collectionType, node.Attributes, items, ref result);
 
-		static string? GetItemName(XmlLiteNode node)
+		static string? GetItemName(IXmlReadOnlyNode node)
 		{
 			if (node.Elements.Count == 0)
 				return null;
@@ -661,7 +658,7 @@ public static partial class XmlTools
 		}
 	}
 
-	//private static bool TryCollection(XmlLiteNode node, IEnumerable<XmlLiteNode>? items, CollectionType collectionType, ref object? result)
+	//private static bool TryCollection(IXmlReadOnlyNode node, IEnumerable<IXmlReadOnlyNode>? items, CollectionType collectionType, ref object? result)
 	//{
 	//	if (items is null)
 	//	{

@@ -13,9 +13,6 @@ public static class SystemLog
 
 	public static bool UseSystemEventLog { get => _eventLogSupported && _useEventLog; set => _useEventLog = value; }
 
-#pragma warning disable CA1416 // Validate platform compatibility
-#pragma warning disable CA1031 // Ignore the error
-
 	internal static bool TestEventLog(string eventSource, string logName)
 	{
 		try

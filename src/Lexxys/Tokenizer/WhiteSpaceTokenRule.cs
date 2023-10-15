@@ -7,6 +7,7 @@
 
 namespace Lexxys.Tokenizer;
 
+[Serializable]
 public class WhiteSpaceTokenRule: LexicalTokenRule
 {
 	public WhiteSpaceTokenRule(LexicalTokenType whiteSpaceToken, LexicalTokenType newLineToken)

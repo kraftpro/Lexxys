@@ -72,9 +72,22 @@ public sealed class ConfigSection: IConfigSection
 		return new ConfigValue<T>(GetConfigValue(Key(key), defaultValue), GetConfigVersion);
 
 		Func<T> GetConfigValue(string k, Func<T>? dv)
-			=> dv == null ?
-				() => Values<T>.TryGet(k, out var value) ? value : _configSource.GetValue(k, typeof(T)) is T value2 ? value2 : throw new ConfigurationException(k, typeof(T)) :
-				() => Values<T>.TryGet(k, out var value) ? value : _configSource.GetValue(k, typeof(T)) is T value2 ? value2 : dv();
+		{
+			return dv == null ?
+						() =>
+						{
+							if (_configSource.GetValue(k, typeof(T)) is T value2)
+							{
+								return Values<T>.TryGet(k, out var value) ? value : value2;
+							}
+							else
+							{
+								throw new ConfigurationException(k, typeof(T));
+							}
+						}
+			:
+						() => Values<T>.TryGet(k, out var value) ? value : _configSource.GetValue(k, typeof(T)) is T value2 ? value2 : dv();
+		}
 	}
 
 	private int GetConfigVersion() => _configSource.Version;
@@ -96,7 +109,7 @@ public sealed class ConfigSection: IConfigSection
 			_path.Length == 0 ? k:
 			k.Length == 0 ? _path: _path + "." + k;
 	}
-	private static readonly char[] Dots = new[] { '.', ':', ' ', '\t', '\r', '\n', '\v', '\f', '\x85', '\xA0' };
+	private static readonly char[] Dots = ['.', ':', ' ', '\t', '\r', '\n', '\v', '\f', '\x85', '\xA0'];
 
 	private static class Values<T>
 	{

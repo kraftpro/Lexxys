@@ -50,7 +50,7 @@ public static class JsonParser
 		public ActualParser()
 		{
 			_back = new OneBackFilter();
-			Scanner = new TokenScanner(new ITokenFilter[] { _back },
+			Scanner = new TokenScanner([_back],
 				new StringTokenRule(),
 				new CppCommentsTokenRule(LexicalTokenType.IGNORE),
 				new NumericTokenRule(),

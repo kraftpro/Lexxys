@@ -103,7 +103,7 @@ public static class DecimalExtensions
 		double total = basket1 + basket2;
 		var first = Math.Round((decimal)((double)value * basket1 / total), scale);
 		var second = value - first;
-		return new[] { first, second };
+		return [first, second];
 	}
 
 	/// <summary>
@@ -134,7 +134,7 @@ public static class DecimalExtensions
 		var first = Math.Round((decimal)((double)value * basket1 / total), scale);
 		var second = Math.Round((decimal)((double)(value - first) * basket2 / (total - basket1)), scale);
 		var third = value - first - second;
-		return new[] { first, second, third };
+		return [first, second, third];
 	}
 
 	/// <summary>
@@ -152,7 +152,7 @@ public static class DecimalExtensions
 			throw new ArgumentNullException(nameof(baskets));
 
 		if (baskets.Length < 2)
-			return baskets.Length == 0 ? Array.Empty<decimal>() : new[] { value };
+			return baskets.Length == 0 ? [] : [value];
 
 		if (scale == -1)
 			scale = value.GetScale(true);
@@ -193,7 +193,7 @@ public static class DecimalExtensions
 			throw new ArgumentOutOfRangeException(nameof(count), count, null);
 
 		if (count < 2)
-			return count == 0 ? Array.Empty<decimal>(): new[] { value };
+			return count == 0 ? [] : [value];
 
 		if (scale == -1)
 			scale = value.GetScale(true);

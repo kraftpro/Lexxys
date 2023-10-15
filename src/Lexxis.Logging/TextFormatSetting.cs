@@ -61,7 +61,7 @@ public readonly struct TextFormatSetting
 	/// </summary>
 	/// <param name="config">Xml Stream with formatting settings</param>
 	/// <returns>this object</returns>
-	public TextFormatSetting Join(XmlLiteNode? config)
+	public TextFormatSetting Join(IXmlReadOnlyNode? config)
 	{
 		return config == null || config.IsEmpty ? this:
 			new TextFormatSetting(

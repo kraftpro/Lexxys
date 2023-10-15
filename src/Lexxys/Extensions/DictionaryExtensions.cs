@@ -20,6 +20,14 @@ public static class DictionaryExtensions
 		return that.TryGetValue(key, out var value) ? value: default;
 	}
 #if !NETCOREAPP
+	public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> that, TKey key, TValue value)
+	{
+		if (that is null) throw new ArgumentNullException(nameof(that));
+		if (that.ContainsKey(key))
+			return false;
+		that.Add(key, value);
+		return true;
+	}
 	public static TValue? GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> that, TKey key)
 	{
 		if (that is null) throw new ArgumentNullException(nameof(that));

@@ -26,7 +26,7 @@ namespace Lexxys.Tests.Tools
 			if (!x)
 				Debugger.Break();
 			Assert.IsTrue(x);
-			var y = Config.Current.GetCollection<Lexxys.Xml.XmlLiteNode>(Factory.ConfigurationSynonyms);
+			var y = Config.Current.GetCollection<Lexxys.Xml.IXmlReadOnlyNode>(Factory.ConfigurationSynonyms);
 			if (y.Value is null || y.Value.Count == 0)
 				Debugger.Break();
 			Assert.IsNotNull(y.Value);

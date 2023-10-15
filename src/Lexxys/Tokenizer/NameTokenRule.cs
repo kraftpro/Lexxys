@@ -7,6 +7,7 @@
 
 namespace Lexxys.Tokenizer;
 
+[Serializable]
 public class NameTokenRule: LexicalTokenRule
 {
 	public const string DefaultBeginning = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";

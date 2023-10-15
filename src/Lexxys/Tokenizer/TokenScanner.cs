@@ -10,6 +10,7 @@ namespace Lexxys.Tokenizer;
 /// <summary>
 /// Parser of the <see cref="CharStream"/> to the list of <see cref="LexicalToken"/>s.
 /// </summary>
+[Serializable]
 public readonly ref struct TokenScanner
 {
 	public delegate LexicalToken TokenParser(in TokenScanner scanner, ref CharStream stream);

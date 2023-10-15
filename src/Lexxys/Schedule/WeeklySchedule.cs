@@ -9,6 +9,7 @@ using System.Text;
 
 namespace Lexxys;
 
+[Serializable]
 public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 {
 	public new const string Type = "weekly";
@@ -27,7 +28,7 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 		}
 	}
 	private static readonly IReadOnlyList<DayOfWeek>[] OneDayOnly =
-	{
+	[
 		ReadOnly.Wrap(new[] { DayOfWeek.Sunday })!,
 		ReadOnly.Wrap(new[] { DayOfWeek.Monday })!,
 		ReadOnly.Wrap(new[] { DayOfWeek.Tuesday })!,
@@ -35,7 +36,7 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 		ReadOnly.Wrap(new[] { DayOfWeek.Thursday })!,
 		ReadOnly.Wrap(new[] { DayOfWeek.Friday })!,
 		ReadOnly.Wrap(new[] { DayOfWeek.Saturday })!,
-	};
+	];
 	private static readonly IReadOnlyList<DayOfWeek> FridayOnly = OneDayOnly[(int)DayOfWeek.Friday];
 
 	public int WeekPeriod { get; }
@@ -73,10 +74,9 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 
 	public override StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 	{
-		if (text is null)
-			throw new ArgumentNullException(nameof(text));
+		if (text is null) throw new ArgumentNullException(nameof(text));
 
-		var format = (DateTimeFormatInfo?)provider?.GetFormat(typeof(DateTimeFormatInfo)) ?? CultureInfo.CurrentCulture.DateTimeFormat;
+		var format = provider?.GetFormat(typeof(DateTimeFormatInfo)) as DateTimeFormatInfo ?? CultureInfo.CurrentCulture.DateTimeFormat;
 		text.Append("every ")
 			.Append(
 				DayList.Count == 7 ? "day" :
@@ -89,35 +89,21 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 		return text;
 	}
 
-	public bool Equals(WeeklySchedule? other)
-	{
-		if (other is null)
-			return false;
-		if (ReferenceEquals(this, other))
-			return true;
-		return WeekPeriod == other.WeekPeriod && Comparer.Equals(DayList, other.DayList);
-	}
+	public bool Equals(WeeklySchedule? other) =>
+		other is not null && (
+			ReferenceEquals(this, other) ||
+			WeekPeriod == other.WeekPeriod && Comparer.Equals(DayList, other.DayList));
 
-	public override bool Equals(Schedule? other)
-	{
-		return other is WeeklySchedule ws && Equals(ws);
-	}
+	public override bool Equals(Schedule? other) => other is WeeklySchedule ws && Equals(ws);
 
-	public override bool Equals(object? obj)
-	{
-		return obj is WeeklySchedule ws && Equals(ws);
-	}
+	public override bool Equals(object? obj) => obj is WeeklySchedule ws && Equals(ws);
 
 	public override int GetHashCode()
-	{
-		return HashCode.Join(HashCode.Join(base.GetHashCode(), WeekPeriod.GetHashCode()), DayList);
-	}
+		=> HashCode.Join(HashCode.Join(base.GetHashCode(), WeekPeriod.GetHashCode()), DayList);
 
 	public override DumpWriter DumpContent(DumpWriter writer)
 	{
-		if (writer is null)
-			throw new ArgumentNullException(nameof(writer));
-
+		if (writer is null) throw new ArgumentNullException(nameof(writer));
 		return base.DumpContent(writer)
 			.Then("WeekPeriod", WeekPeriod)
 			.Then("DayList", DayList);
@@ -125,8 +111,7 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 
 	public override XmlBuilder ToXmlContent(XmlBuilder builder)
 	{
-		if (builder is null)
-			throw new ArgumentNullException(nameof(builder));
+		if (builder is null) throw new ArgumentNullException(nameof(builder));
 
 		builder.Item("type", ScheduleType);
 		if (WeekPeriod != 1)
@@ -140,8 +125,7 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 
 	public override JsonBuilder ToJsonContent(JsonBuilder json)
 	{
-		if (json is null)
-			throw new ArgumentNullException(nameof(json));
+		if (json is null) throw new ArgumentNullException(nameof(json));
 
 		json.Item("type").Val(ScheduleType);
 		if (WeekPeriod != 1)
@@ -153,14 +137,11 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 		return json;
 	}
 
-	public new static WeeklySchedule FromXml(Xml.XmlLiteNode xml)
+	public new static WeeklySchedule FromXml(Xml.IXmlReadOnlyNode xml)
 	{
-		if (xml is null)
-			throw new ArgumentNullException(nameof(xml));
-		if (xml.IsEmpty)
-			throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
-		if (xml["type"] != Type)
-			throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
+		if (xml is null) throw new ArgumentNullException(nameof(xml));
+		if (xml.IsEmpty) throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
+		if (xml["type"] != Type) throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
 
 		IEnumerable<DayOfWeek>? days = xml["days"] != null ?
 			xml["days"]?.Split(',').Select(o => o.AsEnum(DayOfWeek.Friday)) :
@@ -170,10 +151,8 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 
 	public new static WeeklySchedule FromJson(string json)
 	{
-		if (json is not { Length: > 0 })
-			throw new ArgumentNullException(nameof(json));
-
-		return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
+		if (json is not { Length: > 0 }) throw new ArgumentNullException(nameof(json));
+		return FromXml(Xml.XmlTools.FromJson(json, "schedule", forceAttributes: true));
 	}
 }
 

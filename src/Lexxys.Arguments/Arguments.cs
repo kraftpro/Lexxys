@@ -13,7 +13,7 @@ namespace Lexxys;
 /// <summary>
 /// Command line arguments parser.
 /// </summary>
-public class Arguments: IDumpJson, IDumpXml
+public partial class Arguments: IDumpJson, IDumpXml
 {
 	private readonly bool _allowSlash;				// true if slash is a switch prefix
 	private readonly bool _strictDoubleDash;		// true if all arguments longer than 1 character must start with --. otherwise - is allowed for any parameter with value.
@@ -24,13 +24,13 @@ public class Arguments: IDumpJson, IDumpXml
 	private readonly bool _allowUnknown;			// true if unknown parameters are allowed
 	private readonly bool _doubleDashSeparator;		// true if double dash is a separator between options and positional parameters
 	private readonly bool _ignoreNameSeparators;    // true if delimiters in the parameter name must be trimmed before matching
-	private readonly bool _dynamic;
+	private readonly bool _auto;
 	private readonly bool _splitPositional;
 
 	private readonly StringComparison _comparison;
 	private readonly bool _helpRequested;
 	private readonly List<string> _messages;
-	private readonly List<ArgumentCommand> _commands;
+	private readonly ArgumentCommand _command;
 	private readonly List<string> _args;
 
 	private bool PreferLongDash => _strictDoubleDash || _combineOptions;
@@ -64,14 +64,11 @@ public class Arguments: IDumpJson, IDumpXml
 		_doubleDashSeparator = doubleDashSeparator;
 		_ignoreNameSeparators = true;
 		_allowUnknown = true;
-		_dynamic = true;
+		_auto = true;
 		_comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal;
 		_splitPositional = splitPositional;
 
-		var (command, messages, helpRequested) = ParseAutoArguments();
-		_commands = new List<ArgumentCommand> { command };
-		_messages = messages;
-		_helpRequested = helpRequested;
+		(_command, _messages, _helpRequested) = ParseAutoArguments();
 	}
 
 	/// <summary>
@@ -101,7 +98,7 @@ public class Arguments: IDumpJson, IDumpXml
 		_splitPositional = builder.SplitPositional;
 		_comparison = builder.Root.Comparison;
 
-		(_commands, _messages, _helpRequested) = ParseArguments(builder.Root);
+		(_command, _messages, _helpRequested) = ParseArguments(builder.Root);
 	}
 
 	/// <summary>
@@ -125,31 +122,13 @@ public class Arguments: IDumpJson, IDumpXml
 	public IReadOnlyList<string> Errors => _messages;
 
 	/// <summary>
-	/// Returns the root (not named) command.
+	/// Returns containing <see cref="ArgumentCommand"/>.
 	/// </summary>
-	public CommandDefinition CommandInfo => _commands[_commands.Count - 1].Definition;
+	public ArgumentCommand Container => _command;
+	
+	public ArgumentParameterCollection Parameters => _command.Parameters;
 
-	public ArgumentParameterCollection Parameters => _commands[_commands.Count - 1].Parameters;
-
-	public ArgumentCommand? Command => _commands[_commands.Count - 1].Command;
-
-	/// <summary>
-	/// Returns the list of the selected commands if any.
-	/// </summary>
-	/// <param name="includeRootCommand">True if the root command must be included in the list.</param>
-	/// <returns></returns>
-	public IList<CommandDefinition> GetSelectedCommands(bool includeRootCommand = false)
-	{
-		return includeRootCommand ? _commands.ConvertAll(o => o.Definition):
-			_commands.Count == 1 ? Array.Empty<CommandDefinition>():
-			_commands.Count == 2 ? new [] { _commands[1].Definition }:
-			_commands.Skip(1).Select(c => c.Definition).ToList();
-	}
-
-	/// <summary>
-	/// Returns the number of matched parameters.
-	/// </summary>
-	public int Count => _commands[_commands.Count - 1].Parameters.Count;
+	public ArgumentCommand? Command => _command.Command;
 
 	/// <summary>
 	/// Returns first <see cref="ParameterDefinition"/> for the specified <paramref name="name"/> if detected in the command line.
@@ -157,7 +136,7 @@ public class Arguments: IDumpJson, IDumpXml
 	/// <param name="name">Name of the parameter</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public ParameterValue this[string name] => _commands[_commands.Count - 1].Parameters.TryGet(name, out var p, _dynamic, _ignoreNameSeparators) ? p!.Value: default;
+	public ParameterValue this[string name] => _command.Parameters.TryGet(name, out var p, _auto, _ignoreNameSeparators) ? p!.Value: default;
 
 	/// <summary>
 	/// Returns the value of the parameter with the specified <paramref name="name"/> or <c>null</c> if the parameter not found.
@@ -217,7 +196,7 @@ public class Arguments: IDumpJson, IDumpXml
 	/// <summary>
 	/// Enumerates all the positional arguments.
 	/// </summary>
-	public IEnumerable<ParameterValue> Positional => _commands[_commands.Count - 1].Parameters.Where(o => o.Definition.IsPositional).Select(o => o.Value);
+	public IEnumerable<ParameterValue> Positional => _command.Parameters.Positional;
 
 	string IDumpXml.XmlElementName => "args";
 
@@ -228,7 +207,7 @@ public class Arguments: IDumpJson, IDumpXml
 	/// <returns></returns>
 	public JsonBuilder ToJsonContent(JsonBuilder json)
 	{
-		AddCommand(json, _commands[0]);
+		AddCommand(json, _command);
 		return json;
 
 		static void AddCommand(JsonBuilder json, ArgumentCommand cmd)
@@ -256,7 +235,7 @@ public class Arguments: IDumpJson, IDumpXml
 	/// <returns></returns>
 	public XmlBuilder ToXmlContent(XmlBuilder xml)
 	{
-		AddCommand(xml, _commands[0]);
+		AddCommand(xml, _command);
 		return xml;
 
 		static void AddCommand(XmlBuilder xml, ArgumentCommand cmd)
@@ -285,15 +264,16 @@ public class Arguments: IDumpJson, IDumpXml
 	const int Indent = 2;
 	const int MaxOffset = 32;
 
-    /// <summary>
-    /// Prints the usage string.
-    /// </summary>
-    /// <param name="application">Name of the application.</param>
-    /// <param name="brief">Do not include commands details.</param>
-    /// <param name="width">Width of the output. (0 - screen width or 80; &lt;0 - no limit)</param>
-    /// <param name="alignAbbreviation">Align parameters names with and without abbreviations</param>
-    /// <param name="writer">An optional <see cref="TextWriter"/> (by default - <see cref="Console.Out"/>)</param>
-    public void Usage(string? application = null, bool brief = false, int width = 0, bool alignAbbreviation = false, TextWriter? writer = null)
+	/// <summary>
+	/// Prints the usage string.
+	/// </summary>
+	/// <param name="application">Name of the application.</param>
+	/// <param name="brief">Do not include commands details.</param>
+	/// <param name="width">Width of the output. (0 - screen width or 80; &lt;0 - no limit)</param>
+	/// <param name="alignAbbreviation">Align parameters names with and without abbreviations</param>
+	/// <param name="excludePositional">Exclude positional parameters</param>
+	/// <param name="writer">An optional <see cref="TextWriter"/> (by default - <see cref="Console.Out"/>)</param>
+	public void Usage(string? application = null, bool brief = false, int width = 0, bool alignAbbreviation = false, bool excludePositional = false, TextWriter? writer = null)
 	{
 		if (writer == null)
 		{
@@ -302,8 +282,8 @@ public class Arguments: IDumpJson, IDumpXml
 				width = Console.IsOutputRedirected ? int.MaxValue: Console.WindowWidth;
 		}
 
-		var text = UsageString(application, _commands[_commands.Count - 1].Definition, width, new StringBuilder("Usage: "));
-		if (_dynamic)
+		var text = UsageString(application, width, new StringBuilder("Usage: "));
+		if (_auto)
 		{
 			writer.WriteLine(text);
 			return;
@@ -311,132 +291,121 @@ public class Arguments: IDumpJson, IDumpXml
 
 		text.AppendLine();
 
-		if (_commands.Count == 1)
-			UsageDetails(brief, width, alignAbbreviation, text);
+		if (_command.Command is null)
+			UsageDetails(brief, width, alignAbbreviation, excludePositional, text);
 		else
-			UsageCommand(_commands[_commands.Count - 1].Definition, brief, width, alignAbbreviation, text);
+			UsageCommand(_command.Command, brief, width, alignAbbreviation, excludePositional, text);
 
 		writer.Write(text);
 	}
 
-    /// <summary>
-    /// Builds usage parameters and commands details.
-    /// </summary>
-    /// <param name="brief">Do not include command details</param>
-    /// <param name="width">Width of the output. (0 - screen width or 80; &lt;0 - no limit)</param>
-    /// <param name="alignAbbreviation">Align parameters names with and without abbreviations</param>
-    /// <param name="text">The <see cref="StringBuilder"/></param>
-    /// <returns></returns>
-    public StringBuilder UsageDetails(bool brief = false, int width = 0, bool alignAbbreviation = false, StringBuilder? text = null)
+	/// <summary>
+	/// Builds usage parameters and commands details.
+	/// </summary>
+	/// <param name="brief">Do not include command details</param>
+	/// <param name="width">Width of the output. (0 - screen width or 80; &lt;0 - no limit)</param>
+	/// <param name="alignAbbreviation">Align parameters names with and without abbreviations</param>
+	/// <param name="excludePositional">Exclude positional parameters</param>
+	/// <param name="text">The <see cref="StringBuilder"/></param>
+	/// <returns></returns>
+	public StringBuilder UsageDetails(bool brief = false, int width = 0, bool alignAbbreviation = false, bool excludePositional = false, StringBuilder? text = null)
 	{
 		text ??= new StringBuilder();
 		width = FixWidth(width);
 		var offset = GetOffset(Indent, width);
-		if (_commands[0].Definition.Parameters.HasNamedParameters)
+		if (_command.Definition.Parameters.HasNamedParameters)
 			text.AppendLine().AppendLine("Parameters:");
-		UsageParameters(text, _commands[0].Definition.Parameters, Indent, offset, width, alignAbbreviation);
-		if (!_commands[0].Definition.HasCommands)
+		UsageParameters(text, _command.Definition.Parameters, Indent, offset, width, alignAbbreviation, !excludePositional);
+		if (!_command.Definition.HasCommands)
 			return text;
 
 		text.AppendLine().AppendLine("Commands:");
 		bool nl = false;
-		foreach (var item in _commands[0].Definition.Commands!)
+		foreach (var item in _command.Definition.Commands!)
 		{
 			if (item.Name.Length == 0)
 				continue;
 			if (nl && !brief)
 				text.AppendLine();
-			UsageCommand(text, item, Indent, offset, brief, true, width, alignAbbreviation);
+			UsageCommand(text, item, Indent, offset, brief, true, width, alignAbbreviation, !excludePositional);
 			nl = true;
 		}
 		return text;
 	}
 
-    /// <summary>
-    /// Builds usage details text for the parameters and the specified <paramref name="command"/>.
-    /// </summary>
-    /// <param name="command">The <see cref="CommandDefinition"/> to print.</param>
-    /// <param name="brief">Do not include command details</param>
-    /// <param name="width">Width of the output. (0 - screen width or 80; &lt;0 - no limit)</param>
-    /// <param name="alignAbbreviation">Align parameters names with and without abbreviations</param>
-    /// <param name="text">The <see cref="StringBuilder"/></param>
-    /// <returns></returns>
-    public StringBuilder UsageCommand(CommandDefinition command, bool brief = false, int width = 0, bool alignAbbreviation = false, StringBuilder? text = null)
+	/// <summary>
+	/// Builds usage details text for the parameters and the specified <paramref name="command"/>.
+	/// </summary>
+	/// <param name="command">The <see cref="CommandDefinition"/> to print.</param>
+	/// <param name="brief">Do not include command details</param>
+	/// <param name="width">Width of the output. (0 - screen width or 80; &lt;0 - no limit)</param>
+	/// <param name="alignAbbreviation">Align parameters names with and without abbreviations</param>
+	/// <param name="excludePositional">Exclude positional parameters</param>
+	/// <param name="text">The <see cref="StringBuilder"/></param>
+	/// <returns></returns>
+	public StringBuilder UsageCommand(ArgumentCommand? command, bool brief = false, int width = 0, bool alignAbbreviation = false, bool excludePositional = false, StringBuilder? text = null)
 	{
 		text ??= new StringBuilder();
 		width = FixWidth(width);
 		var offset = GetOffset(Indent, width);
-		if (_commands[0].Definition.Parameters.HasNamedParameters)
+		if (_command.Definition.Parameters.HasNamedParameters)
 			text.AppendLine().AppendLine("Parameters:");
-		UsageParameters(text, _commands[0].Definition.Parameters, Indent, offset, width, alignAbbreviation);
+		UsageParameters(text, _command.Definition.Parameters, Indent, offset, width, alignAbbreviation, !excludePositional);
 		var indent = Indent;
-		if (command.Parent == null)
+		if (command is null)
 			return text;
 
 		text.AppendLine().AppendLine("Commands:");
-		foreach (var cmd in GetCommands(command.Parent))
+		var cmd = command;
+		bool nl = false;
+		while (cmd != null)
 		{
-			UsageCommand(text, cmd, indent, offset, brief, false, width, alignAbbreviation);
+			if (nl && !brief)
+				text.AppendLine();
+			UsageCommand(text, cmd.Definition, indent, offset, brief, false, width, alignAbbreviation, !excludePositional);
+			nl = true;
 			indent += Indent;
+			cmd = cmd.Command;
 		}
-		UsageCommand(text, command, indent, offset, brief, false, width, alignAbbreviation);
 		return text;
 	}
 
 	/// <summary>
-	/// Generates the usage string including the specified <paramref name="command"/> if present.
+	/// Generates the usage string including selected command if present.
 	/// </summary>
 	/// <param name="application">Name of the application</param>
-	/// <param name="command">Selected command</param>
 	/// <param name="width">Width of the output. (0 - screen width or 80; &lt;0 - no limit)</param>
 	/// <param name="text">The <see cref="StringBuilder"/></param>
 	/// <returns></returns>
-	public StringBuilder UsageString(string? application = null, CommandDefinition? command = null, int width = 0, StringBuilder? text = null)
+	public StringBuilder UsageString(string? application = null, int width = 0, StringBuilder? text = null)
 	{
 		application ??= Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]);
 		text ??= new StringBuilder();
 		text.Append(application);
-		if (_dynamic)
+		if (_auto)
 			return text.Append(" [<options>]");
 
 		width = FixWidth(width);
 
 		var patch = new List<(int Index, int Length, string Value)>();
 		int k0 = text.Length;
-		int k = text.Length;
-		UsageNamedParameters(text, _commands[0].Definition.Parameters);
-		int n = text.Length - k;
-		if (n > 12)
-			patch.Add((k - k0, n, " [<options>]"));
-		k = text.Length;
-		Arguments.UsagePositionalParameters(text, _commands[0].Definition.Parameters);
-		n = text.Length - k;
-		if (n > 0)
-			patch.Add((k - k0, n, ""));
 
-		if (command?.Parent == null)
+		UsageStringParameters(text, patch, k0, _command, " [<options>]");
+
+		if (_command.Command is null)
 		{
-			if (_commands[0].Definition.HasCommands)
+			if (_command.Definition.HasCommands)
 				text.Append(" <command> [<arguments>]");
 		}
 		else
 		{
-			foreach (var cmd in GetCommands(command))
+			var cmd = _command.Command;
+			while (cmd is not null)
 			{
 				text.Append(' ').Append(cmd.Name);
-				if (cmd.HasParameters)
-				{
-					k = text.Length;
-					UsageNamedParameters(text, cmd.Parameters);
-					n = text.Length - k;
-					if (n > 13)
-						patch.Add((k - k0, n, " [<arguments>]"));
-
-					Arguments.UsagePositionalParameters(text, cmd.Parameters);
-					n = text.Length - k;
-					if (n > 0)
-						patch.Add((k - k0, n, ""));
-				}
+				if (cmd.Definition.HasParameters)
+					UsageStringParameters(text, patch, k0, cmd, " [<arguments>]");
+				cmd = cmd.Command;
 			}
 		}
 
@@ -446,7 +415,7 @@ public class Arguments: IDumpJson, IDumpXml
 		var line = new char[text.Length];
 		text.CopyTo(k0, line, 0, text.Length - k0);
 		text.Length = k0;
-		k = 0;
+		int k = 0;
 		foreach (var (index, length, value) in patch)
 		{
 			text.Append(line, k, index - k);
@@ -459,23 +428,71 @@ public class Arguments: IDumpJson, IDumpXml
 		return text;
 	}
 
-	private static int FixWidth(int width) => width >= 60 ? width: width == 0 ? 80: width < 0 ? int.MaxValue: 60;
-
-	private static List<CommandDefinition> GetCommands(CommandDefinition command)
+	private void UsageStringParameters(StringBuilder text, List<(int Index, int Length, string Value)> patch, int start, ArgumentCommand cmd, string options)
 	{
-		var commands = new List<CommandDefinition>();
-		while (command.Parent != null)
+		var (begin, end) = Split(cmd.Definition.Parameters);
+
+		if (!(begin ^ end))
 		{
-			commands.Add(command);
-			command = command.Parent;
+			UsageParametersPart(text, cmd.Definition.Parameters, patch, start, options, true, true);
 		}
-		commands.Reverse();
-		return commands;
+		else if (begin)
+		{
+			UsageParametersPart(text, cmd.Definition.Parameters, patch, start, String.Empty, true, false);
+			UsageParametersPart(text, cmd.Definition.Parameters, patch, start, options, false, true);
+		}
+		else
+		{
+			UsageParametersPart(text, cmd.Definition.Parameters, patch, start, options, false, true);
+			UsageParametersPart(text, cmd.Definition.Parameters, patch, start, String.Empty, true, false);
+		}
+		return;
+
+		static (bool, bool) Split(ParameterDefinitionCollection parameters)
+		{
+			bool begin = false;
+			bool end = false;
+			bool named = false;
+			foreach (var item in parameters)
+			{
+				if (item.IsPositional)
+					if (named)
+						end = true;
+					else
+						begin = true;
+				else if (!end)
+					named = true;
+				else
+					return (false, false);
+			}
+			return (begin, end);
+		}
+
+		void UsageParametersPart(StringBuilder text, ParameterDefinitionCollection parameters, List<(int Index, int Length, string Value)> patch, int start, string options, bool positional, bool named)
+		{
+			int k = text.Length;
+			foreach (var item in parameters)
+			{
+				if (item.IsPositional ? !positional: !named)
+					continue;
+				text.Append(' ');
+				if (!item.IsRequired)
+					text.Append('[');
+				item.GetParameterName(text, argumentDelimiter: '=', longDash: PreferLongDash, excludeAbbreviation: true);
+				if (!item.IsRequired)
+					text.Append(']');
+			}
+			int n = text.Length - k;
+			if (n > options.Length)
+				patch.Add((k - start, n, options));
+		}
 	}
 
-	private int GetOffset(int indent, int maxWidth, bool padAttributes = false)
+	private static int FixWidth(int width) => width >= 60 ? width: width == 0 ? 80: width < 0 ? int.MaxValue: 60;
+
+	private int GetOffset(int indent, int maxWidth)
 	{
-		var offset = 1 + GetOffset(indent, _commands[0].Definition);
+		var offset = 1 + GetOffset(indent, _command.Definition);
 		if (offset > maxWidth - 12)
 			offset = Math.Max(0, maxWidth - 12);
 		if (offset > MaxOffset)
@@ -495,7 +512,7 @@ public class Arguments: IDumpJson, IDumpXml
 		return Math.Max(offset, command.Commands?.Max(o => (int?)GetOffset(indent + Indent, o)) ?? 0);
 	}
 
-	private void UsageCommand(StringBuilder text, CommandDefinition cmd, int indent, int offset, bool brief, bool commands, int maxWidth, bool alignAbbreviation)
+	private void UsageCommand(StringBuilder text, CommandDefinition cmd, int indent, int offset, bool brief, bool commands, int maxWidth, bool alignAbbreviation, bool positional)
 	{
 		text.Append(' ', indent).Append(cmd.Name);
 		AddDescription(text, cmd.Description, offset - indent - cmd.Name.Length, offset, maxWidth);
@@ -504,7 +521,7 @@ public class Arguments: IDumpJson, IDumpXml
 			return;
 
 		if (cmd.Parameters.Count > 0)
-			UsageParameters(text, cmd.Parameters, indent + Indent, offset, maxWidth, alignAbbreviation);
+			UsageParameters(text, cmd.Parameters, indent + Indent, offset, maxWidth, alignAbbreviation, positional);
 
 		if (!commands || !cmd.HasCommands)
 			return;
@@ -513,59 +530,35 @@ public class Arguments: IDumpJson, IDumpXml
 		{
 			if (item.Name.Length == 0)
 				continue;
-			UsageCommand(text, item, indent + Indent, offset, brief, commands, maxWidth, alignAbbreviation);
+			if (!brief)
+				text.AppendLine();
+			UsageCommand(text, item, indent + Indent, offset, brief, commands, maxWidth, alignAbbreviation, positional);
 		}
 	}
 
-	private void UsageNamedParameters(StringBuilder text, ParameterDefinitionCollection parameters)
-	{
-		foreach (var item in parameters.Where(o => !o.IsPositional))
-		{
-			text.Append(' ');
-			if (!item.IsRequired)
-				text.Append('[');
-			item.GetParameterName(text, argumentDelimiter: '=', longDash: PreferLongDash, excludeAbbreviation: true);
-			if (!item.IsRequired)
-				text.Append(']');
-		}
-	}
-
-	private static void UsagePositionalParameters(StringBuilder text, ParameterDefinitionCollection parameters)
-	{
-		foreach (var item in parameters.Where(o => o.IsPositional))
-		{
-			text.Append(' ')
-				.Append(item.IsRequired ? '<' : '[')
-				.Append(item.ValueName ?? item.Name)
-				.Append(item.IsRequired ? '>' : ']');
-			if (item.IsCollection)
-				text.Append("...");
-		}
-	}
-
-	private void UsageParameters(StringBuilder text, ParameterDefinitionCollection parameters, int indent, int offset, int width, bool alignAbbreviation)
+	private void UsageParameters(StringBuilder text, ParameterDefinitionCollection parameters, int indent, int offset, int width, bool alignAbbreviation, bool positional)
 	{
 		if (!parameters.HasNamedParameters)
 			return;
 
 		bool abbrev = alignAbbreviation && parameters.Any(o => o.HasAbbreviation);
-		foreach (var item in parameters.Where(o => !o.IsPositional))
+		foreach (var item in positional ? parameters: parameters.Where(o => !o.IsPositional))
 		{
 			AddParameterInfo(text, item, indent, offset, abbrev, width);
 		}
-	}
 
-	private void AddParameterInfo(StringBuilder text, ParameterDefinition parameter, int indent, int offset, bool abbrev, int width)
-	{
-		int n0 = text.Length;
-		text.Append(' ', indent);
+		void AddParameterInfo(StringBuilder text, ParameterDefinition parameter, int indent, int offset, bool abbrev, int width)
+		{
+			int n0 = text.Length;
+			text.Append(' ', indent);
 
-		if (abbrev && parameter.Name.Length > 1 && !parameter.HasAbbreviation)
-			text.Append(' ', 4);
+			if (abbrev && parameter is { Name.Length: >1, IsPositional: false, HasAbbreviation: false })
+				text.Append(' ', 4);
 
-		parameter.GetParameterName(text, argumentDelimiter: '=', longDash: PreferLongDash);
-		int pad = offset - (text.Length - n0);
-		AddDescription(text, parameter.Description, pad, offset, width);
+			parameter.GetParameterName(text, argumentDelimiter: '=', longDash: PreferLongDash);
+			int pad = offset - (text.Length - n0);
+			AddDescription(text, parameter.Description, pad, offset, width);
+		}
 	}
 
 	private static void AddDescription(StringBuilder text, string? description, int pad, int offset, int width)
@@ -599,7 +592,7 @@ public class Arguments: IDumpJson, IDumpXml
 			}
 		}
 	}
-	private static readonly char[] NewLine = new[] { '\r', '\n' };
+	private static readonly char[] NewLine = ['\r', '\n'];
 
 	#endregion
 
@@ -618,9 +611,9 @@ public class Arguments: IDumpJson, IDumpXml
 		for (int i=0; i < args.Count; ++i)
 		{
 			var arg = args[i];
-            if (arg is not { Length: > 0 })
-                continue;
-            if (positionalOnly || !IsOption(arg))
+			if (arg is not { Length: > 0 })
+				continue;
+			if (positionalOnly || !IsOption(arg))
 			{
 				var aa = GrabCollection(args, ref i, arg);
 				if (_splitPositional)
@@ -646,10 +639,10 @@ public class Arguments: IDumpJson, IDumpXml
 				helpRequested = true;
 				continue;
 			}
-            if (value == String.Empty && i + 1 < args.Count && !IsOption(args[i + 1]))
-                value = args[++i];
+			if (value == String.Empty && i + 1 < args.Count && !IsOption(args[i + 1]))
+				value = args[++i];
 
-            var p = parameters.FirstOrDefault(o => String.Equals(o.Name, name, _comparison));
+			var p = parameters.FirstOrDefault(o => String.Equals(o.Name, name, _comparison));
 			if (p != null)
 			{
 				if (value is null || p.Definition.IsSwitch)
@@ -673,10 +666,12 @@ public class Arguments: IDumpJson, IDumpXml
 		return (command, messages, helpRequested);
 	}
 
-	private (List<ArgumentCommand>, List<string>, bool) ParseArguments(CommandDefinition root)
+	private (ArgumentCommand, List<string>, bool) ParseArguments(CommandDefinition root)
 	{
 		var args = _args;
-		List<ArgumentCommand> commands = new List<ArgumentCommand> { new ArgumentCommand(root) };
+		var command = new ArgumentCommand(root);
+		var cmd = command;
+		List<ArgumentCommand> commands = new List<ArgumentCommand> { command };
 		var messages = new List<string>();
 		bool options = true;
 		bool helpRequested = false;
@@ -695,7 +690,11 @@ public class Arguments: IDumpJson, IDumpXml
 					continue;
 				}
 				if (ParseCommandOrOption(args, ref i, commands, messages, ref helpRequested))
+				{
+					if (cmd.Command != null)
+						cmd = cmd.Command;
 					continue;
+				}
 			}
 
 			ParsePositional(args, ref i, commands, messages);
@@ -703,7 +702,7 @@ public class Arguments: IDumpJson, IDumpXml
 
 		CheckForMissingParameters(commands, messages);
 
-		return (commands, messages, helpRequested);
+		return (command, messages, helpRequested);
 	}
 
 	private bool ParseCommandOrOption(List<string> args, ref int i, List<ArgumentCommand> commands, List<string> messages, ref bool helpRequested)
@@ -825,7 +824,7 @@ public class Arguments: IDumpJson, IDumpXml
 			return commands[0].Parameters.TryAdd(name, value, anonymous);
 
 		for (int i = commands.Count - 1; i >= 0; i--)
-        {
+		{
 			var pp = commands[i].Parameters;
 			var a = pp.TryAdd(name, value, false);
 			if (a != ParameterDefinitionFindResult.NotFound)
@@ -851,7 +850,7 @@ public class Arguments: IDumpJson, IDumpXml
 		}
 
 		var (command, definition) = dash ? GetSingleDashParameter(name, value, arg, commands, messages): FindParameterDefinition(name, arg, commands, messages);
-        if (command is null)
+		if (command is null)
 			return;
 
 		var parameters = command.Parameters;
@@ -899,26 +898,26 @@ public class Arguments: IDumpJson, IDumpXml
 		}
 
 		(ArgumentCommand?, ParameterDefinition?) GetSingleDashParameter(string name, string? value, string arg, List<ArgumentCommand> commands, List<string> messages)
-        {
-            var (command, definition) = FindParameterDefinition(name, arg, commands, messages, abbreviationOnly: true);
+		{
+			var (command, definition) = FindParameterDefinition(name, arg, commands, messages, abbreviationOnly: true);
 
-            if (definition is not null)
-                return (command, definition);
+			if (definition is not null)
+				return (command, definition);
 
-            if (_combineOptions && value == null)
-            {
-                GrabFlags(name, arg, commands, messages);
-                return default;
-            }
-            if (_strictDoubleDash && name.Length > 1)       // TODO: Do we need to support this?
-            {
-                messages.Add($"Invalid parameter: {arg}");
-                return default;
-            }
+			if (_combineOptions && value == null)
+			{
+				GrabFlags(name, arg, commands, messages);
+				return default;
+			}
+			if (_strictDoubleDash && name.Length > 1)       // TODO: Do we need to support this?
+			{
+				messages.Add($"Invalid parameter: {arg}");
+				return default;
+			}
 
-            return FindParameterDefinition(name, arg, commands, messages);
-        }
-    }
+			return FindParameterDefinition(name, arg, commands, messages);
+		}
+	}
 
 	private bool CheckSwitchParameter(List<string> args, int i, ArgumentCommand command, ParameterDefinition definition, List<string> messages, ref bool helpRequested)
 	{
@@ -963,11 +962,11 @@ public class Arguments: IDumpJson, IDumpXml
 			_colonSeparator ? arg.IndexOf(':') : -1;
 		return j < 0 ? (arg, null): (arg.Substring(0, j), arg.Substring(j + 1));
 	}
-	private static readonly char[] Separators = new[] { '=', ':' };
+	private static readonly char[] Separators = ['=', ':'];
 
 	private static IReadOnlyList<string> GrabCollection(List<string> args, ref int i, string value)
 	{
-		if (!value.EndsWith(",", StringComparison.Ordinal))
+		if (!value.EndsWith(','))
 			return value.Split(',');
 		var list = new List<string>();
 		value = value.Substring(0, value.Length - 1);
@@ -979,7 +978,7 @@ public class Arguments: IDumpJson, IDumpXml
 		while (comma && i < args.Count - 1)
 		{
 			var arg = args[++i];
-			comma = arg.EndsWith(",", StringComparison.Ordinal);
+			comma = arg.EndsWith(',');
 			if (comma)
 				arg = arg.Substring(0, arg.Length - 1);
 			if (arg.IndexOf(',') < 0)

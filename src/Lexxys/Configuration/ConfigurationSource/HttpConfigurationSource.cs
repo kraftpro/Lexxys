@@ -5,9 +5,9 @@ using Xml;
 public class HttpConfigurationSource: IXmlConfigurationSource
 {
 	private const string LogSource = "Lexxys.Configuration.HttpConfigurationSource";
-	private readonly Func<string, string?, IReadOnlyList<XmlLiteNode>> _converter;
+	private readonly Func<string, string?, IReadOnlyList<IXmlReadOnlyNode>> _converter;
 	private List<string>? _includes;
-	private IReadOnlyList<XmlLiteNode>? _content;
+	private IReadOnlyList<IXmlReadOnlyNode>? _content;
 	private int _version;
 
 	public HttpConfigurationSource(Uri location, IReadOnlyCollection<string> parameters)
@@ -36,7 +36,7 @@ public class HttpConfigurationSource: IXmlConfigurationSource
 
 	public int Version => _version;
 
-	public IReadOnlyList<XmlLiteNode> Content
+	public IReadOnlyList<IXmlReadOnlyNode> Content
 	{
 		get
 		{
@@ -150,14 +150,13 @@ public class HttpConfigurationSource: IXmlConfigurationSource
 				++_version;
 			}
 		}
-		#pragma warning disable CA1031 // Ignore all the errors
 		catch (Exception flaw)
 		{
 			Config.LogConfigurationError(LogSource, flaw.Add(nameof(Location), Location));
 		}
 	}
 
-	private IEnumerable<XmlLiteNode>? OptionHandler(ref TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters)
+	private IEnumerable<IXmlReadOnlyNode>? OptionHandler(ref TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters)
 	{
 		if (option != "include")
 		{

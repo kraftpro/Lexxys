@@ -2,6 +2,7 @@
 
 namespace Lexxys
 {
+	[Serializable]
 	public class SafeDictionary<TKey, TValue>: ISafeDictionary<TKey, TValue> where TKey: notnull
 	{
 		private readonly Dictionary<TKey, TValue> _map;
@@ -53,62 +54,30 @@ namespace Lexxys
 
 		public bool IsReadOnly => ((IDictionary<TKey, TValue>)_map).IsReadOnly;
 
+		public void Add(TKey key, TValue value) => _map[key] = value;
+
+		public void Add(KeyValuePair<TKey, TValue> item) => _map[item.Key] = item.Value;
+
+		public void Clear() => _map.Clear();
+
+		public bool Contains(KeyValuePair<TKey, TValue> item) => ((IDictionary<TKey, TValue>)_map).Contains(item);
+
+		public bool ContainsKey(TKey key) => _map.ContainsKey(key);
+
+		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => ((IDictionary<TKey, TValue>)_map).CopyTo(array, arrayIndex);
+
+		public bool Remove(TKey key) => _map.Remove(key);
+
+		public bool Remove(KeyValuePair<TKey, TValue> item) => ((IDictionary<TKey, TValue>)_map).Remove(item);
+
+		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _map.TryGetValue(key, out value);
+
+		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => ((IDictionary<TKey, TValue>)_map).GetEnumerator();
+
 		IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => ((IReadOnlyDictionary<TKey, TValue>)_map).Keys;
+
 		IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => ((IReadOnlyDictionary<TKey, TValue>)_map).Values;
 
-		public void Add(TKey key, TValue value)
-		{
-			_map[key] = value;
-		}
-
-		public void Add(KeyValuePair<TKey, TValue> item)
-		{
-			_map[item.Key] = item.Value;
-		}
-
-		public void Clear()
-		{
-			_map.Clear();
-		}
-
-		public bool Contains(KeyValuePair<TKey, TValue> item)
-		{
-			return ((IDictionary<TKey, TValue>)_map).Contains(item);
-		}
-
-		public bool ContainsKey(TKey key)
-		{
-			return _map.ContainsKey(key);
-		}
-
-		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
-		{
-			((IDictionary<TKey, TValue>)_map).CopyTo(array, arrayIndex);
-		}
-
-		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-		{
-			return ((IDictionary<TKey, TValue>)_map).GetEnumerator();
-		}
-
-		public bool Remove(TKey key)
-		{
-			return _map.Remove(key);
-		}
-
-		public bool Remove(KeyValuePair<TKey, TValue> item)
-		{
-			return ((IDictionary<TKey, TValue>)_map).Remove(item);
-		}
-
-		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
-		{
-			return _map.TryGetValue(key, out value);
-		}
-
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return ((IDictionary<TKey, TValue>)_map).GetEnumerator();
-		}
+		IEnumerator IEnumerable.GetEnumerator() => ((IDictionary<TKey, TValue>)_map).GetEnumerator();
 	}
 }

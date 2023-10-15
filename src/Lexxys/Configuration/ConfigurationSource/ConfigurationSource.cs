@@ -1,10 +1,12 @@
+using System.Reflection;
+
 namespace Lexxys.Configuration;
 
 using Xml;
 
 internal static class ConfigurationSource
 {
-	internal static IEnumerable<XmlLiteNode>? HandleInclude(string logSource, IReadOnlyCollection<string>? parameters, string? directory, ref List<string>? includes, EventHandler<ConfigurationEventArgs> eventHandler)
+	internal static IEnumerable<IXmlReadOnlyNode>? HandleInclude(string logSource, IReadOnlyCollection<string>? parameters, string? directory, ref List<string>? includes, EventHandler<ConfigurationEventArgs> eventHandler)
 	{
 		var include = parameters?.FirstOrDefault();
 		if (String.IsNullOrEmpty(include))
@@ -40,22 +42,25 @@ internal static class ConfigurationSource
 			throw new ArgumentNullException(nameof(location));
 
 		var arguments = new object?[] { location, parameters };
-		foreach (var constructor in Factory.Constructors(typeof(IXmlConfigurationSource), "TryCreate", __locationType2))
+		return TryCreate(location, "TryCreate", arguments) ?? TryCreate(location, "Create", arguments);
+
+		static IXmlConfigurationSource? TryCreate(Uri location, string methodName, object?[] arguments)
 		{
-			try
+			foreach (var constructor in Factory.Constructors(typeof(IXmlConfigurationSource), methodName, __locationType2))
 			{
-				var obj = constructor.Invoke(null, arguments);
-				if (obj is IXmlConfigurationSource source)
-					return source;
+				try
+				{
+					var obj = constructor.Invoke(null, arguments);
+					if (obj is IXmlConfigurationSource source)
+						return source;
+				}
+				catch (Exception flaw)
+				{
+					Config.LogConfigurationError($"{nameof(TryCreateXmlConfigurationSource)} from {location}", flaw);
+				}
 			}
-#pragma warning disable CA1031 // Ignore all the errors.
-			catch (Exception flaw)
-			{
-				Config.LogConfigurationError($"{nameof(TryCreateXmlConfigurationSource)} from {location}", flaw);
-			}
-#pragma warning restore CA1031 // Do not catch general exception types
+			return null;
 		}
-		return null;
 	}
-	private static readonly Type[] __locationType2 = { typeof(Uri), typeof(IReadOnlyCollection<string>) };
+	private static readonly Type[] __locationType2 = [typeof(Uri), typeof(IReadOnlyCollection<string>)];
 }

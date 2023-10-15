@@ -15,20 +15,19 @@ public class ValidationException: InvalidOperationException
 	{
 	}
 
-	public ValidationException(string? message)
-		: base(message)
+	public ValidationException(string? message): base(message)
 	{
 	}
 
-	public ValidationException(string? message, Exception? exception)
-		: base(message, exception)
+	public ValidationException(string? message, Exception? exception): base(message, exception)
 	{
 	}
 
-	protected ValidationException(SerializationInfo info, StreamingContext context)
-		: base(info, context)
+#if !NET8_0_OR_GREATER
+	protected ValidationException(SerializationInfo info, StreamingContext context): base(info, context)
 	{
 	}
+#endif
 }
 
 

@@ -12,7 +12,7 @@ namespace Lexxys.Xml;
 
 using Tokenizer;
 
-public delegate IEnumerable<XmlLiteNode>? TextToXmlOptionHandler(ref TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters);
+public delegate IEnumerable<IXmlReadOnlyNode>? TextToXmlOptionHandler(ref TextToXmlConverter converter, string option, IReadOnlyCollection<string> parameters);
 public delegate string MacroSubstitution(string value);
 
 /// <summary>
@@ -86,13 +86,13 @@ public delegate string MacroSubstitution(string value);
 /// </remarks>
 public ref struct TextToXmlConverter
 {
-	private TokenScanner _nodeScanner;
-	private TokenScanner _nodeValueScanner;
-	private TokenScanner _attribValueScanner;
-	private TokenScanner _optionsScanner;
-	private TokenScanner _nodeArgumentsScanner;
-	private TokenScanner _parametersScanner;
-	private TokenScanner _arrayScanner;
+	private readonly TokenScanner _nodeScanner;
+	private readonly TokenScanner _nodeValueScanner;
+	private readonly TokenScanner _attribValueScanner;
+	private readonly TokenScanner _optionsScanner;
+	private readonly TokenScanner _nodeArgumentsScanner;
+	private readonly TokenScanner _parametersScanner;
+	private readonly TokenScanner _arrayScanner;
 
 	private readonly string? _sourceName;
 	private readonly StringBuilder _currentNodePath;
@@ -110,12 +110,11 @@ public ref struct TextToXmlConverter
 	{
 		_back = new OneBackFilter();
 		_nodeScanner = new TokenScanner(
-			new ITokenFilter[]
-			{
+			[
 				new IndentFilter(),
 				_back
-			}, new LexicalTokenRule[]
-			{
+			],
+			[
 				new WhiteSpaceTokenRule(false, true),
 				new CommentsTokenRule(LexicalTokenType.IGNORE, Comments),
 				new InlineTextTokenRule(),
@@ -131,7 +130,7 @@ public ref struct TextToXmlConverter
 					.Add(CONFIG, "%%")			// configuration mark
 					.Add(OPTION, "%"),			// option mark (not affected to indentation)
 				new UniversalTokenRule(LexicalTokenType.IDENTIFIER, "")
-			});
+			]);
 
 		_nodeValueScanner = new TokenScanner(
 			new WhiteSpaceTokenRule(false, true),
@@ -182,10 +181,10 @@ public ref struct TextToXmlConverter
 		_nodesStack = new Stack<Node>(4);
 	}
 
-	private static readonly string[] CommaSemicolon = { ",", ";" };
-	private static readonly string[] CommaEqual = { ",", "=", "=>" };
-	private static readonly string[] ColonEqual = { ":", "=" };
-	private static readonly (string, string)[] Comments = { ("//", "\n"), ("/*", "*/"), ("<#", "#>"), ("#", "\n") };
+	private static readonly string[] CommaSemicolon = [",", ";"];
+	private static readonly string[] CommaEqual = [",", "=", "=>"];
+	private static readonly string[] ColonEqual = [":", "="];
+	private static readonly (string, string)[] Comments = [("//", "\n"), ("/*", "*/"), ("<#", "#>"), ("#", "\n")];
 
 	public static string Convert(string text, string? sourceName = null)
 	{
@@ -219,36 +218,21 @@ public ref struct TextToXmlConverter
 		writer.Flush();
 	}
 
-	//public static string Convert(TextReader reader, string fileName = null)
-	//{
-	//	return Convert(reader.ReadToEnd(), null, fileName);
-	//}
-
-	//public static string Convert(TextReader reader, TextToXmlOptionHandler optionHandler, string fileName = null)
-	//{
-	//	return Convert(reader.ReadToEnd(), optionHandler, fileName);
-	//}
-
-	//public static void Convert(TextReader reader, XmlWriter writer, TextToXmlOptionHandler optionHandler, string fileName = null)
-	//{
-	//	Convert(reader.ReadToEnd(), writer, optionHandler, fileName);
-	//}
-
-	public static List<XmlLiteNode> ConvertLite(string text, string? sourceName = null, bool ignoreCase = false)
+	public static List<IXmlReadOnlyNode> ConvertLite(string text, string? sourceName = null, bool ignoreCase = false)
 	{
 		return ConvertLite(text, null, sourceName, ignoreCase);
 	}
 
-	public static List<XmlLiteNode> ConvertLite(string text, TextToXmlOptionHandler? optionHandler, string? sourceName = null, bool ignoreCase = false)
+	public static List<IXmlReadOnlyNode> ConvertLite(string text, TextToXmlOptionHandler? optionHandler, string? sourceName = null, bool ignoreCase = false)
 	{
 		var converter = new TextToXmlConverter(sourceName, optionHandler);
-		var result = new List<XmlLiteNode>();
+		var result = new List<IXmlReadOnlyNode>();
 		var cs = new CharStream(text);
 		converter.Convert(ref cs, o=> result.Add(ConvertToXmlLite(o, ignoreCase)));
 		return result;
 	}
 
-	public string? SourceName => _sourceName;
+	public readonly string? SourceName => _sourceName;
 
 	private void Back()
 	{
@@ -316,18 +300,18 @@ public ref struct TextToXmlConverter
 		return value;
 	}
 
-	public static XmlLiteNode ConvertToXmlLite(Node node, bool ignoreCase)
+	public static IXmlReadOnlyNode ConvertToXmlLite(Node node, bool ignoreCase)
 	{
 		if (node is null)
 			throw new ArgumentNullException(nameof(node));
 
-		var child = Array.Empty<XmlLiteNode>();
+		XmlLiteNode[]? child = null;
 		if (node.Children is { Count: >0 } cc)
 		{
 			child = new XmlLiteNode[cc.Count];
 			for (int i = 0; i < child.Length; ++i)
 			{
-				child[i] = ConvertToXmlLite(cc[i], ignoreCase);
+				child[i] = (XmlLiteNode)ConvertToXmlLite(cc[i], ignoreCase);
 			}
 		}
 
@@ -337,7 +321,7 @@ public ref struct TextToXmlConverter
 			attrib = aa.ToArray();
 			for (int i = 0; i < attrib.Length; ++i)
 			{
-				attrib[i] = KeyValue.Create(attrib[i].Key, SubstituteMacro(attrib[i].Value));
+				attrib[i] = new KeyValuePair<string, string>(attrib[i].Key, SubstituteMacro(attrib[i].Value));
 			}
 		}
 		return new XmlLiteNode(node.Name, SubstituteMacro(node.Value), ignoreCase || node.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal, attrib, child);
@@ -382,37 +366,32 @@ public ref struct TextToXmlConverter
 
 	private class UniversalTokenRule: LexicalTokenRule
 	{
+		private readonly LexicalTokenType _tokenType;
 		private readonly char[] _asep;
+
 		public UniversalTokenRule(LexicalTokenType tokenType, string? separators)
 		{
-			TokenType = tokenType;
+			_tokenType = tokenType;
 			_asep = ((separators ?? "") + " \t\r\n\f").ToCharArray();
 		}
-
-		public LexicalTokenType TokenType { get; private set; }
 
 		public override bool TestBeginning(char ch) => Array.IndexOf(_asep, ch) < 0;
 
 		public override LexicalToken TryParse(ref CharStream stream)
 		{
 			if (stream[0] == '"' || stream[0] == '\'')
-				return StringTokenRule.ParseString(TokenType, ref stream, '`');
+				return StringTokenRule.ParseString(_tokenType, ref stream, '`');
 
 			int i = stream.IndexOfAny(_asep);
-			return i <= 0 ? stream.Token(TokenType, stream.Length) : stream.Token(TokenType, i);
+			return i <= 0 ? stream.Token(_tokenType, stream.Length) : stream.Token(_tokenType, i);
 		}
 	}
 
 	private class TextLineTokenRule: LexicalTokenRule
 	{
-		public TextLineTokenRule()
-		{
-			TokenType = TEXT;
-		}
+		private readonly LexicalTokenType _tokenType = TEXT;
 
 		public override bool HasExtraBeginning => true;
-
-		public LexicalTokenType TokenType { get; }
 
 		public override bool TestBeginning(char ch) => ch is not ('\n' or '\r');
 
@@ -427,7 +406,7 @@ public ref struct TextToXmlConverter
 			if (stream[0] == '`')
 			{
 				stream.Forward(1);
-			return stream.Token(TokenType, n - 1);
+			return stream.Token(_tokenType, n - 1);
 			}
 
 			LexicalToken token;
@@ -436,7 +415,7 @@ public ref struct TextToXmlConverter
 			if (i < 0)
 			{
 				var t = s.TrimEnd();
-				token = new LexicalToken(TokenType, stream.Position, t.Length);
+				token = new LexicalToken(_tokenType, stream.Position, t.Length);
 				stream.Forward(n);
 				return token;
 			}
@@ -532,7 +511,7 @@ public ref struct TextToXmlConverter
 			s = s.TrimEnd();
 			if (left is null)
 			{
-				token = new LexicalToken(TokenType, stream.Position, s.Length);
+				token = new LexicalToken(_tokenType, stream.Position, s.Length);
 			}
 			else
 			{
@@ -541,30 +520,30 @@ public ref struct TextToXmlConverter
 #else
 				string value = left + s.ToString();
 #endif
-				token = new LexicalToken(TokenType, stream.Position, n, (_, _) => value);
+				token = new LexicalToken(_tokenType, stream.Position, n, (_, _) => value);
 			}
 			stream.Forward(n);
 			return token;
 		}
-		private static readonly char[] BeginComments = { '/', '#', '<' };
+		private static readonly char[] BeginComments = ['/', '#', '<'];
 
 		private static bool IsWhiteSpace(char value) => value <= '\xFF' ? value is <= ' ' or >= '\x7f' and <= '\xa0' : Char.IsWhiteSpace(value);
 	}
 
 	private class InlineTextTokenRule: LexicalTokenRule
 	{
+		private readonly LexicalTokenType _tokenType;
+
 		public InlineTextTokenRule(): this(TEXT)
 		{
 		}
 
 		private InlineTextTokenRule(LexicalTokenType textTokenType)
 		{
-			TokenType = textTokenType;
+			_tokenType = textTokenType;
 		}
 
 		public override string BeginningChars => "<";
-
-		public LexicalTokenType TokenType { get; }
 
 		public override bool TestBeginning(char ch) => ch == '<';
 
@@ -619,14 +598,14 @@ public ref struct TextToXmlConverter
 			stream.Forward(i + 1);
 			i = slice.LastIndexOfAny(CrLf);
 			if (i <= 0)
-				return new LexicalToken(TokenType, at, stream.Position - at, (_, _) => String.Empty);
+				return new LexicalToken(_tokenType, at, stream.Position - at, (_, _) => String.Empty);
 			if (slice[i - 1] == (slice[i] == '\n' ? '\r': '\n'))
 				--i;
 			var text = Strings.CutIndents(slice.Slice(0, i), stream.TabSize);
-			return new LexicalToken(TokenType,at, stream.Position - at, (_, _) => text);
+			return new LexicalToken(_tokenType,at, stream.Position - at, (_, _) => text);
 		}
 	}
-	private static readonly char[] CrLf = { '\r', '\n' };
+	private static readonly char[] CrLf = ['\r', '\n'];
 	#endregion
 
 	private Exception SyntaxException(in LexicalToken token, in CharStream stream, string? message)
@@ -997,7 +976,7 @@ public ref struct TextToXmlConverter
 				Node top = _nodesStack.Peek();
 				if (_options.IgnoreCase)
 					items.Add(XmlTools.OptionIgnoreCase);
-				IEnumerable<XmlLiteNode>? xx = _optionHandler?.Invoke(ref this, pattern, items);
+				IEnumerable<IXmlReadOnlyNode>? xx = _optionHandler?.Invoke(ref this, pattern, items);
 				if (xx != null)
 					top.AddChild(xx.Select(Node.FromXml));
 			}
@@ -1073,7 +1052,7 @@ public ref struct TextToXmlConverter
 
 		public void AddAttrib(string name, string value)
 		{
-			(_attrib ??= new(2)).Add(KeyValue.Create(name, value));
+			(_attrib ??= new(2)).Add( new KeyValuePair<string, string>(name, value));
 		}
 
 		public void AppendValue(string value)
@@ -1102,7 +1081,7 @@ public ref struct TextToXmlConverter
 			(_child ??= new()).AddRange(nodes);
 		}
 
-		public static Node FromXml(XmlLiteNode xml)
+		public static Node FromXml(IXmlReadOnlyNode xml)
 		{
 			if (xml is null)
 				throw new ArgumentNullException(nameof(xml));
@@ -1239,7 +1218,7 @@ public ref struct TextToXmlConverter
 		{
 			if (node == null || (node = node.Trim(TrimmerChars)).Length == 0)
 				return null;
-			attribs ??= Array.Empty<string>();
+			attribs ??= [];
 			path ??= "";
 
 			string? name = null;
@@ -1303,9 +1282,9 @@ public ref struct TextToXmlConverter
 
 			return new SyntaxRule(name, attribs, start, pattern, ignoreCase, permanent);
 		}
-		private static readonly char[] Star = { '*' };
-		private static readonly char[] StarOrSlash = { '*', '/' };
-		private static readonly char[] TrimmerChars = { '/', ' ', '\t' };
+		private static readonly char[] Star = ['*'];
+		private static readonly char[] StarOrSlash = ['*', '/'];
+		private static readonly char[] TrimmerChars = ['/', ' ', '\t'];
 		private static readonly Regex NameRex = new Regex(@"^[a-zA-Z0-9~!@$&+=_-]+:");
 		private static readonly Regex PrepareRex = new Regex(@"(\\\*)+|\\\((\\\*)+\\\)");
 
@@ -1398,4 +1377,6 @@ public ref struct TextToXmlConverter
 			return true;
 		}
 	}
+
+	internal object GetSyntaxRuleCollectionForTest() => _syntaxRules;
 }

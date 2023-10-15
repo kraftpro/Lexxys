@@ -15,7 +15,7 @@ namespace Lexxys.Crypting.Cryptors;
 public class DesCryptoBase: IEncryptorAlgorithm, IDecryptorAlgorithm, IDisposable
 {
 	private readonly SymmetricAlgorithm _h;
-	private static readonly byte[] _staticIv = { 78, 134, 125, 4, 223, 3, 139, 73 };
+	private static readonly byte[] _staticIv = [78, 134, 125, 4, 223, 3, 139, 73];
 
 	protected DesCryptoBase(object key, bool tripleDes)
 	{

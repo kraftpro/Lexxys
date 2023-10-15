@@ -5,12 +5,14 @@
 // You may use this code under the terms of the MIT license
 //
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Lexxys.Tokenizer;
 
 /// <summary>
 /// Represents a characters stream, optimized for parsing purposes.
 /// </summary>
+[Serializable]
 public ref struct CharStream
 {
 	public const char BofMarker = '\0';
@@ -380,12 +382,28 @@ public ref struct CharStream
 		return _buffer.Length - offset;
 	}
 
-	/// <summary>
-	/// Moves current position of the <see cref="CharStream"/> forward until the <paramref name="predicate"/> is true.
-	/// </summary>
-	/// <param name="predicate"></param>
-	/// <returns></returns>
-	public void Forward(Func<char, bool> predicate)
+#if NET7_0_OR_GREATER
+
+	public readonly ValueMatch Match(Regex regex, int offset = 0)
+	{
+		foreach(var match in regex.EnumerateMatches(_buffer, offset))
+			return match;
+		return default;
+	}
+
+    public readonly Regex.ValueMatchEnumerator MatchAll(Regex regex, int offset = 0)
+    {
+		return regex.EnumerateMatches(_buffer, offset);
+    }
+
+#endif
+
+    /// <summary>
+    /// Moves current position of the <see cref="CharStream"/> forward until the <paramref name="predicate"/> is true.
+    /// </summary>
+    /// <param name="predicate"></param>
+    /// <returns></returns>
+    public void Forward(Func<char, bool> predicate)
 	{
 		if (predicate == null)
 			throw new ArgumentNullException(nameof(predicate));
@@ -449,7 +467,7 @@ public ref struct CharStream
 	/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
 	public readonly SyntaxException SyntaxException(string? message)
 	{
-		var at = GetChatPosition();
+		var at = GetCharPosition();
 		return new SyntaxException(message, null, at.Line + 1, at.Column + 1);
 	}
 
@@ -461,7 +479,7 @@ public ref struct CharStream
 	/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
 	public readonly SyntaxException SyntaxException(string? message, string file)
 	{
-		var at = GetChatPosition();
+		var at = GetCharPosition();
 		return new SyntaxException(message, file, at.Line + 1, at.Column + 1);
 	}
 
@@ -473,7 +491,7 @@ public ref struct CharStream
 	/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
 	public readonly SyntaxException SyntaxException(string? message, int position)
 	{
-		var at = GetChatPosition();
+		var at = GetCharPosition();
 		return new SyntaxException(message, null, at.Line + 1, at.Column + 1);
 	}
 
@@ -486,16 +504,16 @@ public ref struct CharStream
 	/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
 	public readonly SyntaxException SyntaxException(string? message, string? file, int position)
 	{
-		var at = GetChatPosition(position);
+		var at = GetCharPosition(position);
 		return new SyntaxException(message, file, at.Line + 1, at.Column + 1);
 	}
 
-	public readonly CharPosition GetChatPosition() => GetChatPosition(Position);
+	public readonly CharPosition GetCharPosition() => GetCharPosition(Position);
 
-	public readonly CharPosition GetChatPosition(int position, CharPosition prev)
-		=> position < prev.Position ? GetChatPosition(position) : GetChatPosition(prev, position - prev.Position);
+	public readonly CharPosition GetCharPosition(int position, CharPosition prev)
+		=> position < prev.Position ? GetCharPosition(position) : GetCharPosition(prev, position - prev.Position);
 
-	public readonly CharPosition GetChatPosition(int position)
+	public readonly CharPosition GetCharPosition(int position)
 	{
 		if (position <= 0)
 			return default;
@@ -507,7 +525,7 @@ public ref struct CharStream
 		return new CharPosition(end, lc.Line, lc.Column);
 	}
 
-	private readonly CharPosition GetChatPosition(CharPosition at, int offset)
+	private readonly CharPosition GetCharPosition(CharPosition at, int offset)
 	{
 		if (offset <= 0)
 			return at;
@@ -552,7 +570,7 @@ public ref struct CharStream
 	private const char CR = '\r';
 	private const char LF = '\n';
 	private const char TAB = '\t';
-	private static readonly char[] CrLf = { LF, CR };
+	private static readonly char[] CrLf = [LF, CR];
 
 	/// <summary>
 	/// Displays current position and current 120 characters of the stream.

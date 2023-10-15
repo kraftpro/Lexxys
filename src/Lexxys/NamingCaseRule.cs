@@ -1,13 +1,14 @@
+
 // Lexxys Infrastructural library.
 // file: NamingCaseRule.cs
 //
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-#pragma warning disable CA1027 // Mark enums with FlagsAttribute
 
 namespace Lexxys;
 
+[Flags]
 public enum NamingCaseRule
 {
 	None = 0,
@@ -16,24 +17,24 @@ public enum NamingCaseRule
 	PreferPascalCase = 3,
 	PreferUpperCase = 4,
 
-	PreferLowerCaseWithDashes = 5,
-	PreferPascalCaseWithDashes = 6,
-	PreferUpperCaseWithDashes = 7,
-	PreferLowerCaseWithUnderscores = 8,
-	PreferPascalCaseWithUnderscores = 9,
-	PreferUpperCaseWithUnderscores = 10,
+	Dash = 8,
+	Underscore = 16,
+	Dot = 24,
+	Separators = Dot,
 
 	Force = 32,
+
+	PreferKebabCase = Dash + PreferLowerCase,
+	PreferSnakeCase = Underscore + PreferLowerCase,
+	PreferDottedCase = Dot + PreferLowerCase,
+
 	ForceLowerCase = Force + PreferLowerCase,
 	ForceCamelCase = Force + PreferCamelCase,
 	ForcePascalCase = Force + PreferPascalCase,
 	ForceUpperCase = Force + PreferUpperCase,
-	ForceLowerCaseWithDashes = Force + PreferLowerCaseWithDashes,
-	ForcePascalCaseWithDashes = Force + PreferPascalCaseWithDashes,
-	ForceUpperCaseWithDashes = Force + PreferUpperCaseWithDashes,
-	ForceLowerCaseWithUnderscores = Force + PreferLowerCaseWithUnderscores,
-	ForceUpperCaseWithUnderscores = Force + PreferUpperCaseWithUnderscores,
-	ForcePascalCaseWithUnderscores = Force + PreferPascalCaseWithUnderscores,
+	ForceKebabCase = Force + PreferKebabCase,
+	ForceSnakeCase = Force + PreferSnakeCase,
+	ForceDottedCase = Force + PreferDottedCase,
 }
 
 

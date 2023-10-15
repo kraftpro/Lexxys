@@ -8,6 +8,7 @@ using System.Text;
 
 namespace Lexxys;
 
+[Serializable]
 public class DailySchedule: Schedule, IEquatable<DailySchedule>
 {
 	public new const string Type = "daily";
@@ -50,9 +51,7 @@ public class DailySchedule: Schedule, IEquatable<DailySchedule>
 
 	public override StringBuilder ToString(StringBuilder text, IFormatProvider? provider, bool abbreviateDayName = false, bool abbreviateMonthName = false)
 	{
-		if (text is null)
-			throw new ArgumentNullException(nameof(text));
-
+		if (text is null) throw new ArgumentNullException(nameof(text));
 		if (DayPeriod > 1)
 			text.Append("every ").Append(Lingua.Ord(Lingua.NumWord(DayPeriod))).Append(" day");
 		else
@@ -62,43 +61,26 @@ public class DailySchedule: Schedule, IEquatable<DailySchedule>
 	}
 
 	public bool Equals(DailySchedule? other)
-	{
-		if (other is null)
-			return false;
-		if (ReferenceEquals(this, other))
-			return true;
-		return base.Equals(other) && DayPeriod == other.DayPeriod;
-	}
+		=> other is not null && (
+			ReferenceEquals(this, other) ||
+			base.Equals(other) && DayPeriod == other.DayPeriod);
 
-	public override bool Equals(Schedule? other)
-	{
-		return other is DailySchedule ds && Equals(ds);
-	}
+	public override bool Equals(Schedule? other) => other is DailySchedule ds && Equals(ds);
 
-	public override bool Equals(object? obj)
-	{
-		return obj is DailySchedule ds && Equals(ds);
-	}
+	public override bool Equals(object? obj) => obj is DailySchedule ds && Equals(ds);
 
-	public override int GetHashCode()
-	{
-		return HashCode.Join(base.GetHashCode(), DayPeriod.GetHashCode());
-	}
+	public override int GetHashCode() => HashCode.Join(base.GetHashCode(), DayPeriod.GetHashCode());
 
 	public override DumpWriter DumpContent(DumpWriter writer)
 	{
-		if (writer is null)
-			throw new ArgumentNullException(nameof(writer));
-
+		if (writer is null) throw new ArgumentNullException(nameof(writer));
 		return base.DumpContent(writer)
 			.Then("DayPeriod", DayPeriod);
 	}
 
 	public override XmlBuilder ToXmlContent(XmlBuilder builder)
 	{
-		if (builder is null)
-			throw new ArgumentNullException(nameof(builder));
-
+		if (builder is null) throw new ArgumentNullException(nameof(builder));
 		builder.Item("type", ScheduleType);
 		if (DayPeriod != 1)
 			builder.Item("day", DayPeriod);
@@ -109,9 +91,7 @@ public class DailySchedule: Schedule, IEquatable<DailySchedule>
 
 	public override JsonBuilder ToJsonContent(JsonBuilder json)
 	{
-		if (json is null)
-			throw new ArgumentNullException(nameof(json));
-
+		if (json is null) throw new ArgumentNullException(nameof(json));
 		json.Item("type").Val(ScheduleType);
 		if (DayPeriod != 1)
 			json.Item("day").Val(DayPeriod);
@@ -120,7 +100,7 @@ public class DailySchedule: Schedule, IEquatable<DailySchedule>
 		return json;
 	}
 
-	public new static DailySchedule FromXml(Xml.XmlLiteNode xml)
+	public new static DailySchedule FromXml(Xml.IXmlReadOnlyNode xml)
 	{
 		if (xml is null)
 			throw new ArgumentNullException(nameof(xml));
@@ -134,10 +114,8 @@ public class DailySchedule: Schedule, IEquatable<DailySchedule>
 
 	public new static DailySchedule FromJson(string json)
 	{
-		if (json is not { Length: > 0 })
-			throw new ArgumentNullException(nameof(json));
-
-		return FromXml(Xml.XmlLiteNode.FromJson(json, "schedule", forceAttributes: true));
+		if (json is not { Length: > 0 }) throw new ArgumentNullException(nameof(json));
+		return FromXml(Xml.JsonToXmlConverter.Convert(json, "schedule", forceAttributes: true));
 	}
 }
 

@@ -225,7 +225,7 @@ public abstract class DumpWriter
 		Text(__hex[value & 15]);
 		return this;
 	}
-	private static readonly char[] __hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	private static readonly char[] __hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
 
 	/// <summary>
 	/// Dumps the specified <paramref name="value"/> to the stream.
@@ -1103,12 +1103,10 @@ public abstract class DumpWriter
 						DumpIt(v, skipIDump, false, ignoreToString);
 						pad = ',';
 					}
-					#pragma warning disable CA1031 // Do not catch general exception types
 					catch
 					{
 						// ignore all internal exceptions
 					}
-					#pragma warning restore CA1031 // Do not catch general exception types
 				}
 			}
 

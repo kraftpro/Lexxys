@@ -808,11 +808,7 @@ public static class ILoggerExtensions
 	{
 		if (args is not { Length: >0 })
 			return null;
-		System.Diagnostics.Debug.Assert(args != null);
-
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
 		var arg = new OrderedBag<string, object?>((args.Length + 1) / 2);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
 		int count = args.Length & ~1;
 		for (int i = 0; i < count; i += 2)
 		{

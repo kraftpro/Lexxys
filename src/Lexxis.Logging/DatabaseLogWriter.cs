@@ -218,7 +218,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 	}
 
 	private static readonly string[] CreateTableTemplates =
-	{
+	[
 		"""
 		if (schema_id('{S}') is null)
 			exec ('create schema [{S}]');
@@ -264,5 +264,5 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 			ArgValue nvarchar(max)
 			)
 		""",
-	};
+	];
 }

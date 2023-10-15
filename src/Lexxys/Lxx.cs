@@ -22,10 +22,16 @@ public static class Lxx
 		"framework";
 #elif NETSTANDARD
 		"standard";
-#elif NET6_0
-		"net6";
+#elif NET8_0_OR_GREATER
+		"net8";
 #elif NET7_0_OR_GREATER
 		"net7";
+#elif NET6_0_OR_GREATER
+		"net6";
+#elif NET5_0_OR_GREATER
+		"net5";
+#else
+		"unknown";
 #endif
 
 	public static event EventHandler<ConfigurationEventArgs>? ConfigurationChanged;
@@ -58,8 +64,8 @@ public static class Lxx
 		var a = Assembly.GetEntryAssembly();
 		if (a == null || a.IsDynamic)
 		{
-			StackFrame[] sf = new StackTrace().GetFrames();
-			if (sf.Length > 0)
+			var sf = new StackTrace().GetFrames();
+			if (sf is { Length: >0 })
 			{
 				for (int i = sf.Length - 1; i >= 0; --i)
 				{
@@ -96,7 +102,7 @@ public static class Lxx
 					{
 						EventInfo? te = type.GetEvent("ThreadException");
 						if (te != null)
-							te.AddEventHandler(null, new ThreadExceptionEventHandler(OnGuiUnhandedException));
+							te.AddEventHandler(null, OnGuiUnhandedException);
 					}
 					_initialized = true;
 				}
@@ -107,7 +113,7 @@ public static class Lxx
 
 	private static void OnUnhandledException(object? sender, UnhandledExceptionEventArgs e)
 	{
-		EventHandler<ThreadExceptionEventArgs>? handler = UnhandledException;
+		var handler = UnhandledException;
 		if (handler != null && e.ExceptionObject is Exception x && !x.IsCriticalException())
 			handler(sender, new ThreadExceptionEventArgs(x));
 	}
