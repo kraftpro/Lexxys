@@ -84,7 +84,7 @@ public static class XmlFragBuilder
 }
 
 [Serializable]
-internal class XmNodeBuilder<T>: IXmlNodeBuilder<T> where T: INameValueEmpty
+internal class XmNodeBuilder<T>: IXmlNodeBuilder<T> where T: IXmlReadOnlyNode
 {
 	public delegate T NodeConstructor(string name, string? value, StringComparer? comparer, IEnumerable<KeyValuePair<string, string>>? attributes, IEnumerable<T>? descendants);
 

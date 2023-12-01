@@ -45,5 +45,5 @@ public static partial class XmlTools
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
 	public static IXmlReadOnlyNode FromJson(string value, string root, bool ignoreCase = false, bool forceAttributes = false)
-		=> value.Length == 0 ? XmlFragBuilder.Empty : JsonToXmlConverter.Convert(value, root, ignoreCase, forceAttributes);
+		=> value.Length == 0 ? XmlFragBuilder.Empty: JsonToXmlConverter.Convert(value, root, ignoreCase, forceAttributes);
 }

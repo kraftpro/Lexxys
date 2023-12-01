@@ -127,17 +127,17 @@ namespace Lexxys.Tests.Xml
 				bool correct = dateFormat[0] == '+';
 				string date = dateFormat.Substring(1);
 				string format = date;
-				var actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+				var actual = Strings.GetDateTimeOffset(value.ToString(format), default);
 				if (!correct)
 				{
-					Assert.AreEqual(default(DateTimeOffset), actual, format);
+					Assert.AreEqual(default, actual, format);
 				}
 				else
 				{
 					Assert.AreEqual(value.Date, actual.Date, format);
 
 					format = date + "THH:mm:ss";
-					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default);
 					Assert.AreEqual(value.Date, actual.Date, format);
 					Assert.AreEqual(value.Hour, actual.Hour, format);
 					Assert.AreEqual(value.Minute, actual.Minute, format);
@@ -145,7 +145,7 @@ namespace Lexxys.Tests.Xml
 					Assert.AreEqual(DateTimeOffset.Now.Offset, actual.Offset, format);
 
 					format = date + "THH:mm:ss.fffffff";
-					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default);
 					Assert.AreEqual(value.Date, actual.Date, format);
 					Assert.AreEqual(value.Hour, actual.Hour, format);
 					Assert.AreEqual(value.Minute, actual.Minute, format);
@@ -154,7 +154,7 @@ namespace Lexxys.Tests.Xml
 					Assert.AreEqual(DateTimeOffset.Now.Offset, actual.Offset, format);
 
 					format = date + "THH:mm:ss.fffffffK";
-					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default);
 					Assert.AreEqual(value.Date, actual.Date, format);
 					Assert.AreEqual(value.Hour, actual.Hour, format);
 					Assert.AreEqual(value.Minute, actual.Minute, format);
@@ -168,21 +168,21 @@ namespace Lexxys.Tests.Xml
 					correct &= timeFormat[0] == '+';
 					string time = timeFormat.Substring(1);
 					format = date + "T" + time;
-					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default);
 					if (!correct)
-						Assert.AreEqual(default(DateTimeOffset), actual, format);
+						Assert.AreEqual(default, actual, format);
 					else
 						Assert.AreEqual(value.Date, actual.Date, format);
 					format = date + "T" + time + " z";
-					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default);
 					if (!correct)
-						Assert.AreEqual(default(DateTimeOffset), actual, format);
+						Assert.AreEqual(default, actual, format);
 					else
 						Assert.AreEqual(value.Date, actual.Date, format);
 					format = date + "T" + time + "zz";
-					actual = Strings.GetDateTimeOffset(value.ToString(format), default(DateTimeOffset));
+					actual = Strings.GetDateTimeOffset(value.ToString(format), default);
 					if (!correct)
-						Assert.AreEqual(default(DateTimeOffset), actual, format);
+						Assert.AreEqual(default, actual, format);
 					else
 						Assert.AreEqual(value.Date, actual.Date, format);
 				}

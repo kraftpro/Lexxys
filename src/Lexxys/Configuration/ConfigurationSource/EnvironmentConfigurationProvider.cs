@@ -9,13 +9,9 @@ namespace Lexxys.Configuration;
 
 using Xml;
 
-class EnvironmentConfigurationProvider: IConfigProvider
+class EnvironmentConfigurationProvider: IConfigSource
 {
 	private static readonly Uri Uri = new Uri("system:environment");
-
-	public string Name => "System.Environment";
-
-	public Uri Location => Uri;
 
 	public int Version => 1;
 
@@ -39,6 +35,8 @@ class EnvironmentConfigurationProvider: IConfigProvider
 			return ReadOnly.Wrap(new[] { value! })!;
 		return Array.Empty<T>();
 	}
+
+	bool IEquatable<IConfigSource>.Equals(IConfigSource? other) => other is EnvironmentConfigurationProvider;
 
 #pragma warning disable CS0067
 	public event EventHandler<ConfigurationEventArgs>? Changed;

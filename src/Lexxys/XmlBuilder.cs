@@ -88,10 +88,10 @@ public abstract class XmlBuilder
 	{
 		if (((int)NamingRule & 8) != 0)
 			name = Rename(name);
-		return XmlConvert.EncodeName(name);
+		return XmlConvert.EncodeName(name)!;
 	}
 
-	private string PreferName(string name) => XmlConvert.EncodeName(Rename(name));
+	private string PreferName(string name) => XmlConvert.EncodeName(Rename(name))!;
 
 	private string Rename(string value) => Strings.ToNamingRule(value, NamingRule);
 
@@ -1294,14 +1294,14 @@ public class XmlStringBuilder: XmlBuilder
 	/// <inheritdoc />
 	protected override XmlBuilder EncodeAttribute(string? value)
 	{
-		XmlTools.EncodeAttribute(_buffer, value);
+		XmlTools.EncodeAttribute(_buffer, value.AsSpan());
 		return this;
 	}
 
 	/// <inheritdoc />
 	protected override XmlBuilder EncodeValue(string? value)
 	{
-		XmlTools.Encode(_buffer, value);
+		XmlTools.Encode(_buffer, value.AsSpan());
 		return this;
 	}
 
@@ -1374,14 +1374,14 @@ public class XmlStreamBuilder: XmlBuilder
 	/// <inheritdoc />
 	protected override XmlBuilder EncodeAttribute(string? value)
 	{
-		_writer.Write(XmlTools.EncodeAttribute(value));
+		_writer.Write(XmlTools.EncodeAttribute(value.AsSpan()));
 		return this;
 	}
 
 	/// <inheritdoc />
 	protected override XmlBuilder EncodeValue(string? value)
 	{
-		_writer.Write(XmlTools.Encode(value));
+		_writer.Write(XmlTools.Encode(value.AsSpan()));
 		return this;
 	}
 

@@ -43,7 +43,7 @@ namespace Lexxys
 			{
 				if (index < 0)
 					index = _list.Count + index;
-				if (index  >= 0 && index <= _list.Count)
+				if (index >= 0 && index <= _list.Count)
 					_list[index] = value;
 			}
 		}

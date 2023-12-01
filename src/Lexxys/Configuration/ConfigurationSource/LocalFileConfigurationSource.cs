@@ -73,7 +73,7 @@ internal class LocalFileConfigurationSource: IXmlConfigurationSource
 
 	private void OnFileChanged(object sender, FileSystemEventArgs e)
 	{
-		OnChanged(this, new ConfigurationEventArgs());
+		OnChanged(this, ConfigurationEventArgs.Default);
 	}
 
 	private void OnChanged(object? sender, ConfigurationEventArgs e)

@@ -10,6 +10,8 @@ using System.Text;
 
 namespace Lexxys;
 
+using System.Xml;
+
 using Xml;
 
 [Serializable]
@@ -36,9 +38,9 @@ public abstract class JsonItem
 		null => NullValue,
 		string s => s,
 		bool b => b ? TrueValue : FalseValue,
-		DateTime d => XmlTools.Convert(d),
-		DateTimeOffset x => XmlTools.Convert(x),
-		TimeSpan t => XmlTools.Convert(t),
+		DateTime d => XmlConvert.ToString(d, XmlDateTimeSerializationMode.RoundtripKind),
+		DateTimeOffset x => XmlConvert.ToString(x),
+		TimeSpan t => XmlConvert.ToString(t),
 		byte[] y => Convert.ToBase64String(y, Base64FormattingOptions.None),
 		IConvertible c => c.ToString(null),
 		_ => Value.ToString() ?? String.Empty
@@ -53,20 +55,6 @@ public abstract class JsonItem
 	protected JsonItem(IReadOnlyList<JsonPair>? attributes)
 	{
 		Attributes = attributes ?? _noAttributes;
-	}
-
-	public abstract IXmlReadOnlyNode ToXml(string name, bool ignoreCase = false, bool attributes = false);
-
-	protected IXmlReadOnlyNode ToXml(string name, string? value, bool ignoreCase, IEnumerable<IXmlReadOnlyNode>? properties)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-
-		return Attributes.Count == 0 ?
-			new XmlLiteNode(name, value, ignoreCase, null, properties):
-			new XmlLiteNode(name, value, ignoreCase,
-				Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")),
-				properties);
 	}
 
 	public virtual StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
@@ -108,39 +96,6 @@ public abstract class JsonItem
 		stream.Write((byte)')');
 	}
 
-	//public virtual bool TryWrite(Span<byte> buffer, out int length)
-	//{
-	//	if (Attributes.Count == 0)
-	//	{
-	//		length = 0;
-	//		return true;
-	//	}
-	//	int k = 1;
-	//	if (buffer.Length > 0)
-	//		buffer[0] = (byte)'(';
-	//	bool next = false;
-	//	foreach (var attrib in Attributes)
-	//	{
-	//		if (next)
-	//		{
-	//			if (buffer.Length > ++k)
-	//				buffer[k] = (byte)',';
-	//		}
-	//		else
-	//		{
-	//			next = true;
-	//		}
-	//		attrib.TryWrite(buffer.Slice(k), out var len);
-	//		k += len;
-	//	}
-
-	//	length = ++k;
-	//	if (buffer.Length <= k)
-	//		return false;
-	//	buffer[k] = (byte)')';
-	//	return true;
-	//}
-
 	public string ToString(bool format, int stringLimit = 0, int arrayLimit = 0)
 		=> ToString(new StringBuilder(), format ? "" : null, stringLimit, arrayLimit).ToString();
 
@@ -155,7 +110,7 @@ public readonly struct JsonPair: IEquatable<JsonPair>
 
 	public JsonPair(string name, JsonItem item)
 	{
-		if (name is not { Length: >0})
+		if (name is not { Length: >0 })
 			throw new ArgumentNullException(nameof(name));
 		if (item is null)
 			throw new ArgumentNullException(nameof(item));
@@ -318,8 +273,6 @@ public class JsonScalar: JsonItem
 		_ => []
 	};
 
-	public override IXmlReadOnlyNode ToXml(string name, bool ignoreCase = false, bool attributes = false) => ToXml(name, XmlTools.Convert(Value), ignoreCase, null);
-
 	public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 	{
 		if (text is null)
@@ -331,9 +284,9 @@ public class JsonScalar: JsonItem
 			null => text.Append("null"),
 			string s => Escape(s),
 			bool b => text.Append(b ? "true" : "false"),
-			DateTime d => text.Append('"').Append(XmlTools.Convert(d)).Append('"'),
-			DateTimeOffset x => text.Append('"').Append(XmlTools.Convert(x)).Append('"'),
-			TimeSpan t => text.Append('"').Append(XmlTools.Convert(t)).Append('"'),
+			DateTime d => text.Append('"').Append(XmlConvert.ToString(d, XmlDateTimeSerializationMode.RoundtripKind)).Append('"'),
+			DateTimeOffset x => text.Append('"').Append(XmlConvert.ToString(x)).Append('"'),
+			TimeSpan t => text.Append('"').Append(XmlConvert.ToString(t)).Append('"'),
 			byte[] y => text.Append('"').Append(Convert.ToBase64String(y, Base64FormattingOptions.None)).Append('"'),
 			byte or sbyte or
 			short or ushort or
@@ -601,41 +554,7 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 
 	public JsonMap(IWrappedList<JsonPair> properties, IReadOnlyList<JsonPair>? attributes): base(attributes)
 	{
-		if (properties is null)
-			throw new ArgumentNullException(nameof(properties));
-		Properties = properties;
-	}
-
-	public override IXmlReadOnlyNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
-	{
-		var attribs = Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")).ToList();
-		var properties = new List<IXmlReadOnlyNode>();
-		if (Properties.Count > 0)
-		{
-			foreach (var prop in Properties)
-			{
-				if (prop.IsEmpty)
-					continue;
-				if (prop.Item is JsonScalar scalar)
-				{
-					bool attrib = attributes;
-					var nm = prop.Name;
-					if (nm.StartsWith("@", StringComparison.Ordinal))
-					{
-						attrib = true;
-						if (nm.Length > 1)
-							nm = nm.Substring(1);
-					}
-					if (attrib)
-					{
-						attribs.Add(new KeyValuePair<string, string>(nm, XmlTools.Convert(scalar.Value) ?? ""));
-						continue;
-					}
-				}
-				properties.Add(prop.Item.ToXml(prop.Name, ignoreCase, attributes));
-			}
-		}
-		return new XmlLiteNode(name, null, ignoreCase, attribs, properties);
+		Properties = properties ?? throw new ArgumentNullException(nameof(properties));
 	}
 
 	public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
@@ -696,7 +615,6 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 [Serializable]
 public class JsonArray: JsonItem, IEnumerable<JsonItem>
 {
-	private const string XmlItemName = "item";
 	public IReadOnlyList<JsonItem> Items { get; }
 	public override JsonItem? this[int index] => index >= 0 && index < Items.Count ? Items[index]: null;
 	public override int Count => Items.Count;
@@ -725,14 +643,7 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 
 	public JsonArray(IWrappedList<JsonItem> items, IReadOnlyList<JsonPair>? attributes): base(attributes)
 	{
-		if (items is null)
-			throw new ArgumentNullException(nameof(items));
-		Items = items;
-	}
-
-	public override IXmlReadOnlyNode ToXml(string name, bool ignoreCase = false, bool attributes = false)
-	{
-		return ToXml(name, null, ignoreCase, Items.Select(o => (o ?? JsonScalar.Null).ToXml(XmlItemName, ignoreCase, attributes)));
+		Items = items ?? throw new ArgumentNullException(nameof(items));
 	}
 
 	public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
@@ -789,108 +700,6 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 	IEnumerator IEnumerable.GetEnumerator() => Items.GetEnumerator();
 }
 
-
-//public ref struct Utf8Writer: IDisposable
-//{
-//	private readonly bool _ownsStream;
-//	private readonly byte[] _buffer;
-//	private int _index;
-//	public Stream Stream { get; }
-
-//	public Utf8Writer(Stream stream, bool ownsStream = false)
-//	{
-//		Stream = stream;
-//		_ownsStream = ownsStream;
-//		_buffer = new byte[4096];
-//		_index = 0;
-//	}
-
-//	private int Left => _buffer.Length - _index;
-
-//	public void Write(byte value)
-//	{
-//		if (Left < 1)
-//			FlushBuffer();
-//		_buffer[_index++] = value;
-//	}
-
-//	public unsafe void Write(char value)
-//	{
-//		const int MaxUtf8Bytes = 3;
-
-//		if (Left < MaxUtf8Bytes)
-//			FlushBuffer();
-//		if (value <= 127)
-//		{
-//			_buffer[_index++] = (byte)value;
-//		}
-//		else
-//		{
-//			unsafe
-//			{
-//				char* pc = stackalloc char[1];
-//				byte* pb = stackalloc byte[MaxUtf8Bytes];
-//				*pc = value;
-//				int count = Encoding.UTF8.GetBytes(pc, 1, pb, MaxUtf8Bytes);
-//				for (int i = 0; i < count; ++i)
-//				{
-//					_buffer[_index++] = pb[i];
-//				}
-//			}
-//		}
-//	}
-
-//	public void Write(string value)
-//	{
-//		if (Left < value.Length)
-//			FlushBuffer();
-//	}
-
-//	public void Write(byte[] value)
-//	{
-//		int left = value.Length;
-//		if (Left < left)
-//			FlushBuffer();
-//		if (left < _buffer.Length)
-//		{
-//			Array.Copy(value, 0, _buffer, _index, left);
-//			_index += left;
-//		}
-//		else
-//		{
-//			Stream.Write(value);
-//		}
-//	}
-
-//	private void FlushBuffer()
-//	{
-//		Stream.Write(_buffer, 0, _index);
-//		_index = 0;
-//	}
-
-//	public void Dispose()
-//	{
-//		if (_index > 0)
-//			FlushBuffer();
-//		if (!_ownsStream)
-//			Stream.Dispose();
-//	}
-//}
-
-//public static class EncodingExtensions
-//{
-//	public static bool TryGetBytes(this Encoding encoding, ReadOnlySpan<char> str, Span<byte> bytes, out int written)
-//	{
-//		if (encoding.GetByteCount(str) > span.Length)
-//		{
-//			written = 0;
-//			return false;
-//		}
-
-//		written = Encoding.UTF8.GetBytes(str, span);
-//		return true;
-//	}
-//}
 
 public static class ZenJson
 {

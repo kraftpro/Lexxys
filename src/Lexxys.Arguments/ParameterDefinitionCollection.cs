@@ -37,25 +37,6 @@ public class ParameterDefinitionCollection: IReadOnlyList<ParameterDefinition>
 	}
 
 	///// <summary>
-	///// Selects the parameters missing in the command line arguments.
-	///// </summary>
-	///// <param name="required">Indicates that only required parameters should be returned.</param>
-	///// <returns></returns>
-	//public IEnumerable<ParameterDefinition> GetMissingParameters(bool required = false) => _parameters.Where(p => !p.HasValue && (!required || p.IsRequired));
-
-	///// <summary>
-	///// Returns the next positional parameter that is not set.
-	///// </summary>
-	///// <returns></returns>
-	//internal ParameterDefinition? GetNextPositionalParameter() => _parameters.FirstOrDefault(o => o is { IsPositional: true, HasValue: false });
-
-	/// <summary>
-	/// Returns the last positional parameter.
-	/// </summary>
-	/// <returns></returns>
-	internal ParameterDefinition? GetLastPositionalParameter() => _parameters.LastOrDefault(o => o is { IsPositional: true });
-
-	///// <summary>
 	///// Returns the positional parameters that are set.
 	///// </summary>
 	///// <returns></returns>
@@ -65,7 +46,7 @@ public class ParameterDefinitionCollection: IReadOnlyList<ParameterDefinition>
 	public ParameterDefinition this[int index] => _parameters[index];
 
 	/// <summary>
-	/// Gets the parameter with the specified <paramref name="name"/>.
+	/// Gets the parameter with the specified <paramref name="name"/> or <c>null</c> if the parameter is not found.
 	/// </summary>
 	/// <param name="name"></param>
 	public ParameterDefinition? this[string name] => _parameters.FirstOrDefault(o => String.Equals(o.Name, name, _comparison));
@@ -73,7 +54,15 @@ public class ParameterDefinitionCollection: IReadOnlyList<ParameterDefinition>
 	/// <inheritdoc />
 	public int Count => _parameters.Count;
 
-	public bool HasNamedParameters => _parameters.Any(o => !o.IsPositional);
+	/// <summary>
+	/// Tests if the collection contains named parameters.
+	/// </summary>
+	public bool ContainsNamedParameters => _parameters.Any(o => !o.IsPositional);
+
+	/// <summary>
+	/// Tests if the collection contains positional parameters.
+	/// </summary>
+	public bool ContainsPositionalParameters => _parameters.Any(o => o.IsPositional);
 
 	internal StringComparison Comparison => _comparison;
 
@@ -90,7 +79,7 @@ public class ParameterDefinitionCollection: IReadOnlyList<ParameterDefinition>
 		var pd = _parameters.FindExact(parameter.Name, _comparison);
 		if (pd != null) throw new ArgumentException($"Parameter with name '{parameter.Name}' already exists.", nameof(parameter));
 
-		foreach (var abbr in parameter.Abbreviations)
+		foreach (var abbr in parameter.Abbreviation)
 		{
 			if (_parameters.FindExact(abbr, _comparison) != null)
 				throw new ArgumentException($"Parameter with abbreviation '{abbr}' already exists.", nameof(parameter));
@@ -114,5 +103,6 @@ public class ParameterDefinitionCollection: IReadOnlyList<ParameterDefinition>
 
 	/// <inheritdoc/>
 	public IEnumerator<ParameterDefinition> GetEnumerator() => ((IEnumerable<ParameterDefinition>)_parameters).GetEnumerator();
+
 	IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_parameters).GetEnumerator();
 }

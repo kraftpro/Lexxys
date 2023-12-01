@@ -11,7 +11,7 @@ namespace Lexxys;
 
 
 /// <summary>
-/// Command line arguments parser.
+/// Command line arguments parser with support for commands, parameters and options.
 /// </summary>
 public partial class Arguments: IDumpJson, IDumpXml
 {
@@ -102,6 +102,30 @@ public partial class Arguments: IDumpJson, IDumpXml
 	}
 
 	/// <summary>
+	/// Copy constructor.
+	/// </summary>
+	/// <param name="that"></param>
+	internal Arguments(Arguments that)
+	{
+		_allowSlash = that._allowSlash;
+		_strictDoubleDash = that._strictDoubleDash;
+		_combineOptions = that._combineOptions;
+		_colonSeparator = that._colonSeparator;
+		_equalSeparator = that._equalSeparator;
+		_blankSeparator = that._blankSeparator;
+		_allowUnknown = that._allowUnknown;
+		_doubleDashSeparator = that._doubleDashSeparator;
+		_ignoreNameSeparators = that._ignoreNameSeparators;
+		_auto = that._auto;
+		_splitPositional = that._splitPositional;
+		_comparison = that._comparison;
+		_helpRequested = that._helpRequested;
+		_messages = that._messages;
+		_command = that._command;
+		_args = that._args;
+	}
+
+	/// <summary>
 	/// Returns all the command line arguments.
 	/// </summary>
 	public IReadOnlyList<string> Args => _args;
@@ -119,15 +143,21 @@ public partial class Arguments: IDumpJson, IDumpXml
 	/// <summary>
 	/// Returns the list of the command line errors if any.
 	/// </summary>
-	public IReadOnlyList<string> Errors => _messages;
+	public IList<string> Errors => _messages;
 
 	/// <summary>
 	/// Returns containing <see cref="ArgumentCommand"/>.
 	/// </summary>
 	public ArgumentCommand Container => _command;
 	
+	/// <summary>
+	/// Returns the list of the parameters.
+	/// </summary>
 	public ArgumentParameterCollection Parameters => _command.Parameters;
 
+	/// <summary>
+	/// Returns selected command if any.
+	/// </summary>
 	public ArgumentCommand? Command => _command.Command;
 
 	/// <summary>
@@ -313,7 +343,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 		text ??= new StringBuilder();
 		width = FixWidth(width);
 		var offset = GetOffset(Indent, width);
-		if (_command.Definition.Parameters.HasNamedParameters)
+		if (_command.Definition.Parameters.ContainsNamedParameters)
 			text.AppendLine().AppendLine("Parameters:");
 		UsageParameters(text, _command.Definition.Parameters, Indent, offset, width, alignAbbreviation, !excludePositional);
 		if (!_command.Definition.HasCommands)
@@ -348,7 +378,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 		text ??= new StringBuilder();
 		width = FixWidth(width);
 		var offset = GetOffset(Indent, width);
-		if (_command.Definition.Parameters.HasNamedParameters)
+		if (_command.Definition.Parameters.ContainsNamedParameters)
 			text.AppendLine().AppendLine("Parameters:");
 		UsageParameters(text, _command.Definition.Parameters, Indent, offset, width, alignAbbreviation, !excludePositional);
 		var indent = Indent;
@@ -538,7 +568,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 
 	private void UsageParameters(StringBuilder text, ParameterDefinitionCollection parameters, int indent, int offset, int width, bool alignAbbreviation, bool positional)
 	{
-		if (!parameters.HasNamedParameters)
+		if (!parameters.ContainsNamedParameters)
 			return;
 
 		bool abbrev = alignAbbreviation && parameters.Any(o => o.HasAbbreviation);
@@ -602,7 +632,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 	{
 		var command = new ArgumentCommand(new CommandDefinition(null, String.Empty, comparison: _comparison));
 		var parameters = command.Parameters;
-		List<string> positional = new List<string>();
+		var positional = new List<string>();
 		var messages = new List<string>();
 		bool positionalOnly = false;
 		bool helpRequested = false;
@@ -628,7 +658,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 				continue;
 			}
 
-			var (name, value) = SplitNameValue(arg[0] == '-' && arg.Length > 1 && arg[1] == '-' ? arg.Substring(2) : arg.Substring(1));
+			var (name, value) = SplitNameValue(arg[0] == '-' && arg.Length > 1 && arg[1] == '-' ? arg.AsSpan(2) : arg.AsSpan(1));
 			if (name.Length == 0)
 			{
 				messages.Add($"Invalid parameter: {arg}");
@@ -713,11 +743,11 @@ public partial class Arguments: IDumpJson, IDumpXml
 			return true;
 		}
 
-		var ci = commands[commands.Count - 1].Definition;
+		var ci = commands[^1].Definition;
 		if (ci.Commands is not null && ci.Commands.TryGetCommand(args[i], out var c))
 		{
 			var cm = new ArgumentCommand(c);
-			commands[commands.Count - 1].Command = cm;
+			commands[^1].Command = cm;
 			commands.Add(cm);
 			return true;
 		}
@@ -778,7 +808,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 
 		// unknown positional argument
 		var v = GrabCollection(args, ref i, args[i]);
-		var c = commands[commands.Count - 1];
+		var c = commands[^1];
 
 		var name = "positional";
 		var k = 0;
@@ -813,8 +843,8 @@ public partial class Arguments: IDumpJson, IDumpXml
 
 			if (!combineLastParameter) return default;
 			
-			var unknown = commands[commands.Count - 1].Parameters.LastOrDefault(o => o.Definition is { IsUnknown: true, IsCollection: true });
-			return unknown is null ? default: (commands[commands.Count - 1], unknown.Definition);
+			var unknown = commands[^1].Parameters.LastOrDefault(o => o.Definition is { IsUnknown: true, IsCollection: true });
+			return unknown is null ? default: (commands[^1], unknown.Definition);
 		}
 	}
 
@@ -830,7 +860,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 			if (a != ParameterDefinitionFindResult.NotFound)
 				return a;
 		}
-		return anonymous ? commands[commands.Count - 1].Parameters.TryAdd(name, value, true): ParameterDefinitionFindResult.NotFound;
+		return anonymous ? commands[^1].Parameters.TryAdd(name, value, true): ParameterDefinitionFindResult.NotFound;
 	}
 
 	private void ParseOption(List<string> args, ref int i, List<ArgumentCommand> commands, List<string> messages, ref bool helpRequested)
@@ -842,7 +872,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 				doubleDash = true;
 			else
 				dash = true;
-		var (name, value) = SplitNameValue(doubleDash ? arg.Substring(2) : arg.Substring(1));
+		var (name, value) = SplitNameValue(doubleDash ? arg.AsSpan(2) : arg.AsSpan(1));
 		if (name.Length == 0)
 		{
 			messages.Add($"Invalid parameter: {arg}");
@@ -950,17 +980,17 @@ public partial class Arguments: IDumpJson, IDumpXml
 			messages.Add($"Ambiguous parameter: {arg}");
 			return default;
 		}
-		return (commands[commands.Count - 1], null);
+		return (commands[^1], null);
 	}
 
 	private bool IsOption(string name) => name.Length > 0 && (name[0] == '-' || (_allowSlash && name[0] == '/'));
 
-	private (string Name, string? Value) SplitNameValue(string arg)
+	private (string Name, string? Value) SplitNameValue(ReadOnlySpan<char> arg)
 	{
 		int j = _equalSeparator ?
 			_colonSeparator ? arg.IndexOfAny(Separators): arg.IndexOf('='):
 			_colonSeparator ? arg.IndexOf(':') : -1;
-		return j < 0 ? (arg, null): (arg.Substring(0, j), arg.Substring(j + 1));
+		return j < 0 ? (arg.ToString(), null): (arg[..j].ToString(), arg[(j + 1) ..].ToString());
 	}
 	private static readonly char[] Separators = ['=', ':'];
 
@@ -969,7 +999,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 		if (!value.EndsWith(','))
 			return value.Split(',');
 		var list = new List<string>();
-		value = value.Substring(0, value.Length - 1);
+		value = value[..^1];
 		if (value.IndexOf(',') < 0)
 			list.Add(value);
 		else
@@ -980,7 +1010,7 @@ public partial class Arguments: IDumpJson, IDumpXml
 			var arg = args[++i];
 			comma = arg.EndsWith(',');
 			if (comma)
-				arg = arg.Substring(0, arg.Length - 1);
+				arg = arg[..^1];
 			if (arg.IndexOf(',') < 0)
 				list.Add(arg);
 			else

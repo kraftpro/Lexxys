@@ -807,7 +807,17 @@ public readonly struct Money:
 
 	#region Convertion operators
 
+	/// <summary>
+	/// Converts <see cref="int"/> value to <see cref="Money"/>.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static Money FromInt32(int value) => new Money(value);
+	/// <summary>
+	/// Converts <see cref="long"/> value to <see cref="Money"/>.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static Money FromInt64(long value) => new Money(value);
 	public static Money FromDecimal(decimal value) => new Money(value);
 	public static Money FromDouble(double value) => new Money(value);
@@ -829,40 +839,58 @@ public readonly struct Money:
 		}
 	}
 
+	/// <inheritdoc />
 	public static bool IsCanonical(Money value) => true;
 
+	/// <inheritdoc />
 	public static bool IsComplexNumber(Money value) => false;
 
+	/// <inheritdoc />
 	public static bool IsEvenInteger(Money value) => ((long)value & 1) == 0;
 
+	/// <inheritdoc />
 	public static bool IsFinite(Money value) => true;
 
+	/// <inheritdoc />
 	public static bool IsImaginaryNumber(Money value) => false;
 
+	/// <inheritdoc />
 	public static bool IsInfinity(Money value) => false;
 
+	/// <inheritdoc />
 	public static bool IsInteger(Money value) => value._value % value.Currency.Multiplier == 0;
 
+	/// <inheritdoc />
 	public static bool IsNaN(Money value) => false;
 
+	/// <inheritdoc />
 	public static bool IsNegative(Money value) => value._value < 0;
 
+	/// <inheritdoc />
 	public static bool IsNegativeInfinity(Money value) => false;
 
+	/// <inheritdoc />
 	public static bool IsNormal(Money value) => value._value != 0;
 
+	/// <inheritdoc />
 	public static bool IsOddInteger(Money value) => ((long)value & 1) == 1;
 
+	/// <inheritdoc />
 	public static bool IsPositive(Money value) => value._value >= 0;
 
+	/// <inheritdoc />
 	public static bool IsPositiveInfinity(Money value) => false;
 
+	/// <inheritdoc />
 	public static bool IsRealNumber(Money value) => true;
 
+	/// <inheritdoc />
 	public static bool IsSubnormal(Money value) => false;
 
+	/// <inheritdoc />
 	public static bool IsZero(Money value) => value._value == 0;
 
+	/// <inheritdoc />
 	public static Money MaxMagnitude(Money x, Money y)
 	{
 		if (x.Currency != y.Currency)
@@ -876,8 +904,10 @@ public readonly struct Money:
 			x >= 0 ? x: y;
 	}
 
+	/// <inheritdoc />
 	public static Money MaxMagnitudeNumber(Money x, Money y) => MaxMagnitude(x, y);
 
+	/// <inheritdoc />
 	public static Money MinMagnitude(Money x, Money y)
 	{
 		if (x.Currency != y.Currency)
@@ -891,9 +921,11 @@ public readonly struct Money:
 			x <= 0 ? x: y;
 	}
 
+	/// <inheritdoc />
 	public static Money MinMagnitudeNumber(Money x, Money y) => MinMagnitude(x, y);
 
 #if NET7_0_OR_GREATER
+	/// <inheritdoc />
 	static bool INumberBase<Money>.TryConvertFromChecked<TOther>(TOther value, out Money result)
 	{
 		if (typeof(TOther) == typeof(Money))
@@ -936,9 +968,19 @@ public readonly struct Money:
 			result = new Money((ulong)((int)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
 			return true;
 		}
+		if (typeof(TOther) == typeof(uint))
+		{
+			result = new Money((ulong)((uint)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+			return true;
+		}
 		if (typeof(TOther) == typeof(short))
 		{
 			result = new Money((ulong)((short)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+			return true;
+		}
+		if (typeof(TOther) == typeof(ushort))
+		{
+			result = new Money((ulong)((ushort)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(sbyte))
@@ -946,10 +988,16 @@ public readonly struct Money:
 			result = new Money((ulong)((sbyte)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
 			return true;
 		}
+		if (typeof(TOther) == typeof(byte))
+		{
+			result = new Money((ulong)((byte)(object)value * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+			return true;
+		}
 		result = Zero;
 		return false;
 	}
 
+	/// <inheritdoc />
 	static bool INumberBase<Money>.TryConvertFromSaturating<TOther>(TOther value, out Money result)
 	{
 		if (typeof(TOther) == typeof(Money))
@@ -1020,6 +1068,7 @@ public readonly struct Money:
 		return false;
 	}
 
+	/// <inheritdoc />
 	static bool INumberBase<Money>.TryConvertFromTruncating<TOther>(TOther value, out Money result)
 	{
 		if (typeof(TOther) == typeof(Money))
@@ -1086,6 +1135,7 @@ public readonly struct Money:
 		return false;
 	}
 
+	/// <inheritdoc />
 	static bool INumberBase<Money>.TryConvertToChecked<TOther>(Money value, [MaybeNullWhen(false)] out TOther result)
 	{
 		if (typeof(TOther) == typeof(Money))
@@ -1142,6 +1192,7 @@ public readonly struct Money:
 		return false;
 	}
 
+	/// <inheritdoc />
 	static bool INumberBase<Money>.TryConvertToSaturating<TOther>(Money value, [MaybeNullWhen(false)] out TOther result)
 	{
 		if (typeof(TOther) == typeof(Money))
@@ -1198,6 +1249,7 @@ public readonly struct Money:
 		return false;
 	}
 
+	/// <inheritdoc />
 	static bool INumberBase<Money>.TryConvertToTruncating<TOther>(Money value, [MaybeNullWhen(false)] out TOther result)
 	{
 		if (typeof(TOther) == typeof(Money))
@@ -1258,78 +1310,145 @@ public readonly struct Money:
 
 	private static readonly Currency[] __internalCurrencies = [Currency.Empty, Currency.Usd, Currency.Eur, Currency.Rub, Currency.Uzs];
 
+	/// <summary>
+	/// Explicitly converts an <see cref="Int32"/> value to <see cref="Money"/> value.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static explicit operator Money(int value) => new Money(value);
 
+	/// <summary>
+	/// Explicitly converts an <see cref="Int64"/> value to <see cref="Money"/> value.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static explicit operator Money(long value) => new Money(value);
 
+	/// <summary>
+	/// Explicitly converts a <see cref="Decimal"/> value to <see cref="Money"/> value.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static explicit operator Money(decimal value) => new Money(value);
 
+	/// <summary>
+	/// Explicitly converts a <see cref="Double"/> value to <see cref="Money"/> value.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static explicit operator Money(double value) => new Money(value);
 
+	/// <summary>
+	/// Explicitly converts a <see cref="Money"/> value to <see cref="Int32"/> value.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static explicit operator int(Money value) => checked((int)(value._value / value.Currency.Multiplier));
 
+	/// <summary>
+	/// Explicitly converts a <see cref="Money"/> value to <see cref="Int64"/> value.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static explicit operator long(Money value) => value._value / value.Currency.Multiplier;
 
+	/// <summary>
+	/// Explicitly converts a <see cref="Money"/> value to <see cref="Decimal"/> value.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static implicit operator decimal(Money value) => value.Amount;
 
+	/// <summary>
+	/// Explicitly converts a <see cref="Money"/> value to <see cref="Double"/> value.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns></returns>
 	public static explicit operator double(Money value) => (double)value._value / value.Currency.Multiplier;
 
 	#endregion
 
 	#region Comparison operators
 
+	#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
+
+	/// <inheritdoc cref="IEqualityOperators{TLeft, TRight, TResult}.op_Equality(TLeft, TRight)" />
 	public static bool operator ==(Money left, Money right) => left.Currency == right.Currency && left._value == right._value;
 
+	/// <inheritdoc cref="IEqualityOperators{TLeft, TRight, TResult}.op_Inequality(TLeft, TRight)" />
 	public static bool operator !=(Money left, Money right) => left.Currency != right.Currency || left._value != right._value;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_GreaterThan(TLeft, TRight)" />
 	public static bool operator >(Money left, Money right) => left.Currency == right.Currency && left._value > right._value;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_GreaterThanOrEqual(TLeft, TRight)" />
 	public static bool operator >=(Money left, Money right) => left.Currency == right.Currency && left._value >= right._value;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_LessThan(TLeft, TRight)" />
 	public static bool operator <(Money left, Money right) => left.Currency == right.Currency && left._value < right._value;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_LessThanOrEqual(TLeft, TRight)" />
 	public static bool operator <=(Money left, Money right) => left.Currency == right.Currency && left._value <= right._value;
 
+	/// <inheritdoc cref="IEqualityOperators{TLeft, TRight, TResult}.op_Equality(TLeft, TRight)" />
 	public static bool operator ==(Money left, long right) => left._value == right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IEqualityOperators{TLeft, TRight, TResult}.op_Inequality(TLeft, TRight)" />
 	public static bool operator !=(Money left, long right) => left._value != right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_GreaterThan(TLeft, TRight)" />
 	public static bool operator >(Money left, long right) => left._value > right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_GreaterThanOrEqual(TLeft, TRight)" />
 	public static bool operator >=(Money left, long right) => left._value >= right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_LessThan(TLeft, TRight)" />
 	public static bool operator <(Money left, long right) => left._value < right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_LessThanOrEqual(TLeft, TRight)" />
 	public static bool operator <=(Money left, long right) => left._value <= right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IEqualityOperators{TLeft, TRight, TResult}.op_Equality(TLeft, TRight)" />
 	public static bool operator ==(Money left, decimal right) => left._value == right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IEqualityOperators{TLeft, TRight, TResult}.op_Inequality(TLeft, TRight)" />
 	public static bool operator !=(Money left, decimal right) => left._value != right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_GreaterThan(TLeft, TRight)" />
 	public static bool operator >(Money left, decimal right) => left._value > right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_GreaterThanOrEqual(TLeft, TRight)" />
 	public static bool operator >=(Money left, decimal right) => left._value >= right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_LessThan(TLeft, TRight)" />
 	public static bool operator <(Money left, decimal right) => left._value < right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_LessThanOrEqual(TLeft, TRight)" />
 	public static bool operator <=(Money left, decimal right) => left._value <= right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IEqualityOperators{TLeft, TRight, TResult}.op_Equality(TLeft, TRight)" />
 	public static bool operator ==(Money left, double right) => left._value == right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IEqualityOperators{TLeft, TRight, TResult}.op_Inequality(TLeft, TRight)" />
 	public static bool operator !=(Money left, double right) => left._value != right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_GreaterThan(TLeft, TRight)" />
 	public static bool operator >(Money left, double right) => left._value > right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_GreaterThanOrEqual(TLeft, TRight)" />
 	public static bool operator >=(Money left, double right) => left._value >= right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_LessThan(TLeft, TRight)" />
 	public static bool operator <(Money left, double right) => left._value < right * left.Currency.Multiplier;
 
+	/// <inheritdoc cref="IComparisonOperators{TLeft, TRight, TResult}.op_LessThanOrEqual(TLeft, TRight)" />
 	public static bool operator <=(Money left, double right) => left._value <= right * left.Currency.Multiplier;
 
 	#endregion
 
 	#region Math operators
 
+	/// <inheritdoc cref="IAdditionOperators{TLeft, TRight, TResult}.op_Addition(TLeft, TRight)" />
 	public static Money operator +(Money left, Money right)
 	{
 		if (left.Currency != right.Currency)
@@ -1342,46 +1461,55 @@ public readonly struct Money:
 		return Create(checked(left._value + right._value), left._currency);
 	}
 
+	/// <inheritdoc cref="IAdditionOperators{TLeft, TRight, TResult}.op_Addition(TLeft, TRight)" />
 	public static Money operator +(Money left, int right)
 	{
 		return Create(checked(left._value + (long)right * left.Currency.Multiplier), left._currency);
 	}
 
+	/// <inheritdoc cref="IAdditionOperators{TLeft, TRight, TResult}.op_Addition(TLeft, TRight)" />
 	public static Money operator +(Money left, long right)
 	{
 		return Create(checked(left._value + right * left.Currency.Multiplier), left._currency);
 	}
 
+	/// <inheritdoc cref="IAdditionOperators{TLeft, TRight, TResult}.op_Addition(TLeft, TRight)" />
 	public static Money operator +(Money left, decimal right)
 	{
 		return Create(checked(left._value + (long)(right * left.Currency.Multiplier)), left._currency);
 	}
 
+	/// <inheritdoc cref="IAdditionOperators{TLeft, TRight, TResult}.op_Addition(TLeft, TRight)" />
 	public static Money operator +(Money left, double right)
 	{
 		return Create(checked(left._value + (long)(right * left.Currency.Multiplier)), left._currency);
 	}
 
+	/// <inheritdoc cref="IAdditionOperators{TLeft, TRight, TResult}.op_Addition(TLeft, TRight)" />
 	public static Money operator +(int left, Money right)
 	{
 		return Create(checked((long)left * right.Currency.Multiplier + right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="IAdditionOperators{TLeft, TRight, TResult}.op_Addition(TLeft, TRight)" />
 	public static Money operator +(long left, Money right)
 	{
 		return Create(checked(left * right.Currency.Multiplier + right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="IAdditionOperators{TLeft, TRight, TResult}.op_Addition(TLeft, TRight)" />
 	public static Money operator +(decimal left, Money right)
 	{
 		return Create(checked((long)(left * right.Currency.Multiplier) + right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="IAdditionOperators{TLeft, TRight, TResult}.op_Addition(TLeft, TRight)" />
 	public static Money operator +(double left, Money right)
 	{
 		return Create(checked((long)(left * right.Currency.Multiplier) + right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator -(Money left, Money right)
 	{
 		if (left.Currency != right.Currency)
@@ -1394,151 +1522,181 @@ public readonly struct Money:
 		return Create(checked(left._value - right._value), left._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator -(Money left, int right)
 	{
 		return Create(checked(left._value - (long)right * left.Currency.Multiplier), left._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator -(Money left, long right)
 	{
 		return Create(checked(left._value - right * left.Currency.Multiplier), left._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator -(Money left, decimal right)
 	{
 		return Create(checked(left._value - (long)(right * left.Currency.Multiplier)), left._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator -(Money left, double right)
 	{
 		return Create(checked(left._value - (long)(right * left.Currency.Multiplier)), left._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator -(int left, Money right)
 	{
 		return Create(checked((long)left * right.Currency.Multiplier - right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator -(long left, Money right)
 	{
 		return Create(checked(left * right.Currency.Multiplier - right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator -(decimal left, Money right)
 	{
 		return Create(checked((long)(left * right.Currency.Multiplier) - right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator -(double left, Money right)
 	{
 		return Create(checked((long)(left * right.Currency.Multiplier) - right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="ISubtractionOperators{TLeft, TRight, TResult}.op_Subtraction(TLeft, TRight)" />
 	public static Money operator *(Money left, int right)
 	{
 		return Create(checked(left._value * right), left._currency);
 	}
 
+	/// <inheritdoc cref="IMultiplyOperators{TLeft, TRight, TResult}.op_Multiply(TLeft, TRight)" />
 	public static Money operator *(Money left, long right)
 	{
 		return Create(checked(left._value * right), left._currency);
 	}
 
+	/// <inheritdoc cref="IMultiplyOperators{TLeft, TRight, TResult}.op_Multiply(TLeft, TRight)" />
 	public static Money operator *(Money left, decimal right)
 	{
 		return Create((long)(left._value * right), left._currency);
 	}
 
+	/// <inheritdoc cref="IMultiplyOperators{TLeft, TRight, TResult}.op_Multiply(TLeft, TRight)" />
 	public static Money operator *(Money left, double right)
 	{
 		return Create(checked((long)(left._value * right)), left._currency);
 	}
 
+	/// <inheritdoc cref="IMultiplyOperators{TLeft, TRight, TResult}.op_Multiply(TLeft, TRight)" />
 	public static Money operator *(int left, Money right)
 	{
 		return Create(checked(left * right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="IMultiplyOperators{TLeft, TRight, TResult}.op_Multiply(TLeft, TRight)" />
 	public static Money operator *(long left, Money right)
 	{
 		return Create(checked(left * right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="IMultiplyOperators{TLeft, TRight, TResult}.op_Multiply(TLeft, TRight)" />
 	public static Money operator *(decimal left, Money right)
 	{
 		return Create((long)(left * right._value), right._currency);
 	}
 
+	/// <inheritdoc cref="IMultiplyOperators{TLeft, TRight, TResult}.op_Multiply(TLeft, TRight)" />
 	public static Money operator *(double left, Money right)
 	{
 		return Create(checked((long)(left * right._value)), right._currency);
 	}
 
+	/// <inheritdoc cref="IDivisionOperators{TLeft, TRight, TResult}.op_Division(TLeft, TRight)" />
 	public static Money operator /(Money left, int right)
 	{
 		return Create(left._value / right, left._currency);
 	}
 
+	/// <inheritdoc cref="IDivisionOperators{TLeft, TRight, TResult}.op_Division(TLeft, TRight)" />
 	public static Money operator /(Money left, long right)
 	{
 		return Create(left._value / right, left._currency);
 	}
 
+	/// <inheritdoc cref="IDivisionOperators{TLeft, TRight, TResult}.op_Division(TLeft, TRight)" />
 	public static Money operator /(Money left, decimal right)
 	{
 		return Create((long)(left._value / right), left._currency);
 	}
 
+	/// <inheritdoc cref="IDivisionOperators{TLeft, TRight, TResult}.op_Division(TLeft, TRight)" />
 	public static Money operator /(Money left, double right)
 	{
 		return Create(checked((long)(left._value / right)), left._currency);
 	}
 
+	/// <inheritdoc cref="IModulusOperators{TLeft, TRight, TResult}.op_Modulus(TLeft, TRight)" />
 	public static Money operator %(Money left, int right)
 	{
 		return Create(left._value % checked(right * left.Currency.Multiplier), left._currency);
 	}
 
+	/// <inheritdoc cref="IModulusOperators{TLeft, TRight, TResult}.op_Modulus(TLeft, TRight)" />
 	public static Money operator %(Money left, long right)
 	{
 		return Create(left._value % checked(right * left.Currency.Multiplier), left._currency);
 	}
 
+	/// <inheritdoc cref="IModulusOperators{TLeft, TRight, TResult}.op_Modulus(TLeft, TRight)" />
 	public static Money operator %(Money left, decimal right)
 	{
 		return Create(left._value % (long)(right * left.Currency.Multiplier), left._currency);
 	}
 
+	/// <inheritdoc cref="IModulusOperators{TLeft, TRight, TResult}.op_Modulus(TLeft, TRight)" />
 	public static Money operator %(Money left, double right)
 	{
 		return Create(checked(left._value % (long)(right * left.Currency.Multiplier)), left._currency);
 	}
 
+	/// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
 	public static Money operator --(Money value)
 	{
 		return Create(checked(value._value - value.Currency.Multiplier), value._currency);
 	}
 
+	/// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
 	public static Money operator ++(Money value)
 	{
 		return Create(checked(value._value + value.Currency.Multiplier), value._currency);
 	}
 
+	/// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
 	public static Money operator -(Money value)
 	{
 		return Create(-value._value, value._currency);
 	}
 
+	/// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
 	public static Money operator +(Money value)
 	{
 		return value;
 	}
 
+	/// <inheritdoc cref="IDivisionOperators{TLeft, TRight, TResult}.op_Division(TLeft, TRight)" />
 	public static Money operator /(Money left, Money right)
 	{
 		return left / right.Amount;
 	}
 
+	/// <inheritdoc cref="IMultiplyOperators{TLeft, TRight, TResult}.op_Multiply(TLeft, TRight)" />
 	public static Money operator *(Money left, Money right)
 	{
 		return left * right.Amount;
@@ -1546,22 +1704,31 @@ public readonly struct Money:
 
 #if NET7_0_OR_GREATER
 
+	/// <inheritdoc cref="IDivisionOperators{TLeft, TRight, TResult}.op_Division(TLeft, TRight)" />
 	static Money IDivisionOperators<Money, Money, Money>.operator /(Money left, Money right) => left / right.Amount;
 
+	/// <inheritdoc cref="IModulusOperators{TLeft, TRight, TResult}.op_Modulus(TLeft, TRight)" />
 	static Money IModulusOperators<Money, Money, Money>.operator %(Money left, Money right) => left % right.Amount;
 
+	/// <inheritdoc cref="IMultiplyOperators{TLeft, TRight, TResult}.op_Multiply(TLeft, TRight)" />
 	static Money IMultiplyOperators<Money, Money, Money>.operator *(Money left, Money right) => left * right.Amount;
 
+	/// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
 	static Money INumber<Money>.Clamp(Money value, Money min, Money max) => value < min ? min : value > max ? max : value;
 
+	/// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
 	static Money INumber<Money>.CopySign(Money value, Money sign) => (value._value & long.MinValue) == (sign._value & long.MinValue) ? value : -value;
 
+	/// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
 	static Money INumber<Money>.Max(Money x, Money y) => x > y ? x : y;
 
+	/// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
 	static Money INumber<Money>.MaxNumber(Money x, Money y) => x > y ? x : y;
 
+	/// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
 	static Money INumber<Money>.Min(Money x, Money y) => x < y ? x : y;
 
+	/// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
 	static Money INumber<Money>.MinNumber(Money x, Money y) => x < y ? x : y;
 
 #endif

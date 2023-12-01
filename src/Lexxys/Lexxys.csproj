@@ -1,22 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net6.0;net5.0;netstandard2.0;net472</TargetFrameworks>
+    <TargetFrameworks>net8.0;net6.0;netstandard2.0;net472</TargetFrameworks>
     <LangVersion>preview</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
 
-    <VersionPrefix>2.6.0</VersionPrefix>
-    <VersionSuffix></VersionSuffix>
-    <!--Build>0$([System.DateTime]::Today.ToString("MMdd"))</Build-->
-    <Build>0</Build>
-    <FileVersion>$(VersionPrefix).$(Build)</FileVersion>
+    <VersionPrefix>3.0.0</VersionPrefix>
+    <VersionSuffix>alpha.1</VersionSuffix>
     <Description>Common Infrastructure Library</Description>
     <Copyright>Copyright © 2001-2016</Copyright>
     <Authors>Kraft Pro Utilities</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <!--<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,44 +45,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0-rc.2.23479.6" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0-rc.2.23479.6" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0-rc.2.23479.6" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0-rc.2.23479.6" />
-    <PackageReference Include="System.Diagnostics.EventLog" Version="8.0.0-rc.2.23479.6" />
-    <PackageReference Include="System.Runtime.Caching" Version="8.0.0-rc.2.23479.6" />
-    <PackageReference Include="System.Security.Permissions" Version="8.0.0-rc.2.23479.6" />
+    <PackageReference Include="Azure.Identity" Version="1.10.4" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="8.0.0" />
+    <PackageReference Include="System.Runtime.Caching" Version="8.0.0" />
+    <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
   </ItemGroup>
-
-<!--
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0-rc.1.23419.4" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0-rc.1.23419.4" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0-rc.1.23419.4" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0-rc.1.23419.4" />
-    <PackageReference Include="System.Diagnostics.EventLog" Version="8.0.0-rc.1.23419.4" />
-    <PackageReference Include="System.Runtime.Caching" Version="8.0.0-rc.1.23419.4" />
-    <PackageReference Include="System.Security.Permissions" Version="8.0.0-rc.1.23419.4" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' != 'net8.0'">
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
-    <PackageReference Include="System.Diagnostics.EventLog" Version="7.0.0" />
-    <PackageReference Include="System.Runtime.Caching" Version="7.0.0" />
-    <PackageReference Include="System.Security.Permissions" Version="7.0.0" />
-  </ItemGroup>
--->
 
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName).Logging" />
     <InternalsVisibleTo Include="$(AssemblyName).Legacy" />
     <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+    <InternalsVisibleTo Include="$(AssemblyName).Xml" />
     <InternalsVisibleTo Include="$(AssemblyName).Test.Console" />
     <InternalsVisibleTo Include="$(AssemblyName).Validation" />
     <InternalsVisibleTo Include="$(AssemblyName).Arguments" />

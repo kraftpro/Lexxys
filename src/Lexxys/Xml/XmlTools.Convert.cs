@@ -1,186 +1,86 @@
-﻿using System.Collections;
+﻿using System.Buffers;
+using System.Collections;
+using System.Globalization;
 using System.Text;
 using System.Xml;
+
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Lexxys.Xml;
 
 public static partial class XmlTools
 {
-	public static string Convert(bool value)
-	{
-		return value ? "true" : "false";
-	}
+	public static string Convert(bool value) => value ? "true" : "false";
 
-	public static string Convert(Guid value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(Guid value) => value.ToString();
 
-	public static string Convert(Guid? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(Guid? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
 	public static string Convert(DateTime value, XmlDateTimeSerializationMode mode = XmlDateTimeSerializationMode.Unspecified)
-	{
-		string result = XmlConvert.ToString(value, mode);
-		return result.EndsWith("T00:00:00", StringComparison.Ordinal) ? result.Substring(0, result.Length - 9) : result;
-	}
+		=> value.Ticks % TimeSpan.TicksPerDay == 0 ? value.ToString("yyyy-MM-dd"): XmlConvert.ToString(value, mode);
 
 	public static string Convert(DateTime? value, XmlDateTimeSerializationMode mode = XmlDateTimeSerializationMode.Unspecified)
-	{
-		return value.HasValue ? Convert(value.GetValueOrDefault(), mode) : "";
-	}
+		=> value.HasValue ? Convert(value.GetValueOrDefault(), mode): "";
 
-	public static string Convert(DateTime value, string format)
-	{
-		return XmlConvert.ToString(value, format);
-	}
+	public static string Convert(DateTime value, string format) => value.ToString(format, CultureInfo.InvariantCulture);
 
-	public static string Convert(DateTime? value, string format)
-	{
-		return value.HasValue ? Convert(value.GetValueOrDefault(), format) : "";
-	}
+	public static string Convert(DateTime? value, string format) => value.HasValue ? Convert(value.GetValueOrDefault(), format): "";
 
-	public static string Convert(DateTimeOffset value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(DateTimeOffset value) => XmlConvert.ToString(value);
 
-	public static string Convert(DateTimeOffset? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(DateTimeOffset? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(DateTimeOffset value, string format)
-	{
-		return XmlConvert.ToString(value, format);
-	}
+	public static string Convert(DateTimeOffset value, string format) => value.ToString(format, CultureInfo.InvariantCulture);
 
-	public static string Convert(DateTimeOffset? value, string format)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault(), format) : "";
-	}
+	public static string Convert(DateTimeOffset? value, string format) => value.HasValue ? Convert(value.GetValueOrDefault(), format): "";
 
-	public static string Convert(TimeSpan value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(TimeSpan value) => XmlConvert.ToString(value);
 
-	public static string Convert(TimeSpan? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(TimeSpan? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(sbyte value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(sbyte value) => value.ToString();
 
-	public static string Convert(sbyte? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(sbyte? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(byte value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(byte value) => value.ToString();
 
-	public static string Convert(byte? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(byte? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(short value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(short value) => value.ToString();
 
-	public static string Convert(short? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(short? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(ushort value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(ushort value) => value.ToString();
 
-	public static string Convert(ushort? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(ushort? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(int value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(int value) => value.ToString();
 
-	public static string Convert(int? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(int? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(uint value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(uint value) => value.ToString();
 
-	public static string Convert(uint? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(uint? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(long value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(long value) => value.ToString();
 
-	public static string Convert(long? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(long? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(ulong value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(ulong value) => value.ToString();
 
-	public static string Convert(ulong? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(ulong? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(decimal value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(decimal value) => value.ToString();
 
-	public static string Convert(decimal? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(decimal? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(float value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(float value) => XmlConvert.ToString(value);
 
-	public static string Convert(float? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(float? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(double value)
-	{
-		return XmlConvert.ToString(value);
-	}
+	public static string Convert(double value) => XmlConvert.ToString(value);
 
-	public static string Convert(double? value)
-	{
-		return value.HasValue ? XmlConvert.ToString(value.GetValueOrDefault()) : "";
-	}
+	public static string Convert(double? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
 	public static string? Convert(object? value, bool encodeQuote = false)
 	{
@@ -194,36 +94,36 @@ public static partial class XmlTools
 				case TypeCode.Boolean:
 					return Convert((bool)value);
 				case TypeCode.Byte:
-					return XmlConvert.ToString((byte)value);
+					return Convert((byte)value);
 				case TypeCode.SByte:
-					return XmlConvert.ToString((sbyte)value);
+					return Convert((sbyte)value);
 				case TypeCode.Char:
-					return XmlConvert.ToString((char)value);
+					return Convert((char)value);
 				case TypeCode.Decimal:
-					return XmlConvert.ToString((decimal)value);
+					return Convert((decimal)value);
 				case TypeCode.Single:
-					return XmlConvert.ToString((float)value);
+					return Convert((float)value);
 				case TypeCode.Double:
-					return XmlConvert.ToString((double)value);
+					return Convert((double)value);
 				case TypeCode.Int16:
-					return XmlConvert.ToString((short)value);
+					return Convert((short)value);
 				case TypeCode.UInt16:
-					return XmlConvert.ToString((ushort)value);
+					return Convert((ushort)value);
 				case TypeCode.Int32:
-					return XmlConvert.ToString((int)value);
+					return Convert((int)value);
 				case TypeCode.UInt32:
-					return XmlConvert.ToString((uint)value);
+					return Convert((uint)value);
 				case TypeCode.Int64:
-					return XmlConvert.ToString((long)value);
+					return Convert((long)value);
 				case TypeCode.UInt64:
-					return XmlConvert.ToString((ulong)value);
+					return Convert((ulong)value);
 				case TypeCode.DBNull:
 				case TypeCode.Empty:
 					return "";
 				case TypeCode.DateTime:
 					return Convert((DateTime)value);
 				case TypeCode.String:
-					return Encode((string)value, encodeQuote);
+					return Encode(((string)value).AsSpan(), encodeQuote);
 			}
 		}
 		return value switch
@@ -237,381 +137,281 @@ public static partial class XmlTools
 		};
 	}
 
-	public static string ConvertCollection(IEnumerable? collection, bool braces = false)
-	{
-		return ConvertCollection(new StringBuilder(), collection, braces).ToString();
-	}
+	//public static string ConvertCollection(IEnumerable? collection, bool braces = false)
+	//{
+	//	return ConvertCollection(new StringBuilder(), collection, braces).ToString();
+	//}
 
-	public static StringBuilder ConvertCollection(StringBuilder text, IEnumerable? collection, bool braces = false)
+	//public static StringBuilder ConvertCollection(StringBuilder text, IEnumerable? collection, bool braces = false)
+	//{
+	//	if (text == null)
+	//		throw new ArgumentNullException(nameof(text));
+	//	if (collection == null)
+	//		return text;
+	//	if (braces)
+	//		text.Append('(');
+	//	string pad = "";
+	//	foreach (var item in collection)
+	//	{
+	//		text.Append(pad);
+	//		string? s = Convert(item);
+	//		if (s != null)
+	//			text.Append(s);
+	//		else if (item is IEnumerable ienum)
+	//			ConvertCollection(text, ienum, true);
+	//		pad = ",";
+	//	}
+	//	if (braces)
+	//		text.Append(')');
+	//	return text;
+	//}
+
+	public static StringBuilder Encode(StringBuilder text, ReadOnlySpan<char> value, bool encodeQuote = false)
 	{
-		if (text == null)
-			throw new ArgumentNullException(nameof(text));
-		if (collection == null)
-			return text;
-		if (braces)
-			text.Append('(');
-		string pad = "";
-		foreach (var item in collection)
-		{
-			text.Append(pad);
-			string? s = Convert(item);
-			if (s != null)
-				text.Append(s);
-			else if (item is IEnumerable ienum)
-				ConvertCollection(text, ienum, true);
-			pad = ",";
-		}
-		if (braces)
-			text.Append(')');
+		if (text is null) throw new ArgumentNullException(nameof(text));
+
+		if (value.Length == 0) return text;
+		int size = ProjectedSize(value);
+		var local = size > Tools.SafeStackAllocChar ? new LocalStringBuilder(size): new LocalStringBuilder(stackalloc char[size]);
+		Encode(value, encodeQuote, ref local);
+		text.Append(local.AsSpan());
+		local.Dispose();
 		return text;
 	}
 
-	public static unsafe StringBuilder Encode(StringBuilder text, string? value, bool encodeQuote = false)
-	{
-		if (text == null)
-			throw new ArgumentNullException(nameof(text));
-		if (value == null)
-			return text;
+	public static string Encode(string value, bool encodeQuote = false) => Encode(value.AsSpan(), encodeQuote);
 
-		fixed (char* source = value)
-		{
-			return Encode(text, source, value.Length, encodeQuote) ?? text.Append(value);
-		}
+	public static string Encode(ReadOnlySpan<char> value, bool encodeQuote = false)
+	{
+		if (value.Length == 0) return String.Empty;
+		int size = ProjectedSize(value);
+		var local = size > Tools.SafeStackAllocChar ? new LocalStringBuilder(size): new LocalStringBuilder(stackalloc char[size]);
+		Encode(value, encodeQuote, ref local);
+		var result = local.AsSpan().ToString();
+		local.Dispose();
+		return result;
 	}
 
-	public static unsafe StringBuilder Encode(StringBuilder text, string? value, int start, int length, bool encodeQuote = false)
+	public static string EncodeAttribute(string value) => EncodeAttribute(value.AsSpan());
+
+	public static string EncodeAttribute(ReadOnlySpan<char> value)
 	{
-		if (text == null)
-			throw new ArgumentNullException(nameof(text));
-		if (value == null || start < 0 || value.Length <= start)
-			return text;
-		if (length > value.Length - start)
-			length = value.Length - start;
-		fixed (char* source = value)
-		{
-			return Encode(text, source + start, length, encodeQuote) ?? text.Append(value, start, length);
-		}
+		if (value.Length == 0) return "\"\"";
+		int size = ProjectedSize(value) + 2;
+		var local = size > Tools.SafeStackAllocChar ? new LocalStringBuilder(size): new LocalStringBuilder(stackalloc char[size]);
+		local.Append('"');
+		Encode(value, true, ref local);
+		local.Append('"');
+		var result = local.AsSpan().ToString();
+		local.Dispose();
+		return result;
 	}
 
-	private static unsafe StringBuilder? Encode(StringBuilder text, char* source, int length, bool encodeQuote = false)
+	private static int ProjectedSize(ReadOnlySpan<char> value) => value.Length + 86 < Tools.SafeStackAllocChar ? Tools.SafeStackAllocChar: value.Length + 256;
+
+	public static StringBuilder EncodeAttribute(StringBuilder text, ReadOnlySpan<char> value)
 	{
-		(int k, int first) = EncodeSize(source, length, encodeQuote);
-		if (k == length)
-			return null;
-
-		if (k <= Tools.MaxStackAllocSize / sizeof(char))
-		{
-			char* target = stackalloc char[k];
-			return text.Append(target, EncodeMemory(source, target, first, length, encodeQuote));
-		}
-		fixed (char* target = new char[k])
-		{
-			return text.Append(target, EncodeMemory(source, target, first, length, encodeQuote));
-		}
-	}
-
-
-	public static unsafe string Encode(string? value, bool encodeQuote = false)
-	{
-		if (value == null)
-			return "";
-
-		fixed (char* source = value)
-		{
-			return Encode(source, value.Length, encodeQuote) ?? value;
-		}
-	}
-
-	public static unsafe string Encode(string? value, int start, int length, bool encodeQuote = false)
-	{
-		if (value == null || start < 0 || value.Length <= start)
-			return "";
-		if (length > value.Length - start)
-			length = value.Length - start;
-		fixed (char* source = value)
-		{
-			return Encode(source + start, length, encodeQuote) ?? value.Substring(start, length);
-		}
-	}
-
-	public static unsafe string Encode(char[]? value, bool encodeQuote = false)
-	{
-		if (value == null)
-			return "";
-
-		fixed (char* source = value)
-		{
-			return Encode(source, value.Length, encodeQuote) ?? new String(value);
-		}
-	}
-
-	public static unsafe string Encode(char[]? value, int start, int length, bool encodeQuote = false)
-	{
-		if (value == null || start < 0 || value.Length <= start)
-			return "";
-		if (length > value.Length - start)
-			length = value.Length - start;
-
-		fixed (char* source = value)
-		{
-			return Encode(source + start, Math.Min(length, value.Length - start), encodeQuote) ?? new String(value, start, length);
-		}
-	}
-
-	public static string EncodeAttribute(string? value)
-	{
-		if (value is not { Length: >0 })
-			return "\"\"";
-
-		return
-			value.IndexOf('"') < 0 ? "\"" + Encode(value, false) + "\"" :
-			value.IndexOf('\'') < 0 ? "'" + Encode(value, false) + "'" :
-			"\"" + Encode(value, true) + "\"";
-	}
-
-	public static StringBuilder EncodeAttribute(StringBuilder text, string? value)
-	{
-		if (text is null)
-			throw new ArgumentNullException(nameof(text));
-
-		if (value is not { Length: >0 })
-			return text.Append("\"\"");
-
-		if (value.IndexOf('"') < 0)
-		{
-			text.Append('"');
-			Encode(text, value, false);
-			return text.Append('"');
-		}
-		if (value.IndexOf('\'') < 0)
-		{
-			text.Append('\'');
-			Encode(text, value, false);
-			return text.Append('\'');
-		}
+		if (text is null) throw new ArgumentNullException(nameof(text));
 		text.Append('"');
 		Encode(text, value, true);
 		return text.Append('"');
 	}
 
-	private static unsafe string? Encode(char* source, int length, bool encodeQuote = false)
+	private static void Encode(ReadOnlySpan<char> value, bool encodeQuote, ref LocalStringBuilder text)
 	{
-		(int k, int first) = EncodeSize(source, length, encodeQuote);
-		if (k == length)
-			return null;
-		if (k <= Tools.MaxStackAllocSize / sizeof(char))
+		int i;
+		ReadOnlySpan<char> special = encodeQuote ? "<>&\"'".AsSpan(): "<>&".AsSpan();
+		while ((i = value.IndexOfAny(special)) >= 0)
 		{
-			char* target = stackalloc char[k];
-			return new String(target, 0, EncodeMemory(source, target, first, length, encodeQuote));
+			text.Append(value.Slice(0, i));
+			text.Append(value[i] switch
+				{
+					'<' => "&lt;".AsSpan(),
+					'>' => "&gt;".AsSpan(),
+					'"' => "&quot;".AsSpan(),
+					'\'' => "&39;".AsSpan(),
+					'&' => "&amp;".AsSpan(),
+					_ => ReadOnlySpan<char>.Empty,
+				});
+			value = value.Slice(i + 1);
 		}
-		fixed (char* target = new char[k])
-		{
-			return new String(target, 0, EncodeMemory(source, target, first, length, encodeQuote));
-		}
+		text.Append(value);
 	}
 
-	private static unsafe (int Length, int First) EncodeSize(char* source, int length, bool encodeQuote)
+	public static unsafe StringBuilder Decode(StringBuilder text, ReadOnlySpan<char> value)
 	{
-		char* s = source;
-		int k = 0;
-		int first = -1;
-		for (int i = 0; i < length; ++i)
-		{
-			switch (*s)
-			{
-				case '<':
-				case '>':
-					k += 3;
-					if (first == -1)
-						first = i;
-					break;
-
-				case '&':
-					k += 4;
-					if (first == -1)
-						first = i;
-					break;
-
-				case '"':
-					if (encodeQuote)
-					{
-						k += 5;
-						if (first == -1)
-							first = i;
-					}
-					break;
-			}
-			++s;
-		}
-		return (k + length, first);
-	}
-
-	private static unsafe int EncodeMemory(char* source, char* target, int skip, int count, bool encodeQuote)
-	{
-		char* s = source + skip;
-		char* t = target + skip;
-		char* e = source + count;
-		Buffer.MemoryCopy(source, target, skip * sizeof(char), skip * sizeof(char));
-		while (s != e)
-		{
-			char c = *s++;
-			switch (c)
-			{
-				case '<':
-					*t++ = '&';
-					*t++ = 'l';
-					*t++ = 't';
-					*t++ = ';';
-					break;
-				case '>':
-					*t++ = '&';
-					*t++ = 'g';
-					*t++ = 't';
-					*t++ = ';';
-					break;
-				case '&':
-					*t++ = '&';
-					*t++ = 'a';
-					*t++ = 'm';
-					*t++ = 'p';
-					*t++ = ';';
-					break;
-				case '"':
-					if (encodeQuote)
-					{
-						*t++ = '&';
-						*t++ = 'q';
-						*t++ = 'u';
-						*t++ = 'o';
-						*t++ = 't';
-						*t++ = ';';
-					}
-					else
-					{
-						*t++ = c;
-					}
-					break;
-
-				default:
-					*t++ = c;
-					break;
-			}
-		}
-		return (int)(t - target);
-	}
-
-	public static unsafe StringBuilder Decode(StringBuilder text, string value)
-	{
-		if (text == null)
-			throw new ArgumentNullException(nameof(text));
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
+		if (text == null) throw new ArgumentNullException(nameof(text));
 
 		int i = value.IndexOf('&');
 		if (i < 0)
 			return text.Append(value);
-		fixed (char* source = value)
-		{
-			int n = value.Length;
-			if (n <= Tools.MaxStackAllocSize / sizeof(char))
-			{
-				char* target = stackalloc char[n];
-				return text.Append(target, DecodeMemory(source, target, i, n));
-			}
-			fixed (char* target = new char[n])
-			{
-				return text.Append(target, DecodeMemory(source, target, i, n));
-			}
-		}
+		int vlen = value.Length;
+		Span<char> buffer = vlen > Tools.SafeStackAllocChar ? new char[vlen] : stackalloc char[vlen];
+		var n = Decode(value, buffer);
+		return text.Append(buffer.Slice(0, n));
 	}
 
-	public static unsafe string Decode(string value)
+	public static unsafe string Decode(ReadOnlySpan<char> value)
 	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
-
 		int i = value.IndexOf('&');
 		if (i < 0)
-			return value;
-		fixed (char* source = value)
-		{
-			int n = value.Length;
-			if (n <= Tools.MaxStackAllocSize / sizeof(char))
-			{
-				char* target = stackalloc char[n];
-				return new String(target, 0, DecodeMemory(source, target, i, n));
-			}
-			fixed (char* target = new char[n])
-			{
-				return new String(target, 0, DecodeMemory(source, target, i, n));
-			}
-		}
+			return value.ToString();
+		int vlen = value.Length;
+		Span<char> buffer = vlen > Tools.SafeStackAllocChar ? new char[vlen] : stackalloc char[vlen];
+		var n = Decode(value, buffer);
+		return buffer.Slice(0, n).ToString();
 	}
 
-	private static unsafe int DecodeMemory(char* source, char* target, int start, int count)
+	private static int Decode(ReadOnlySpan<char> source, Span<char> target)
 	{
-		Buffer.MemoryCopy(source, target, start * sizeof(char), start * sizeof(char));
-		char* s = source + start;
-		char* t = target + start;
-		int left = count - start;
-		while (left > 0)
+		int len = 0;
+		int i;
+		while ((i = source.IndexOf('&')) >= 0)
 		{
-			if (s[0] != '&')
-			{
-				*t++ = *s++;
-				--left;
-				continue;
-			}
-
-			switch (s[1])
+			source.Slice(0, i).CopyTo(target);
+			target = target.Slice(i);
+			source = source.Slice(i);
+			len += i;
+			if (source.Length < 4) goto exit;
+			switch (source[1])
 			{
 				case 'l':
-					if (left >= 4 && s[2] == 't' && s[3] == ';')
-					{
-						s += 4;
-						left -= 4;
-						*t++ = '<';
-						continue;
-					}
+					if (source[2] != 't' || source[3] != ';')
+						goto default;
+					target[0] = '<';
+					target = target.Slice(1);
+					source = source.Slice(4);
+					++len;
 					break;
+
 				case 'g':
-					if (left >= 4 && s[2] == 't' && s[3] == ';')
-					{
-						s += 4;
-						left -= 4;
-						*t++ = '>';
-						continue;
-					}
+					if (source[2] != 't' || source[3] != ';')
+						goto default;
+					target[0] = '>';
+					target = target.Slice(1);
+					source = source.Slice(4);
+					++len;
 					break;
-				case 'a':
-					if (left >= 5 && s[2] == 'm' && s[3] == 'p' && s[4] == ';')
-					{
-						s += 5;
-						left -= 5;
-						*t++ = '&';
-						continue;
-					}
-					if (left >= 6 && s[2] == 'p' && s[3] == 'o' && s[4] == 's' && s[5] == ';')
-					{
-						s += 6;
-						left -= 6;
-						*t++ = '\'';
-						continue;
-					}
-					break;
+
 				case 'q':
-					if (left >= 6 && s[2] == 'u' && s[3] == 'o' && s[4] == 't' && s[5] == ';')
+					if (source.Length < 6) goto default;
+					if (source[2] != 'u' || source[3] != 'o' || source[4] != 't' || source[5] != ';')
+						goto default;
+					target[0] = '"';
+					target = target.Slice(1);
+					source = source.Slice(6);
+					++len;
+					break;
+
+				case 'a':
+					if (source[2] == 'm')
 					{
-						s += 6;
-						left -= 6;
-						*t++ = '"';
-						continue;
+						if (source.Length < 5) goto exit;
+						if (source[3] != 'p' || source[4] != ';')
+							goto default;
+						target[0] = '&';
+						source = source.Slice(5);
 					}
+					else
+					{
+						if (source.Length < 6) goto default;
+						if (source[2] != 'p' || source[3] != 'o' || source[4] != 's' || source[5] != ';')
+							goto default;
+						target[0] = '\'';
+						source = source.Slice(6);
+					}
+					target = target.Slice(1);
+					++len;
+					break;
+
+				case '#':
+					int k = 2;
+					int d = 0;
+					while (source.Length > k && source[k] is >= '0' and <= '9')
+					{
+						d = d * 10 + (source[k] - '0');
+						++k;
+					}
+					if (k == 2 || source.Length == k || source[k] != ';' || d > 0xFFFF)
+						goto default;
+					target[0] = (char)d;
+					target = target.Slice(1);
+					source = source.Slice(k + 1);
+					++len;
+					break;
+
+				default:
+					target[0] = '&';
+					target = target.Slice(1);
+					source = source.Slice(1);
+					++len;
 					break;
 			}
-			*t++ = *s++;
-			--left;
 		}
-		return (int)(t - target);
+		exit:
+		source.CopyTo(target);
+		return len + source.Length;
+	}
+
+	private ref struct LocalStringBuilder
+	{
+		private char[]? _shared;
+		private Span<char> _buffer;
+		private int _length;
+
+		public LocalStringBuilder(Span<char> buffer)
+		{
+			_buffer = buffer;
+		}
+
+		public LocalStringBuilder(int capacity)
+		{
+			_shared = ArrayPool<char>.Shared.Rent(capacity);
+			_buffer = _shared;
+		}
+
+		public Span<char> AsSpan() => _buffer.Slice(0, _length);
+
+		public void Append(ReadOnlySpan<char> value)
+		{
+			if (value.Length == 0) return;
+			int len = _length;
+			int vlen = value.Length;
+			if (len + vlen > _buffer.Length)
+				Grow(vlen);
+			if (vlen == 1)
+				_buffer[len] = value[0];
+			else
+				value.CopyTo(_buffer.Slice(len));
+			_length = len + vlen;
+		}
+
+		public void Append(char value)
+		{
+			int len = _length;
+			if (len == _buffer.Length)
+				Grow(1);
+			_buffer[len] = value;
+			_length = len + 1;
+		}
+
+		private void Grow(int extra)
+		{
+			int size = Math.Max(extra, _buffer.Length * 2);
+			var temp = ArrayPool<char>.Shared.Rent(size);
+			_buffer.Slice(0, _length).CopyTo(temp);
+			if (_shared != null)
+				ArrayPool<char>.Shared.Return(_shared);
+			_buffer = temp;
+			_shared = temp;
+		}
+
+		public void Dispose()
+		{
+			var temp = _shared;
+			this = default;
+			if (temp != null)
+				ArrayPool<char>.Shared.Return(temp);
+		}
 	}
 }

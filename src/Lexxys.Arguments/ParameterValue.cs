@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Primitives;
-
-using System.Collections;
+﻿using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace Lexxys;
@@ -88,6 +86,9 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 		_ => String.Join(",", Unsafe.As<string[]>(_value)),
 	};
 
+	/// <summary>
+	/// Returns the number of values in the parameter.
+	/// </summary>
 	public int Count => _value switch
 	{
 		null => 0,
@@ -106,8 +107,17 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 		{
 			null => new ParameterValue(value),
 			string s => new ParameterValue(new[] { s, value }),
-			_ => new ParameterValue(Unsafe.As<string[]>(_value).Append(value)),
+			_ => new ParameterValue(Append1(Unsafe.As<string[]>(_value), value)),
 		};
+
+		static string[] Append1(string[] array, string value)
+		{
+			var tmp = new string[array.Length + 1];
+			Array.Copy(array, tmp, array.Length);
+			tmp[array.Length] = value;
+			return tmp;
+		}
+
 	}
 
 	/// <summary>
@@ -130,17 +140,33 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 		{
 			var tmp = new string[value.Count + 1];
 			tmp[0] = s;
-			value.CopyTo(tmp, 1);
-			return tmp;
+			return CopyItems(value, tmp, 1);
 		}
 
 		static string[] Append2(string[] array, IReadOnlyCollection<string> value)
 		{
 			var tmp = new string[value.Count + array.Length];
 			Array.Copy(array, 0, tmp, 0, array.Length);
-			value.CopyTo(tmp, array.Length);
-			return tmp;
+			return CopyItems(value, tmp, array.Length);
 		}
+
+		static string[] CopyItems(IReadOnlyCollection<string> value, string[] array, int index)
+		{
+			if (value is ICollection<string> collection)
+			{
+				collection.CopyTo(array, index);
+			}
+			else
+			{
+				int i = index;
+				foreach (var item in value)
+				{
+					array[i++] = item;
+				}
+			}
+			return array;
+		}
+
 	}
 
 	/// <summary>
@@ -149,8 +175,13 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 	/// <returns></returns>
 	public override string ToString() => StringValue ?? String.Empty;
 
+	/// <summary>
+	/// Returns the array representation of the current value.
+	/// </summary>
+	/// <returns></returns>
 	public string[] ToArray() => ArrayValue ?? [];
 
+	/// <inheritdoc />
 	public IEnumerator<string> GetEnumerator() => new Enumerator(this);
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -196,7 +227,7 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 				case null:
 					_array = null;
 					_current = null;
-					_index = -1;
+					_index = 1;
 					break;
 				case string s:
 					_array = null;
@@ -221,16 +252,13 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 		{
 			if (_array is null)
 			{
-				if (_index < 0) return false;
-				_index = -1;
+				if (_index != 0) return false;
+				_index = 1;
 				return true;
 			}
-			if (_index < _array.Length)
-			{
-				_current = _array[_index++];
-				return true;
-			}
-			return false;
+			if (_index >= _array.Length) return false;
+			_current = _array[_index++];
+			return true;
 		}
 
 		public void Reset() => throw new NotImplementedException();

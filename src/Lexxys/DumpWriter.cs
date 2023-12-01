@@ -65,7 +65,7 @@ public abstract class DumpWriter
 	/// <summary>
 	/// Maximum depth of dumping objects.
 	/// </summary>
-	public int MaxDepth { get; private set; }
+	public int MaxDepth { get; }
 	/// <summary>
 	/// Current depth of dumping objects.
 	/// </summary>

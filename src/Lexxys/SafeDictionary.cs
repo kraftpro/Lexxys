@@ -70,7 +70,13 @@ namespace Lexxys
 
 		public bool Remove(KeyValuePair<TKey, TValue> item) => ((IDictionary<TKey, TValue>)_map).Remove(item);
 
-		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _map.TryGetValue(key, out value);
+		public bool TryGetValue(TKey key, out TValue value)
+		{
+			if (_map.TryGetValue(key, out value!))
+				return true;
+			value = _emptyValue;
+			return false;
+		}
 
 		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => ((IDictionary<TKey, TValue>)_map).GetEnumerator();
 

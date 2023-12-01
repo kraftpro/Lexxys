@@ -1,7 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-namespace Lexxys.Argument.Tests;
+﻿namespace Lexxys.Argument.Tests;
 
-[TestClass]
 public class DefinedArgumentsTests
 {
     #region Arguments and Parameters
@@ -47,7 +45,7 @@ public class DefinedArgumentsTests
 
     #endregion
 
-    [TestMethod]
+    [Fact]
     public void MyTestMethod()
     {
 

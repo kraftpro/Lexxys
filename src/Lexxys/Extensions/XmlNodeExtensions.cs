@@ -20,10 +20,12 @@ public static class XmlNodeExtensions
 		var comparer = node.Comparer;
 		return node.Elements.Where(o => comparer.Equals(name, o.Name));
 	}
+
 	public static IEnumerable<IXmlNode> Where(this IXmlNode node, string name, IEqualityComparer<string?> comparer)
 	{
 		return node.Elements.Where(o => comparer.Equals(name, o.Name));
 	}
+
 	public static IEnumerable<IXmlNode> Where(this IXmlNode node, Func<IXmlNode, bool> predicate)
 	{
 		return node.Elements.Where(predicate);
@@ -32,42 +34,76 @@ public static class XmlNodeExtensions
 	public static IXmlNode Element(this IXmlNode node, string name)
 	{
 		var comparer = node.Comparer;
-		return node.Elements.FirstOrDefault(o => comparer.Equals(name, o.Name)) ?? XmlFragBuilder.Empty;
+		foreach (var item in node.Elements)
+		{
+			if (comparer.Equals(item.Name, name))
+				return item;
+		}
+		return XmlFragBuilder.Empty;
 	}
 	public static IXmlNode Element(this IXmlNode node, string name, IEqualityComparer<string?> comparer)
 	{
-		return node.Elements.FirstOrDefault(o => comparer.Equals(name, o.Name)) ?? XmlFragBuilder.Empty;
+		foreach (var item in node.Elements)
+		{
+			if (comparer.Equals(item.Name, name))
+				return item;
+		}
+		return XmlFragBuilder.Empty;
 	}
 	public static IXmlNode Element(this IXmlNode node, Func<IXmlNode, bool> predicate)
 	{
-		return node.Elements.FirstOrDefault(predicate) ?? XmlFragBuilder.Empty;
+		foreach (var item in node.Elements)
+		{
+			if (predicate(item))
+				return item;
+		}
+		return XmlFragBuilder.Empty;
 	}
 
 	public static IXmlNode? FirstOrDefault(this IXmlNode node, string? name)
 	{
 		var comparer = node.Comparer;
-		return node.Elements.FirstOrDefault(o => comparer.Equals(name, o.Name));
+		foreach (var item in node.Elements)
+		{
+			if (comparer.Equals(item.Name, name))
+				return item;
+		}
+		return default;
 	}
+
 	public static IXmlNode? FirstOrDefault(this IXmlNode node, string? name, IEqualityComparer<string?> comparer)
 	{
-		return node.Elements.FirstOrDefault(o => comparer.Equals(name, o.Name));
+		foreach (var item in node.Elements)
+		{
+			if (comparer.Equals(item.Name, name))
+				return item;
+		}
+		return default;
 	}
+
 	public static IXmlNode? FirstOrDefault(this IXmlNode node, Func<IXmlNode, bool> predicate)
 	{
-		return node.Elements.FirstOrDefault(predicate);
+		foreach (var item in node.Elements)
+		{
+			if (predicate(item))
+				return item;
+		}
+		return default;
 	}
 
 	// IXmlReadOnlyNode
-	
+
 	public static IEnumerable<IXmlReadOnlyNode> Where(this IXmlReadOnlyNode node, string name)
 	{
 		var comparer = node.Comparer;
 		return node.Elements.Where(o => comparer.Equals(name, o.Name));
 	}
+
 	public static IEnumerable<IXmlReadOnlyNode> Where(this IXmlReadOnlyNode node, string name, IEqualityComparer<string?> comparer)
 	{
 		return node.Elements.Where(o => comparer.Equals(name, o.Name));
 	}
+
 	public static IEnumerable<IXmlReadOnlyNode> Where(this IXmlReadOnlyNode node, Func<IXmlReadOnlyNode, bool> predicate)
 	{
 		return node.Elements.Where(predicate);
@@ -77,32 +113,66 @@ public static class XmlNodeExtensions
 	public static IXmlReadOnlyNode Element(this IXmlReadOnlyNode node, string name)
 	{
 		var comparer = node.Comparer;
-		return node.Elements.FirstOrDefault(o => comparer.Equals(name, o.Name)) ?? XmlFragBuilder.Empty;
+		foreach (var item in node.Elements)
+		{
+			if (comparer.Equals(item.Name, name))
+				return item;
+		}
+		return XmlFragBuilder.Empty;
 	}
+
 	public static IXmlReadOnlyNode Element(this IXmlReadOnlyNode node, string name, IEqualityComparer<string?> comparer)
 	{
-		return node.Elements.FirstOrDefault(o => comparer.Equals(name, o.Name)) ?? XmlFragBuilder.Empty;
+		foreach (var item in node.Elements)
+		{
+			if (comparer.Equals(item.Name, name))
+				return item;
+		}
+		return XmlFragBuilder.Empty;
 	}
+
 	public static IXmlReadOnlyNode Element(this IXmlReadOnlyNode node, Func<IXmlReadOnlyNode, bool> predicate)
 	{
-		return node.Elements.FirstOrDefault(predicate) ?? XmlFragBuilder.Empty;
+		foreach (var item in node.Elements)
+		{
+			if (predicate(item))
+				return item;
+		}
+		return XmlFragBuilder.Empty;
 	}
 
 
 	public static IXmlReadOnlyNode? FirstOrDefault(this IXmlReadOnlyNode node, string? name)
 	{
 		var comparer = node.Comparer;
-		return node.Elements.FirstOrDefault(o => comparer.Equals(name, o.Name));
+		foreach (var item in node.Elements)
+		{
+			if (comparer.Equals(item.Name, name))
+				return item;
+		}
+		return default;
 	}
+
 	public static IXmlReadOnlyNode? FirstOrDefault(this IXmlReadOnlyNode node, string? name, IEqualityComparer<string?> comparer)
 	{
-		return node.Elements.FirstOrDefault(o => comparer.Equals(name, o.Name));
+		foreach (var item in node.Elements)
+		{
+			if (comparer.Equals(item.Name, name))
+				return item;
+		}
+		return default;
 	}
+
 	public static IXmlReadOnlyNode? FirstOrDefault(this IXmlReadOnlyNode node, Func<IXmlReadOnlyNode, bool> predicate)
 	{
-		return node.Elements.FirstOrDefault(predicate);
+		foreach (var item in node.Elements)
+		{
+			if (predicate(item))
+				return item;
+		}
+		return default;
 	}
-	
+
 	public static XmlReader ReadSubtree(this IXmlReadOnlyNode node) => XmlReader.Create(new StringReader(WriteXml(node).ToString()));
 
 	public static StringBuilder WriteXml(this IXmlReadOnlyNode node, StringBuilder? text = null, bool innerXml = false, bool format = false)
@@ -119,7 +189,7 @@ public static class XmlNodeExtensions
 			foreach (var item in node.Attributes)
 			{
 				text.Append(' ').Append(XmlConvert.EncodeName(item.Key)).Append('=');
-				XmlTools.EncodeAttribute(text, item.Value);
+				XmlTools.EncodeAttribute(text, item.Value.AsSpan());
 			}
 
 			if (node.Value.Length > 0)
@@ -127,7 +197,7 @@ public static class XmlNodeExtensions
 				text.Append('>');
 				if (indent != null && (node.Value.Length > 80 || node.Elements.Count > 0))
 					text.AppendLine().Append(indent).Append("  ");
-				XmlTools.Encode(text, node.Value);
+				XmlTools.Encode(text, node.Value.AsSpan());
 			}
 			else if (node.Elements.Count > 0)
 			{

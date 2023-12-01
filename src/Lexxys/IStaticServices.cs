@@ -7,5 +7,5 @@ public interface IStaticServices
 	bool IsInitialized { get; }
 	IServiceProvider ServiceProvider { get; }
 
-	void AddServices(IEnumerable<ServiceDescriptor>? services, bool safe = false);
+	bool AddServices(IEnumerable<ServiceDescriptor>? services, bool unique = false);
 }

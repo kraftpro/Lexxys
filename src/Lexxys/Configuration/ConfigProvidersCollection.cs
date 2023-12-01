@@ -20,7 +20,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 	private ConcurrentQueue<EventEntry>? _messages;
 	private volatile int _version;
 	private int _top;
-	private volatile List<IConfigProvider> _providers = new List<IConfigProvider>();
+	private volatile List<IConfigSource> _providers = new List<IConfigSource>();
 	private readonly object _syncObj = new Object();
 
 	public ConfigProvidersCollection()
@@ -39,7 +39,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		}
 	}
 
-	public ConfigProvidersCollection(IEnumerable<IConfigProvider> providers) : this()
+	public ConfigProvidersCollection(IEnumerable<IConfigSource> providers) : this()
 	{
 		if (providers == null)
 			throw new ArgumentNullException(nameof(providers));
@@ -70,7 +70,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 
 		object? value = null;
 		var providers = _providers;
-		foreach (IConfigProvider item in providers)
+		foreach (IConfigSource item in providers)
 		{
 			value = item.GetValue(key, objectType);
 			if (value != null)
@@ -90,9 +90,9 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		IReadOnlyList<T>? temp = null;
 		List<T>? list = null;
 		var providers = _providers;
-		foreach (IConfigProvider item in providers)
+		foreach (IConfigSource item in providers)
 		{
-			IReadOnlyList<T> x = item.GetList<T>(key);
+			var x = item.GetList<T>(key);
 			if (x.Count <= 0) continue;
 			if (temp == null)
 				temp = x;
@@ -100,8 +100,8 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 				(list ??= new List<T>(temp)).AddRange(x);
 		}
 		IReadOnlyList<T> result =
-			temp == null ? Array.Empty<T>() :
-			list == null ? temp : ReadOnly.Wrap(list)!;
+			temp == null ? Array.Empty<T>():
+			list == null ? temp: ReadOnly.Wrap(list)!;
 		return result;
 	}
 
@@ -119,7 +119,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		return added != 0;
 	}
 
-	public bool AddConfiguration(IConfigProvider provider, bool tail = false)
+	public bool AddConfiguration(IConfigSource provider, bool tail = false)
 	{
 		if (provider is null)
 			throw new ArgumentNullException(nameof(provider));
@@ -174,9 +174,11 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 
 	#endregion
 
-	private void OnChanged() => OnChanged(null, new ConfigurationEventArgs());
+	bool IEquatable<IConfigSource>.Equals(IConfigSource? other) => ReferenceEquals(this, other);
 
-	private int AddConfiguration(IConfigProvider provider, int position)
+	private void OnChanged() => OnChanged(null, ConfigurationEventArgs.Default);
+
+	public int AddConfiguration(IConfigSource provider, int position)
 	{
 		if (provider is null)
 			throw new ArgumentNullException(nameof(provider));
@@ -184,7 +186,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		int i = AddProvider(provider, position);
 		if (i >= 0)
 		{
-			LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(provider.Location, i));
+			LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(provider.ToString(), i));
 			ScanConfigurationFile(provider, i);
 			provider.Changed += OnChanged;
 			OnChanged();
@@ -233,30 +235,23 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		}
 	}
 
-	private List<IConfigProvider?> CreateProviders(Uri location, IReadOnlyCollection<string>? parameters)
+	private List<IConfigSource?> CreateProviders(Uri location, IReadOnlyCollection<string>? parameters)
 	{
 		if (location is null)
 			throw new ArgumentNullException(nameof(location));
 		if (!_initialized)
 			Initialize();
 
-		var result = new List<IConfigProvider?>();
+		var result = new List<IConfigSource?>();
 		var files = !location.IsAbsoluteUri || location.IsFile ? Config.GetLocalFiles(location.IsAbsoluteUri ? location.LocalPath: location.OriginalString, ConfigurationDirectories): [location];
 		foreach (var file in files)
 		{
 			try
 			{
-				int i = _providers.FindIndex(o => o.Location == file);
-				if (i >= 0)
-				{
-					result.Add(null);
-					continue;
-				}
 				var provider = TryCreateProvider(file, parameters);
 				if (provider == null)
 					continue;
-				i = _providers.FindIndex(o => o.Location == provider.Location);
-				result.Add(i < 0 ? provider: null);
+				result.Add(_providers.Any(o => o.Equals(provider)) ? null: provider);
 			}
 			catch (Exception flaw)
 			{
@@ -275,8 +270,8 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		return result;
 	}
 
-	internal static IConfigProvider? TryCreateProvider(Uri location, IReadOnlyCollection<string>? parameters)
-		=> TryCreateInstance<IConfigProvider>(__methodNames, __locationType2, [location, parameters]);
+	internal static IConfigSource? TryCreateProvider(Uri location, IReadOnlyCollection<string>? parameters)
+		=> TryCreateInstance<IConfigSource>(__methodNames, __locationType2, [location, parameters]);
 	private static readonly Type[] __locationType2 = [typeof(Uri), typeof(IReadOnlyCollection<string>)];
 	private static readonly string[] __methodNames = ["Create", "TryCreate"];
 
@@ -311,15 +306,15 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		public static List<MethodInfo>? Cache;
 	}
 
-	private int AddProvider(IConfigProvider provider, int position)
+	private int AddProvider(IConfigSource provider, int position)
 	{
-		List<IConfigProvider> providers;
-		List<IConfigProvider> updated;
+		List<IConfigSource> providers;
+		List<IConfigSource> updated;
 		int inserted;
 		do
 		{
 			providers = _providers;
-			var i = providers.FindIndex(o => o.Location == provider.Location);
+			var i = providers.FindIndex(o => o.Equals(provider));
 			if (i >= 0)
 				return ~i;
 			updated = new(providers);
@@ -337,7 +332,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		return inserted;
 	}
 
-	private void ScanConfigurationFile(IConfigProvider provider, int position)
+	private void ScanConfigurationFile(IConfigSource provider, int position)
 	{
 		if (provider.GetValue("applicationDirectory", typeof(string)) is string home)
 		{
@@ -449,17 +444,17 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 			}
 			_initialized = true;
 			_initializing = false;
-			Lxx.OnConfigurationInitialized(this, new ConfigurationEventArgs());
+			Lxx.OnConfigurationInitialized(this, ConfigurationEventArgs.Default);
 			OnChanged();
 		}
 	}
 
-	private void AddSystem(Uri locator, IConfigProvider provider, int position)
+	private void AddSystem(Uri locator, IConfigSource provider, int position)
 	{
 		position = AddProvider(provider, position);
 		if (position < 0)
 			return;
-		LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(locator, position));
+		LogConfigurationEvent(LogSource, SR.ConfigurationLoaded(provider.ToString(), position));
 		ScanConfigurationFile(provider, position);
 	}
 

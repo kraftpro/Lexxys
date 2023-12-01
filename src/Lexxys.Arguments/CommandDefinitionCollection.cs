@@ -79,14 +79,26 @@ public class CommandDefinitionCollection: IEnumerable<CommandDefinition>
 			throw new ArgumentNullException(nameof(name));
 		var command = _commands.Find(o => String.Equals(o.Name, name, _comparison));
 		if (command is null)
-			_commands.Add(command = new CommandDefinition(Command, name, description));
+			_commands.Add(command = new CommandDefinition(Command, name, description: description));
 		return command;
 	}
 
-	///// <summary>
-	///// Returns the default, no-name command.
-	///// </summary>
-	//public CommandDefinition Default => _commands[0];
+	/// <summary>
+	/// Gets or creates a command with the specified <paramref name="name"/> and <paramref name="description"/>.
+	/// </summary>
+	/// <param name="name">Command name.</param>
+	/// <param name="description">Command description.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public CommandDefinition GetOrCreate(string name, string[]? abbreviation, string? description = null)
+	{
+		if (name is null)
+			throw new ArgumentNullException(nameof(name));
+		var command = _commands.Find(o => String.Equals(o.Name, name, _comparison));
+		if (command is null)
+			_commands.Add(command = new CommandDefinition(Command, name, abbreviation, description));
+		return command;
+	}
 
 	/// <summary>
 	/// Returns the command with the specified <paramref name="name"/> or <c>null</c> if not found.

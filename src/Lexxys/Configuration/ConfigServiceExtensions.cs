@@ -35,4 +35,17 @@ public static class ConfigServiceExtensions
 		service.AddConfiguration(new Uri(path, UriKind.RelativeOrAbsolute), parameters, tail);
 		return service;
 	}
+	
+#warning REWRITE
+	public static bool AddConfiguration(this IConfigService service, Uri path, IReadOnlyCollection<string>? parameters = null, bool tail = false)
+	{
+		if (service is null)
+			throw new ArgumentNullException(nameof(service));
+		if (path is null)
+			throw new ArgumentNullException(nameof(path));
+
+		// service.AddConfiguration(new Uri(path, UriKind.RelativeOrAbsolute), parameters, tail);
+		return false;
+	}
+
 }

@@ -11,7 +11,7 @@ namespace Lexxys
 	[Serializable]
 	public readonly struct RowVersion: IEquatable<RowVersion>, IComparable<RowVersion>, IComparable
 	{
-		public RowVersion(long value)
+		public RowVersion(ulong value)
 		{
 			Value = value;
 		}
@@ -23,7 +23,7 @@ namespace Lexxys
 			Value = PackRowVersion(bits);
 		}
 
-		public long Value { get; }
+		public ulong Value { get; }
 
 		public byte[] ToByteArray() => UnPackRowVersion(Value);
 
@@ -33,24 +33,24 @@ namespace Lexxys
 
 		public static explicit operator RowVersion(byte[] value) => FromByteArray(value);
 
-		public long ToInt64() => Value;
+		public ulong ToInt64() => Value;
 
-		public static RowVersion FromInt64(long value) => new RowVersion(value);
+		public static RowVersion FromInt64(ulong value) => new RowVersion(value);
 
-		public static explicit operator long(RowVersion value) => value.Value;
+		public static explicit operator ulong(RowVersion value) => value.Value;
 
-		public static explicit operator RowVersion(long value) => new RowVersion(value);
+		public static explicit operator RowVersion(ulong value) => new RowVersion(value);
 
-		private static unsafe long PackRowVersion(byte[] value)
+		private static unsafe ulong PackRowVersion(byte[] value)
 		{
 			if (value == null)
 				throw new ArgumentNullException(nameof(value));
-			if (value.Length != sizeof(long))
+			if (value.Length != sizeof(ulong))
 				throw new ArgumentOutOfRangeException(nameof(value) + ".Length", value.Length, null);
 
 			fixed (byte* p = value)
 			{
-				byte* q = stackalloc byte[sizeof(long)];
+				byte* q = stackalloc byte[sizeof(ulong)];
 				q[0] = p[7];
 				q[1] = p[6];
 				q[2] = p[5];
@@ -59,17 +59,17 @@ namespace Lexxys
 				q[5] = p[2];
 				q[6] = p[1];
 				q[7] = p[0];
-				return *(long*)q;
+				return *(ulong*)q;
 			}
 		}
 
-		private static unsafe byte[] UnPackRowVersion(long value)
+		private static unsafe byte[] UnPackRowVersion(ulong value)
 		{
-			byte[] bytes = new byte[sizeof(long)];
+			byte[] bytes = new byte[sizeof(ulong)];
 			fixed (byte* p = bytes)
 			{
-				byte* q = stackalloc byte[sizeof(long)];
-				*(long*)q = value;
+				byte* q = stackalloc byte[sizeof(ulong)];
+				*(ulong*)q = value;
 				p[0] = q[7];
 				p[1] = q[6];
 				p[2] = q[5];

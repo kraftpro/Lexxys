@@ -191,32 +191,32 @@ public sealed class ConfigSection: IConfigSection
 	}
 }
 
-public sealed class DisposableConfigSection: IConfigSection, IDisposable
-{
-	private readonly IConfigSection _configSection;
-	private readonly IDisposable _disposable;
+//public sealed class DisposableConfigSection: IConfigSection, IDisposable
+//{
+//	private readonly IConfigSection _configSection;
+//	private readonly IDisposable _disposable;
 
-	public DisposableConfigSection(IDisposableConfigSource configSource)
-	{
-		_configSection = new ConfigSection(configSource);
-		_disposable = configSource;
-	}
+//	public DisposableConfigSection(IDisposableConfigSource configSource)
+//	{
+//		_configSection = new ConfigSection(configSource);
+//		_disposable = configSource;
+//	}
 
-	public int Version => _configSection.Version;
+//	public int Version => _configSection.Version;
 
-	public event EventHandler<ConfigurationEventArgs>? Changed { add => _configSection.Changed += value; remove => _configSection.Changed -= value; }
+//	public event EventHandler<ConfigurationEventArgs>? Changed { add => _configSection.Changed += value; remove => _configSection.Changed -= value; }
 
-	public void Dispose() => _disposable.Dispose();
+//	public void Dispose() => _disposable.Dispose();
 
-	public IValue<IReadOnlyList<T>> GetCollection<T>(string? key) => _configSection.GetCollection<T>(key);
+//	public IValue<IReadOnlyList<T>> GetCollection<T>(string? key) => _configSection.GetCollection<T>(key);
 
-	public IConfigSection GetSection(string? key) => _configSection.GetSection(key);
+//	public IConfigSection GetSection(string? key) => _configSection.GetSection(key);
 
-	public IValue<T> GetValue<T>(string? key, Func<T>? defaultValue = null) => _configSection.GetValue(key, defaultValue);
+//	public IValue<T> GetValue<T>(string? key, Func<T>? defaultValue = null) => _configSection.GetValue(key, defaultValue);
 
-	public void MapPath(string key, string value) => _configSection.MapPath(key, value);
+//	public void MapPath(string key, string value) => _configSection.MapPath(key, value);
 
-	public void SetCollection<T>(string? key, IReadOnlyList<T> value) => _configSection.SetCollection(key, value);
+//	public void SetCollection<T>(string? key, IReadOnlyList<T> value) => _configSection.SetCollection(key, value);
 
-	public void SetValue<T>(string? key, T value) => _configSection.SetValue(key, value);
-}
+//	public void SetValue<T>(string? key, T value) => _configSection.SetValue(key, value);
+//}

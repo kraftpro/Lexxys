@@ -2,6 +2,7 @@
 using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Globalization;
+using System.Collections.Concurrent;
 
 namespace Lexxys;
 
@@ -1047,8 +1048,10 @@ public static partial class Strings
 	{
 		if (!type.IsValueType)
 			return (type, null);
-		if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-			return (type.GetGenericArguments()[0], type);
-		return (type, typeof(Nullable<>).MakeGenericType(type));
+		return __nullableTypesCache.GetOrAdd(type, t =>
+			t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>) ?
+				((Type, Type?))(t.GetGenericArguments()[0], t):
+				((Type, Type?))(t, typeof(Nullable<>).MakeGenericType(t)));
 	}
+	private static readonly ConcurrentDictionary<Type, (Type, Type?)> __nullableTypesCache = new ConcurrentDictionary<Type, (Type, Type?)>();
 }

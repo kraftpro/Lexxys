@@ -7,15 +7,12 @@
 
 namespace Lexxys.Configuration;
 
-public interface IConfigSource
+public interface IConfigSource: IEquatable<IConfigSource>
 {
-	int Version { get; }
 	event EventHandler<ConfigurationEventArgs>? Changed;
+	int Version { get; }
 
 	object? GetValue(string key, Type objectType);
-	IReadOnlyList<T> GetList<T>(string key);
-}
 
-public interface IDisposableConfigSource: IConfigSource, IDisposable
-{
+	IReadOnlyList<T> GetList<T>(string key);
 }

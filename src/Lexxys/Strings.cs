@@ -5,7 +5,11 @@
 // You may use this code under the terms of the MIT license
 //
 using System.Buffers;
+using System.Globalization;
 using System.Text;
+using System.Xml;
+using System.Diagnostics.CodeAnalysis;
+using System;
 
 namespace Lexxys;
 
@@ -215,88 +219,6 @@ public static partial class Strings
 			text.Write(marker);
 	}
 
-	// public static IEnumerable<char> EscapeCsCharArray(IEnumerable<char> value, char marker = '"')
-	// {
-	// 	if (value == null)
-	// 		throw new ArgumentNullException(nameof(value));
-	//
-	// 	if (marker != '\0')
-	// 		yield return marker;
-	// 	foreach (char c in value)
-	// 	{
-	// 		if (c < ' ' || c == 127)
-	// 		{
-	// 			switch (c)
-	// 			{
-	// 				case '\n':
-	// 					yield return '\\';
-	// 					yield return 'n';
-	// 					break;
-	// 				case '\r':
-	// 					yield return '\\';
-	// 					yield return 'r';
-	// 					break;
-	// 				case '\t':
-	// 					yield return '\\';
-	// 					yield return 't';
-	// 					break;
-	// 				case '\f':
-	// 					yield return '\\';
-	// 					yield return 'f';
-	// 					break;
-	// 				case '\v':
-	// 					yield return '\\';
-	// 					yield return 'v';
-	// 					break;
-	// 				case '\a':
-	// 					yield return '\\';
-	// 					yield return 'a';
-	// 					break;
-	// 				case '\b':
-	// 					yield return '\\';
-	// 					yield return 'b';
-	// 					break;
-	// 				case '\0':
-	// 					yield return '\\';
-	// 					yield return '0';
-	// 					break;
-	// 				default:
-	// 					yield return '\\';
-	// 					yield return 'x';
-	// 					yield return '0';
-	// 					yield return '0';
-	// 					yield return __hex[(c & 0xF0) >> 4];
-	// 					yield return __hex[c & 0xF];
-	// 					break;
-	// 			}
-	// 		}
-	// 		else if (c >= '\xd800')
-	// 		{
-	// 			yield return '\\';
-	// 			yield return 'x';
-	// 			yield return __hex[(c & 0xF000) >> 12];
-	// 			yield return __hex[(c & 0xF00) >> 8];
-	// 			yield return __hex[(c & 0xF0) >> 4];
-	// 			yield return __hex[c & 0xF];
-	// 		}
-	// 		else if (c == marker)
-	// 		{
-	// 			yield return '\\';
-	// 			yield return marker;
-	// 		}
-	// 		else if (c == '\\')
-	// 		{
-	// 			yield return '\\';
-	// 			yield return '\\';
-	// 		}
-	// 		else
-	// 		{
-	// 			yield return c;
-	// 		}
-	// 	}
-	// 	if (marker != '\0')
-	// 		yield return marker;
-	// }
 	private static readonly char[] __hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
 
 	/// <summary>
@@ -604,14 +526,6 @@ public static partial class Strings
 	/// <param name="value">The string to convert.</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static string ToPascalCase(string value) => value is null ? throw new ArgumentNullException(nameof(value)): ToPascalCase(value.AsSpan());
-
-	/// <summary>
-	/// Converts the specified string <paramref name="value"/> to the camel case naming convention.
-	/// </summary>
-	/// <param name="value">The string to convert.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
 	public static string ToCamelCase(ReadOnlySpan<char> value)
 	{
 		if (value.Length == 0)
@@ -634,6 +548,14 @@ public static partial class Strings
 	}
 
 	/// <summary>
+	/// Converts the specified string <paramref name="value"/> to the camel case naming convention.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static string ToPascalCase(string value) => value is null ? throw new ArgumentNullException(nameof(value)): ToPascalCase(value.AsSpan());
+
+	/// <summary>
 	/// Converts the specified string <paramref name="value"/> to the pascal case naming convention.
 	/// </summary>
 	/// <param name="value">The string to convert.</param>
@@ -654,7 +576,6 @@ public static partial class Strings
 	}
 
 	public delegate void Converter(ReadOnlySpan<char> span, Span<char> buffer);
-
 	
 	/// <summary>
 	/// Converts the specified string <paramref name="value"/> to the names separated by the specified dash.
@@ -790,25 +711,32 @@ public static partial class Strings
 
 		var text = new StringBuilder();
 		string value = "";
-		bool first = true;
-		comma ??= ", ";
-		string pad = "";
-		foreach (var item in values.Where(o => !String.IsNullOrEmpty(o)))
+		bool one = false;
+		bool two = false;
+		string pad = comma ?? ", ";
+		foreach (var item in values)
 		{
-			if (first)
+			if (String.IsNullOrEmpty(item)) continue;
+			if (!one)
 			{
-				first = false;
+				one = true;
 			}
 			else
 			{
-				text.Append(pad).Append(value);
-				pad = comma;
+                if (two)
+					text.Append(pad);
+				else
+					two = true;
+                text.Append(value);
 			}
 			value = item;
 		}
 		if (text.Length == 0)
 			return value;
-		text.Append(and ?? " and ").Append(value);
+        if (two && comma == null && and == null)
+            text.Append(", and ").Append(value);
+		else
+	        text.Append(and ?? " and ").Append(value);
 		return text.ToString();
 	}
 
@@ -924,25 +852,17 @@ public static partial class Strings
 		"1100", "1101", "1110", "1111",
 	];
 
-	public static string CutIndents(ReadOnlySpan<string?> source, int tabSize = 4, string? newLine = null)
+	public static string CutIndents(IReadOnlyCollection<string?> source, int tabSize = 4, string? newLine = null)
 	{
 		if (tabSize is <1 or >32)
 			throw new ArgumentOutOfRangeException(nameof(tabSize), tabSize, null);
 
-		if (source.Length <= 0)
-			return source.Length == 0 ? String.Empty: source[0]?.Trim() ?? String.Empty;
-		newLine ??= Environment.NewLine;
-		var result = new StringBuilder(source.Length * 80);
-		if ((source[source.Length - 1]?.Length ?? 0) == 0)
-		{
-			for (int i = 0; i < source.Length - 1; ++i)
-			{
-				result.Append(source[i].AsSpan().TrimEnd()).Append(newLine);
-			}
-			return result.ToString(0, result.Length - newLine.Length);
-		}
+		if (source.Count <= 1)
+			return source.FirstOrDefault()?.Trim() ?? String.Empty;
 
-		int indent = Int32.MaxValue; // source[source.Length - 1].Length;
+		newLine ??= Environment.NewLine;
+		var result = new StringBuilder(source.Count * 80);
+		int indent = Int32.MaxValue;
 
 		foreach (var t in source)
 		{

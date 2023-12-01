@@ -11,7 +11,7 @@ internal static class ParameterDefinitionExtensions
 
 		foreach (var p in parameters)
 		{
-			if (!abbreviationOnly && String.Equals(p.Name, name, comparison) || p.Abbreviations.Any(o => String.Equals(o, name, comparison)))
+			if (!abbreviationOnly && String.Equals(p.Name, name, comparison) || p.Abbreviation.Any(o => String.Equals(o, name, comparison)))
 				return p;
 		}
 		return default;
@@ -24,7 +24,7 @@ internal static class ParameterDefinitionExtensions
 		foreach (var p in parameters)
 		{
 			var i = p.Definition;
-			if (String.Equals(i.Name, name, comparison) || i.Abbreviations.Any(o => String.Equals(o, name, comparison)))
+			if (String.Equals(i.Name, name, comparison) || i.Abbreviation.Any(o => String.Equals(o, name, comparison)))
 				return i;
 		}
 		return default;

@@ -9,7 +9,7 @@ namespace Lexxys.Configuration;
 
 using Xml;
 
-public class XmlConfigurationProvider: IConfigProvider
+public class XmlConfigurationProvider: IConfigSource
 {
 	private const string ConfigurationRoot = "configuration";
 	readonly IXmlConfigurationSource _source;
@@ -20,10 +20,6 @@ public class XmlConfigurationProvider: IConfigProvider
 		_source = source ?? throw new ArgumentNullException(nameof(source));
 		_source.Changed += OnChanged;
 	}
-
-	public string Name => _source.Name;
-
-	public Uri Location => _source.Location;
 
 	public int Version => _source.Version;
 
@@ -54,6 +50,11 @@ public class XmlConfigurationProvider: IConfigProvider
 			.Select(o => ParseValue(o, typeof(T)))
 			.Where(o => o != null)
 			.Select(o => (T)o!))!;
+	}
+
+	public bool Equals(IConfigSource? other)
+	{
+		throw new NotImplementedException();
 	}
 
 	public static XmlConfigurationProvider? TryCreate(Uri location, IReadOnlyCollection<string>? parameters)

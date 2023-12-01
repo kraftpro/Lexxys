@@ -904,7 +904,12 @@ public static class Dc
 			{ typeof(RowVersion), o =>
 			{
 				var v = o[0];
-				return v == null ? default: v is byte[] b ? new RowVersion(b): new RowVersion((long)v);
+				return v switch
+				{
+					null => default,
+					byte[] b => new RowVersion(b),
+					_ => new((ulong)v)
+				};
 			} },
 
 			{ typeof(string), o => (string?)o[0] },
@@ -930,7 +935,12 @@ public static class Dc
 			{ typeof(RowVersion?), o =>
 			{
 				var v = o[0];
-				return v == null ? default: v is byte[] b ? new RowVersion(b): (RowVersion?)new RowVersion((long)v);
+				return v switch
+				{
+					null => default,
+					byte[] b => new RowVersion(b),
+					_ => new((ulong)v)
+				};
 			} },
 		};
 

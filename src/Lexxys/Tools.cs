@@ -15,6 +15,8 @@ namespace Lexxys;
 public static class Tools
 {
 	internal const int MaxStackAllocSize = 4096;
+	internal const int SafeStackAllocByte = 1024;
+	internal const int SafeStackAllocChar = SafeStackAllocByte / sizeof(char);
 
 	/// <summary>
 	/// Converts floating point value to rational number

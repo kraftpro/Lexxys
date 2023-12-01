@@ -37,7 +37,7 @@ public class XsdLiteNode
 
 	public int MaxCount { get; }
 
-	public bool IsMatch(XmlLiteNode node)
+	public bool IsMatch(IXmlReadOnlyNode node)
 	{
 		if (node == null)
 			throw new ArgumentNullException(nameof(node));
@@ -50,7 +50,7 @@ public class XsdLiteNode
 
 		foreach (var item in Descendant)
 		{
-			IList<XmlLiteNode> nodes = node.Where(item.Name).ToList();
+			IList<IXmlReadOnlyNode> nodes = node.Where(item.Name).ToList();
 			if (nodes.Count < MinCount)
 				return false;
 			if (nodes.Count > MaxCount)
@@ -124,7 +124,7 @@ public class XsdLiteNode
 				{
 					var s = attr["name"] ?? attr.Name;
 					var v = XsdLiteValue.FromXml(attr);
-					if (s != null && v != null)
+					if (v != null)
 						attribs.Add(new KeyValuePair<string, XsdLiteValue>(s, v));
 				}
 			}
@@ -132,7 +132,7 @@ public class XsdLiteNode
 			{
 				var s = item["name"].AsString(String.Empty);
 				var v = XsdLiteValue.FromXml(item);
-				if (s != null && v != null)
+				if (v != null)
 					attribs.Add(new KeyValuePair<string, XsdLiteValue>(s, v));
 			}
 			else

@@ -214,7 +214,9 @@ public static class ReadOnly
 
 		public bool Remove(TKey key) => throw new ReadOnlyException();
 
+#pragma warning disable CS8767 // NET472 only. Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _dictionary.TryGetValue(key, out value);
+#pragma warning restore CS8767 // NET472 only. Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
 		public IWrappedCollection<TValue> Values => new ReadOnlyCollectionWrap<TValue>(_dictionary.Values);
 
@@ -309,7 +311,9 @@ public static class ReadOnly
 
 		public TValue this[TKey key] => _dictionary[key];
 
+#pragma warning disable CS8767 // NET472 only. Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _dictionary.TryGetValue(key, out value);
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
 		public IEnumerable<TKey> Keys => _dictionary.Keys;
 

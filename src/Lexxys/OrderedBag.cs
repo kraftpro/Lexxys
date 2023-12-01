@@ -141,7 +141,7 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 	}
 
 	/// <inheritdoc cref="IDictionary{TKey,TValue}.TryGetValue" />
-	public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+	public bool TryGetValue(TKey key, out TValue value)
 	{
 		int i = IndexOf(key);
 		if (i < 0)

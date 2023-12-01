@@ -1,4 +1,6 @@
-﻿namespace Lexxys;
+﻿using System.Reflection;
+
+namespace Lexxys;
 
 /// <summary>
 /// Builder for <see cref="Arguments"/> class.
@@ -293,7 +295,20 @@ public class ArgumentsBuilder
 	public ArgumentsBuilder BeginCommand(string name, string? description = null)
 	{
 		if (name is null) throw new ArgumentNullException(nameof(name));
-		_current = new CommandDefinition(_current, name, description);
+		_current = new CommandDefinition(_current, name, description: description);
+		return this;
+	}
+
+	/// <summary>
+	/// Specifies a new or an existing command to which parameters will be added.
+	/// </summary>
+	/// <param name="name">Name of the command or <c>null</c></param>
+	/// <param name="description">Description for the new command</param>
+	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
+	public ArgumentsBuilder BeginCommand(string name, string[]? abbreviation, string? description = null)
+	{
+		if (name is null) throw new ArgumentNullException(nameof(name));
+		_current = new CommandDefinition(_current, name, abbreviation, description);
 		return this;
 	}
 
@@ -350,7 +365,7 @@ public class ArgumentsBuilder
 	/// <param name="required">Indicates that this is a required parameter.</param>
 	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public ArgumentsBuilder Parameter(string name, string[] abbrev, string? valueName = null, string? description = null, bool collection = false, bool required = false)
+	public ArgumentsBuilder Parameter(string name, string[]? abbrev, string? valueName = null, string? description = null, bool collection = false, bool required = false)
 	{
 		_current.Add(new ParameterDefinition(_current, name, abbrev, valueName, description: description, collection: collection, required: required));
 		return this;
@@ -409,15 +424,75 @@ public class ArgumentsBuilder
 	}
 
 	/// <summary>
+	/// Adds parameters and commands from the specified type <typeparamref name="T"/>.
+	/// </summary>
+	/// <typeparam name="T">The type to be used.</typeparam>
+	/// <returns></returns>
+	public ArgumentsBuilder Use<T>() where T: class, new() => Use(typeof(T));
+
+	/// <summary>
+	/// Adds parameters and commands from the specified <paramref name="type"/>.
+	/// </summary>
+	/// <param name="type">The type to be used.</param>
+	/// <returns></returns>
+	public ArgumentsBuilder Use(Type type)
+	{
+		List<ParameterDef> items = GetProperties(type);
+		var commands = new List<ParameterDef>();
+
+		foreach (var item in items)
+		{
+			if (item.Cmd != null || IsInternal(item.Type, type))
+			{
+				commands.Add(item);
+				continue;
+			}
+			var attr = item.Prm;
+			Parameter(item.Name, attr?.Alias, attr?.ValueName, attr?.Description, IsCollection(item.Type), attr?.Required ?? false);
+		}
+
+		foreach (var item in commands)
+		{
+			var attr = item.Cmd;
+			BeginCommand(item.Name, attr?.Alias, attr?.Description);
+			Use(item.Type);
+			EndCommand();
+		}
+		return this;
+
+		static bool IsCollection(Type type)
+		{
+			if (type == typeof(string)) return false;
+			if (type.IsArray) return true;
+			if (!type.IsGenericType) return false;
+			var args = type.GetGenericArguments();
+			return args.Length == 1 && type.IsAssignableFrom(typeof(List<>).MakeGenericType(args));
+		}
+
+		static bool IsInternal(Type itemType, Type type) => type.Namespace == null ? TopDeclaringType(itemType) == TopDeclaringType(type): type.Namespace == itemType.Namespace;
+
+		static Type? TopDeclaringType(Type type) => type.DeclaringType is null ? type: TopDeclaringType(type.DeclaringType);
+	}
+
+	private static List<ParameterDef> GetProperties(Type type)
+	{
+		return type
+			.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty)
+			.Where(o => o.CanWrite && o.GetSetMethod() != null && o.GetIndexParameters().Length == 0)
+			.Select(o => new ParameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliParamAttribute>(), o.Name, o.PropertyType, o.SetValue))
+			.Union(type
+				.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetField)
+				.Where(o => !o.IsInitOnly && !o.IsLiteral)
+				.Select(o => new ParameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliParamAttribute>(), o.Name, o.FieldType, o.SetValue))
+				).ToList();
+	}
+
+	private record struct ParameterDef(CliCommandAttribute? Cmd, CliParamAttribute? Prm, string Name, Type Type, Action<object, object?> Setter);
+
+	/// <summary>
 	/// Parses the specified arguments and returns an <see cref="Arguments"/> instance.
 	/// </summary>
 	/// <param name="args">Command line arguments.</param>
 	/// <returns></returns>
 	public Arguments Build(IEnumerable<string> args) => new Arguments(args, this);
-
-#if NET7_0_OR_GREATER
-
-	public Arguments<T> Built<T>(IEnumerable<string> args) where T: ICliOption<T> => new Arguments<T>(args, this);
-
-#endif
 }

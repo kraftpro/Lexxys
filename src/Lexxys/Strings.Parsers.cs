@@ -72,7 +72,7 @@ public static partial class Strings
 		if (TryWellKnownConverter(value, returnType, out result))
 			return true;
 
-		if (returnType.IsEnum || returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Nullable<>) && returnType.GetGenericArguments()[0].IsEnum)
+		if (returnType.IsEnum || Nullable.GetUnderlyingType(returnType) is { IsEnum: true })
 		{
 			var (regular, nullable) = NullableTypes(returnType);
 			__stringConditionalConstructor.TryAdd(regular!, (string x, out object? y) => TryGetEnum(x, regular, out y));
@@ -81,7 +81,7 @@ public static partial class Strings
 			return TryGetEnum(value, regular, out result);
 		}
 
-		var parser = GetTypeConverter(returnType) ?? GetExplicitConverter(returnType);
+		var parser = GetValueConverter(returnType) ?? GetExplicitConverter(returnType);
 		if (parser != null)
 		{
 			var (type1, type2) = NullableTypes(returnType);
@@ -105,71 +105,84 @@ public static partial class Strings
 
 	private static bool IsNullValue(string? value)
 	{
-		value = value.TrimToNull();
-		return value == null ||
-			value.Length == 4 && String.Equals(value, "NULL", StringComparison.OrdinalIgnoreCase) ||
-			value.Length == 5 && String.Equals(value, "$NULL", StringComparison.OrdinalIgnoreCase);
+		var span = value.AsSpan().Trim();
+		if (span.Length == 0) return true;
+        if (span[0] == '$')
+			span = span.Slice(1);
+        return span.Length == 4
+			&& (span[0] | ('a'^'A')) == 'n'
+			&& (span[1] | ('a'^'A')) == 'u'
+			&& (span[2] | ('a'^'A')) == 'l'
+			&& (span[3] | ('a'^'A')) == 'l';
 	}
 
-	private static ValueParser? GetTypeConverter(Type targetType)
+	private static readonly ConcurrentDictionary<Type, ValueParser?> __typeConvertersCache = new ConcurrentDictionary<Type, ValueParser?>();
+
+	private static ValueParser? GetValueConverter(Type targetType)
 	{
-		var converterType = GetConverterType(targetType);
-		if (converterType == null)
-			return null;
-		TypeConverter? converter;
+		if (__typeConvertersCache.TryGetValue(targetType, out var parser))
+			return parser;
+		
+		TypeConverter? converter = CreateTypeConverter(targetType);
+		if (converter != null && converter.CanConvertFrom(typeof(string)))
+			parser = (string v, out object? r) =>
+			{
+				try
+				{
+					r = converter.ConvertFromInvariantString(v);
+					return true;
+				}
+				catch (NotSupportedException)
+				{
+				}
+				catch (ArgumentException)
+				{
+				}
+				r = null;
+				return false;
+			};
+		__typeConvertersCache.TryAdd(targetType, parser);
+		return parser;
+	}
+
+	private static TypeConverter? CreateTypeConverter(Type targetType)
+	{
 		try
 		{
-			converter = Factory.Construct(converterType) as TypeConverter;
+			Type? converterType = GetConverterType(targetType);
+			return converterType == null ? null: Factory.Construct(converterType) as TypeConverter;
 		}
 		catch
 		{
 			return null;
 		}
-		if (converter == null || !converter.CanConvertFrom(typeof(string)))
-			return null;
-		return (string v, out object? r) =>
+
+		static Type? GetConverterType(Type? type)
 		{
-			try
-			{
-				r = converter.ConvertFromInvariantString(v);
-				return true;
-			}
-			catch (NotSupportedException)
-			{
-			}
-			catch (ArgumentException)
-			{
-			}
-			r = null;
-			return false;
-		};
-	}
-
-	private static Type? GetConverterType(Type? type)
-	{
-		if (type is null)
-			return null;
-		while (type != typeof(object))
-		{
-			CustomAttributeTypedArgument argument = CustomAttributeData.GetCustomAttributes(type)
-				.Where(o => o.Constructor.ReflectedType == typeof(TypeConverterAttribute) && o.ConstructorArguments.Count == 1)
-				.Select(o => o.ConstructorArguments[0]).FirstOrDefault();
-
-			if (argument != default)
-			{
-				if (argument.Value is Type qualifiedType)
-					return Factory.IsPublicType(qualifiedType) ? qualifiedType: null;
-
-				if (argument.Value is string qualifiedTypeName)
-				{
-					qualifiedType = Factory.GetType(qualifiedTypeName)!;
-					return Factory.IsPublicType(qualifiedType) ? qualifiedType: null;
-				}
+			if (type is null)
 				return null;
+			while (type != typeof(object))
+			{
+				foreach (var attrib in CustomAttributeData.GetCustomAttributes(type))
+				{
+					if (attrib.Constructor.ReflectedType != typeof(TypeConverterAttribute) || attrib.ConstructorArguments.Count != 1) continue;
+					CustomAttributeTypedArgument argument = attrib.ConstructorArguments[0];
+					if (argument == default) continue;
+
+					if (argument.Value is Type qualifiedType)
+					{
+						if (Factory.IsPublicType(qualifiedType)) return qualifiedType;
+					}	
+					else if (argument.Value is string qualifiedTypeName)
+					{
+						qualifiedType = Factory.GetType(qualifiedTypeName)!;
+						if (Factory.IsPublicType(qualifiedType)) return qualifiedType;
+					}
+				}
+				type = type.BaseType!;
 			}
-			type = type.BaseType!;
+			return null;
 		}
-		return null;
 	}
 
 	private static ValueParser? GetExplicitConverter(Type type)

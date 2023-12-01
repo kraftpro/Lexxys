@@ -12,7 +12,13 @@ using Configuration;
 
 public class ConfigurationEventArgs: EventArgs
 {
-	public new static readonly ConfigurationEventArgs Empty = new ConfigurationEventArgs();
+	public static ConfigurationEventArgs Default => _default;
+	private static readonly ConfigurationEventArgs _default = new ConfigurationEventArgs();
+
+    public ConfigurationEventArgs()
+    {
+        
+    }
 }
 
 public static class Config
@@ -22,21 +28,21 @@ public static class Config
 
 	public static IValue<T> GetValue<T>(string key)
 	{
-		if (key == null || key.Length <= 0)
+		if (key is not { Length: >0 })
 			throw new ArgumentNullException(nameof(key));
 		return Current.GetValue<T>(key);
 	}
 
 	public static IValue<T> GetValue<T>(string key, T defaultValue)
 	{
-		if (key == null || key.Length <= 0)
+		if (key is not { Length: >0 })
 			throw new ArgumentNullException(nameof(key));
 		return Current.GetValue(key, defaultValue);
 	}
 
 	public static IValue<T> GetValue<T>(string key, Func<T> defaultValue)
 	{
-		if (key == null || key.Length <= 0)
+		if (key is not { Length: >0 })
 			throw new ArgumentNullException(nameof(key));
 		if (defaultValue == null)
 			throw new ArgumentNullException(nameof(defaultValue));
@@ -45,7 +51,7 @@ public static class Config
 
 	public static IValue<IReadOnlyList<T>> GetCollection<T>(string key)
 	{
-		if (key == null || key.Length <= 0)
+		if (key is not { Length: >0 })
 			throw new ArgumentNullException(nameof(key));
 		return Current.GetCollection<T>(key);
 	}

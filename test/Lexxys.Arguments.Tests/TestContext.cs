@@ -13,12 +13,11 @@ public static class CallContext
 		state.TryGetValue(name, out AsyncLocal<object>? data) ? data.Value: null;
 }
 
-[TestClass]
 public class CallContextTests
 {
 	static AsyncLocal<object?> _context = new AsyncLocal<object?>();
 
-	[TestMethod]
+	[Fact]
 	public void WhenFlowingData_ThenCanUseContext()
 	{
 		object? d1, t1, t10, t11, t12, t13, t14;
@@ -28,6 +27,7 @@ public class CallContextTests
 		t1 = t10 = t11 = t12 = t13 = t14 = null;
 		t2 = t20 = t21 = t22 = t23 = t24 = null;
 
+#pragma warning disable xUnit1031 // Do not use blocking task operations in test method
 		Task.WaitAll(
 			Task.Run(() =>
 			{
@@ -54,28 +54,29 @@ public class CallContextTests
 				);
 			})
 		);
+#pragma warning restore xUnit1031 // Do not use blocking task operations in test method
 
 		Thread.Sleep(10);
 
-		Assert.AreEqual(d1, t1);
-		Assert.AreEqual(d1, t10);
-		Assert.AreEqual(d1, t11);
-		Assert.AreEqual(d1, t12);
-		Assert.AreEqual(d1, t13);
-		Assert.IsNull(t14);
+		Assert.Equal(d1, t1);
+		Assert.Equal(d1, t10);
+		Assert.Equal(d1, t11);
+		Assert.Equal(d1, t12);
+		Assert.Equal(d1, t13);
+		Assert.Null(t14);
 
-		Assert.AreEqual(d2, t2);
-		Assert.AreEqual(d2, t20);
-		Assert.AreEqual(d2, t21);
-		Assert.AreEqual(d2, t22);
-		Assert.AreEqual(d2, t23);
-		Assert.IsNull(t24);
+		Assert.Equal(d2, t2);
+		Assert.Equal(d2, t20);
+		Assert.Equal(d2, t21);
+		Assert.Equal(d2, t22);
+		Assert.Equal(d2, t23);
+		Assert.Null(t24);
 
-		Assert.IsNull(CallContext.GetData("d1"));
-		Assert.IsNull(CallContext.GetData("d2"));
+		Assert.Null(CallContext.GetData("d1"));
+		Assert.Null(CallContext.GetData("d2"));
 	}
 
-	[TestMethod]
+	[Fact]
 	public void ContextTest()
 	{
 		object? d1, t1, t10, t11, t12, t13, t14;
@@ -85,6 +86,7 @@ public class CallContextTests
 		t1 = t10 = t11 = t12 = t13 = t14 = null;
 		t2 = t20 = t21 = t22 = t23 = t24 = null;
 
+#pragma warning disable xUnit1031 // Do not use blocking task operations in test method
 		Task.WaitAll(
 			Task.Run(() =>
 			{
@@ -111,23 +113,24 @@ public class CallContextTests
 				);
 			})
 		);
+#pragma warning restore xUnit1031 // Do not use blocking task operations in test method
 
 		Thread.Sleep(10);
 
-		Assert.AreEqual(d1, t1);
-		Assert.AreEqual(d1, t10);
-		Assert.AreEqual(d1, t11);
-		Assert.AreEqual(d1, t12);
-		Assert.AreEqual(d1, t13);
-		Assert.AreEqual(d1, t14);
+		Assert.Equal(d1, t1);
+		Assert.Equal(d1, t10);
+		Assert.Equal(d1, t11);
+		Assert.Equal(d1, t12);
+		Assert.Equal(d1, t13);
+		Assert.Equal(d1, t14);
 
-		Assert.AreEqual(d2, t2);
-		Assert.AreEqual(d2, t20);
-		Assert.AreEqual(d2, t21);
-		Assert.AreEqual(d2, t22);
-		Assert.AreEqual(d2, t23);
-		Assert.AreEqual(d2, t24);
+		Assert.Equal(d2, t2);
+		Assert.Equal(d2, t20);
+		Assert.Equal(d2, t21);
+		Assert.Equal(d2, t22);
+		Assert.Equal(d2, t23);
+		Assert.Equal(d2, t24);
 
-		Assert.IsNull(_context.Value);
+		Assert.Null(_context.Value);
 	}
 }

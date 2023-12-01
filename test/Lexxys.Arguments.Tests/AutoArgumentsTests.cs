@@ -1,9 +1,8 @@
 ﻿namespace Lexxys.Argument.Tests;
 
-[TestClass]
 public class AutoArgumentsTests
 {
-	[TestMethod]
+	[Fact]
 	public void TestSimpleParameters()
 	{
 		// Arrange
@@ -11,17 +10,17 @@ public class AutoArgumentsTests
 		var arguments = new Arguments(args);
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.IsFalse(arguments.HelpRequested);
-		Assert.AreEqual(4, arguments.Parameters.Count);
-		Assert.AreEqual("1,2", arguments["a"].StringValue);
-		Assert.AreEqual("2", arguments["b"].StringValue);
-		Assert.AreEqual("true", arguments["c"].StringValue);
-		Assert.AreEqual("a", arguments["alpha"].StringValue);
-		Assert.AreEqual("2", arguments["beta"].StringValue);
+		Assert.False(arguments.HasErrors);
+		Assert.False(arguments.HelpRequested);
+		Assert.Equal(4, arguments.Parameters.Count);
+		Assert.Equal("1,2", arguments["a"].StringValue);
+		Assert.Equal("2", arguments["b"].StringValue);
+		Assert.Equal("true", arguments["c"].StringValue);
+		Assert.Equal("a", arguments["alpha"].StringValue);
+		Assert.Equal("2", arguments["beta"].StringValue);
 	}
 
-	[TestMethod]
+	[Fact]
 	public void TestHelpArgument()
 	{
 		// Arrange
@@ -29,12 +28,12 @@ public class AutoArgumentsTests
 		var arguments = new Arguments(args);
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.IsTrue(arguments.HelpRequested);
-		Assert.AreEqual(4, arguments.Parameters.Count);
+		Assert.False(arguments.HasErrors);
+		Assert.True(arguments.HelpRequested);
+		Assert.Equal(4, arguments.Parameters.Count);
 	}
 
-	[TestMethod]
+	[Fact]
 	public void TestArgumentsCollection()
 	{
 		// Arrange
@@ -42,14 +41,14 @@ public class AutoArgumentsTests
 		var arguments = new Arguments(args);
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.AreEqual(3, arguments.Parameters.Count);
-		Assert.AreEqual("1;2;3", String.Join(";", arguments["a"].ToArray()));
-		Assert.AreEqual("true", arguments["c"].StringValue);
-		Assert.AreEqual("a;b;c;d", String.Join(";", arguments["alpha"].ToArray()));
+		Assert.False(arguments.HasErrors);
+		Assert.Equal(3, arguments.Parameters.Count);
+		Assert.Equal("1;2;3", String.Join(";", arguments["a"].ToArray()));
+		Assert.Equal("true", arguments["c"].StringValue);
+		Assert.Equal("a;b;c;d", String.Join(";", arguments["alpha"].ToArray()));
 	}
 
-	[TestMethod]
+	[Fact]
 	public void TestCaseSensitive()
 	{
 		// Arrange
@@ -57,17 +56,17 @@ public class AutoArgumentsTests
 		var arguments = new Arguments(args, ignoreCase: false);
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.AreEqual(4, arguments.Parameters.Count);
-		Assert.AreEqual("2", arguments["a"].ToString());
-		Assert.AreEqual("1", arguments["A"].ToString());
-		Assert.IsFalse(arguments["c"].HasValue);
-		Assert.AreEqual("true", arguments["C"].StringValue);
-		Assert.IsFalse(arguments["ALpha"].HasValue);
-		Assert.AreEqual("a;b;c;d", String.Join(";", arguments["Alpha"].ToArray()));
+		Assert.False(arguments.HasErrors);
+		Assert.Equal(4, arguments.Parameters.Count);
+		Assert.Equal("2", arguments["a"].ToString());
+		Assert.Equal("1", arguments["A"].ToString());
+		Assert.False(arguments["c"].HasValue);
+		Assert.Equal("true", arguments["C"].StringValue);
+		Assert.False(arguments["ALpha"].HasValue);
+		Assert.Equal("a;b;c;d", String.Join(";", arguments["Alpha"].ToArray()));
 	}
 
-	[TestMethod]
+	[Fact]
 	public void TestCaseInsensitive()
 	{
 		// Arrange
@@ -75,14 +74,14 @@ public class AutoArgumentsTests
 		var arguments = new Arguments(args, ignoreCase: true);
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.AreEqual(3, arguments.Parameters.Count);
-		Assert.AreEqual("1;2", String.Join(";", arguments["a"].ToArray()));
-		Assert.AreEqual("true", arguments["c"].StringValue);
-		Assert.AreEqual("a;b;c;d", String.Join(";", arguments["ALPHA"].ToArray()));
+		Assert.False(arguments.HasErrors);
+		Assert.Equal(3, arguments.Parameters.Count);
+		Assert.Equal("1;2", String.Join(";", arguments["a"].ToArray()));
+		Assert.Equal("true", arguments["c"].StringValue);
+		Assert.Equal("a;b;c;d", String.Join(";", arguments["ALPHA"].ToArray()));
 	}
 
-	[TestMethod]
+	[Fact]
 	public void TestPositionalArguments()
 	{
 		// Arrange
@@ -90,12 +89,12 @@ public class AutoArgumentsTests
 		var arguments = new Arguments(args);
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.AreEqual(3, arguments.Parameters.Count);
-		Assert.AreEqual("item1;item2;item3", String.Join(";", arguments["positional"].ToArray()));
+		Assert.False(arguments.HasErrors);
+		Assert.Equal(3, arguments.Parameters.Count);
+		Assert.Equal("item1;item2;item3", String.Join(";", arguments["positional"].ToArray()));
 	}
 
-	[TestMethod]
+	[Fact]
 	public void TestPositionalArgumentsCollection()
 	{
 		// Arrange
@@ -103,12 +102,12 @@ public class AutoArgumentsTests
 		var arguments = new Arguments(args);
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.AreEqual(3, arguments.Parameters.Count);
-		Assert.AreEqual("item1;item2;item2a;item3", String.Join(";", arguments["positional"].ToArray()));
+		Assert.False(arguments.HasErrors);
+		Assert.Equal(3, arguments.Parameters.Count);
+		Assert.Equal("item1;item2;item2a;item3", String.Join(";", arguments["positional"].ToArray()));
 	}
 
-    [TestMethod]
+    [Fact]
     public void TestSplitPositionalArguments()
     {
         // Arrange
@@ -116,14 +115,14 @@ public class AutoArgumentsTests
         var arguments = new Arguments(args, splitPositional: true);
 
         // Assert
-        Assert.IsFalse(arguments.HasErrors);
-        Assert.AreEqual(5, arguments.Parameters.Count);
-        Assert.AreEqual("item1", String.Join(";", arguments["positional"].ToArray()));
-        Assert.AreEqual("item2;item2a", String.Join(";", arguments["positional.1"].ToArray()));
-        Assert.AreEqual("item3", String.Join(";", arguments["positional.2"].ToArray()));
+        Assert.False(arguments.HasErrors);
+        Assert.Equal(5, arguments.Parameters.Count);
+        Assert.Equal("item1", String.Join(";", arguments["positional"].ToArray()));
+        Assert.Equal("item2;item2a", String.Join(";", arguments["positional.1"].ToArray()));
+        Assert.Equal("item3", String.Join(";", arguments["positional.2"].ToArray()));
     }
 
-	[TestMethod]
+	[Fact]
 	public void TestDisableSlashPrefix()
 	{
         // Arrange
@@ -131,16 +130,16 @@ public class AutoArgumentsTests
         var arguments = new Arguments(args, allowSlash: false);
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.IsFalse(arguments.HelpRequested);
-        Assert.AreEqual(3, arguments.Parameters.Count);
-        Assert.AreEqual("1;2", String.Join(";", arguments["a"].ToArray()));
-        Assert.AreEqual(null, arguments["c"].StringValue);
-        Assert.AreEqual("/c", arguments["positional"].StringValue);
-        Assert.AreEqual("a;b;c;d", String.Join(";", arguments["alpha"].ToArray()));
+		Assert.False(arguments.HasErrors);
+		Assert.False(arguments.HelpRequested);
+        Assert.Equal(3, arguments.Parameters.Count);
+        Assert.Equal("1;2", String.Join(";", arguments["a"].ToArray()));
+        Assert.Null(arguments["c"].StringValue);
+        Assert.Equal("/c", arguments["positional"].StringValue);
+        Assert.Equal("a;b;c;d", String.Join(";", arguments["alpha"].ToArray()));
     }
 
-    [TestMethod]
+    [Fact]
 	public void TestColonSeparatorOnly()
 	{
 		// Arrange
@@ -150,14 +149,14 @@ public class AutoArgumentsTests
 		// Act
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.IsFalse(arguments.HelpRequested);
-		Assert.AreEqual(2, arguments.Parameters.Count);
-        Assert.AreEqual("1", arguments["a="].StringValue);
-        Assert.AreEqual("=2", arguments["b"].StringValue);
+		Assert.False(arguments.HasErrors);
+		Assert.False(arguments.HelpRequested);
+		Assert.Equal(2, arguments.Parameters.Count);
+        Assert.Equal("1", arguments["a="].StringValue);
+        Assert.Equal("=2", arguments["b"].StringValue);
     }
 
-    [TestMethod]
+    [Fact]
 	public void TestEqualSeparatorOnly()
 	{
 		// Arrange
@@ -167,14 +166,14 @@ public class AutoArgumentsTests
 		// Act
 
 		// Assert
-		Assert.IsFalse(arguments.HasErrors);
-		Assert.IsFalse(arguments.HelpRequested);
-		Assert.AreEqual(2, arguments.Parameters.Count);
-        Assert.AreEqual(":1", arguments["a"].StringValue);
-        Assert.AreEqual("2", arguments["b:"].StringValue);
+		Assert.False(arguments.HasErrors);
+		Assert.False(arguments.HelpRequested);
+		Assert.Equal(2, arguments.Parameters.Count);
+        Assert.Equal(":1", arguments["a"].StringValue);
+        Assert.Equal("2", arguments["b:"].StringValue);
     }
 
-    //[TestMethod]
+    //[Fact]
     //public void TestConstructorWithBlankSeparator()
     //{
     //	// Arrange
@@ -184,12 +183,12 @@ public class AutoArgumentsTests
     //	// Act
 
     //	// Assert
-    //	Assert.IsFalse(arguments.HasErrors);
-    //	Assert.IsFalse(arguments.HelpRequested);
-    //	Assert.AreEqual(2, arguments.Args.Count);
+    //	Assert.False(arguments.HasErrors);
+    //	Assert.False(arguments.HelpRequested);
+    //	Assert.Equal(2, arguments.Args.Count);
     //}
 
-    //[TestMethod]
+    //[Fact]
     //public void TestConstructorWithIgnoreNameSeparators()
     //{
     //	// Arrange
@@ -199,12 +198,12 @@ public class AutoArgumentsTests
     //	// Act
 
     //	// Assert
-    //	Assert.IsFalse(arguments.HasErrors);
-    //	Assert.IsFalse(arguments.HelpRequested);
-    //	Assert.AreEqual(2, arguments.Args.Count);
+    //	Assert.False(arguments.HasErrors);
+    //	Assert.False(arguments.HelpRequested);
+    //	Assert.Equal(2, arguments.Args.Count);
     //}
 
-    //[TestMethod]
+    //[Fact]
     //public void TestConstructorWithCombineLastParameter()
     //{
     //	// Arrange
@@ -214,12 +213,12 @@ public class AutoArgumentsTests
     //	// Act
 
     //	// Assert
-    //	Assert.IsFalse(arguments.HasErrors);
-    //	Assert.IsFalse(arguments.HelpRequested);
-    //	Assert.AreEqual(3, arguments.Parameters.Count);
+    //	Assert.False(arguments.HasErrors);
+    //	Assert.False(arguments.HelpRequested);
+    //	Assert.Equal(3, arguments.Parameters.Count);
     //}
 
-    //[TestMethod]
+    //[Fact]
     //public void TestConstructorWithCommands()
     //{
     //	// Arrange
@@ -233,14 +232,14 @@ public class AutoArgumentsTests
     //	// Act
 
     //	// Assert
-    //	Assert.IsFalse(arguments.HasErrors);
-    //	Assert.IsFalse(arguments.HelpRequested);
-    //	Assert.AreEqual(5, arguments.Args.Count);
-    //	Assert.AreEqual("command2", arguments.CommandInfo.Name);
+    //	Assert.False(arguments.HasErrors);
+    //	Assert.False(arguments.HelpRequested);
+    //	Assert.Equal(5, arguments.Args.Count);
+    //	Assert.Equal("command2", arguments.CommandInfo.Name);
 
     //	var command = arguments.Parameters.GetCommand("command1");
-    //	Assert.IsNotNull(command);
-    //	Assert.AreEqual("subCommand1", command.Name);
-    //	Assert.AreEqual(2, command.Parameters.Count);
+    //	Assert.NotNull(command);
+    //	Assert.Equal("subCommand1", command.Name);
+    //	Assert.Equal(2, command.Parameters.Count);
     //}
 }

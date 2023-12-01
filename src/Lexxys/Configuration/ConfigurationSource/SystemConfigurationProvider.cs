@@ -15,13 +15,9 @@ namespace Lexxys.Configuration;
 using Xml;
 
 [DebuggerDisplay("[System.Configuration]")]
-public sealed class SystemConfigurationProvider: IConfigProvider
+public sealed class SystemConfigurationProvider: IConfigSource
 {
 	private static readonly Uri Uri = new Uri("system:configuration");
-
-	public string Name => "System.Configuration";
-
-	public Uri Location => Uri;
 
 	public int Version => 1;
 
@@ -103,6 +99,8 @@ public sealed class SystemConfigurationProvider: IConfigProvider
 			return ReadOnly.WrapCopy(ienum)!;
 		return Array.Empty<T>();
 	}
+
+	bool IEquatable<IConfigSource>.Equals(IConfigSource other) => other is SystemConfigurationProvider;
 
 	public event EventHandler<ConfigurationEventArgs>? Changed
 	{

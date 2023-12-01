@@ -14,25 +14,33 @@ public static class Statics
 	{
 		if (serviceType is null)
 			throw new ArgumentNullException(nameof(serviceType));
-
 		return Instance.ServiceProvider.GetService(serviceType);
 	}
 
 	public static object GetService(Type serviceType)
+		=> TryGetService(serviceType) ?? throw new InvalidOperationException($"Cannot create service of type {serviceType.FullName}.");
+
+	public static object? TryGetKeyedService(Type serviceType, object? serviceKey)
 	{
 		if (serviceType is null)
 			throw new ArgumentNullException(nameof(serviceType));
-
-		return Instance.ServiceProvider.GetService(serviceType) ?? throw new InvalidOperationException($"Cannot create service of type {serviceType.FullName}.");
+		return Instance.ServiceProvider is IKeyedServiceProvider ksp ? ksp.GetKeyedService(serviceType, serviceKey): null;
 	}
 
-	public static T? TryGetService<T>() where T : class => Instance.ServiceProvider.GetService<T>();
+	public static object GetKeyedService(Type serviceType, object? serviceKey)
+		=> TryGetKeyedService(serviceType, serviceKey) ?? throw new InvalidOperationException($"Cannot create keyed service of type {serviceType.FullName} and key {serviceKey}.");
 
-	public static T GetService<T>() where T : class => Instance.ServiceProvider.GetService<T>() ?? throw new InvalidOperationException($"Cannot create service of type {typeof(T).FullName}.");
+	public static T? TryGetService<T>() where T: class => (T?)TryGetService(typeof(T));
 
-	public static void AddServices(IEnumerable<ServiceDescriptor> services) => Instance.AddServices(services, false);
+	public static T GetService<T>() where T: class => (T)GetService(typeof(T));
 
-	public static void TryAddServices(IEnumerable<ServiceDescriptor> services) => Instance.AddServices(services, true);
+	public static T? TryGetKeyedService<T>(object? serviceKey) where T: class => (T?)TryGetKeyedService(typeof(T), serviceKey);
+
+	public static T GetKeyedService<T>(object? serviceKey) where T: class => (T)GetKeyedService(typeof(T), serviceKey);
+
+	public static bool TryAddServices(IEnumerable<ServiceDescriptor> services, bool unique = false) => Instance.IsInitialized ? false: Instance.AddServices(services, unique);
+
+	public static bool AddServices(IEnumerable<ServiceDescriptor> services, bool unique = false) => Instance.AddServices(services, unique);
 
 	public static IServiceCollection AddServices(Func<IServiceCollection, IServiceCollection>? settings = null)
 	{

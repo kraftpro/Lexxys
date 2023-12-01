@@ -14,13 +14,15 @@ public class CommandDefinition
 	/// </summary>
 	/// <param name="parent">A parent command</param>
 	/// <param name="name">Name of the command</param>
+	/// <param name="abbreviation">An optional abbreviations for the command.</param>
 	/// <param name="description">Description of the command</param>
 	/// <param name="comparison">A <see cref="StringComparison"/></param>
 	/// <exception cref="ArgumentNullException"></exception>
-	internal CommandDefinition(CommandDefinition? parent, string name, string? description = null, StringComparison? comparison = null)
+	internal CommandDefinition(CommandDefinition? parent, string name, string[]? abbreviation = null, string? description = null, StringComparison? comparison = null)
 	{
 		Parent = parent;
 		Name = name ?? throw new ArgumentNullException(nameof(name));
+		Abbreviation = abbreviation ?? [];
 		Description = description;
 		_comparison = comparison ?? StringComparison.Ordinal;
 		_parameters = new ParameterDefinitionCollection(_comparison);
@@ -38,6 +40,7 @@ public class CommandDefinition
 		if (other is null) throw new ArgumentNullException(nameof(other));
 		Parent = other.Parent;
 		Name = other.Name;
+		Abbreviation = other.Abbreviation;
 		Description = other.Description;
 		_comparison = comparison;
 		_parameters = new ParameterDefinitionCollection(other._parameters, comparison);
@@ -53,6 +56,11 @@ public class CommandDefinition
 	/// Name of the command.
 	/// </summary>
 	public string Name { get; }
+
+	/// <summary>
+	/// Abbreviations of the command.
+	/// </summary>
+	public string[] Abbreviation { get; }
 
 	/// <summary>
 	/// Description of the command.

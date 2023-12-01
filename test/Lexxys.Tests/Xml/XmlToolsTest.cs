@@ -63,17 +63,7 @@ namespace Lexxys.Tests.Xml
 			Assert.AreEqual(expected, result.Value);
 		}
 
-		public class NameValueClassConstruct
-		{
-			public NameValueClassConstruct(string name, string value = "default")
-			{
-				Name = name ?? throw new ArgumentNullException(nameof(name));
-				Value = value ?? throw new ArgumentNullException(nameof(value));
-			}
-
-			public string Name { get; }
-			public string Value { get; }
-		}
+		public record NameValueClassConstruct(string Name, string Value);
 
 		[TestMethod]
 		[DataRow("""<x><name>Name value</name><value>Value value</value></x>""")]

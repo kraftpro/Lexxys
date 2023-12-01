@@ -109,3 +109,20 @@ partial class SampleOption: ICliOption<SampleOption>
 			.Parameter("gamma", new[] { "c", "cc", "ccc" }, description: "gamma option");
 	}
 }
+
+//public interface ICliOption<T>
+//{
+//	static abstract ArgumentsBuilder Build(ArgumentsBuilder? builder = null);
+//	static abstract T Parse(ArgumentCommand c);
+//}
+
+//public static class ICliOptionExtensions
+//{
+//	public static ArgumentsBuilder AddCommand<T>(this ArgumentsBuilder builder, string name, string description) where T: ICliOption<T>
+//	{
+//		builder.BeginCommand(name, description);
+//		T.Build(builder);
+//		return builder.EndCommand();
+//	}
+//}
+

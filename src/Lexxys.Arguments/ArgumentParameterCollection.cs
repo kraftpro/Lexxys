@@ -3,11 +3,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Lexxys;
 
+/// <summary>
+/// Represents a collection of command line parameters with their values.
+/// </summary>
 public class ArgumentParameterCollection: IReadOnlyCollection<ArgumentParameter>
 {
 	private readonly Dictionary<ParameterDefinition, ArgumentParameter> _parameters;
 
-	public ArgumentParameterCollection(ParameterDefinitionCollection definition)
+	internal ArgumentParameterCollection(ParameterDefinitionCollection definition)
 	{
 		Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 		_parameters = new Dictionary<ParameterDefinition, ArgumentParameter>(definition.Count);
@@ -63,7 +66,7 @@ public class ArgumentParameterCollection: IReadOnlyCollection<ArgumentParameter>
 
 	public T Value<T>(string name, T defaultValue) => Strings.GetValue(Value(name), defaultValue);
 
-	public string[] Collection(string name) => TryGet(name, out var value) ? value?.Value.ArrayValue ?? Array.Empty<string>() : Array.Empty<string>();
+	public string[] Collection(string name) => TryGet(name, out var value) ? value?.Value.ArrayValue ?? []: [];
 
 	public T[] Collection<T>(string name, T defaultItem) => Array.ConvertAll(Collection(name), o => Strings.GetValue(o, defaultItem));
 

@@ -19,6 +19,9 @@ using Xml;
 /// </summary>
 public abstract class JsonBuilder
 {
+	/// <summary>
+	/// Represents the null value in JSON.
+	/// </summary>
 	protected const string NullValue = "null";
 
 	enum State

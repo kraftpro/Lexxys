@@ -13,9 +13,7 @@ public interface IDump
 	DumpWriter DumpContent(DumpWriter writer);
 }
 
-public interface IDumpValue: IDump
-{
-}
+public interface IDumpValue: IDump;
 
 public static class DumpExtensions
 {

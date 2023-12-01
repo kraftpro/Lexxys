@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,7 +39,7 @@ public struct AttributeValue
 		else if (value2 is null)
 			_value = Clean(value1);
 		else
-			_value = new StringBuilder(value1.Length + value2.Length + 1).Clean(value1).Append(' ').Clean(value2);
+			_value = new StringBuilder(value1.Length + value2.Length + 1).AppendAttributePart(value1).Append(' ').AppendAttributePart(value2);
 	}
 
 	public AttributeValue(string? value1, string? value2, string? value3)
@@ -52,16 +53,16 @@ public struct AttributeValue
 			else if (value3 is null)
 				_value = Clean(value2);
 			else
-				_value = new StringBuilder(value2.Length + value3.Length + 1).Clean(value2).Append(' ').Clean(value3);
+				_value = new StringBuilder(value2.Length + value3.Length + 1).AppendAttributePart(value2).Append(' ').AppendAttributePart(value3);
 		else if (value2 is null)
 			if (value3 is null)
 				_value = Clean(value1);
 			else
-				_value = new StringBuilder(value1.Length + value3.Length + 1).Clean(value1).Append(' ').Clean(value3);
+				_value = new StringBuilder(value1.Length + value3.Length + 1).AppendAttributePart(value1).Append(' ').AppendAttributePart(value3);
 		else if (value3 is null)
-			_value = new StringBuilder(value1.Length + value2.Length + 1).Clean(value1).Append(' ').Clean(value2);
+			_value = new StringBuilder(value1.Length + value2.Length + 1).AppendAttributePart(value1).Append(' ').AppendAttributePart(value2);
 		else
-			_value = new StringBuilder(value1.Length + value2.Length + value3.Length + 2).Clean(value1).Append(' ').Clean(value2).Append(' ').Clean(value3);
+			_value = new StringBuilder(value1.Length + value2.Length + value3.Length + 2).AppendAttributePart(value1).Append(' ').AppendAttributePart(value2).Append(' ').AppendAttributePart(value3);
 	}
 
 	public AttributeValue(params string[] value)
@@ -80,7 +81,7 @@ public struct AttributeValue
 				continue;
 			if (text.Length > 0)
 				text.Append(' ');
-			text.Clean(v);
+			text.AppendAttributePart(v);
 		}
 		_value = text;
 	}
@@ -102,7 +103,7 @@ public struct AttributeValue
 				continue;
 			if (text.Length > 0)
 				text.Append(' ');
-			text.Clean(v);
+			text.AppendAttributePart(v);
 		}
 		_value = text;
 	}
@@ -116,7 +117,7 @@ public struct AttributeValue
 		if (_value is string s)
 		{
 			if (value != s)
-				_value = new StringBuilder(s.Length + v.Length + 1).Append(s).Append(' ').Clean(v);
+				_value = new StringBuilder(s.Length + v.Length + 1).Append(s).Append(' ').AppendAttributePart(v);
 		}
 		else if (_value is null)
 		{
@@ -125,7 +126,7 @@ public struct AttributeValue
 		else // if (_value is StringBuilder)
 		{
 			var l = Unsafe.As<StringBuilder>(_value);
-			l.Append(' ').Clean(v);
+			l.Append(' ').AppendAttributePart(v);
 		}
 		return this;
 	}
@@ -147,7 +148,7 @@ public struct AttributeValue
 		else // if (_value is StringBuilder)
 			text = Unsafe.As<StringBuilder>(_value).Append(' ');
 
-		text.Clean(v1).Append(' ').Clean(v2);
+		text.AppendAttributePart(v1).Append(' ').AppendAttributePart(v2);
 		return this;
 	}
 
@@ -170,7 +171,7 @@ public struct AttributeValue
 			_value = text = new StringBuilder(v1.Length + v2.Length + v3.Length + 2);
 		else // if (_value is StringBuilder)
 			text = Unsafe.As<StringBuilder>(_value).Append(' ');
-		text.Clean(v1).Append(' ').Clean(v2).Append(' ').Clean(v3);
+		text.AppendAttributePart(v1).Append(' ').AppendAttributePart(v2).Append(' ').AppendAttributePart(v3);
 		return this;
 	}
 
@@ -196,7 +197,7 @@ public struct AttributeValue
 			_value = text = new StringBuilder(v1.Length + v2.Length + v3.Length + v4.Length + 3);
 		else // if (_value is StringBuilder)
 			text = Unsafe.As<StringBuilder>(_value).Append(' ');
-		text.Clean(v1).Append(' ').Clean(v2).Append(' ').Clean(v3).Append(' ').Clean(v4);
+		text.AppendAttributePart(v1).Append(' ').AppendAttributePart(v2).Append(' ').AppendAttributePart(v3).Append(' ').AppendAttributePart(v4);
 		return this;
 	}
 
@@ -219,7 +220,7 @@ public struct AttributeValue
 				first = false;
 			else
 				text.Append(' ');
-			text.Clean(item);
+			text.AppendAttributePart(item);
 		}
 		return this;
 	}
@@ -237,28 +238,67 @@ public struct AttributeValue
 
 static class StrBuExtensions
 {
-	public static StringBuilder AppendAttributePart(this StringBuilder text, ReadOnlySpan<char> value)
+	public static StringBuilder EncodeAttribute(this StringBuilder text, ReadOnlySpan<char> value, ReadOnlySpan<char> line)
 	{
 		int i;
-		while ((i = value.IndexOfAny("<\"'&")) >= 0)
+		while ((i = value.IndexOfAny(line)) >= 0)
 		{
-			text.Append(value.Slice(0, i))
-				.Append(value[i] switch
-				{
-					'<' => "&lt;",
-					'>' => "&gt;",
-					'"' => "&quot;",
-					'\'' => "&apos;",
-					'&' => "&amp;",
-					_ => null
-				});
+			text.Append(value.Slice(0, i));
+			var c = value[i];
 			value = value.Slice(i + 1);
+			if (c == '&')
+			{
+				var k = TestReEncoding(value);
+				if (k == 0)
+				{
+					text.Append("&amp;");
+				}
+				else
+				{
+					text.Append('&').Append(value.Slice(0, k));
+					value = value.Slice(k);
+				}
+			}
+			else
+			{
+				text.Append(c switch
+					{
+						'<' => "&lt;",
+						'>' => "&gt;",
+						'"' => "&quot;",
+						'\'' => "&apos;",
+						'&' => "&amp;",
+						_ => null
+					});
+			}
 		}
 
 		return text.Append(value);
+
+		static int TestReEncoding(ReadOnlySpan<char> value)
+		{
+			if (value.Length < 3) return 0;
+			return value[0] switch
+			{
+				'l' => (value[1] == 't' && value[2] == ';') ? 3: 0,
+				'g' => (value[1] == 't' && value[2] == ';') ? 3: 0,
+				'a' => (value.Length > 3 && value[1] == 'm') ? (value[2] == 'p' && value[3] == ';') ? 4: 0:
+					   (value.Length > 4 && value[1] == 'p' && value[2] == 'o' && value[3] == 's' && value[4] == ';') ? 5: 0,
+				'q' => (value.Length > 4 && value[1] == 'u' && value[2] == 'o' && value[3] == 't' && value[4] == ';') ? 5: 0,
+				_ => 0,
+			};
+		}
 	}
 
-	public static StringBuilder Clean(this StringBuilder text, ReadOnlySpan<char> value) => value.Length > 2 && value[0] == value[^1] && value[0] is '"' or '\'' ? text.Append(value[1..^1]) : text.AppendAttributePart(value);
+	public static StringBuilder AppendAttributePart(this StringBuilder text, ReadOnlySpan<char> value) =>
+		value.Length < 2 || value[0] != value[^1] ? text.EncodeAttribute(value, "<\"&"):
+		value[0] is '"' ? text.Append(value[1..^1]):
+		value[0] is '\'' ? text.EncodeAttribute(value[1..^1], "<\""):
+		text.EncodeAttribute(value, "<\"&");
+
+	public static StringBuilder AppendAttribute(this StringBuilder text, ReadOnlySpan<char> value) =>
+		value.Length < 2 || value[0] != value[^1] ? text.Append('"').EncodeAttribute(value, "<\"&").Append('"'):
+		value[0] is '"' or '\'' ? text.Append(value): text.Append('"').EncodeAttribute(value, "<\"&").Append('"');
 }
 
 readonly struct AttrubNamePair

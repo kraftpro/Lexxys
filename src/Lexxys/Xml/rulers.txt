@@ -1,0 +1,172 @@
+#<
+declaration 
+
+>#
+
+macro directives:
+% include ...
+
+values:
+    numbers
+    strings
+    datetime
+    ...
+    just a text value
+
+structures:
+    arrays: [ ... ]
+    maps:   { key: value, ... }
+    cortage: ...
+
+record
+    record definition
+        %: name1 name2 name3 name4 ...
+        %rec1: A B C D
+    record value
+        %: name1 name2 name3 name4 ...
+            val1, val2, val3, val4
+        =>  { name1: val1, name2: val2, name3: val3, name4: val4 }
+        %rec1: A B C D
+            valA,, valB,, valD
+        %rec1:
+            valA1 valB1 valC1 valD1
+            valA2 valB2 valC2 valD2
+        =>  { A: valA1, B: valB1, C: valC1, D: valD1 },
+            { A: valA2, B: valB2, C: valC2, D: valD2 }
+
+defining conplex schema
+
+    statemachine
+        type: object
+        properties:
+            name:
+                type: string
+                description: text
+            
+            
+
+
+
+    statemachines
+        type: array
+        item: statemachine
+
+    %statemachines:$array
+    %statemachines/statemachine:$object
+    %statemachines/statemachine: name start
+    %statemachines/statemachine/node:$array
+
+    %statemachines:$array
+    %statemachines/$item: name start
+    %statemachines/$item/nodes:$array
+    %statemachines/$item/nodes:$item name
+    %statemachines/$item/nodes:$item/transitions:$array
+    %statemachines/$item/nodes:$item/transitions:$item action target
+
+    %transition: action start
+
+    %statemachine: name start
+    %statemachine/node: name
+    %statemachine/node/transition: action target
+
+    %statemachines:$array
+    %statemachines/$item: $statemachine
+
+%statemachine {
+    name
+    states [
+        {
+            name
+            
+        }
+    ]
+}
+
+$object
+$value
+$array
+
+%statemachines
+- Expenses Created
+  description: The expenses state machine
+  - Created
+    - Save => Draft
+
+statemachine
+    name: "Expenses"
+    description: "The expenses state machine"
+    start: Created
+
+    - Created
+        transition Save => Draft
+        transition Submit => Submitted
+            guard: VarifyExpense
+    - Draft
+        transition Save => Draft
+        transition Cancel => Cancelled
+        transition Submit -> Submitted
+            guard: VarifyExpense
+    - Submitted
+        transition Approve => Approved
+        transition Cancel => Cancelled
+    - Approved
+        transition Back => Submitted
+        transition Pay => Completed
+        transition Cancel => Cancelled
+    - Completed
+    - Cancelled
+
+
+
+statemachines: [
+    {
+        name: expenses
+        start: Created
+        description: <<<
+            Multiline
+            String
+            <<<
+        description2: """
+            Multiline
+            String
+            """
+        nodes: [
+            {
+                name: Created
+                description: Initial state
+                transitions: [
+                    {
+                        name: no-name       # default
+                        source: Created     # default
+                        target: Draft
+                        action: Save
+                    },
+                    {
+                        target: Submitted
+                        action: Submit
+                        guard: validate-expense
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        name: another
+    },
+    [
+        node: {
+            name: Start
+
+        }
+    ]
+    (tuple, tuple)
+    [item, item, item]
+    {
+        key: value, key: value, key: value
+    }
+
+]
+    
+
+
+config  := NAME

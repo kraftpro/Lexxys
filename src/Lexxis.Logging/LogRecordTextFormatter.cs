@@ -11,7 +11,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -29,7 +28,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 	private const string NullValue = "<null>";
 	private const string DbNullValue = "<dbnull>";
 
-	private readonly IReadOnlyCollection<LogRecordFormatItem> _mappedFormat;
+	private readonly List<LogRecordFormatItem> _mappedFormat;
 
 	public TextFormatSetting Setting { get; }
 
@@ -140,7 +139,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		}
 	}
 
-	private static void Format(TextWriter writer, LogRecord record, IEnumerable<LogRecordFormatItem> format, string indent, string newLine)
+	private static void Format(TextWriter writer, LogRecord record, List<LogRecordFormatItem> format, string indent, string newLine)
 	{
 		foreach (LogRecordFormatItem item in format)
 		{
@@ -193,35 +192,36 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 					break;
 				case FormatItemType.Type:
 					string s;
-					if (record.LogType is >= LogType.Output and <= LogType.MaxValue)
+					if (record.LogType is < LogType.Output or > LogType.MaxValue)
+						s = record.LogType.ToString();
+					else
 						s = item.Format?.ToUpperInvariant() switch
 						{
 							"1" => __severity1[(int)record.LogType],
 							"3" => __severity3[(int)record.LogType],
 							"4" => __severity4[(int)record.LogType],
+							"5" => __severity5[(int)record.LogType],
 							"X" => item.Format[0] == 'x' ?
-										__severity1[(int)record.LogType].ToLowerInvariant():
+										__severity1[(int)record.LogType].ToLowerInvariant() :
 										__severity1[(int)record.LogType],
 							"XXX" => item.Format[0] == 'x' ?
-										__severity3[(int)record.LogType].ToLowerInvariant():
+										__severity3[(int)record.LogType].ToLowerInvariant() :
 									item.Format[1] == 'X' ?
-										__severity3[(int)record.LogType].ToUpperInvariant():
+										__severity3[(int)record.LogType].ToUpperInvariant() :
 										__severity3[(int)record.LogType],
 							"XXXX" => item.Format[0] == 'x' ?
-										__severity4[(int)record.LogType].ToLowerInvariant():
+										__severity4[(int)record.LogType].ToLowerInvariant() :
 									item.Format[1] == 'X' ?
-										__severity5[(int)record.LogType].ToUpperInvariant():
+										__severity5[(int)record.LogType].ToUpperInvariant() :
 										__severity4[(int)record.LogType],
 							"XXXXX" => item.Format[0] == 'x' ?
-										__severity5[(int)record.LogType].ToLowerInvariant():
+										__severity5[(int)record.LogType].ToLowerInvariant() :
 									item.Format[1] == 'X' ?
-										__severity5[(int)record.LogType].ToUpperInvariant():
+										__severity5[(int)record.LogType].ToUpperInvariant() :
 										__severity5[(int)record.LogType],
 							"D" => record.LogType.ToString(item.Format),
 							_ => __severity5[(int)record.LogType],
 						};
-					else
-						s = record.LogType.ToString();
 					writer.Write(s);
 					break;
 				case FormatItemType.Grouping:
@@ -395,39 +395,86 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		}
 	}
 
-	private static IReadOnlyCollection<LogRecordFormatItem> MapFormat(string format)
+	private static List<LogRecordFormatItem> MapFormat(string format)
 	{
 		return __formatItems.GetOrAdd(format, Map);
 
-		static IReadOnlyCollection<LogRecordFormatItem> Map(string format)
+		static List<LogRecordFormatItem> Map(string format)
 		{
 			var result = new List<LogRecordFormatItem>();
-			MatchCollection mc = __formatRe.Matches(format);
-			int last = 0;
-			foreach (var m in mc.Cast<Match>())
+			var template = format.AsSpan();
+
+			while (template.Length > 0)
 			{
-				if (!NamesMap.TryGetValue(m.Groups[1].Value.ToUpperInvariant(), out FormatItemType id))
+				int k = TextPart(template, '{', out string text);
+				template = template.Slice(k);
+				if (template.Length == 0)
+				{
+					result.Add(new LogRecordFormatItem(FormatItemType.Empty, text, null));
+					break;
+				}
+				k = TextPart(template, '}', out string val);
+				template = template.Slice(k);
+				k = val.IndexOf(':');
+				string fmt, key;
+				if (k > 0)
+				{
+					fmt = val.Substring(k + 1);
+					key = val.Substring(0, k);
+				}
+				else
+				{
+					fmt = String.Empty;
+					key = val;
+				}
+				if (!NamesMap.TryGetValue(key, out var id))
+				{
+					result.Add(new LogRecordFormatItem(FormatItemType.Empty, $"{text}{{{key}{(fmt.Length > 0 ? ":" + fmt: String.Empty)}}}", null));
 					continue;
-				var f = m.Groups[4].Value;
-				if (f.Length == 0)
-					f = null;
-				else if (id == FormatItemType.Timestamp)
-					if (f.Equals("yyyy-MM-ddTHH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
-						f = null;
-					else if (f.Equals("HH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
-						f = "t";
-				result.Add(new LogRecordFormatItem(id, format.Substring(last, m.Index - last), f));
-				last = m.Index + m.Length;
+				}
+
+				if (id == FormatItemType.Timestamp)
+					if (fmt.Equals("yyyy-MM-ddTHH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
+						fmt = String.Empty;
+					else if (fmt.Equals("HH:mm:ss.fffff", StringComparison.OrdinalIgnoreCase))
+						fmt = "t";
+				result.Add(new LogRecordFormatItem(id, text, fmt));
 			}
-			if (last < format.Length)
-				result.Add(new LogRecordFormatItem(FormatItemType.Empty, format.Substring(last), null));
 			return result;
+
+			static int TextPart(ReadOnlySpan<char> template, char brace, out string text)
+			{
+				int k = template.IndexOf(brace);
+				if (k < 0)
+				{
+					text = template.ToString();
+					return template.Length;
+				}
+
+				string ta = template.Slice(0, k).ToString();
+				int pad = 1;
+				while (k + 1 < template.Length && template[k + 1] == brace)
+				{
+					pad += k + 2;
+					ta += brace.ToString();
+					template = template.Slice(k + 2);
+					k = template.IndexOf(brace);
+					if (k < 0)
+					{
+						text = String.Concat(ta, template);
+						return pad + template.Length - 1;
+					}
+					ta = String.Concat(ta, template.Slice(0, k));
+				}
+				text = ta;
+				return pad + k;
+			}
 		}
 	}
 	private static readonly Regex __formatRe = new Regex(@"\{\s*([a-zA-Z]+)\s*(,\s*[0-9]*)?\s*(:(.*?))?\s*\}", RegexOptions.Compiled);
-	private static readonly ConcurrentDictionary<string, IReadOnlyCollection<LogRecordFormatItem>> __formatItems = new ConcurrentDictionary<string, IReadOnlyCollection<LogRecordFormatItem>>();
+	private static readonly ConcurrentDictionary<string, List<LogRecordFormatItem>> __formatItems = new ConcurrentDictionary<string, List<LogRecordFormatItem>>();
 
-	private static readonly Dictionary<string, FormatItemType> NamesMap = new Dictionary<string, FormatItemType>(14)
+	private static readonly Dictionary<string, FormatItemType> NamesMap = new Dictionary<string, FormatItemType>(14, StringComparer.OrdinalIgnoreCase)
 		{
 			{ "INDENTMARK", FormatItemType.IndentMark },
 
@@ -558,17 +605,5 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 	}
 
 	// ReSharper disable once MemberHidesStaticFromOuterClass
-	private readonly struct LogRecordFormatItem
-	{
-		public readonly FormatItemType Index;
-		public readonly string Prefix;
-		public readonly string? Format;
-
-		public LogRecordFormatItem(FormatItemType index, string prefix, string? format)
-		{
-			Index = index;
-			Prefix = prefix;
-			Format = format;
-		}
-	}
+	private readonly record struct LogRecordFormatItem(FormatItemType Index, string Prefix, string? Format);
 }

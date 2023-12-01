@@ -18,41 +18,57 @@ public class ArgumentCommand
 
 	public string Name => Definition.Name;
 
-	public T Parse<T>() where T: class, new()
-	{
-		if (typeof(T) == typeof(string)) throw new ArgumentOutOfRangeException(nameof(T), typeof(T), null);
+	//public object Parse(Type type, out object? result)
+	//{
+	//	if (!type.IsClass || type == typeof(string))
+	//	{
+	//		result = null;
+	//		return false;
+	//	}
 
-		var type = typeof(T);
-		var commands = new List<(CliCommandAttribute Attribute, string Name, Type Type, Action<object?, object?> Setter)>();
-		var attributes = new List<(CliParamAttribute? Atribute, string Name, Type Type, Action<object?, object?> Setter)>();
+	//	result = Activator.CreateInstance(type) ?? throw new ArgumentOutOfRangeException(nameof(type), type, null);
+	//	var parameters = new List<(CliParamAttribute? Atrribute, string Name, Type Type, Action<object?, object?> Setter)>();
+	//	var commands = new List<(CliCommandAttribute? Attribute, string Name, Type Type, Action<object?, object?> Setter)>();
 
-		foreach (var item in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty))
-		{
-			if (!item.CanWrite || item.GetSetMethod() == null || item.GetIndexParameters().Length != 0)
-				continue;
-			var cmd = item.GetCustomAttribute<CliCommandAttribute>();
-			if (cmd != null)
-				commands.Add((cmd, item.Name, item.PropertyType, item.SetValue));
-			else
-				attributes.Add((item.GetCustomAttribute<CliParamAttribute>(), item.Name, item.PropertyType, item.SetValue));
-		}
-		foreach (var item in type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetField))
-		{
-			if (item.IsInitOnly || item.IsLiteral)
-				continue;
-			var cmd = item.GetCustomAttribute<CliCommandAttribute>();
-			if (cmd != null)
-				commands.Add((cmd, item.Name, item.FieldType, item.SetValue));
-			else
-				attributes.Add((item.GetCustomAttribute<CliParamAttribute>(), item.Name, item.FieldType, item.SetValue));
-		}
+	//	foreach (var item in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty))
+	//	{
+	//		if (!item.CanWrite || item.GetSetMethod() == null || item.GetIndexParameters().Length != 0)
+	//			continue;
+	//		var cmd = item.GetCustomAttribute<CliCommandAttribute>();
+	//		if (cmd != null || item.PropertyType.DeclaringType == type)
+	//			commands.Add((cmd, item.Name, item.PropertyType, item.SetValue));
+	//		else
+	//			parameters.Add((item.GetCustomAttribute<CliParamAttribute>(), item.Name, item.PropertyType, item.SetValue));
+	//	}
+	//	foreach (var item in type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetField))
+	//	{
+	//		if (item.IsInitOnly || item.IsLiteral)
+	//			continue;
+	//		var cmd = item.GetCustomAttribute<CliCommandAttribute>();
+	//		if (cmd != null || item.FieldType.DeclaringType == type)
+	//			commands.Add((cmd, item.Name, item.FieldType, item.SetValue));
+	//		else
+	//			parameters.Add((item.GetCustomAttribute<CliParamAttribute>(), item.Name, item.FieldType, item.SetValue));
+	//	}
 
-		foreach (var item in attributes)
-		{
-			Parameters.TryFind(item.Name, out var pd, Definition.Parameters.Comparison);
-		}
-		return default!;
-	}
+	//	var comparison = Definition.Comparison;
+	//	foreach (ArgumentParameter item in Parameters)
+	//	{
+	//		var field = parameters.FirstOrDefault(o => String.Equals(o.Name, item.Name, comparison));
+	//		if (field.Type == null) continue;
+	//		if (Strings.TryGetValue((string?)item.Value, field.Type, out var value))
+	//			field.Setter(result, value);
+	//		else
+	//			commands.Add((null, item.Name, field.Type, field.Setter));
+	//	}
+	//	if (Command != null)
+	//	{
+	//		var command = commands.FirstOrDefault(o => String.Equals(o.Name, Command.Name, comparison));
+	//		if (command.Type != null)
+	//			command.Setter(result, Command.Parse(command.Type));
+	//	}
+	//	return result;
+	//}
 }
 
 
@@ -95,4 +111,22 @@ public class CliParamAttribute: Attribute
 	public CliParamAttribute() { }
 
 	public CliParamAttribute(params string[]? alias) => Alias = alias;
+}
+
+#pragma warning disable CA2252
+
+public interface ICliOption<T>
+{
+	static abstract ArgumentsBuilder Build(ArgumentsBuilder? builder = null);
+	static abstract T Parse(ArgumentCommand c);
+}
+
+public static class ICliOptionExtensions
+{
+	public static ArgumentsBuilder AddCommand<T>(this ArgumentsBuilder builder, string name, string description) where T: ICliOption<T>
+	{
+		builder.BeginCommand(name, description);
+		T.Build(builder);
+		return builder.EndCommand();
+	}
 }

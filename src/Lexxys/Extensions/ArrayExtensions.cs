@@ -1,4 +1,6 @@
-﻿namespace Lexxys;
+﻿using Lexxys;
+
+namespace Lexxys;
 
 public static class ArrayExtensions
 {
@@ -47,7 +49,21 @@ public static class ArrayExtensions
         return result;
     }
 
-    public static int BinarySearch<T>(this T[] array, T value, IComparer<T>? comparer = null) => Array.BinarySearch(array, value, comparer);
+	public static T[] Insert<T>(this T[] array, int position, T value)
+	{
+		if (array is null) throw new ArgumentNullException(nameof(array));
+		if (position < 0 || position > array.Length) throw new ArgumentOutOfRangeException(nameof(position), position, null);
+
+		var result = new T[array.Length + 1];
+		if (position > 0)
+			Array.Copy(array, result, position);
+		result[position] = value;
+		if (position < array.Length)
+			Array.Copy(array, position, result, position + 1, array.Length - position);
+		return result;
+	}
+
+	public static int BinarySearch<T>(this T[] array, T value, IComparer<T>? comparer = null) => Array.BinarySearch(array, value, comparer);
 
 	public static int BinarySearch<T>(this T[] array, int index, int length, T value, IComparer<T>? comparer = null) => Array.BinarySearch(array, index, length, value, comparer);
 

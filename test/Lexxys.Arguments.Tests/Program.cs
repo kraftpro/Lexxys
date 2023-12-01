@@ -132,13 +132,15 @@ Console.WriteLine(DateOnly.FromDateTime(DateTime.Now).ToString("r"));
 
 #if NET7_0_OR_GREATER
 
-var options = new Arguments<SampleOption>(new[]
+var options = Arguments.Parse<SampleOption>(new[]
 	{
 		"-a:1",
 		"new", "-b=22",
 		"-i:input.txt"
 	});
 var opt = options.Option;
+
+var xx = Arguments.Parse<SampleOption>(args);
 
 Console.WriteLine("SampleOption:");
 

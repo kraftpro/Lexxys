@@ -17,7 +17,7 @@ public class ParameterDefinition
 	/// </summary>
 	/// <param name="command">The command this parameter belongs to.</param>
 	/// <param name="name">Name of the parameter.</param>
-	/// <param name="abbreviations">An optional abbreviations for the parameter.</param>
+	/// <param name="abbreviation">An optional abbreviations for the parameter.</param>
 	/// <param name="valueName">An optional name for the parameter value to be displayed in the usage message.</param>
 	/// <param name="description">An optional parameter description for the usage message.</param>
 	/// <param name="positional">Indicates that this is a positional parameter.</param>
@@ -26,15 +26,13 @@ public class ParameterDefinition
 	/// <param name="toggle">Indicates that this is a switch parameter.</param>
 	/// <param name="unknown">Indicates that this is an unknown parameter.</param>
 	/// <exception cref="ArgumentNullException"></exception>
-	public ParameterDefinition(CommandDefinition command, string name, string[]? abbreviations = null, string? valueName = null, string? description = null, bool positional = false, bool required = false, bool collection = false, bool toggle = false, bool unknown = false)
+	public ParameterDefinition(CommandDefinition command, string name, string[]? abbreviation = null, string? valueName = null, string? description = null, bool positional = false, bool required = false, bool collection = false, bool toggle = false, bool unknown = false)
 	{
-		if (command is null)
-			throw new ArgumentNullException(nameof(command));
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
+		if (command is null) throw new ArgumentNullException(nameof(command));
+		if (name is null) throw new ArgumentNullException(nameof(name));
 
 		Name = FixName(name);
-		Abbreviations = abbreviations ?? [];
+		Abbreviation = abbreviation ?? [];
 		ValueName = valueName.TrimToNull();
 		Description = description;
 		Command = command;
@@ -55,12 +53,12 @@ public class ParameterDefinition
 	/// <summary>
 	/// Abbreviations of the parameter.
 	/// </summary>
-	public string[] Abbreviations { get; }
+	public string[] Abbreviation { get; }
 
 	/// <summary>
 	/// Tests if the parameter has any abbreviations.
 	/// </summary>
-	public bool HasAbbreviation => Abbreviations.Any(o => o.Length > 0 && o[0] != HiddenPrefix);
+	public bool HasAbbreviation => Abbreviation.Any(o => o.Length > 0 && o[0] != HiddenPrefix);
 
 	/// <summary>
 	/// Name of the parameter value to be displayed in the usage message.
@@ -109,7 +107,7 @@ public class ParameterDefinition
 		{
 			if (!excludeAbbreviation)
 			{
-				foreach (var a in Abbreviations.Where(o => o[0] != HiddenPrefix))
+				foreach (var a in Abbreviation.Where(o => o[0] != HiddenPrefix))
 				{
 					text.Append('-').Append(a).Append(", ");
 				}

@@ -50,19 +50,21 @@ namespace Lexxys.Tests.Configuration
 		public void GetListCollectsItemsFromAllConfigs()
 		{
 			var service = Statics.TryGetService<IConfigService>();
-			service.AddConfiguration(new Uri(@"string:[txt]?
-GetListCollectsItemsFromAllConfigs
-	list
-		item	1
-		item	2
-		item	3
-"));
-			service.AddConfiguration(new Uri(@"string:[txt]?
-GetListCollectsItemsFromAllConfigs
-	list
-		item	4
-		item	5
-"));
+			service.AddConfiguration(new Uri("""
+				string:[txt]?
+				GetListCollectsItemsFromAllConfigs
+					list
+						item	1
+						item	2
+						item	3
+				"""));
+			service.AddConfiguration(new Uri("""
+				string:[txt]?
+				GetListCollectsItemsFromAllConfigs
+					list
+						item	4
+						item	5
+				"""));
 			var list = Statics.TryGetService<IConfigSection>().GetCollection<int>("GetListCollectsItemsFromAllConfigs.list.item");
 			Assert.IsNotNull(list);
 			Assert.IsNotNull(list.Value);
@@ -72,19 +74,23 @@ GetListCollectsItemsFromAllConfigs
 		[TestMethod]
 		public void GetValueReflectsConfigChanges()
 		{
-			var config1 = XmlConfigurationProviderTest.CreateConfig(@"string:[txt]?
-GetValueReflectsConfigChanges
-	list
-		item	1
-		item	2
-		item	3
-");
-			var config2 = XmlConfigurationProviderTest.CreateConfig(@"string:[txt]?
-GetValueReflectsConfigChanges
-	list
-		item	4
-		item	5
-");
+			var config1 = XmlConfigurationProviderTest.CreateConfig("""
+				string:[txt]?
+				GetValueReflectsConfigChanges
+					list
+						item	1
+						item	2
+						item	3
+
+				""");
+			var config2 = XmlConfigurationProviderTest.CreateConfig("""
+				string:[txt]?
+				GetValueReflectsConfigChanges
+					list
+						item	4
+						item	5
+
+				""");
 			var service = Statics.TryGetService<IConfigService>();
 			service.AddConfiguration(config1);
 			var list = Statics.TryGetService<IConfigSection>().GetValue<List<int>>("GetValueReflectsConfigChanges.list");
@@ -99,19 +105,23 @@ GetValueReflectsConfigChanges
 		[TestMethod]
 		public void GetListReflectsConfigChanges()
 		{
-			var config1 = XmlConfigurationProviderTest.CreateConfig(@"string:[txt]?
-GetListReflectsConfigChanges
-	list
-		item	1
-		item	2
-		item	3
-");
-			var config2 = XmlConfigurationProviderTest.CreateConfig(@"string:[txt]?
-GetListReflectsConfigChanges
-	list
-		item	4
-		item	5
-");
+			var config1 = XmlConfigurationProviderTest.CreateConfig("""
+				string:[txt]?
+				GetListReflectsConfigChanges
+					list
+						item	1
+						item	2
+						item	3
+
+				""");
+			var config2 = XmlConfigurationProviderTest.CreateConfig("""
+				string:[txt]?
+				GetListReflectsConfigChanges
+					list
+						item	4
+						item	5
+
+				""");
 			var service = Statics.TryGetService<IConfigService>();
 			service.AddConfiguration(config1);
 			var list = Statics.TryGetService<IConfigSection>().GetCollection<int>("GetListReflectsConfigChanges.list.item");

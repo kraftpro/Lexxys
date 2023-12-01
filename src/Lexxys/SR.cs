@@ -230,17 +230,17 @@ namespace Lexxys
 		{
 			return () => String.Format(Culture, "Cannot find configuration provider ({0}).", location);
 		}
-		public static string ConfigurationLoaded(Uri location, int position)
+		public static string ConfigurationLoaded(string? location, int position)
 		{
 			return String.Format(Culture, "Configuration loaded {1}. ({0})", location, position);
 		}
 		public static string ConfigurationChanged(Configuration.IXmlConfigurationSource? source)
 		{
-			return String.Format(Culture, "Configuration changed ({0}).", source?.Name);
+			return String.Format(Culture, "Configuration changed ({0}).", source?.ToString());
 		}
-		public static Func<string> ConfigurationChanged(Configuration.IConfigProvider? source)
+		public static Func<string> ConfigurationChanged(Configuration.IConfigSource? source)
 		{
-			return () => String.Format(Culture, "Configuration changed ({0}).", source?.Name);
+			return () => String.Format(Culture, "Configuration changed ({0}).", source?.ToString());
 		}
 		public static string ConfigurationFileIncluded(string fileName)
 		{

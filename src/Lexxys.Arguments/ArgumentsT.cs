@@ -1,34 +1,15 @@
-﻿#if NET7_0_OR_GREATER
+﻿namespace Lexxys;
 
-namespace Lexxys;
-
-public class Arguments<T>: Arguments where T: ICliOption<T>
+/// <summary>
+/// Command line arguments parser with the parsed option value of type <typeparamref name="T"/>.
+/// </summary>
+/// <typeparam name="T">Parsed option type.</typeparam>
+public class Arguments<T>: Arguments where T : class, new()
 {
-	public Arguments(IEnumerable<string> args): base(args, T.Build()) => Option = T.Parse(Container);
+	internal Arguments(Arguments arguments, T option): base(arguments) => Option = option;
 
-	public Arguments(IEnumerable<string> args, ArgumentsBuilder builder): base(args, builder) => Option = T.Parse(Container);
-
-	public T Option { get; }
+	/// <summary>
+	/// Gets the parsed option value.
+	/// </summary>
+	public T Option { get; init; }
 }
-
-public partial class Arguments
-{
-	public static Arguments<T> Create<T>(IEnumerable<string> args) where T: ICliOption<T> => new Arguments<T>(args);
-}
-
-public interface ICliOption<out T>
-{
-	static abstract T Parse(ArgumentCommand command);
-	static abstract ArgumentsBuilder Build(ArgumentsBuilder? builder = null);
-}
-
-public static class CliArgumentsExtensions
-{
-	public static ArgumentsBuilder AddCommand<T>(this ArgumentsBuilder builder, string name, string? description = null) where T: ICliOption<T>
-	{
-		builder.BeginCommand(name, description);
-		return T.Build(builder).EndCommand();
-	}
-}
-
-#endif
