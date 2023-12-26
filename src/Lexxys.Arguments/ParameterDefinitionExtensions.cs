@@ -30,7 +30,7 @@ internal static class ParameterDefinitionExtensions
 		return default;
 	}
 
-    private static List<ParameterDefinition> FindAuto(this IEnumerable<ParameterDefinition> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
+    private static List<ParameterDefinition> FindExtra(this IEnumerable<ParameterDefinition> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
         => parameters.Where(o => o.IsReverseSimilar(name, comparison, ignoreDelimiters)).ToList();
 
     private static List<ParameterDefinition> FindSimilar(this IEnumerable<ParameterDefinition> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
@@ -39,17 +39,17 @@ internal static class ParameterDefinitionExtensions
 	private static List<ArgumentParameter> FindSimilar(this IEnumerable<ArgumentParameter> parameters, string name, bool ignoreDelimiters, StringComparison comparison)
 		=> parameters.Where(o => o.Definition.IsSimilar(name, comparison, ignoreDelimiters)).ToList();
 
-	public static ParameterDefinitionFindResult TryFind(this IReadOnlyCollection<ParameterDefinition> parameters, string name, out ParameterDefinition? parameter, StringComparison comparison, bool auto = false, bool ignoreDelimiters = false)
+	public static ParameterDefinitionFindResult TryFind(this IReadOnlyCollection<ParameterDefinition> parameters, string name, out ParameterDefinition? parameter, StringComparison comparison, bool extended = false, bool ignoreDelimiters = false)
 	{
 		if (name is null) throw new ArgumentNullException(nameof(name));
 
 		parameter = FindExact(parameters, name, comparison);
 		if (parameter != null)
 			return ParameterDefinitionFindResult.Found;
-		if (!auto)
+		if (!extended)
 			return ParameterDefinitionFindResult.NotFound;
 
-		var similar = FindAuto(parameters, name, ignoreDelimiters, comparison);
+		var similar = FindExtra(parameters, name, ignoreDelimiters, comparison);
 		if (similar.Count == 0)
 			return ParameterDefinitionFindResult.NotFound;
 		if (similar.Count > 1)

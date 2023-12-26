@@ -16,6 +16,12 @@ public partial class Arguments
 		return new Arguments<T>(arguments, (T)value);
 	}
 
+	//public static Arguments<T> Create<T>(IEnumerable<string> args) where T: ICliOption<T>
+	//{
+	//	var build = T.Build();
+	//	var x = T.Parse(T.Build(new ArgumentsBuilder()).Build(args).Container);
+	//}
+
 	private static void Parse(IEnumerable<string> args, Type type, out Arguments arguments, out object value)
 	{
 		if (!type.IsClass || type == typeof(string)) throw new ArgumentOutOfRangeException(nameof(type), type, null);
@@ -23,7 +29,7 @@ public partial class Arguments
 		var builder = new ArgumentsBuilder().Use(type);
 		var arg = new Arguments(args, builder);
 		var errors = new List<string>();
-		var val = ConstructValue(arg.Container, type, errors);
+		var val = ConstructValue(arg.Root, type, errors);
 		foreach (var item in errors)
 		{
 			arg.Errors.Add(item);
@@ -36,10 +42,10 @@ public partial class Arguments
 	{
 		var value = Activator.CreateInstance(type) ?? throw new ArgumentOutOfRangeException(nameof(type), type, null);
 		var items = GetProperties(type);
-		var comparision = command.Definition.Comparison;
+		StringComparison comparison = command.Definition.Comparison;
 		foreach (var item in command.Parameters)
 		{
-			var field = items.FirstOrDefault(o => String.Equals(o.Name, item.Name, comparision));
+			var field = items.FirstOrDefault(o => String.Equals(o.Name, item.Name, comparison));
 			if (field.Type == null) continue;
 			if (Strings.TryGetValue((string?)item.Value, field.Type, out var v))
 				field.Setter(value, v);
@@ -49,7 +55,7 @@ public partial class Arguments
 		var cmd = command.Command;
 		if (cmd == null) return value;
 
-		var cmdField = items.FirstOrDefault(o => String.Equals(o.Name, cmd.Name, comparision));
+		var cmdField = items.FirstOrDefault(o => String.Equals(o.Name, cmd.Name, comparison));
 		if (cmdField.Type == null) return value;
 
 		var commandValue = ConstructValue(cmd, cmdField.Type, errors);
@@ -57,18 +63,18 @@ public partial class Arguments
 		return value;
 	}
 
-	private record struct PapameterDef(CliCommandAttribute? Cmd, CliParamAttribute? Prm, string Name, Type Type, Action<object, object?> Setter);
+	private record struct ParameterDef(CliCommandAttribute? Cmd, CliParamAttribute? Prm, string Name, Type Type, Action<object, object?> Setter);
 
-	private static List<PapameterDef> GetProperties(Type type)
+	private static List<ParameterDef> GetProperties(Type type)
 	{
 		return type
 			.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty)
 			.Where(o => o.CanWrite && o.GetSetMethod() != null && o.GetIndexParameters().Length == 0)
-			.Select(o => new PapameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliParamAttribute>(), o.Name, o.PropertyType, o.SetValue))
+			.Select(o => new ParameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliParamAttribute>(), o.Name, o.PropertyType, o.SetValue))
 			.Union(type
 				.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetField)
 				.Where(o => !o.IsInitOnly && !o.IsLiteral)
-				.Select(o => new PapameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliParamAttribute>(), o.Name, o.FieldType, o.SetValue))
+				.Select(o => new ParameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliParamAttribute>(), o.Name, o.FieldType, o.SetValue))
 				).ToList();
 	}
 }

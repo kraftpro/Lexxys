@@ -4,21 +4,21 @@ using System.Text.RegularExpressions;
 namespace Lexxys.Argument.Tests;
 
 [CliArguments(IgnoreCase = true)]
-partial class SampleOption
+partial class SampleOption: ICliOption<SampleOption>
 {
-    [CliParam("a", ValueName = "alpha", Description = "alpha option")]
+    [CliParam(["a"], ValueName = "alpha", Description = "alpha option")]
     public float Alpha { get; init; }
 
-    [CliParam("b", "bt", ValueName = "beta", Description = "beta option")]
+    [CliParam(["b", "bt"], ValueName = "beta", Description = "beta option")]
     public float Beta { get; init; }
 
-    [CliParam("c", "g", ValueName = "gamma", Description = "gamma option")]
+    [CliParam(["c", "g"], ValueName = "gamma", Description = "gamma option")]
     public float Gamma { get; init; }
 
-	[CliParam("i", ValueName = "input", Description = "input file")]
+	[CliParam(["i"], ValueName = "input", Description = "input file")]
 	public FileInfo? Input { get; init; }
 
-	[CliParam("o", ValueName = "output", Description = "output file")]
+	[CliParam(["o"], ValueName = "output", Description = "output file")]
 	public FileInfo? Output { get; init; }
 
 	[CliCommand("new", Description = "Create something")]
@@ -30,30 +30,31 @@ partial class SampleOption
 	[CliArguments]
 	public partial class CommandCreate
 	{
-		[CliParam("a", Description = "alpha option")]
+		[CliParam(["a"], Description = "alpha option")]
 		public int Alpha { get; init; }
 
-		[CliParam("b", Description = "beta option")]
+		[CliParam(["b"], Description = "beta option")]
 		public int Beta { get; init; }
 
-		[CliParam("c", Description = "gamma option")]
+		[CliParam(["c"], Description = "gamma option")]
 		public int Gamma { get; init; }
 	}
 
 	[CliArguments]
 	public partial class CommandDelete: ICliOption<CommandDelete>
 	{
-		[CliParam("a")]
+		[CliParam(["a"])]
 		public int Alpha { get; init; }
 
-		[CliParam("b", "bb", "bbb", ValueName = "beta", Description = "bbb")]
+		[CliParam(["b", "bb", "bbb"], ValueName = "beta", Description = "bbb")]
 		public int Beta { get; init; }
 
-		[CliParam("c", "cc", "ccc")]
+		[CliParam(["c", "cc", "ccc"])]
 		public int Gamma { get; init; }
 	}
 }
 
+#if false
 partial class SampleOption: ICliOption<SampleOption>
 {
 	public static SampleOption ParseArguments(IReadOnlyCollection<string> args) => Parse(CreateBuilder().Build(args).Container);
@@ -64,20 +65,22 @@ partial class SampleOption: ICliOption<SampleOption>
 		Alpha = c.Parameters.Value<int>("alpha", default),
 		Beta = c.Parameters.Value<float>("beta", default),
 		Gamma = c.Parameters.Value<float>("gamma", default),
-		Input = c.Parameters.Value("input") is string v1 ? new FileInfo(v1): null,
+		//Input = c.Parameters.Value("input") is string v1 ? new FileInfo(v1) : null,
+		Input = c.Parameters.Value<FileInfo?>("input", default),
 		Output = c.Parameters.Value("output") is string v2 ? new FileInfo(v2) : null,
-		Create = c.Command?.Name == "new" ? CommandCreate.Parse(c.Command): null,
-		Delete = c.Command?.Name == "del" ? CommandDelete.Parse(c.Command): null,
+		Create = c.Command?.Name == "Create" ? CommandCreate.Parse(c.Command): null,
+		Delete = c.Command?.Name == "Delete" ? CommandDelete.Parse(c.Command): null,
 	};
 
 	public static ArgumentsBuilder Build(ArgumentsBuilder? builder = null) => (builder ?? new ArgumentsBuilder())
-		.Parameter("alpha", new[] { "a" }, description: "alpha option")
-		.Parameter("beta", new[] { "b", "bt" }, description: "beta option")
-		.Parameter("gamma", new[] { "c", "g" }, description: "gamma option")
-		.Parameter("input", new[] { "i" }, description: "input file")
-		.Parameter("output", new[] { "o" }, description: "output file")
-		.AddCommand<CommandCreate>("new", description: "Create something")
-		.AddCommand<CommandDelete>("del", description: "Delete something");
+		.Parameter("alpha", __aliases[0], description: "alpha option")
+		.Parameter("beta", __aliases[1], description: "beta option")
+		.Parameter("gamma", __aliases[2], description: "gamma option")
+		.Parameter("input", __aliases[3], description: "input file")
+		.Parameter("output", __aliases[4], description: "output file")
+		.Command<CommandCreate>("new", description: "Create something")
+		.Command<CommandDelete>("del", description: "Delete something");
+	private static readonly string[][] __aliases = [["a"], ["b", "bt"], ["c", "g"], ["i"], ["o"]];
 
 	public partial class CommandCreate: ICliOption<CommandCreate>
 	{
@@ -89,9 +92,10 @@ partial class SampleOption: ICliOption<SampleOption>
 		};
 
 		public static ArgumentsBuilder Build(ArgumentsBuilder? builder = null) => (builder ?? new ArgumentsBuilder())
-			.Parameter("alpha", new[] { "a" }, description: "alpha option")
-			.Parameter("beta", new[] { "b" }, description: "beta option")
-			.Parameter("gamma", new[] { "c" }, description: "gamma option");
+			.Parameter("alpha", __aliases[0], description: "alpha option")
+			.Parameter("beta", __aliases[1], description: "beta option")
+			.Parameter("gamma", __aliases[2], description: "gamma option");
+		private static readonly string[][] __aliases = [["a"], ["b"], ["c"]];
 	}
 
 	public partial class CommandDelete
@@ -104,11 +108,14 @@ partial class SampleOption: ICliOption<SampleOption>
 		};
 
 		public static ArgumentsBuilder Build(ArgumentsBuilder? builder = null) => (builder ?? new ArgumentsBuilder())
-			.Parameter("alpha", new[] { "a" }, description: "alpha option")
-			.Parameter("beta", new[] { "b", "bb", "bbb" }, description: "bbb")
-			.Parameter("gamma", new[] { "c", "cc", "ccc" }, description: "gamma option");
+			.Parameter("alpha", __aliases[0], description: "alpha option")
+			.Parameter("beta", __aliases[1], description: "bbb")
+			.Parameter("gamma", __aliases[2], description: "gamma option");
+		private static readonly string[][] __aliases = [["a"], ["b", "bb", "bbb"], ["c", "cc", "ccc"]];
 	}
 }
+
+#endif
 
 //public interface ICliOption<T>
 //{

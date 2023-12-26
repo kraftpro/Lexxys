@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Generator": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\..\\test\\Lexxys.Arguments.Tests\\Lexxys.Argument.Tests.csproj"
+    }
+  }
+}

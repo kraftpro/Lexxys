@@ -13,7 +13,7 @@ namespace Lexxys;
 /// <summary>
 /// Command line arguments parser with support for commands, parameters and options.
 /// </summary>
-public partial class Arguments: IDumpJson, IDumpXml
+public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 {
 	private readonly bool _allowSlash;				// true if slash is a switch prefix
 	private readonly bool _strictDoubleDash;		// true if all arguments longer than 1 character must start with --. otherwise - is allowed for any parameter with value.
@@ -104,25 +104,25 @@ public partial class Arguments: IDumpJson, IDumpXml
 	/// <summary>
 	/// Copy constructor.
 	/// </summary>
-	/// <param name="that"></param>
-	internal Arguments(Arguments that)
+	/// <param name="other"></param>
+	internal Arguments(Arguments other)
 	{
-		_allowSlash = that._allowSlash;
-		_strictDoubleDash = that._strictDoubleDash;
-		_combineOptions = that._combineOptions;
-		_colonSeparator = that._colonSeparator;
-		_equalSeparator = that._equalSeparator;
-		_blankSeparator = that._blankSeparator;
-		_allowUnknown = that._allowUnknown;
-		_doubleDashSeparator = that._doubleDashSeparator;
-		_ignoreNameSeparators = that._ignoreNameSeparators;
-		_auto = that._auto;
-		_splitPositional = that._splitPositional;
-		_comparison = that._comparison;
-		_helpRequested = that._helpRequested;
-		_messages = that._messages;
-		_command = that._command;
-		_args = that._args;
+		_allowSlash = other._allowSlash;
+		_strictDoubleDash = other._strictDoubleDash;
+		_combineOptions = other._combineOptions;
+		_colonSeparator = other._colonSeparator;
+		_equalSeparator = other._equalSeparator;
+		_blankSeparator = other._blankSeparator;
+		_allowUnknown = other._allowUnknown;
+		_doubleDashSeparator = other._doubleDashSeparator;
+		_ignoreNameSeparators = other._ignoreNameSeparators;
+		_auto = other._auto;
+		_splitPositional = other._splitPositional;
+		_comparison = other._comparison;
+		_helpRequested = other._helpRequested;
+		_messages = other._messages;
+		_command = other._command;
+		_args = other._args;
 	}
 
 	/// <summary>
@@ -146,9 +146,9 @@ public partial class Arguments: IDumpJson, IDumpXml
 	public IList<string> Errors => _messages;
 
 	/// <summary>
-	/// Returns containing <see cref="ArgumentCommand"/>.
+	/// Returns a root command containing <see cref="ArgumentCommand"/>.
 	/// </summary>
-	public ArgumentCommand Container => _command;
+	public ArgumentCommand Root => _command;
 	
 	/// <summary>
 	/// Returns the list of the parameters.
@@ -229,6 +229,10 @@ public partial class Arguments: IDumpJson, IDumpXml
 	public IEnumerable<ParameterValue> Positional => _command.Parameters.Positional;
 
 	string IDumpXml.XmlElementName => "args";
+
+	CommandDefinition IArgumentCommand.Definition => _command.Definition;
+
+	string IArgumentCommand.Name => _command.Name;
 
 	/// <summary>
 	/// Converts the command line parameters to JSON.

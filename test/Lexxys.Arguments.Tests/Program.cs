@@ -6,7 +6,6 @@ TestAttrib.Go();
 
 args = new[] { "-a=1", "-b=2", "-c:3" };
 
-
 ArgumentsBuilder pp = new ArgumentsBuilder()
 	.Positional(
 		name: "data file",
@@ -55,7 +54,7 @@ ArgumentsBuilder pp = new ArgumentsBuilder()
 	.SeparatePositionalParameters()
 	;
 
-var aa = pp.Build(args.Union(new[]
+Arguments aa = pp.Build(args.Union(new[]
 	//{ "data.txt", "--input", "input.txt", "--output", "output.txt", "find", "replace", "--m-e", ".*", "--help", "data 2", "data 3", "data 4" }
 	{ "data.txt", "--input", "input.txt", "--output", "output.txt" }
 	));
@@ -78,7 +77,7 @@ if (aa.HasErrors)
 {
 	Console.WriteLine();
 
-	foreach (var item in aa.Errors)
+	foreach (string item in aa.Errors)
 	{
 		Console.WriteLine(item);
 	}
@@ -92,7 +91,7 @@ if (aa.Command != null)
 {
 	Console.WriteLine($"Command = {aa.Command.Name}");
 }
-foreach (var item in aa.Parameters)
+foreach (ArgumentParameter item in aa.Parameters)
 {
 	Console.WriteLine($"{item.Name} = {item.Value}");
 }
@@ -132,15 +131,23 @@ Console.WriteLine(DateOnly.FromDateTime(DateTime.Now).ToString("r"));
 
 #if NET7_0_OR_GREATER
 
-var options = Arguments.Parse<SampleOption>(new[]
+Arguments<SampleOption> options = Arguments.Parse<SampleOption>(new[]
 	{
 		"-a:1",
 		"new", "-b=22",
 		"-i:input.txt"
 	});
-var opt = options.Option;
+SampleOption opt = options.Option;
 
-var xx = Arguments.Parse<SampleOption>(args);
+Arguments<SampleOption> xx = Arguments.Parse<SampleOption>(args);
+
+ArgumentsBuilder b = SampleOption.CreateBuilder();
+
+SampleOption2 c = SampleOption2.Parse([
+	"-a:1",
+	"new", "-b=22",
+	"-i:input.txt"
+	]);
 
 Console.WriteLine("SampleOption:");
 

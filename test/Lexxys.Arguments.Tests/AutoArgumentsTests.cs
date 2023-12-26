@@ -2,12 +2,13 @@
 
 public class AutoArgumentsTests
 {
+	private string[] Args1 = ["-a=", "1,", "2", "-b:2", "/c", "--alpha=a"];
+
 	[Fact]
-	public void TestSimpleParameters()
+	public void Args1_HasCorrectParametersCount()
 	{
 		// Arrange
-		var args = new string[] { "-a=", "1,", "2", "-b:2", "/c", "--alpha=a" };
-		var arguments = new Arguments(args);
+		var arguments = new Arguments(Args1);
 
 		// Assert
 		Assert.False(arguments.HasErrors);
@@ -18,6 +19,21 @@ public class AutoArgumentsTests
 		Assert.Equal("true", arguments["c"].StringValue);
 		Assert.Equal("a", arguments["alpha"].StringValue);
 		Assert.Equal("2", arguments["beta"].StringValue);
+	}
+
+	[Theory]
+	[InlineData("a", "1,2")]
+	[InlineData("b", "2")]
+	[InlineData("c", "true")]
+	[InlineData("alpha", "a")]
+	[InlineData("beta", "2")]
+	public void Args1_StringValuesAreCorrect(string parameter, string value)
+	{
+		// Arrange
+		var arguments = new Arguments(Args1);
+
+		// Assert
+		Assert.Equal(value, arguments[parameter].StringValue);
 	}
 
 	[Fact]

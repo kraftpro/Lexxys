@@ -442,20 +442,20 @@ public class ArgumentsBuilder
 
 		foreach (var item in items)
 		{
-			if (item.Cmd != null || IsInternal(item.Type, type))
+			if (item.CmdAttrib != null || IsInternal(item.PropertyType, type))
 			{
 				commands.Add(item);
 				continue;
 			}
-			var attr = item.Prm;
-			Parameter(item.Name, attr?.Alias, attr?.ValueName, attr?.Description, IsCollection(item.Type), attr?.Required ?? false);
+			var attr = item.PrmAttrib;
+			Parameter(attr?.Name ?? item.PropertyName, attr?.Alias, attr?.ValueName, attr?.Description, IsCollection(item.PropertyType), attr?.Required ?? false);
 		}
 
 		foreach (var item in commands)
 		{
-			var attr = item.Cmd;
-			BeginCommand(item.Name, attr?.Alias, attr?.Description);
-			Use(item.Type);
+			var attr = item.CmdAttrib;
+			BeginCommand(attr?.Name ?? item.PropertyName, attr?.Alias, attr?.Description);
+			Use(item.PropertyType);
 			EndCommand();
 		}
 		return this;
@@ -487,7 +487,7 @@ public class ArgumentsBuilder
 				).ToList();
 	}
 
-	private record struct ParameterDef(CliCommandAttribute? Cmd, CliParamAttribute? Prm, string Name, Type Type, Action<object, object?> Setter);
+	private record struct ParameterDef(CliCommandAttribute? CmdAttrib, CliParamAttribute? PrmAttrib, string PropertyName, Type PropertyType, Action<object, object?> Setter);
 
 	/// <summary>
 	/// Parses the specified arguments and returns an <see cref="Arguments"/> instance.

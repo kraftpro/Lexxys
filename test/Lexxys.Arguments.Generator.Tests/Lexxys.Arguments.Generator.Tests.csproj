@@ -1,22 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net6.0</TargetFrameworks>
-    <!--<TargetFrameworks>net8.0;net6.0;netstandard2.0;net472</TargetFrameworks>-->
-    <RootNamespace>Lexxys</RootNamespace>
-    <LangVersion>preview</LangVersion>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\Lexxys\Lexxys.csproj" />
-  </ItemGroup>
-  <ItemGroup>
+    <PackageReference Include="MSTest" Version="3.2.0-preview.23623.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
   </ItemGroup>
+
   <ItemGroup>
-    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+    <ProjectReference Include="..\..\src\Lexxys.Arguments.Generator\Lexxys.Arguments.Generator.csproj" />
   </ItemGroup>
 
 </Project>

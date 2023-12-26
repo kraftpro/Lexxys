@@ -2,7 +2,15 @@
 
 namespace Lexxys;
 
-public class ArgumentCommand
+public interface IArgumentCommand
+{
+	ArgumentCommand? Command { get; }
+	CommandDefinition Definition { get; }
+	string Name { get; }
+	ArgumentParameterCollection Parameters { get; }
+}
+
+public class ArgumentCommand: IArgumentCommand
 {
 	public ArgumentCommand(CommandDefinition definition)
 	{
@@ -10,11 +18,11 @@ public class ArgumentCommand
 		Definition = definition;
 	}
 
-	public CommandDefinition Definition { get; }
+	public virtual CommandDefinition Definition { get; }
 
-	public ArgumentParameterCollection Parameters { get; }
+	public virtual ArgumentParameterCollection Parameters { get; }
 
-	public ArgumentCommand? Command { get; internal set; }
+	public virtual ArgumentCommand? Command { get; internal set; }
 
 	public string Name => Definition.Name;
 
@@ -91,18 +99,26 @@ public class CliArgumentsAttribute: Attribute
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public class CliCommandAttribute: Attribute
 {
+	public string? Name { get; init; }
 	public string[]? Alias { get; init; }
 	public string? Description { get; init; }
 
 	public CliCommandAttribute() { }
 
-	public CliCommandAttribute(params string[]? alias) => Alias = alias;
+	public CliCommandAttribute(string? name, string[]? alias = null)
+	{
+		Name = name;
+		Alias = alias;
+	}
+
+	public CliCommandAttribute(string[]? alias) => Alias = alias;
 }
 
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public class CliParamAttribute: Attribute
 {
 	public string[]? Alias { get; init; }
+	public string? Name { get; init; }
 	public string? ValueName { get; init; }
 	public string? Description { get; init; }
 	public bool Required { get; init; }
@@ -110,23 +126,36 @@ public class CliParamAttribute: Attribute
 
 	public CliParamAttribute() { }
 
-	public CliParamAttribute(params string[]? alias) => Alias = alias;
+	public CliParamAttribute(string? name, string[]? alias = null)
+	{
+		Name = name;
+		Alias = alias;
+	}
+
+	public CliParamAttribute(string[]? alias = null) => Alias = alias;
 }
 
 #pragma warning disable CA2252
 
 public interface ICliOption<T>
 {
-	static abstract ArgumentsBuilder Build(ArgumentsBuilder? builder = null);
-	static abstract T Parse(ArgumentCommand c);
+	static abstract ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null);
+	static abstract T Parse(IArgumentCommand c);
 }
 
 public static class ICliOptionExtensions
 {
-	public static ArgumentsBuilder AddCommand<T>(this ArgumentsBuilder builder, string name, string description) where T: ICliOption<T>
+	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string[]? abbreviation, string? description = null) where T: ICliOption<T>
+	{
+		builder.BeginCommand(name, abbreviation, description);
+		T.CreateBuilder(builder);
+		return builder.EndCommand();
+	}
+
+	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string? description = null) where T : ICliOption<T>
 	{
 		builder.BeginCommand(name, description);
-		T.Build(builder);
+		T.CreateBuilder(builder);
 		return builder.EndCommand();
 	}
 }

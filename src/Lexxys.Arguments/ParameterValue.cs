@@ -40,8 +40,8 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 		{
 			null => null,
 			{ Count: 0 } => null,
-			{ Count: 1 } => value.FirstOrDefault(),
-			string[] s => s,
+			{ Count: 1 } => value is IReadOnlyList<string> irl ? irl[0]: value is IList<string> il ? il[0]: value.FirstOrDefault(),
+			string[] array => array,
 			_ => value.ToArray(),
 		};
 	}
@@ -254,13 +254,26 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 			{
 				if (_index != 0) return false;
 				_index = 1;
-				return true;
 			}
-			if (_index >= _array.Length) return false;
-			_current = _array[_index++];
+			else
+			{
+				if (_index >= _array.Length) return false;
+				_current = _array[_index++];
+			}
 			return true;
 		}
 
-		public void Reset() => throw new NotImplementedException();
+		public void Reset()
+		{
+			if (_array == null)
+			{
+				_index = _current == null ? 1: 0;
+			}
+			else
+			{
+				_current = null;
+				_index = 0;
+			}
+		}
 	}
 }

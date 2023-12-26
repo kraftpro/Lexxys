@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -23,10 +24,10 @@ namespace Lexxys.Logging;
 public class LogRecordTextFormatter: ILogRecordFormatter
 {
 	public const int MaxIndents = 20;
-	private const int MAX_STACK_ALLOC = 4 * 1024;
+	private const int MAX_STACK_ALLOC = Lexxys.Tools.MaxStackAllocSize;
 
 	private const string NullValue = "<null>";
-	private const string DbNullValue = "<dbnull>";
+	private const string DbNullValue = "<db-null>";
 
 	private readonly List<LogRecordFormatItem> _mappedFormat;
 
@@ -240,45 +241,70 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 
 	private static void AppendTimeStamp(TextWriter writer, DateTime date, bool useDate)
 	{
-		char[] buffer = ArrayPool<char>.Shared.Rent(26);
+		Span<char> buffer = stackalloc char[26];
+		Span<char> b = buffer;
 		var n = 0;
 		if (useDate)
 		{
-			Write4(date.Year);
-			buffer[n++] = '-';
-			Write2(date.Month);
-			buffer[n++] = '-';
-			Write2(date.Day);
-			buffer[n++] = 'T';
+			Write4(b, date.Year);
+			b[4] = '-';
+			b = b.Slice(5);
+			Write2(b, date.Month);
+			b[2] = '-';
+			b = b.Slice(3);
+			Write2(b, date.Day);
+			b[2] = 'T';
+			b = b.Slice(3);
+			// 11
 		}
 
-		Write2(date.Hour);
-		buffer[n++] = ':';
-		Write2(date.Minute);
-		buffer[n++] = ':';
-		Write2(date.Second);
-		buffer[n++] = '.';
-		Write5((int)(date.Ticks % TicksPerSecond / TicksPerFraction));
-		writer.Write(buffer, 0, n);
-		ArrayPool<char>.Shared.Return(buffer);
+		Write2(b, date.Hour);
+		b[2] = ':';
+		b = b.Slice(3);
+		Write2(b, date.Minute);
+		b[2] = ':';
+		b = b.Slice(3);
+		Write2(b, date.Second);
+		b[2] = '.';
+		b = b.Slice(3);
+		Write5(b, (int)(date.Ticks % TicksPerSecond / TicksPerFraction));
+		b = b.Slice(5);
+		// 14
+		writer.Write(buffer.Slice(0, useDate ? 11 + 14: 14));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void Write2(int value)
+		static void Write2(Span<char> buffer, int quot)
 		{
-			buffer[n++] = (char)(value / 10 + '0');
-			buffer[n++] = (char)(value % 10 + '0');
+			int rem;
+			quot = Math.DivRem(quot, 10, out rem);
+			buffer[0] = (char)(quot + '0');
+			buffer[1] = (char)(rem + '0');
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void Write4(int value)
+		static void Write4(Span<char> buffer, int quot)
 		{
-			Write2(value / 100);
-			Write2(value % 100);
+			int rem;
+			quot = Math.DivRem(quot, 10, out rem);
+			buffer[3] = (char)(rem + '0');
+			quot = Math.DivRem(quot, 10, out rem);
+			buffer[2] = (char)(rem + '0');
+			quot = Math.DivRem(quot, 10, out rem);
+			buffer[1] = (char)(rem + '0');
+			buffer[0] = (char)(quot + '0');
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void Write5(int value)
+		static void Write5(Span<char> buffer, int quot)
 		{
-			buffer[n++] = (char)(value / 10000 + '0');
-			Write4(value % 10000);
+			int rem;
+			quot = Math.DivRem(quot, 10, out rem);
+			buffer[4] = (char)(rem + '0');
+			quot = Math.DivRem(quot, 10, out rem);
+			buffer[3] = (char)(rem + '0');
+			quot = Math.DivRem(quot, 10, out rem);
+			buffer[2] = (char)(rem + '0');
+			quot = Math.DivRem(quot, 10, out rem);
+			buffer[1] = (char)(rem + '0');
+			buffer[0] = (char)(quot + '0');
 		}
 	}
 	private const long TicksPerFraction = 100L;
@@ -368,11 +394,13 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		{
 			char* q = pvalue;
 			char* e = q + value.Length;
+			bool ctrl = false;
 			while (q != e)
 			{
 				char c = *q++;
 				if (IsWhiteSpace(c))
 				{
+					ctrl |= c != ' ';
 					do
 					{
 						if (q == e)
@@ -384,12 +412,13 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 				*p++ = c;
 			}
 			Finish:;
+			int len = (int)(p - buffer);
+			return len == value.Length && !ctrl ? value: new string(buffer, 0, (int)(p - buffer));
 		}
-		return new string(buffer, 0, (int)(p - buffer));
+
 		static bool IsWhiteSpace(char c)
 		{
-			if (c < '\x7F') return c <= ' ';
-			if (c <= '\xA0') return true;
+			if (c <= '\xA0') return c is <'!' or >'~';
 			var k = Char.GetUnicodeCategory(c);
 			return k == UnicodeCategory.OtherNotAssigned || k == UnicodeCategory.Control || k == UnicodeCategory.SpaceSeparator;
 		}
