@@ -196,8 +196,9 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 
 	private void PrepareTemplates()
 	{
-		const string InsertInstanceTemplate = "insert into [{S}].[{T}LogInstances] (LocalTime,ComputerName,DomainName,ProcessId) values ";
-		const string InsertEntryTemplate = "\ninsert into[{S}].[{T}LogEntries] (SeqNumber,LocalTime,InstanceId,Source,ThreadId,LogType,RecordType,IndentLevel,Message) values";
+		const string Insert = "insert into";
+		const string InsertInstanceTemplate = Insert + "[{S}].[{T}LogInstances](LocalTime,ComputerName,DomainName,ProcessId) values ";
+		const string InsertEntryTemplate = "\n" + Insert + "[{S}].[{T}LogEntries](SeqNumber,LocalTime,InstanceId,Source,ThreadId,LogType,RecordType,IndentLevel,Message) values";
 		const string InsertArgTemplate = "\n declare @id int=scope_identity();\n insert into [{S}].[{T}LogArguments] (Entry,ArgName,ArgValue) values";
 
 		_insertInstanceTemplate = InsertInstanceTemplate.Replace("{S}", _schema).Replace("{T}", _table);

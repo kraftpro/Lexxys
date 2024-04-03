@@ -35,8 +35,8 @@ namespace Lexxys.Tests.Usage
 			var c2b = Statics.TryGetService<IConfigSection>()?.GetSection(settingsNode)?.GetCollection<string>("proxy");
 
 			var cf = Statics.TryGetService<IConfigService>();
-			IConfigProvider provider = new EnvironmentConfigurationProvider();
-			cf?.AddConfiguration(provider, true);
+			IConfigSource provider = new EnvironmentConfigurationProvider();
+			cf?.AddConfiguration(provider, 0);
 		}
 	}
 }

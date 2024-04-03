@@ -75,11 +75,11 @@ public class RndKnuth: IRand
 
 	#region IRand
 
-	void IRand.Reset(int seed)
+	void IRand.Reset(long seed)
 	{
 		lock (syncObj)
 		{
-			Reset(seed);
+			Reset((int)seed);
 		}
 	}
 
@@ -88,6 +88,16 @@ public class RndKnuth: IRand
 		lock (syncObj)
 		{
 			return NextInt();
+		}
+	}
+
+	long IRand.NextLong()
+	{
+		lock (syncObj)
+		{
+			var n1 = NextInt();
+			var n2 = NextInt();
+			return ((long)n1 << 31) + n2;
 		}
 	}
 
@@ -111,7 +121,7 @@ public class RndKnuth: IRand
 
 	public void Reset(int seed = 0)
 	{
-		_seed = seed <= 0 ? (int)(DateTime.Now.Ticks & 0x3FFFFFFF): (seed  & 0x3FFFFFFF);
+		_seed = seed == 0 ? (int)(DateTime.UtcNow.Ticks & 0x3FFFFFFF): (seed  & 0x3FFFFFFF);
 		ran_arr_ptr = ran_arr_started;
 		ranf_arr_ptr = ran_arr_started;
 		_integerInitialized = false;

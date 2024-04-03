@@ -12,7 +12,7 @@ namespace Lexxys.Data;
 /// <summary>
 /// The default implementation of <see cref="IDataContext" />.
 /// </summary>
-public sealed class DataContext: IDataContext
+public sealed class MsSqlDataContext: IDataContext
 {
 	private static readonly IValue<ConnectionStringInfo> __globalConnectionString = Config.Current.GetValue<ConnectionStringInfo>(Dc.ConfigSection, null);
 	private static Func<string, DbConnection> __defaultConnectionFactory = o => new Microsoft.Data.SqlClient.SqlConnection(o);
@@ -25,16 +25,16 @@ public sealed class DataContext: IDataContext
 		set => __defaultConnectionFactory = value ?? throw new ArgumentNullException(nameof(value));
 	}
 
-	private DataContext(DataContextImplementation context)
+	private MsSqlDataContext(DataContextImplementation context)
 	{
 		_context = context;
 	}
 
-	public DataContext(Func<string, DbConnection>? factory = null) : this(__globalConnectionString.Value, factory)
+	public MsSqlDataContext(Func<string, DbConnection>? factory = null) : this(__globalConnectionString.Value, factory)
 	{
 	}
 
-	public DataContext(ConnectionStringInfo connectionInfo, Func<string, DbConnection>? connectionFactory = null)
+	public MsSqlDataContext(ConnectionStringInfo connectionInfo, Func<string, DbConnection>? connectionFactory = null)
 	{
 		if (connectionInfo == null)
 			throw new ArgumentNullException(nameof(connectionInfo));
@@ -79,7 +79,7 @@ public sealed class DataContext: IDataContext
 
 	public IContextHolder NoTiming() => new Dc.TimingLocker(this);
 
-	public IDataContext Clone() => new DataContext(_context.Clone());
+	public IDataContext Clone() => new MsSqlDataContext(_context.Clone());
 
 	public void Commit() => _context.Commit();
 

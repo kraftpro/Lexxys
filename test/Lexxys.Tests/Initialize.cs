@@ -1,7 +1,7 @@
 ﻿namespace Lexxys.Tests
 {
 	[TestClass]
-	public static class Initialize
+	public class Initialize
 	{
 
 		[AssemblyInitialize]

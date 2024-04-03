@@ -76,9 +76,9 @@ namespace Lexxys.Tests.Xml
 		///</summary>
 		[TestMethod]
 		[DataRow("on<e", "\"on&lt;e\"")]
-		[DataRow(">one'", "\"&gt;one'\"")]
-		[DataRow("on<>e\"", "'on&lt;&gt;e\"'")]
-		[DataRow("'o'ne\"", "\"'o'ne&quot;\"")]
+		[DataRow(">one'", "\"&gt;one&#39;\"")]
+		[DataRow("on<>e\"", "\"on&lt;&gt;e&quot;\"")]
+		[DataRow("'o'ne\"", "\"&#39;o&#39;ne&quot;\"")]
 		[DataRow(" ", "\" \"")]
 		[DataRow(null, "\"\"")]
 		public void EncodeAttributeTest(string value, string expected)

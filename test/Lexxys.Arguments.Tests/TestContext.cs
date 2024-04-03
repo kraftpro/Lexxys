@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 
 namespace Lexxys.Argument.Tests;
 
@@ -13,7 +14,7 @@ public static class CallContext
 		state.TryGetValue(name, out AsyncLocal<object>? data) ? data.Value: null;
 }
 
-public class CallContextTests
+public partial class CallContextTests
 {
 	static AsyncLocal<object?> _context = new AsyncLocal<object?>();
 
@@ -133,4 +134,17 @@ public class CallContextTests
 
 		Assert.Null(_context.Value);
 	}
+
+	internal void Sample()
+	{
+		Regex r = MyRegex();
+	}
+
+	[GeneratedRegex(@"\A[a-z]{2}-[A-Z]{2}")]
+	private static partial Regex MyRegex();
+
+	private static readonly Regex patch = MyRegex1();
+
+	[GeneratedRegex(@"(https?://)((\w+\.)+\w+\.\w+)")]
+	private static partial Regex MyRegex1();
 }

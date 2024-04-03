@@ -23,27 +23,27 @@ public static class Tools
 	/// </summary>
 	/// <param name="value">The value to convert</param>
 	/// <param name="precision">Precision of the conversion</param>
-	/// <param name="maxWidth">Maximum possible number of digits in minimum of both the numerator and the denominator</param>
+	/// <param name="digits">Maximum number of digits in minimum of both the numerator and the denominator</param>
 	/// <returns>Tuple type with Item = enumerator, Item2 = denominator, Item3 = precision</returns>
 	/// <remarks>
-	///	Conversion stops when achieved required <paramref name="precision"/> or minimal number of digits in numerator or denominator is greater or equal then <paramref name="maxWidth"/>.
+	///	Conversion stops when achieved required <paramref name="precision"/> or minimal number of digits in numerator or denominator is greater or equal then <paramref name="digits"/>.
 	///	special cases:
 	///		0 = 0/1 with 0 precision
 	///		NaN = 0/0 with NaN precision
 	///		+infinity = 1/0 with positive infinity precision
 	///		-infinity = -1/0 with negative infinity precision.
 	/// </remarks>
-	public static (long Numerator, long Denominator, double Precision) ToRational(double value, double precision = 0, int maxWidth = 0)
+	public static (long Numerator, long Denominator, double Precision) ToRational(double value, double precision = 0, int digits = 0)
 	{
 		if (Double.IsNaN(value))
 			return (0L, 0L, Double.NaN);
 		if (Double.IsPositiveInfinity(value))
 			return (1L, 0L, Double.PositiveInfinity);
 		if (Double.IsNegativeInfinity(value))
-			return (-1L, 0L, Double.PositiveInfinity);
+			return (-1L, 0L, Double.NegativeInfinity);
 
-		if (maxWidth <= 0)
-			maxWidth = 20;
+		if (digits <= 0)
+			digits = 20;
 		if (precision < Double.Epsilon)
 			precision = Double.Epsilon;
 		bool neg = false;
@@ -83,7 +83,7 @@ public static class Tools
 			long h2 = x * h1 + h0; h0 = h1; h1 = h2;
 			long k2 = x * k1 + k0; k0 = k1; k1 = k2;
 			int w2 = DigitsNumber(Math.Min(k1, h1));
-			if (w2 > maxWidth)
+			if (w2 > digits)
 				break;
 			if (delta <= precision)
 			{
@@ -130,16 +130,49 @@ public static class Tools
 		};
 	}
 
-	public static ulong Power2Round(ulong value)
+	/// <summary>
+	/// Calculates the smallest value of power of 2, which is greater or equal to the specified <paramref name="value"/>.
+	/// </summary>
+	/// <param name="value"></param>
+	/// <returns></returns>
+	public static ulong Power2Round(ulong value) => BitMask(value - 1) + 1;
+
+	/// <summary>
+	/// Calculates the smallest value of power of 2, which is greater or equal to the specified <paramref name="value"/>.
+	/// </summary>
+	/// <param name="value"></param>
+	/// <returns></returns>
+	public static uint Power2Round(uint value) => BitMask(value - 1) + 1;
+
+	/// <summary>
+	/// Calculates the bit mask for the <paramref name="value"/>, i.e., the smallest value of power of 2 minus one, which is greater or equal to the specified <paramref name="value"/>.
+	/// </summary>
+	/// <param name="value"></param>
+	/// <returns></returns>
+	public static ulong BitMask(ulong value)
 	{
-		--value;
 		value |= value >> 1;
 		value |= value >> 2;
 		value |= value >> 4;
 		value |= value >> 8;
 		value |= value >> 16;
 		value |= value >> 32;
-		return value + 1;
+		return value;
+	}
+
+	/// <summary>
+	/// Calculates the bit mask for the <paramref name="value"/>, i.e., the smallest value of power of 2 minus one, which is greater or equal to the specified <paramref name="value"/>.
+	/// </summary>
+	/// <param name="value"></param>
+	/// <returns></returns>
+	public static uint BitMask(uint value)
+	{
+		value |= value >> 1;
+		value |= value >> 2;
+		value |= value >> 4;
+		value |= value >> 8;
+		value |= value >> 16;
+		return value;
 	}
 
 	public static object? GetUnderlyingValue(object? value)
@@ -168,35 +201,6 @@ public static class Tools
 			TypeCode.UInt64 => (ulong)value,
 			_ => (int)value
 		};
-	}
-
-	public static BitArray InitializeBitArray(params int[] values)
-	{
-		if (values == null)
-			throw new ArgumentNullException(nameof(values));
-		if (values.Length <= 1)
-			return values.Length == 0 ? new BitArray(0): new BitArray(1, true);
-
-		int mi = Int32.MaxValue;
-		int ma = Int32.MinValue;
-		for (int i = 0; i < values.Length; ++i)
-		{
-			if (mi > values[i])
-				mi = values[i];
-			if (ma < values[i])
-				ma = values[i];
-		}
-		var ba = new BitArray(ma - mi + 1);
-		for (int i = 0; i < values.Length; ++i)
-		{
-			ba[values[i] - mi] = true;
-		}
-		return ba;
-	}
-
-	public static T Cast<T>(object value)
-	{
-		return (T)value;
 	}
 
 	internal static string MachineName

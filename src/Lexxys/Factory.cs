@@ -20,207 +20,75 @@ using Tokenizer;
 public static class Factory
 {
 	public const string ConfigurationRoot = "lexxys.factory";
-	public const string ConfigurationImport = ConfigurationRoot + ".import";
-	public const string ConfigurationSkip = ConfigurationRoot + ".ignore";
 	public const string ConfigurationSynonyms = ConfigurationRoot + ".synonyms.*";
 
-	public static readonly object Void = new object();
-	public static readonly object[] NoArgs = [];
 #if NETFRAMEWORK && DEBUG
 	public static readonly DebugInfoGenerator DebugInfo = DebugInfoGenerator.CreatePdbGenerator();
 #endif
 
+	private static readonly object SyncRoot = new object();
+
 	private static readonly ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>> __foundTypesP = new ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>>();
 	private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesC = new ConcurrentDictionary<Type, IEnumerable<Type>>();
 	private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesA = new ConcurrentDictionary<Type, IEnumerable<Type>>();
-	private static volatile ConcurrentBag<Assembly>? __assemblies;
-	private static volatile ConcurrentBag<Assembly>? __systemAssemblies;
-	private static volatile bool __assembliesImported;
-	private static string[]? __systemAssemblyNames;
-	private static readonly object SyncRoot = new object();
 
+	private static readonly ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?> __constructors = new ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?>(new ConstructorTypesComparer());
 	private static readonly ConcurrentDictionary<MemberInfo, Func<object?, object?[], object?>?> __compiledMethods = new ConcurrentDictionary<MemberInfo, Func<object?, object?[], object?>?>();
+	private static readonly ConcurrentDictionary<Type, ObjectTypeAccessor> __typeAccessors = new ConcurrentDictionary<Type, ObjectTypeAccessor>();
+
+	#region Assemblies
 
 	public static IEnumerable<Assembly> DomainAssemblies
 	{
 		get
 		{
-			CollectOrImportAssemblies();
-			return __assemblies!;
-		}
-	}
-
-	public static IEnumerable<Assembly> SystemAssemblies
-	{
-		get
-		{
-			CollectAssemblies();
-			return __systemAssemblies!;
-		}
-	}
-
-	private static void OnAssemblyLoad(Assembly asm)
-	{
-		AssemblyLoad?.Invoke(null, new AssemblyLoadEventArgs(asm));
-	}
-
-	public static event EventHandler<AssemblyLoadEventArgs>? AssemblyLoad;
-
-	#region Assemblies
-
-	private static string[] SystemAssemblyNames()
-	{
-		if (!Statics.Instance.IsInitialized)
-			return DefaultSystemAssemblyNames;
-		var systemNamesConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<string>(ConfigurationSkip);
-		var systemNames = systemNamesConfig?.Value;
-		if (systemNames == null || systemNames.Count == 0)
-			return DefaultSystemAssemblyNames;
-
-		var ss = new List<string>(systemNames
-			.SelectMany(o => o.Split(',', ';'))
-			.Select(o => o.TrimToNull())
-			.Where(o => o != null)!);
-		if (ss.Count == 0)
-			return DefaultSystemAssemblyNames;
-
-		for (int i = 0; i < DefaultSystemAssemblyNames.Length; ++i)
-		{
-			if (string.IsNullOrEmpty(ss[i]))
-				continue;
-
-			if (!ss.Contains(DefaultSystemAssemblyNames[i]))
-				ss.Add(DefaultSystemAssemblyNames[i]);
-		}
-		return ss.ToArray();
-	}
-	private static readonly string[] DefaultSystemAssemblyNames = ["CppCodeProvider", "WebDev.", "SMDiagnostics", "mscor", "vshost", "System", "Microsoft", "Windows", "Presentation", "netstandard"];
-
-	private static bool IsSystemAssembly(Assembly asm)
-	{
-#if !NETCOREAPP
-		if (asm.GlobalAssemblyCache)
-			return true;
-#endif
-		string? name = asm.FullName;
-		return name != null && name.IndexOf("Version=0.0.0.0", StringComparison.OrdinalIgnoreCase) >= 0 || Array.FindIndex(__systemAssemblyNames!, s => name != null && name.StartsWith(s, StringComparison.Ordinal)) >= 0;
-	}
-
-	private static void CollectAssemblies()
-	{
-		if (__assemblies == null)
-		{
+			var assemblies = _domainAssemblies;
+			if (assemblies != null)
+				return assemblies;
 			lock (SyncRoot)
 			{
-				if (__assemblies == null)
-					CollectAssembliesInternal();
+				if (_domainAssemblies != null)
+					return _domainAssemblies;
+				if (!__assembliesInitialized)
+				{
+					AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
+					__assembliesInitialized = true;
+				}
+				_domainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+				return _domainAssemblies;
 			}
 		}
 	}
+	private static bool __assembliesInitialized;
+	private static Assembly[]? _domainAssemblies;
 
-	public static bool AssembliesImported => __assembliesImported;
+	public static IEnumerable<Assembly> ReverseDomainAssemblies => new ReverseDomainIterator((Assembly[])DomainAssemblies);
 
-	private static void CollectOrImportAssemblies()
+	private class ReverseDomainIterator: IEnumerable<Assembly>
 	{
-		if (__assemblies == null)
-		{
-			lock (SyncRoot)
-			{
-				if (__assemblies == null)
-					CollectAssembliesInternal();
-				if (!__assembliesImported)
-					ImportAssembliesInternal();
-			}
-		}
-		else if (!__assembliesImported)
-		{
-			lock (SyncRoot)
-			{
-				if (!__assembliesImported)
-					ImportAssembliesInternal();
-			}
-		}
-	}
+		private readonly Assembly[] _assemblies;
 
-	private static void CollectAssembliesInternal()
-	{
-		__systemAssemblyNames = SystemAssemblyNames();
-		AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
-		AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
-		var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
-		__assemblies = new ConcurrentBag<Assembly>(assemblies.Where(a => !IsSystemAssembly(a)));
-		__systemAssemblies = new ConcurrentBag<Assembly>(assemblies.Where(IsSystemAssembly));
-	}
+		public ReverseDomainIterator(Assembly[] assemblies) => _assemblies = assemblies;
 
-	private static void ImportAssembliesInternal()
-	{
-		if (!__assembliesImported)
-		{
-			ImportRestAssemblies();
-			Lxx.ConfigurationChanged += OnConfigChanged;
-			__assembliesImported = true;
-		}
+		public IEnumerator<Assembly> GetEnumerator() => ((IEnumerable<Assembly>)_assemblies).GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => _assemblies.GetEnumerator();
 	}
 
 	private static void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs args)
 	{
-		Assembly asm = args.LoadedAssembly;
-		CollectAssemblies();
-		if (IsSystemAssembly(asm))
+		lock (SyncRoot)
 		{
-			__systemAssemblies!.Add(asm);
-		}
-		else
-		{
-			__assemblies!.Add(asm);
+			_domainAssemblies = null;
 			__foundTypesP.Clear();
 			__foundTypesC.Clear();
 			__foundTypesA.Clear();
-			OnAssemblyLoad(asm);
 		}
 	}
 
-	private static Assembly? CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
+	public static Assembly LoadAssembly(string assemblyName)
 	{
-		if (sender is not AppDomain domain)
-			return null;
-		foreach (var assembly in domain.GetAssemblies())
-		{
-			if (assembly.FullName == args.Name)
-				return assembly;
-		}
-		return null;
-	}
-
-	private static void ImportRestAssemblies()
-	{
-		if (!Statics.Instance.IsInitialized)
-			return;
-		var importConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<string>(ConfigurationImport);
-		var assemblies = importConfig?.Value;
-		if (assemblies == null)
-			return;
-
-		foreach (string assemblyName in assemblies)
-		{
-			TryLoadAssembly(assemblyName, false);
-		}
-	}
-
-	private static void OnConfigChanged(object? sender, ConfigurationEventArgs e)
-	{
-		ImportRestAssemblies();
-		ResetSynonyms();
-	}
-
-
-	public static Assembly? TryLoadAssembly(string? assemblyName, bool throwOnError)
-	{
-		if (assemblyName is not { Length: > 0 })
-			if (throwOnError)
-				throw new ArgumentNullException(nameof(assemblyName));
-			else
-				return null;
+		if (assemblyName is not { Length: > 0 }) throw new ArgumentNullException(nameof(assemblyName));
 
 		string? file = null;
 		try
@@ -231,23 +99,15 @@ public static class Factory
 		catch (Exception flaw)
 		{
 			SystemLog.WriteErrorMessage("Lexxys.Factory.TryLoadAssembly", flaw, new OrderedBag<string, object?> { { "assemblyName", assemblyName }, { "file", file } });
-			if (throwOnError)
-				throw;
-			return null;
+			throw;
 		}
-	}
-
-	public static Assembly LoadAssembly(string assemblyName)
-	{
-		return TryLoadAssembly(assemblyName, true)!;
 	}
 
 	#endregion
 
-	public static IEnumerable<Type> Types(Func<Type, bool> predicate)
-	{
-		return __foundTypesP.GetOrAdd(predicate, p => ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(p)))!);
-	}
+	public static IEnumerable<Type> Types(Func<Type, bool> predicate) =>
+		//return __foundTypesP.GetOrAdd(predicate, p => ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(p)))!);
+		__foundTypesP.GetOrAdd(predicate, p => ReadOnly.WrapCopy(AppDomain.CurrentDomain.GetAssemblies().SelectMany(asm => asm.SelectTypes(p)))!);
 
 	public static IEnumerable<Type> Types(Type type, bool cacheResults = false)
 	{
@@ -281,10 +141,7 @@ public static class Factory
 			Classes(type, DomainAssemblies);
 	}
 
-	public static IEnumerable<Type> Classes(Type type, params Assembly[] assemblies)
-	{
-		return Classes(type, (IEnumerable<Assembly>)assemblies);
-	}
+	public static IEnumerable<Type> Classes(Type type, params Assembly[] assemblies) => Classes(type, (IEnumerable<Assembly>)assemblies);
 
 	public static IEnumerable<Type> Classes(Type type, IEnumerable<Assembly> assemblies)
 	{
@@ -307,17 +164,11 @@ public static class Factory
 			.Where(m => m != null && type.IsAssignableFrom(m.ReturnType));
 	}
 
-	public static Type? GetType(string? typeName)
-	{
-		return typeName == null || (typeName = typeName.Trim()).Length == 0 ? null: GetSynonym(typeName) ?? GetTypeInternal(typeName);
-	}
+	public static Type? GetType(string? typeName) => typeName == null || (typeName = typeName.Trim()).Length == 0 ? null: GetSynonym(typeName) ?? GetTypeInternal(typeName);
 
 	public static Type? ParseTypeName(string typeName) => TypeNameParser.Parse(typeName);
 
-	public static void ResetSynonyms()
-	{
-		__synonymsLoaded = false;
-	}
+	public static void ResetSynonyms() => __synonymsLoaded = false;
 
 	public static void SetSynonym(string? name, Type? type)
 	{
@@ -742,7 +593,7 @@ public static class Factory
 								text.Append(']');
 							prefix = ", ";
 						}
-						text.Append(alter ? '>' : ']');
+						text.Append(alter ? '>': ']');
 					}
 					else if (alter)
 					{
@@ -772,10 +623,7 @@ public static class Factory
 
 			public string BaseName(bool alter = false) => BaseName(new StringBuilder(), alter).ToString();
 
-			public override string ToString()
-			{
-				return BaseName(true);
-			}
+			public override string ToString() => BaseName(true);
 
 			public Type? MakeType()
 			{
@@ -802,9 +650,8 @@ public static class Factory
 			{
 				var name = IsGeneric ? Name + "`" + GenericParametersCount.ToString(): Name;
 				var type = GetSynonym(name) ?? (Assembly == null ?
-					Factory.FindType(name, DomainAssemblies) ?? Factory.FindType(name, SystemAssemblies):
-					DomainAssemblies.FirstOrDefault(o => String.Equals(o.GetName().Name, Assembly, StringComparison.OrdinalIgnoreCase))
-					?.GetType(name, false, true));
+					Factory.FindType(name, ReverseDomainAssemblies):
+					ReverseDomainAssemblies.FirstOrDefault(o => String.Equals(o.GetName().Name, Assembly, StringComparison.OrdinalIgnoreCase))?.GetType(name, false, true));
 
 				if (type == null)
 					return null;
@@ -904,25 +751,13 @@ public static class Factory
 
 	#region Helpers
 
-	public static T Construct<T>()
-	{
-		return (T)Construct(typeof(T));
-	}
+	public static T Construct<T>() => (T)Construct(typeof(T));
 
-	public static T Construct<T>(params object?[] arguments)
-	{
-		return (T)Construct(typeof(T), arguments);
-	}
+	public static T Construct<T>(params object?[] arguments) => (T)Construct(typeof(T), arguments);
 
-	public static T? TryConstruct<T>()
-	{
-		return TryConstruct(typeof(T)) is T result ? result: default;
-	}
+	public static T? TryConstruct<T>() => TryConstruct(typeof(T)) is T result ? result: default;
 
-	public static T? TryConstruct<T>(params object?[] arguments)
-	{
-		return TryConstruct(typeof(T), arguments) is T result ? result: default;
-	}
+	public static T? TryConstruct<T>(params object?[] arguments) => TryConstruct(typeof(T), arguments) is T result ? result: default;
 
 	public static object Construct(string typeName)
 	{
@@ -975,29 +810,22 @@ public static class Factory
 	{
 		if (type is null)
 			throw new ArgumentNullException(nameof(type));
-		return Activator.CreateInstance(type, true)!;
+		return Activator.CreateInstance(type, true) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Func<object> GetConstructor(Type type)
+	public static object Construct(Type type, params object?[] args)
 	{
 		if (type is null)
 			throw new ArgumentNullException(nameof(type));
+		if (args is not { Length: >0 })
+			return Activator.CreateInstance(type, true)!;
 
-		return TryGetConstructor(type) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, 0));
+		return TryConstruct(type, args) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, args.Length));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static object Construct(Type type, params object?[]? args)
-	{
-		if (type is null)
-			throw new ArgumentNullException(nameof(type));
-
-		return TryConstruct(type, args) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Func<object?[], object> GetConstructor(Type type, params Type?[]? args)
+	public static Func<object?[], object> GetConstructor(Type type, params Type?[] args)
 	{
 		if (type is null)
 			throw new ArgumentNullException(nameof(type));
@@ -1005,23 +833,13 @@ public static class Factory
 		return TryGetConstructor(type, args) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static object? TryConstruct(Type type)
-	{
-		if (type == null)
-			throw new ArgumentNullException(nameof(type));
-
-		Func<object>? f = TryGetConstructor(type);
-		return f?.Invoke();
-	}
-
-	public static object? TryConstruct(Type type, params object?[]? args)
+	public static object? TryConstruct(Type type, params object?[] args)
 	{
 		if (type is null)
 			throw new ArgumentNullException(nameof(type));
 
-		if (args == null || args.Length == 0)
-			return TryConstruct(type);
+		if (args is not { Length: >0 })
+			return Activator.CreateInstance(type, true);
 
 		Type?[] argType = new Type[args.Length];
 		for (int i = 0; i < args.Length; ++i)
@@ -1044,79 +862,14 @@ public static class Factory
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Func<object>? TryGetConstructor(Type type)
-	{
-		if (type is null)
-			throw new ArgumentNullException(nameof(type));
-
-		return __constructors0.GetOrAdd(type, TryCreateConstructor);
-	}
-	private static readonly ConcurrentDictionary<Type, Func<object>?> __constructors0 = new ConcurrentDictionary<Type, Func<object>?>();
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Func<object>? TryCreateConstructor(Type type)
-	{
-		if (type.IsValueType)
-		{
-			if (type == typeof(void))
-				return null;
-			return Expression.Lambda<Func<object>>(Expression.TypeAs(Expression.Default(type), typeof(object)))
-#if NETFRAMEWORK && DEBUG
-				.Compile(DebugInfo);
-#else
-				.Compile();
-#endif
-		}
-
-		ConstructorInfo? ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
-		if (ci == null)
-			return null;
-		return Expression.Lambda<Func<object>>(Expression.New(ci))
-#if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo);
-#else
-			.Compile();
-#endif
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Func<object?, object>? TryGetConstructor(Type type, Type argType)
 	{
 		if (type == null)
 			throw new ArgumentNullException(nameof(type));
 
-		Func<object?[], object>? c = TryGetConstructor(type, new[] { argType });
+		Func<object?[], object>? c = TryGetConstructor(type, [argType]);
 		return c == null ? null: o => c(new[] {o});
 	}
-
-	//public static Func<object[], object> TryGetConstructor(Type type, int parametersCount)
-	//{
-	//	return __constructors2.GetOrAdd(Tuple.Create(type, parametersCount), o => TryCreateConstructor(o.Item1, o.Item2));
-	//}
-	//private static ConcurrentDictionary<Tuple<Type, int>, Func<object[], object>> __constructors2 = 
-	//	new ConcurrentDictionary<Tuple<Type, int>, Func<object[], object>>();
-
-	//private static Func<object[], object> TryCreateConstructor(Type type, int parametersCount)
-	//{
-	//	if (type == null)
-	//		return null;
-
-	//	ConstructorInfo constructor = null;
-	//	foreach (var item in type.GetConstructors())
-	//	{
-	//		ParameterInfo[] pi = item.GetParameters();
-	//		if (pi.Length == parametersCount)
-	//		{
-	//			if (constructor != null)
-	//				return null;
-	//			constructor = item;
-	//		}
-	//	}
-	//	if (constructor == null)
-	//		return null;
-
-	//	return CompileParameterizedConstructor(constructor);
-	//}
 
 	public static Func<object?[], object>? TryGetConstructor(Type? type, Type?[]? argType)
 	{
@@ -1134,10 +887,8 @@ public static class Factory
 			args = new Type[argType.Length];
 			Array.Copy(argType, 0, args, 0, argType.Length);
 		}
-		return __constructors3.GetOrAdd((type, args), o => TryCreateConstructor(o.Ret, o.Args));
+		return __constructors.GetOrAdd((type, args), o => TryCreateConstructor(o.Ret, o.Args));
 	}
-	private static readonly ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?> __constructors3 = 
-		new ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?>(new ConstructorTypesComparer());
 
 	private class ConstructorTypesComparer: IEqualityComparer<(Type Ret, Type?[] Args)>
 	{
@@ -1162,10 +913,7 @@ public static class Factory
 			return true;
 		}
 
-		public int GetHashCode((Type Ret, Type?[] Args) obj)
-		{
-			return HashCode.Join(obj.Ret.GetHashCode(), obj.Args.Length.GetHashCode());
-		}
+		public int GetHashCode((Type Ret, Type?[] Args) obj) => HashCode.Join(obj.Ret.GetHashCode(), obj.Args.Length.GetHashCode());
 	}
 
 	private static Func<object?[], object>? TryCreateConstructor(Type type, Type?[] argType)
@@ -1330,7 +1078,7 @@ public static class Factory
 			bool found = true;
 			for (int i = 0; i < pp.Length; ++i)
 			{
-				Type t = pp[i].ParameterType.IsGenericType ? pp[i].ParameterType.GetGenericTypeDefinition() : pp[i].ParameterType;
+				Type t = pp[i].ParameterType.IsGenericType ? pp[i].ParameterType.GetGenericTypeDefinition(): pp[i].ParameterType;
 				if (t.UnderlyingSystemType != arguments[i].UnderlyingSystemType)
 				{
 					found = false;
@@ -1342,282 +1090,6 @@ public static class Factory
 		}
 		return null;
 	}
-
-#if false
-
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	
-	public static IEnumerable<MethodBase> FindConstructors(Type type, string methodName, Type[] argTypes)
-	{
-		if (argTypes == null)
-			argTypes = Type.EmptyTypes;
-		if (methodName == null)
-			return FindTypes(type)
-				.Select(t => (MethodBase)t.GetConstructor(argTypes))
-				.Where(m => m != null);
-		else
-			return FindTypes(type)
-				.Select(t => (MethodBase)t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public, null, argTypes, null) ?? (MethodBase)t.GetConstructor(argTypes))
-				.Where(m => m != null);
-	}
-
-	public static object New(Type type, string methodName, Type[] argTypes)
-	{
-		if (argTypes == null)
-			argTypes = Type.EmptyTypes;
-		if (methodName == null)
-		{
-			return FindTypes(type)
-				.Select(t => (MethodBase)t.GetConstructor(argTypes))
-				.Where(m => m != null);
-
-		}
-		else
-			return FindTypes(type)
-				.Select(t => (MethodBase)t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public, null, types, null) ?? (MethodBase)t.GetConstructor(types))
-				.Where(m => m != null);
-		return GetConstructor(type)();
-	}
-
-	public static T Create<T>()
-	{
-		return (T)Create(typeof(T));
-	}
-
-	public static object Create(Type type)
-	{
-		IList<Func<object>> cc = Constructors(type);
-		return cc.Count == 1 ? cc[0](): null;
-	}
-
-	public static IList<Func<object>> Constructors(Type type)
-	{
-		return __constructors.GetOrAdd(type, t =>
-		{
-			List<Func<object>> r = null;
-			foreach (var item in ConstructedTypes(t))
-			{
-				ConstructorInfo c = item.GetConstructor(Type.EmptyTypes);
-				if (c != null)
-				{
-					DynamicMethod m = new DynamicMethod(string.Empty, item, null, typeof(Factory).Module);
-					ILGenerator il = m.GetILGenerator();
-					il.Emit(OpCodes.Newobj, c);
-					il.Emit(OpCodes.Ret);
-					if (r == null)
-						r = new List<Func<object>>();
-					r.Add((Func<object>)m.CreateDelegate(typeof(Func<object>)));
-				}
-			}
-			return r == null ? NoResults<Func<object>>.Items: ReadOnly.Wrap(r);
-		});
-	}
-	private static ConcurrentDictionary<Type, IList<Func<object>>> __constructors = new ConcurrentDictionary<Type, IList<Func<object>>>();
-
-	public static Func<TObj, TArg> Create<TObj, TArg>(string staticMethod)
-	{
-		return __constructors.GetOrAdd(type, t =>
-		{
-			foreach (var item in Classes(t))
-			{
-				ConstructorInfo c = item.GetConstructor(Type.EmptyTypes);
-				if (c != null)
-				{
-					DynamicMethod m = new DynamicMethod(string.Empty, item, null, MethodBase.GetCurrentMethod().DeclaringType.Module);
-					ILGenerator il = m.GetILGenerator();
-					il.Emit(OpCodes.Newobj, c);
-					il.Emit(OpCodes.Ret);
-					return (Func<object>)m.CreateDelegate(typeof(Func<object>));
-				}
-			}
-			return () => null;
-		});
-	}
-
-	public static T New<T>()
-		where T: new()
-	{
-		return Constructor<T>.New();
-	}
-
-	private static class Constructor<T>
-		where T: new()
-	{
-		private static Func<T> _emptyConstructor = () => default(T);
-		private static Func<T> _defaultConstructor = GetDefaultConstructor();
-		private static IList<Func<T>> _allConstructors = GetAllConstructors();
-
-		public Func<T> Empty
-		{
-			get { return _emptyConstructor; }
-		}
-
-		public Func<T> Default
-		{
-			get { return _defaultConstructor; }
-		}
-
-		public bool HasDefault
-		{
-			get { return _defaultConstructor != _emptyConstructor; }
-		}
-
-		public IList<Func<T>> All
-		{
-			get { return _allConstructors; }
-		}
-
-		public IList<Func<T>> GetAllConstructors(string methodName)
-		{
-			List<Func<T>> r = null;
-			foreach (Type type in ConstructedTypes(typeof(T)))
-			{
-				MethodInfo m = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public, null, Type.EmptyTypes, null)
-				if (m != null && m.ReturnType == type)
-				{
-					if (r == null)
-						r = new List<Func<T>>();
-					r.Add(Expression.Lambda<Func<T>>(Expression.Call(m)).Compile());
-				}
-			}
-			return r == null ? NoResults<Func<T>>.Items: ReadOnly.Wrap(r);
-
-
-		}
-		
-
-		private static IList<Func<T>> GetAllConstructors()
-		{
-			List<Func<T>> r = null;
-			foreach (Type type in ConstructedTypes(typeof(T)))
-			{
-				ConstructorInfo c = type.GetConstructor(Type.EmptyTypes);
-				if (c != null)
-				{
-					if (r == null)
-						r = new List<Func<T>>();
-					r.Add(Expression.Lambda<Func<T>>(Expression.New(c)).Compile());
-				}
-			}
-			return r == null ? NoResults<Func<T>>.Items: ReadOnly.Wrap(r);
-		}
-
-		private static Func<T> GetDefaultConstructor()
-		{
-			ConstructorInfo c = typeof(T).GetConstructor(Type.EmptyTypes);
-			return c == null ? _emptyConstructor: Expression.Lambda<Func<T>>(Expression.New(c)).Compile();
-		}
-	}
-
-	private static class Constructor<T, Targ>
-		where T: new()
-	{
-		private static Func<T> _emptyConstructor = () => default(T);
-		private static Func<T> _defaultConstructor = GetDefaultConstructor();
-		private static IList<Func<T>> _allConstructors = GetAllConstructors();
-
-		public static T New()
-		{
-			return _defaultConstructor();
-		}
-
-		public Func<T> Empty
-		{
-			get { return _emptyConstructor; }
-		}
-
-		public Func<T> Default
-		{
-			get { return _defaultConstructor; }
-		}
-
-		public IList<Func<T>> All
-		{
-			get { return _allConstructors; }
-		}
-
-		public Func<T> GetMethod()
-		{
-			return null;
-		}
-
-		private static IList<Func<T>> GetAllConstructors()
-		{
-			List<Func<T>> r = null;
-			foreach (Type type in ConstructedTypes(typeof(T)))
-			{
-				ConstructorInfo c = type.GetConstructor(Type.EmptyTypes);
-				if (c != null)
-				{
-					if (r == null)
-						r = new List<Func<T>>();
-					r.Add(Expression.Lambda<Func<T>>(Expression.New(c)).Compile());
-				}
-			}
-			return r == null ? NoResults<Func<T>>.Items: ReadOnly.Wrap(r);
-		}
-
-		private static Func<T> GetDefaultConstructor()
-		{
-			ConstructorInfo c = typeof(T).GetConstructor(Type.EmptyTypes);
-			return c == null ? _emptyConstructor: Expression.Lambda<Func<T>>(Expression.New(c)).Compile();
-		}
-	}
-
-	public static T Create<T>(string methodName)
-	{
-		return default(T);
-	}
-
-	public static Type GetType(string typeName, string assemblyName)
-	{
-		if (typeName == null || typeName.Length == 0)
-			throw new ArgumentNullException("typeName");
-
-		Type type = TryGetType(typeName, assemblyName);
-		if (type == null)
-			throw new InvalidOperationException(SR.TLS_CannotCreateType(typeName, assemblyName));
-		return type;
-	}
-
-	public static Type TryGetType(string typeName, string assemblyName)
-	{
-		if (typeName == null || typeName.Length == 0)
-			return null;
-
-		Type type = Type.GetType(typeName, false, true);
-		if (type == null && assemblyName != null && assemblyName.Length > 0)
-		{
-			Assembly asm = TryLoadAssembly(assemblyName);
-			if (asm != null)
-				type = asm.GetType(typeName);
-		}
-		return type;
-	}
-
-	public static Type GetType(string typeName)
-	{
-		if (typeName == null || typeName.Length == 0)
-			throw new ArgumentNullException("typeName");
-
-		Type type = TryGetType(typeName);
-		if (type == null)
-			throw new InvalidOperationException(SR.TLS_CannotCreateType(typeName, null));
-		return type;
-	}
-
-	public static Type TryGetType(string typeName)
-	{
-		if (typeName == null || typeName.Length == 0)
-			return null;
-
-		int i = typeName.IndexOf(',');
-		if (i < 0)
-			return TryGetType(typeName, null);
-		else
-			return TryGetType(typeName.Substring(0, i).TrimEnd(), typeName.Substring(i+1).TrimStart());
-	}
-#endif
 
 	public static object? GetUnderlyingValue(object? value)
 	{
@@ -1647,6 +1119,117 @@ public static class Factory
 		};
 	}
 
+	public static IObjectAccessor CreateAccessor(object obj)
+	{
+		if (obj == null)
+			throw new ArgumentNullException(nameof(obj));
+		var type = obj.GetType();
+		var accessor = __typeAccessors.GetOrAdd(type, o => new ObjectTypeAccessor(o));
+		return new ObjectAccessor(accessor, obj);
+	}
+
+	class ObjectTypeAccessor
+	{
+		private readonly Type _type;
+
+		public ObjectTypeAccessor(Type type)
+		{
+			_type = type ?? throw new ArgumentNullException(nameof(type));
+			CollectProperties();
+		}
+
+		private void CollectProperties()
+		{
+			var props = _type.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+			foreach (var p in props)
+			{
+				var getMethod = p.GetGetMethod(true);
+				var setMethod = p.GetSetMethod(true);
+				var indexes = p.GetIndexParameters();
+				if (indexes.Length > 1) continue;
+				if (indexes.Length == 0)
+				{
+					Func<object?, object?>? getter = getMethod == null ? null: Compile0(getMethod);
+					Func<object?, object?, object?>? setter = setMethod == null ? null: Compile1(setMethod);
+					_properties[p.Name] = (getter, setter);
+				}
+				else
+				{
+					Func<object?, object?, object?>? getter = getMethod == null ? null: Compile1(getMethod);
+					Func<object?, object?, object?, object?>? setter = setMethod == null ? null: Compile2(setMethod);
+					_indexedProperties[p.Name] = (getter, setter);
+				}
+			}
+		}
+
+		private readonly Dictionary<string, (Func<object?, object?>? Get, Func<object?, object?, object?>? Set)> _properties
+			= new Dictionary<string, (Func<object?, object?>?, Func<object?, object?, object?>?)>(StringComparer.OrdinalIgnoreCase);
+
+		private readonly Dictionary<string, (Func<object?, object?, object?>? Get, Func<object?, object?, object?, object?>? Set)> _indexedProperties
+			= new Dictionary<string, (Func<object?, object?, object?>?, Func<object?, object?, object?, object?>?)>(StringComparer.OrdinalIgnoreCase);
+
+		public bool TryGetValue(object? instance, string name, out object? result)
+		{
+			if (!_properties.TryGetValue(name, out var accessor) || accessor.Get == null)
+			{
+				result = null;
+				return false;
+			}
+			result = accessor.Get(instance);
+			return true;
+		}
+
+		public bool TryGetValue(object? instance, string name, object index, out object? result)
+		{
+			if (!_indexedProperties.TryGetValue(name, out var accessor) || accessor.Get == null)
+			{
+				result = null;
+				return false;
+			}
+			result = accessor.Get(instance, index);
+			return true;
+		}
+
+		public bool TrySetValue(object? instance, string name, object? value)
+		{
+			if (!_properties.TryGetValue(name, out var accessor) || accessor.Set == null)
+				return false;
+			accessor.Set(instance, value);
+			return true;
+		}
+
+		public bool TrySetValue(object? instance, string name, object index, object? value)
+		{
+			if (!_indexedProperties.TryGetValue(name, out var accessor) || accessor.Set == null)
+				return false;
+			accessor.Set(instance, index, value);
+			return true;
+		}
+	}
+
+	class ObjectAccessor: IObjectAccessor
+	{
+		private readonly ObjectTypeAccessor _accessor;
+		private readonly object? _obj;
+
+		public ObjectAccessor(ObjectTypeAccessor accessor, object? obj)
+		{
+			_accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));
+			_obj = obj;
+		}
+
+		public bool TryGetValue(string name, out object? result)
+			=> _accessor.TryGetValue(_obj, name, out result);
+
+		public bool TryGetValue(string name, object index, out object? result)
+			=> _accessor.TryGetValue(_obj, name, index, out result);
+
+		public bool TrySetValue(string name, object? value)
+			=> _accessor.TrySetValue(_obj, name, value);
+
+		public bool TrySetValue(string name, object index, object? value)
+			=> _accessor.TrySetValue(_obj, name, index, value);
+	}
 
 	public static object? Invoke(object? instance, MethodInfo method, params object?[] parameters)
 	{
@@ -1679,29 +1262,15 @@ public static class Factory
 		return f?.Invoke(null, parameters);
 	}
 
-	//public static Func<object, object[], object> TryCompile(MemberInfo member)
-	//{
-	//	if (member == null)
-	//		throw new ArgumentNullException("member");
-
-	//	MethodInfo method = member as MethodInfo;
-	//	if (method != null)
-	//		return __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
-	//	ConstructorInfo constructor = member as ConstructorInfo;
-	//	if (constructor != null)
-	//		return __compiledMethods.GetOrAdd(constructor, o => Compile((ConstructorInfo)o));
-	//	throw EX.ArgumentWrongType("member", member.GetType());
-	//}
-
 	private static Func<object?, object?[], object?> Compile(MethodInfo method)
 	{
 		if (method == null)
 			throw new ArgumentNullException(nameof(method));
 
-		ParameterExpression arg1 = Expression.Parameter(typeof(object));
+		ParameterExpression arg0 = Expression.Parameter(typeof(object));
 		ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
 		Expression[] pp = CompileParameters(method, args);
-		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg1, method.DeclaringType);
+		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg0, method.DeclaringType);
 		Expression call = method.IsStatic ? Expression.Call(method, pp): Expression.Call(instance, method, pp);
 		if (method.ReturnType != typeof(void) && method.ReturnType.IsValueType)
 			call = Expression.TypeAs(call, typeof(object));
@@ -1709,13 +1278,92 @@ public static class Factory
 		if (method.ReturnType == typeof(void))
 			call = Expression.Block(call, Expression.Constant(null));
 
-		return Expression.Lambda<Func<object?, object?[], object?>>(call, arg1, args)
+		return Expression.Lambda<Func<object?, object?[], object?>>(call, arg0, args)
 #if NETFRAMEWORK && DEBUG
 			.Compile(DebugInfo);
 #else
 			.Compile();
 #endif
 
+	}
+
+	private static Func<object?, object?> Compile0(MethodInfo method)
+	{
+		if (method == null)
+			throw new ArgumentNullException(nameof(method));
+
+		ParameterExpression arg0 = Expression.Parameter(typeof(object));
+		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg0, method.DeclaringType);
+		Expression call = method.IsStatic ? Expression.Call(method): Expression.Call(instance, method);
+		if (method.ReturnType != typeof(void) && method.ReturnType.IsValueType)
+			call = Expression.TypeAs(call, typeof(object));
+
+		if (method.ReturnType == typeof(void))
+			call = Expression.Block(call, Expression.Constant(null));
+
+		return Expression.Lambda<Func<object?, object?>>(call, arg0)
+#if NETFRAMEWORK && DEBUG
+			.Compile(DebugInfo);
+#else
+			.Compile();
+#endif
+
+	}
+
+	private static Func<object?, object?, object?> Compile1(MethodInfo method)
+	{
+		if (method == null)
+			throw new ArgumentNullException(nameof(method));
+		ParameterInfo[] pp = method.GetParameters();
+		if (pp.Length != 1)
+			throw new ArgumentException($"Invalid number of parameters. Expected 1, actual {pp.Length}.", nameof(method));
+
+		ParameterExpression arg0 = Expression.Parameter(typeof(object));
+		ParameterExpression arg1 = Expression.Parameter(typeof(object), "arg");
+		Expression p1 = Expression.Convert(arg1, pp[0].ParameterType);
+		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg0, method.DeclaringType);
+		Expression call = method.IsStatic ? Expression.Call(method, p1): Expression.Call(instance, method, p1);
+		if (method.ReturnType != typeof(void) && method.ReturnType.IsValueType)
+			call = Expression.TypeAs(call, typeof(object));
+
+		if (method.ReturnType == typeof(void))
+			call = Expression.Block(call, Expression.Constant(null));
+
+		return Expression.Lambda<Func<object?, object?, object?>>(call, arg0, arg1)
+#if NETFRAMEWORK && DEBUG
+			.Compile(DebugInfo);
+#else
+			.Compile();
+#endif
+	}
+
+	private static Func<object?, object?, object?, object?> Compile2(MethodInfo method)
+	{
+		if (method == null)
+			throw new ArgumentNullException(nameof(method));
+		ParameterInfo[] pp = method.GetParameters();
+		if (pp.Length != 2)
+			throw new ArgumentException($"Invalid number of parameters. Expected 2, actual {pp.Length}.", nameof(method));
+
+		ParameterExpression arg0 = Expression.Parameter(typeof(object));
+		ParameterExpression arg1 = Expression.Parameter(typeof(object), "arg1");
+		ParameterExpression arg2 = Expression.Parameter(typeof(object), "arg2");
+		Expression p1 = Expression.Convert(arg1, pp[0].ParameterType);
+		Expression p2 = Expression.Convert(arg2, pp[1].ParameterType);
+		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg0, method.DeclaringType);
+		Expression call = method.IsStatic ? Expression.Call(method, p1, p2): Expression.Call(instance, method, p1, p2);
+		if (method.ReturnType != typeof(void) && method.ReturnType.IsValueType)
+			call = Expression.TypeAs(call, typeof(object));
+
+		if (method.ReturnType == typeof(void))
+			call = Expression.Block(call, Expression.Constant(null));
+
+		return Expression.Lambda<Func<object?, object?, object?, object?>>(call, arg0, arg1, arg2)
+#if NETFRAMEWORK && DEBUG
+			.Compile(DebugInfo);
+#else
+			.Compile();
+#endif
 	}
 
 	private static Func<object?, object?[], object?> Compile(ConstructorInfo constructor)

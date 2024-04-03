@@ -7,8 +7,10 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
+using Lexxys;
+using Lexxys.Xml;
+
 namespace Lexxys.Data;
-using Xml;
 
 /// <summary>
 /// Provides information about connection to the data source.
@@ -373,25 +375,40 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 
 		void Append(string name, string value)
 		{
-			connection.Append(name).Append('=').Append(Value(value)).Append(';');
+			connection.Append(name).Append('=');
+			AppendValue(value);
+			connection.Append(';');
 		}
 
-		string Value(string value)
+		void AppendValue(string value)
 		{
 			if (value.Length == 0)
-				return value;
-			return odbc ?
-				IsOdbcCorrect(value) ? value:
-					"{" + value.Replace("}", "}}") + "}":
-				IdOledbCorrect(value) ? value :
-					value.IndexOf('"') < 0 ? "\"" + value + "\"":
-					value.IndexOf('\'') < 0 ? "'" + value + "'":
-					"\"" + value.Replace("\"", "\"\"") + "\"";
-
-			static bool IsOdbcCorrect(string value) => value[0] != '{' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[value.Length - 1]) && value.IndexOf(';') < 0;
-
-			static bool IdOledbCorrect(string value) => value[0] != '"' && value[0] != '\'' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[value.Length - 1]) && value.IndexOf(';') < 0;
+				return;
+			if (odbc)
+			{
+				if (IsOdbcCorrect(value))
+					connection.Append(value);
+				else if (value.IndexOf('{') < 0)
+					connection.Append('{').Append(value).Append('}');
+				else
+					connection.Append('{').Append(value.Replace("{", "{{")).Append('}');
+			}
+			else
+			{
+				if (IsOledbCorrect(value))
+					connection.Append(value);
+				else if (value.IndexOf('"') < 0)
+					connection.Append('"').Append(value).Append('"');
+				else if (value.IndexOf('\'') < 0)
+					connection.Append('\'').Append(value).Append('\'');
+				else
+					connection.Append('"').Append(value.Replace("\"", "\"\"")).Append('"');
+			}
 		}
+
+		static bool IsOdbcCorrect(string value) => value[0] != '{' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[value.Length - 1]) && value.IndexOf(';') < 0;
+
+		static bool IsOledbCorrect(string value) => value[0] != '"' && value[0] != '\'' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[value.Length - 1]) && value.IndexOf(';') < 0;
 	}
 	private static readonly char[] __adoAny = [';', '\'', '"'];
 
@@ -399,20 +416,14 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 	/// Returns a string representation of the connection.
 	/// </summary>
 	/// <returns></returns>
-	public override string ToString()
-	{
-		return ToString(false);
-	}
+	public override string ToString() => ToString(false);
 
 	/// <summary>
 	/// Returns true if the specified <paramref name="obj"/> is equal to this connection.
 	/// </summary>
 	/// <param name="obj">The object to compare.</param>
 	/// <returns></returns>
-	public override bool Equals(object? obj)
-	{
-		return obj is ConnectionStringInfo other && Equals(other);
-	}
+	public override bool Equals(object? obj) => obj is ConnectionStringInfo other && Equals(other);
 
 	/// <summary>
 	/// Returns a hash code for this connection.

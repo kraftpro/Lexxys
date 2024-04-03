@@ -2,9 +2,12 @@ using Lexxys;
 using Lexxys.Argument.Tests;
 using Lexxys.Tests;
 
+var tt = Strings.CutIndents("  abcd\r\n def\r\n  \r\n");
+var dd = Strings.CutIndents(["  abcd", " def", "  ", ""]);
+
 TestAttrib.Go();
 
-args = new[] { "-a=1", "-b=2", "-c:3" };
+args = ["-a=1", "-b=2", "-c:3"];
 
 ArgumentsBuilder pp = new ArgumentsBuilder()
 	.Positional(
@@ -54,9 +57,9 @@ ArgumentsBuilder pp = new ArgumentsBuilder()
 	.SeparatePositionalParameters()
 	;
 
-Arguments aa = pp.Build(args.Union(new[]
-	//{ "data.txt", "--input", "input.txt", "--output", "output.txt", "find", "replace", "--m-e", ".*", "--help", "data 2", "data 3", "data 4" }
-	{ "data.txt", "--input", "input.txt", "--output", "output.txt" }
+Arguments aa = pp.Build(args.Union(
+	//[ "data.txt", "--input", "input.txt", "--output", "output.txt", "find", "replace", "--m-e", ".*", "--help", "data 2", "data 3", "data 4" ]
+	[ "data.txt", "--input", "input.txt", "--output", "output.txt" ]
 	));
 
 Console.WriteLine("TestApp.exe " + String.Join(" ", aa.Args));
@@ -123,7 +126,7 @@ foreach (ArgumentParameter item in aa.Parameters)
 
 aa = Parameters.ObjParameters()
 	.UnixStyle()
-	.Build(args.Union(new[] { "--help" }));
+	.Build(args.Union([ "--help" ]));
 aa.Usage("obj");
 aa.Usage("obj", alignAbbreviation: true);
 
@@ -131,24 +134,43 @@ Console.WriteLine(DateOnly.FromDateTime(DateTime.Now).ToString("r"));
 
 #if NET7_0_OR_GREATER
 
-Arguments<SampleOption> options = Arguments.Parse<SampleOption>(new[]
-	{
-		"-a:1",
-		"new", "-b=22",
-		"-i:input.txt"
-	});
-SampleOption opt = options.Option;
-
-Arguments<SampleOption> xx = Arguments.Parse<SampleOption>(args);
-
-ArgumentsBuilder b = SampleOption.CreateBuilder();
-
-SampleOption2 c = SampleOption2.Parse([
+ParsedArguments<SampleOption> arg = Arguments.Parse<SampleOption>([
 	"-a:1",
-	"new", "-b=22",
-	"-i:input.txt"
-	]);
+	"ne", "-b=22",
+	"-i:input.txt",
+	"-h"]);
+SampleOption option = arg.Value;
+Console.WriteLine($"a={option.Alpha}, b={option.Beta}, i={option.Input}, o={option.Output}");
+Console.WriteLine($"create a={option.Create?.Alpha}, b={option.Create?.Beta}, g={option.Create?.Gamma}");
+Console.WriteLine($"delete a={option.Delete?.Alpha}, b={option.Delete?.Beta}, g={option.Delete?.Gamma}");
+Console.WriteLine($"help={arg.HelpRequested}");
+Console.WriteLine($"errors={arg.HasErrors}");
+if (arg.HasErrors || arg.HelpRequested)
+{
+	arg.Arguments.Usage(alignAbbreviation: true);
+}
 
-Console.WriteLine("SampleOption:");
+
+//var args2 = SampleOption.Parse([
+//	"-a:1",
+//	"ne", "-b=22",
+//	"-i:input.txt",
+//	"-h"]);
+
+var xx = Arguments.Parse<SampleOption>(args);
+
+SampleOption3.CreateBuilder();
+
+var b = new ArgumentsBuilder();
+
+
+var x3a = SampleOption3.Parse(args);
+string[] args2 = ["-i=input.txt", "-o", "output.txt", .. args];
+var x2 = SampleOption2.Parse(args2);
+var x3b = Arguments.Parse<SampleOption3>(args);
+
+Console.WriteLine("----------");
+
+x2.Usage();
 
 #endif

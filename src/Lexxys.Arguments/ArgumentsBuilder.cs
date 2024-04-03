@@ -2,6 +2,21 @@
 
 namespace Lexxys;
 
+public record ArgumentsBuilderSettings
+	(
+	bool IgnoreCase = false,
+	bool AllowSlash = false,
+	bool StrictDoubleDash = false,
+	bool CombineOptions = false,
+	bool DoubleDashSeparator = false,
+	bool IgnoreNameSeparators = false,
+	bool AllowUnknown = false,
+	bool SplitPositional = false,
+	bool ColonSeparator = true,
+	bool EqualSeparator = true,
+	bool BlankSeparator = true
+	);
+
 /// <summary>
 /// Builder for <see cref="Arguments"/> class.
 /// </summary>
@@ -63,32 +78,22 @@ public class ArgumentsBuilder
 	/// <param name="colonSeparator">True if colon is a separator between parameter name and value.</param>
 	/// <param name="equalSeparator">True if equal sign is a separator between parameter name and value.</param>
 	/// <param name="blankSeparator">True if blank is a separator between parameter name and value.</param>
-	public ArgumentsBuilder(
-		bool ignoreCase = false,
-		bool allowSlash = false,
-		bool strictDoubleDash = false,
-		bool combineOptions = false,
-		bool doubleDashSeparator = false,
-		bool ignoreNameSeparators = false,
-		bool allowUnknown = false,
-		bool splitPositional = false,
-		bool colonSeparator = true,
-		bool equalSeparator = true,
-		bool blankSeparator = true)
+	public ArgumentsBuilder(ArgumentsBuilderSettings? settings = null)
 	{
-		Root = new CommandDefinition(null, String.Empty, comparison: ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+		settings ??= new ArgumentsBuilderSettings();
+		Root = new CommandDefinition(null, String.Empty, comparison: settings.IgnoreCase ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal);
 		_current = Root;
 
-		_allowSlash = allowSlash;
-		_strictDoubleDash = strictDoubleDash;
-		_combineOptions = combineOptions;
-		_colonSeparator = colonSeparator;
-		_equalSeparator = equalSeparator;
-		_blankSeparator = blankSeparator;
-		_doubleDashSeparator = doubleDashSeparator;
-		_ignoreNameSeparators = ignoreNameSeparators;
-		_allowUnknown = allowUnknown;
-		_splitPositional = splitPositional;
+		_allowSlash = settings.AllowSlash;
+		_strictDoubleDash = settings.StrictDoubleDash;
+		_combineOptions = settings.CombineOptions;
+		_colonSeparator = settings.ColonSeparator;
+		_equalSeparator = settings.EqualSeparator;
+		_blankSeparator = settings.BlankSeparator;
+		_doubleDashSeparator = settings.DoubleDashSeparator;
+		_ignoreNameSeparators = settings.IgnoreNameSeparators;
+		_allowUnknown = settings.AllowUnknown;
+		_splitPositional = settings.SplitPositional;
 	}
 
 	public CommandDefinition Root { get; }
@@ -350,7 +355,7 @@ public class ArgumentsBuilder
 	/// <exception cref="ArgumentNullException"></exception>
 	public ArgumentsBuilder Parameter(string name, string? abbrev = null, string? valueName = null, string? description = null, bool collection = false, bool required = false)
 	{
-		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null : [abbrev], valueName, description: description, collection: collection, required: required));
+		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null: [abbrev], valueName, description: description, collection: collection, required: required));
 		return this;
 	}
 
@@ -391,7 +396,7 @@ public class ArgumentsBuilder
 	/// <returns>The <see cref="ArgumentsBuilder"/></returns>
 	public ArgumentsBuilder Switch(string name, string? abbrev = null, string? description = null)
 	{
-		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null : [abbrev], description: description, toggle: true));
+		_current.Add(new ParameterDefinition(_current, name, abbrev == null ? null: [abbrev], description: description, toggle: true));
 		return this;
 	}
 
@@ -479,15 +484,15 @@ public class ArgumentsBuilder
 		return type
 			.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty)
 			.Where(o => o.CanWrite && o.GetSetMethod() != null && o.GetIndexParameters().Length == 0)
-			.Select(o => new ParameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliParamAttribute>(), o.Name, o.PropertyType, o.SetValue))
+			.Select(o => new ParameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliOptionAttribute>(), o.Name, o.PropertyType, o.SetValue))
 			.Union(type
 				.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetField)
 				.Where(o => !o.IsInitOnly && !o.IsLiteral)
-				.Select(o => new ParameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliParamAttribute>(), o.Name, o.FieldType, o.SetValue))
+				.Select(o => new ParameterDef(o.GetCustomAttribute<CliCommandAttribute>(), o.GetCustomAttribute<CliOptionAttribute>(), o.Name, o.FieldType, o.SetValue))
 				).ToList();
 	}
 
-	private record struct ParameterDef(CliCommandAttribute? CmdAttrib, CliParamAttribute? PrmAttrib, string PropertyName, Type PropertyType, Action<object, object?> Setter);
+	private record struct ParameterDef(CliCommandAttribute? CmdAttrib, CliOptionAttribute? PrmAttrib, string PropertyName, Type PropertyType, Action<object, object?> Setter);
 
 	/// <summary>
 	/// Parses the specified arguments and returns an <see cref="Arguments"/> instance.

@@ -7,8 +7,6 @@
 using System.Data;
 using System.Data.Common;
 
-using Lexxys;
-
 namespace Lexxys.Data;
 
 public static class DataContextExtensions
@@ -177,26 +175,26 @@ public static class DataContextExtensions
 	}
 
 	public static T? GetValue<T>(this IDataContext context, string query, params DataParameter[] parameters)
-		=> Map((context ?? throw new ArgumentNullException(nameof(context))), Dc.ValueMapper<T>, query, parameters);
+		=> Map(context ?? throw new ArgumentNullException(nameof(context)), Dc.ValueMapper<T>, query, parameters);
 
 	public static Task<T?> GetValueAsync<T>(this IDataContext context, string query, params DataParameter[] parameters)
-		=> MapAsync((context ?? throw new ArgumentNullException(nameof(context))), Dc.ValueMapperAsync<T>, query, parameters);
+		=> MapAsync(context ?? throw new ArgumentNullException(nameof(context)), Dc.ValueMapperAsync<T>, query, parameters);
 
 	public static List<T> GetList<T>(this IDataContext context, string query, params DataParameter[] parameters)
-		=> Map((context ?? throw new ArgumentNullException(nameof(context))), Dc.ListMapper<T>, query, parameters);
+		=> Map(context ?? throw new ArgumentNullException(nameof(context)), Dc.ListMapper<T>, query, parameters);
 
 	public static Task<List<T>> GetListAsync<T>(this IDataContext context, string query, params DataParameter[] parameters)
-		=> MapAsync((context ?? throw new ArgumentNullException(nameof(context))), Dc.ListMapperAsync<T>, query, parameters);
+		=> MapAsync(context ?? throw new ArgumentNullException(nameof(context)), Dc.ListMapperAsync<T>, query, parameters);
 
 	public static bool ReadXmlText(this IDataContext context, TextWriter text, string query, params DataParameter[] parameters)
-		=> Map((context ?? throw new ArgumentNullException(nameof(context))), o => Dc.XmlTextMapper(text, o), query, parameters);
+		=> Map(context ?? throw new ArgumentNullException(nameof(context)), o => Dc.XmlTextMapper(text, o), query, parameters);
 
 	public static Task<bool> ReadXmlTextAsync(this IDataContext context, TextWriter text, string query, params DataParameter[] parameters)
-		=> MapAsync((context ?? throw new ArgumentNullException(nameof(context))), o => Dc.XmlTextMapperAsync(text, o), query, parameters);
+		=> MapAsync(context ?? throw new ArgumentNullException(nameof(context)), o => Dc.XmlTextMapperAsync(text, o), query, parameters);
 
 	public static List<Xml.IXmlReadOnlyNode> ReadXml(this IDataContext context, string query, params DataParameter[] parameters)
-		=> Map((context ?? throw new ArgumentNullException(nameof(context))), Dc.XmlMapper, query, parameters);
+		=> Map(context ?? throw new ArgumentNullException(nameof(context)), Dc.XmlMapper, query, parameters);
 
 	public static Task<List<Xml.IXmlReadOnlyNode>> ReadXmlAsync(this IDataContext context, string query, params DataParameter[] parameters)
-		=> MapAsync((context ?? throw new ArgumentNullException(nameof(context))), Dc.XmlMapperAsync, query, parameters);
+		=> MapAsync(context ?? throw new ArgumentNullException(nameof(context)), Dc.XmlMapperAsync, query, parameters);
 }

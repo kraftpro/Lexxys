@@ -66,6 +66,23 @@ public static class Comparer
 	public static bool Equals(byte[]? left, byte[]? right)
 		=> ((ReadOnlySpan<byte>)left).SequenceEqual(right);
 
+	public static bool Equals(Xml.IXmlReadOnlyNode left, Xml.IXmlReadOnlyNode right)
+	{
+		return left == null ? right == null:
+			right != null &&
+			left.Name == right.Name &&
+			left.Value == right.Value &&
+			left.Attributes.Count == right.Attributes.Count &&
+			left.Elements.Count == right.Elements.Count &&
+			left.Attributes.SequenceEqual(right.Attributes) &&
+			left.Elements.SequenceEqual(right.Elements, XmlNodeComparer);
+	}
+
+	public static bool Equals(IEnumerable<Xml.IXmlReadOnlyNode> left, IEnumerable<Xml.IXmlReadOnlyNode> right)
+		=> left == null ? right == null : right != null && left.SequenceEqual(right, XmlNodeComparer);
+
+	private static readonly IEqualityComparer<Xml.IXmlReadOnlyNode> XmlNodeComparer = new GenericEqualityComparer<Xml.IXmlReadOnlyNode>(Equals);
+
 	#region Internal classes
 
 	private class GenericComparer<T1, T2>: IComparer

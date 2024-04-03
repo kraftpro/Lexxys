@@ -59,23 +59,23 @@ internal static class ParameterDefinitionExtensions
 		return ParameterDefinitionFindResult.Found;
 	}
 
-	public static ParameterDefinitionFindResult TryFind(this IReadOnlyCollection<ArgumentParameter> parameters, string name, out ParameterDefinition? parameter, StringComparison comparison, bool findSimilar = false, bool ignoreDelimiters = false)
+	public static ParameterDefinitionFindResult TryFind(this IReadOnlyCollection<ArgumentParameter> parameters, string name, out ParameterDefinition? parameter, StringComparison comparison, bool similar = false, bool ignoreDelimiters = false)
 	{
 		if (name is null) throw new ArgumentNullException(nameof(name));
 
 		parameter = FindExact(parameters, name, comparison);
 		if (parameter != null)
 			return ParameterDefinitionFindResult.Found;
-		if (!findSimilar)
+		if (!similar)
 			return ParameterDefinitionFindResult.NotFound;
 
-		var similar = FindSimilar(parameters, name, ignoreDelimiters, comparison);
-		if (similar.Count == 0)
+		var sims = FindSimilar(parameters, name, ignoreDelimiters, comparison);
+		if (sims.Count == 0)
 			return ParameterDefinitionFindResult.NotFound;
-		if (similar.Count > 1)
+		if (sims.Count > 1)
 			return ParameterDefinitionFindResult.Ambiguous;
 
-		parameter = similar[0].Definition;
+		parameter = sims[0].Definition;
 		return ParameterDefinitionFindResult.Found;
 	}
 

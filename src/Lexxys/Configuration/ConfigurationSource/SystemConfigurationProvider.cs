@@ -68,7 +68,7 @@ public sealed class SystemConfigurationProvider: IConfigSource
 					var result = new List<T>();
 					for (int i = 0; i < cc.Count; ++i)
 					{
-						result.Add(Tools.Cast<T>(cc[i].ConnectionString));
+						result.Add((T)(object)cc[i].ConnectionString);
 					}
 					return ReadOnly.Wrap(result)!;
 				}
@@ -77,7 +77,7 @@ public sealed class SystemConfigurationProvider: IConfigSource
 					var result = new List<T>();
 					for (int i = 0; i < cc.Count; ++i)
 					{
-						result.Add(Tools.Cast<T>(cc[i]));
+						result.Add((T)(object)cc[i]);
 					}
 					return ReadOnly.Wrap(result)!;
 				}
@@ -86,7 +86,7 @@ public sealed class SystemConfigurationProvider: IConfigSource
 					var result = new List<T>();
 					for (int i = 0; i < cc.Count; ++i)
 					{
-						result.Add(Tools.Cast<T>(new Data.ConnectionStringInfo(cc[i].ConnectionString)));
+						result.Add((T)(object)new Data.ConnectionStringInfo(cc[i].ConnectionString));
 					}
 					return ReadOnly.Wrap(result)!;
 				}

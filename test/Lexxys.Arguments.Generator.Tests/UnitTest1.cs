@@ -23,7 +23,7 @@ public class UnitTest1
 		var gen = new ArgumentCodeGen();
 		var dr = CSharpGeneratorDriver.Create(gen);
 		var result = dr.RunGeneratorsAndUpdateCompilation(CreateCompilation(NestedText), out var output, out var diagnostics);
-		Assert.AreEqual(0, diagnostics.Length);
+		Assert.AreEqual(0, diagnostics.Length, String.Join("; ", diagnostics));
 	}
 
 
@@ -34,13 +34,13 @@ public class UnitTest1
 		new CSharpCompilationOptions(OutputKind.ConsoleApplication));
 
 	private const string SeparateText = """
-		[CliArguments(IgnoreCase = true)]
+		[CliParameters(IgnoreCase = true)]
 		partial class SampleOption
 		{
-		    [CliParam("a", ValueName = "alpha", Description = "alpha option")]
+		    [CliOption("a", ValueName = "alpha", Description = "alpha option")]
 		    public float Alpha { get; init; }
 
-		    [CliParam("b", "bt", ValueName = "beta", Description = "beta option")]
+		    [CliOption("b", "bt", ValueName = "beta", Description = "beta option")]
 		    public float Beta { get; init; }
 
 			[CliCommand("new", Description = "Create something")]
@@ -50,29 +50,29 @@ public class UnitTest1
 			public CommandDelete? Delete { get; init; }
 		}
 		
-		[CliArguments]
+		[CliParameters]
 		public partial class CommandCreate
 		{
-			[CliParam("a", Description = "alpha option")]
+			[CliOption("a", Description = "alpha option")]
 			public int Alpha { get; init; }
 		}
 		
-		[CliArguments]
+		[CliParameters]
 		public partial class CommandDelete: ICliOption<CommandDelete>
 		{
-			[CliParam("a")]
+			[CliOption("a")]
 			public int Alpha { get; init; }
 		}
 		""";
 
 	private const string NestedText = """
-		[CliArguments(IgnoreCase = true)]
+		[CliParameters(IgnoreCase = true)]
 		partial class SampleOptionSecond
 		{
-		    [CliParam("a", ValueName = "alpha", Description = "alpha option")]
+		    [CliOption("a", ValueName = "alpha", Description = "alpha option")]
 		    public float Alpha { get; init; }
 
-		    [CliParam("b", "bt", ValueName = "beta", Description = "beta option")]
+		    [CliOption("b", "bt", ValueName = "beta", Description = "beta option")]
 		    public float Beta { get; init; }
 
 			[CliCommand("new", Description = "Create something")]
@@ -81,26 +81,26 @@ public class UnitTest1
 			[CliCommand("del", Description = "Delete something")]
 			public CommandDelete? Delete { get; init; }
 
-			[CliArguments]
+			[CliParameters]
 			public partial class CommandCreate
 			{
-				[CliParam("a", Description = "alpha option")]
+				[CliOption("a", Description = "alpha option")]
 				public int Alpha { get; init; }
 
 				[CliCommand]
 				public CommandCopy? Copy { get; init; }
 
-				[CliArguments]
+				[CliParameters]
 				public partial class CommandCopy
 				{
 					public int Source { get; init; }
 				}
 			}
 
-			[CliArguments]
+			[CliParameters]
 			public partial class CommandDelete: ICliOption<CommandDelete>
 			{
-				[CliParam("a")]
+				[CliOption("a")]
 				public int Alpha { get; init; }
 			}
 		}

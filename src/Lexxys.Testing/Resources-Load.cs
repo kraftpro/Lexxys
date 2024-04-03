@@ -37,7 +37,7 @@ public static partial class Resources
 			foreach (var location in dd)
 			{
 				string path = Path.Combine(location, resourceFile);
-				IEnumerable<string> files = path.Contains('?') || path.Contains('*') ? Directory.EnumerateFiles(Path.GetDirectoryName(path) ?? ".", Path.GetFileName(path)): new[] { path };
+				IEnumerable<string> files = path.Contains('?') || path.Contains('*') ? Directory.EnumerateFiles(Path.GetDirectoryName(path) ?? ".", Path.GetFileName(path)): [path];
 				bool found = false;
 				foreach (var file in files)
 				{

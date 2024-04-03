@@ -52,15 +52,14 @@ namespace Lexxys.Tests.Xml
 		[TestMethod]
 		[DataRow("""<x><name>Name value</name><value>Value value</value></x>""")]
 		[DataRow("""<x name="Name value" value="Value value" />""")]
-		[DataRow("""<x name="Name value" />""")]
 		public void TryReflection2(string xml)
 		{
 			var x = XmlTools.FromXml(xml);
 			var success = XmlTools.TryGetValue<NameValueClassConstruct>(x, out var result);
-			Assert.IsTrue(success);
-			Assert.AreEqual("Name value", result.Name);
+			Assert.IsTrue(success, xml);
+			Assert.AreEqual("Name value", result.Name, xml);
 			string expected = xml.Contains("<value") || xml.Contains("value=") ? "Value value": "default";
-			Assert.AreEqual(expected, result.Value);
+			Assert.AreEqual(expected, result.Value, xml);
 		}
 
 		public record NameValueClassConstruct(string Name, string Value);

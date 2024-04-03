@@ -105,7 +105,7 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	/// Copy constructor.
 	/// </summary>
 	/// <param name="other"></param>
-	internal Arguments(Arguments other)
+	internal Arguments(Arguments other, IReadOnlyCollection<string>? errors = null)
 	{
 		_allowSlash = other._allowSlash;
 		_strictDoubleDash = other._strictDoubleDash;
@@ -120,9 +120,11 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 		_splitPositional = other._splitPositional;
 		_comparison = other._comparison;
 		_helpRequested = other._helpRequested;
-		_messages = other._messages;
+		_messages = new List<string>(other._messages);
 		_command = other._command;
 		_args = other._args;
+		if (errors is { Count: >0 })
+			_messages.AddRange(errors);
 	}
 
 	/// <summary>
@@ -146,11 +148,6 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	public IList<string> Errors => _messages;
 
 	/// <summary>
-	/// Returns a root command containing <see cref="ArgumentCommand"/>.
-	/// </summary>
-	public ArgumentCommand Root => _command;
-	
-	/// <summary>
 	/// Returns the list of the parameters.
 	/// </summary>
 	public ArgumentParameterCollection Parameters => _command.Parameters;
@@ -166,13 +163,7 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	/// <param name="name">Name of the parameter</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public ParameterValue this[string name] => _command.Parameters.TryGet(name, out var p, _auto, _ignoreNameSeparators) ? p!.Value: default;
-
-	/// <summary>
-	/// Returns the value of the parameter with the specified <paramref name="name"/> or <c>null</c> if the parameter not found.
-	/// </summary>
-	/// <param name="name">Name of the parameter</param>
-	public string? Value(string name) => this[name].StringValue;
+	public ParameterValue this[string name] => _command.Parameters.TryGetParameter(name, out var p, _auto, _ignoreNameSeparators) ? p!.Value: default;
 
 	/// <summary>
 	/// Checks if the specified flag was found in the command line.  (i.e. -flag or -flag=true ...)
@@ -180,6 +171,12 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	/// <param name="name">Name of the parameter</param>
 	/// <returns></returns>
 	public bool Switch(string name) => Strings.GetBoolean(Value(name), false);
+
+	/// <summary>
+	/// Returns the value of the parameter with the specified <paramref name="name"/> or <c>null</c> if the parameter not found.
+	/// </summary>
+	/// <param name="name">Name of the parameter</param>
+	public string? Value(string name) => this[name].StringValue;
 
 	/// <summary>
 	/// Returns the value of the parameter with the specified <paramref name="name"/> as <typeparamref name="T"/>
@@ -197,6 +194,13 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	/// <param name="defaultValue">Default value</param>
 	/// <returns></returns>
 	public T Value<T>(string name, T defaultValue) => Strings.GetValue(Value(name), defaultValue);
+
+	/// <summary>
+	/// Returns the array of values of the parameter with the specified <paramref name="name"/> or an empty array if the parameter was not found.
+	/// </summary>
+	/// <param name="name">Name of the parameter</param>
+	/// <returns></returns>
+	public string[] Collection(string name) => this[name].ArrayValue ?? Array.Empty<string>();
 
 	/// <summary>
 	/// Returns the array of values of <typeparamref name="T"/> of the parameter with the specified <paramref name="name"/> or an empty array if the parameter was not found.
@@ -217,16 +221,9 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 		=> this[name].ArrayValue?.ConvertAll(o => Strings.GetValue(o, defaultItem)) ?? Array.Empty<T>();
 
 	/// <summary>
-	/// Returns the array of values of the parameter with the specified <paramref name="name"/> or an empty array if the parameter was not found.
-	/// </summary>
-	/// <param name="name">Name of the parameter</param>
-	/// <returns></returns>
-	public string[] Collection(string name) => this[name].ArrayValue ?? Array.Empty<string>();
-
-	/// <summary>
 	/// Enumerates all the positional arguments.
 	/// </summary>
-	public IEnumerable<ParameterValue> Positional => _command.Parameters.Positional;
+	public IEnumerable<ParameterValue> Positional => Parameters.Positional;
 
 	string IDumpXml.XmlElementName => "args";
 
@@ -241,6 +238,37 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	/// <returns></returns>
 	public JsonBuilder ToJsonContent(JsonBuilder json)
 	{
+		json.Item("$arguments").Obj();
+		if (_allowSlash)
+			json.Item("allowSlash", _allowSlash);
+		if (_strictDoubleDash)
+			json.Item("strictDoubleDash", _strictDoubleDash);
+		if (_combineOptions)
+			json.Item("combineOptions", _combineOptions);
+		if (_colonSeparator)
+			json.Item("colonSeparator", _colonSeparator);
+		if (_equalSeparator)
+			json.Item("equalSeparator", _equalSeparator);
+		if (_blankSeparator)
+			json.Item("blankSeparator", _blankSeparator);
+		if (_allowUnknown)
+			json.Item("allowUnknown", _allowUnknown);
+		if (_doubleDashSeparator)
+			json.Item("doubleDashSeparator", _doubleDashSeparator);
+		if (_ignoreNameSeparators)
+			json.Item("ignoreNameSeparators", _ignoreNameSeparators);
+		if (_auto)
+			json.Item("auto", _auto);
+		if (_splitPositional)
+			json.Item("splitPositional", _splitPositional);
+		if (_helpRequested)
+			json.Item("helpRequested", _helpRequested);
+		json.Item("comparison", _comparison);
+		if (_messages.Count > 0)
+			json.Item("messages", _messages);
+		json.Item("args", _args);
+		json.End();
+
 		AddCommand(json, _command);
 		return json;
 
@@ -269,6 +297,37 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	/// <returns></returns>
 	public XmlBuilder ToXmlContent(XmlBuilder xml)
 	{
+		xml.Element("x:arguments");
+		if (_allowSlash)
+			xml.Item("allowSlash", _allowSlash);
+		if (_strictDoubleDash)
+			xml.Item("strictDoubleDash", _strictDoubleDash);
+		if (_combineOptions)
+			xml.Item("combineOptions", _combineOptions);
+		if (_colonSeparator)
+			xml.Item("colonSeparator", _colonSeparator);
+		if (_equalSeparator)
+			xml.Item("equalSeparator", _equalSeparator);
+		if (_blankSeparator)
+			xml.Item("blankSeparator", _blankSeparator);
+		if (_allowUnknown)
+			xml.Item("allowUnknown", _allowUnknown);
+		if (_doubleDashSeparator)
+			xml.Item("doubleDashSeparator", _doubleDashSeparator);
+		if (_ignoreNameSeparators)
+			xml.Item("ignoreNameSeparators", _ignoreNameSeparators);
+		if (_auto)
+			xml.Item("auto", _auto);
+		if (_splitPositional)
+			xml.Item("splitPositional", _splitPositional);
+		if (_helpRequested)
+			xml.Item("helpRequested", _helpRequested);
+		xml.Item("comparison", _comparison);
+		if (_messages.Count > 0)
+			xml.Item("messages", _messages);
+		xml.Item("args", _args);
+		xml.End();
+
 		AddCommand(xml, _command);
 		return xml;
 
@@ -855,16 +914,16 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	private static ParameterDefinitionFindResult TryAdd(List<ArgumentCommand> commands, string name, string value, bool anonymous = false)
 	{
 		if (commands.Count == 1)
-			return commands[0].Parameters.TryAdd(name, value, anonymous);
+			return commands[0].Parameters.TryAddParameter(name, value, anonymous);
 
 		for (int i = commands.Count - 1; i >= 0; i--)
 		{
 			var pp = commands[i].Parameters;
-			var a = pp.TryAdd(name, value, false);
+			var a = pp.TryAddParameter(name, value, false);
 			if (a != ParameterDefinitionFindResult.NotFound)
 				return a;
 		}
-		return anonymous ? commands[^1].Parameters.TryAdd(name, value, true): ParameterDefinitionFindResult.NotFound;
+		return anonymous ? commands[^1].Parameters.TryAddParameter(name, value, true): ParameterDefinitionFindResult.NotFound;
 	}
 
 	private void ParseOption(List<string> args, ref int i, List<ArgumentCommand> commands, List<string> messages, ref bool helpRequested)

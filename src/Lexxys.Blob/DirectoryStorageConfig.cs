@@ -1,7 +1,7 @@
 ﻿// Lexxys Infrastructural library.
 // file: BlobStorage.cs
 //
-// Copyright (c) 2001-2014, Kraft Pro Utilities.
+// Copyright (c) 2001-2014, ANN, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
 using System.Globalization;
@@ -10,7 +10,8 @@ using System.Text;
 namespace Lexxys;
 
 /// <summary>
-/// Directory and file name generation configuration
+/// Directory and file name generation configuration.
+/// Used to generate file paths in the form: /dir/.../index-salt.ext, ie /12/34/1234567-a3drexw.doc
 /// </summary>
 public class DirectoryStorageConfig
 {
@@ -87,14 +88,14 @@ public class DirectoryStorageConfig
 				if (fileCount > 0 && fileCount < radix)
 					throw new ArgumentOutOfRangeException(nameof(fileCount), fileCount, null);
 
-				DirectoryCount = directoryCount > 0 ? directoryCount : fileCount / radix;
-				FileCount = fileCount > 0 ? fileCount : directoryCount * radix;
+				DirectoryCount = directoryCount > 0 ? directoryCount: fileCount / radix;
+				FileCount = fileCount > 0 ? fileCount: directoryCount * radix;
 			}
 		}
 
-		PathSeparator = pathSeparator == default ? Path.DirectorySeparatorChar : pathSeparator;
+		PathSeparator = pathSeparator == default ? Path.DirectorySeparatorChar: pathSeparator;
 		var tmp = FixTempDir(temporaryFolder, PathSeparator);
-		TemporaryFolder = tmp[0] == PathSeparator ? tmp : PathSeparator + tmp;
+		TemporaryFolder = tmp[0] == PathSeparator ? tmp: PathSeparator + tmp;
 		Mode = mode;
 		_format = new Fmt(radix, DirectoryCount);
 
@@ -223,7 +224,7 @@ public class DirectoryStorageConfig
 
 	/// <summary>Increases the <paramref name="salt"/> value</summary>
 	/// <param name="salt">The value to increase</param>
-	public static long NextSalt(long salt) => salt + 1 + (WatchTimer.Query(0) & 7);
+	public static long NextSalt(long salt) => salt + 1 + (WatchTimer.Query(0) & 15);
 
 	private static unsafe void AppendDirectory(StringBuilder path, ulong index, uint directoryCount, uint fileCount, Fmt format, char pathSeparator, DirectoryGenerationMode mode)
 	{

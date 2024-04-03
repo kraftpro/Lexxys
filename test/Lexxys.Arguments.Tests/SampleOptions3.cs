@@ -1,24 +1,23 @@
-using System.Diagnostics.SymbolStore;
-using System.Text.RegularExpressions;
+using Lexxys;
 
-namespace Lexxys.Argument.Tests.Template;
+namespace Lexxys.Argument.Tests;
 
-// [CliArguments(IgnoreCase = true)]
-partial class SampleOption: ICliOption<SampleOption>
+// [CliParameters(IgnoreCase = true)]
+partial class SampleOption3
 {
-    [CliParam(["a"], ValueName = "alpha", Description = "alpha option")]
+    [CliOption(["a"], ValueName = "alpha", Description = "alpha option")]
     public float Alpha { get; init; }
 
-    [CliParam(["b", "bt"], ValueName = "beta", Description = "beta option")]
+    [CliOption(["b", "bt"], ValueName = "beta", Description = "beta option")]
     public float Beta { get; init; }
 
-    [CliParam(["c", "g"], ValueName = "gamma", Description = "gamma option")]
+    [CliOption(["c", "g"], ValueName = "gamma", Description = "gamma option")]
     public float Gamma { get; init; }
 
-	[CliParam(["i"], ValueName = "input", Description = "input file")]
+	[CliOption(["i"], ValueName = "input", Description = "input file")]
 	public FileInfo? Input { get; init; }
 
-	[CliParam(["o"], ValueName = "output", Description = "output file")]
+	[CliOption(["o"], ValueName = "output", Description = "output file")]
 	public FileInfo? Output { get; init; }
 
 	[CliCommand("new", Description = "Create something")]
@@ -27,49 +26,60 @@ partial class SampleOption: ICliOption<SampleOption>
 	[CliCommand("del", Description = "Delete something")]
 	public CommandDelete? Delete { get; init; }
 
-	// [CliArguments]
+	// [CliParameters]
 	public partial class CommandCreate
 	{
-		[CliParam(["a"], Description = "alpha option")]
+		[CliOption(["a"], Description = "alpha option")]
 		public int Alpha { get; init; }
 
-		[CliParam(["b"], Description = "beta option")]
+		[CliOption(["b"], Description = "beta option")]
 		public int Beta { get; init; }
 
-		[CliParam(["c"], Description = "gamma option")]
+		[CliOption(["c"], Description = "gamma option")]
 		public int Gamma { get; init; }
 	}
 
-	// [CliArguments]
-	public partial class CommandDelete: ICliOption<CommandDelete>
+	// [CliParameters]
+	public partial class CommandDelete: ICliParameters<CommandDelete>
 	{
-		[CliParam("a")]
+		[CliOption("a")]
 		public int Alpha { get; init; }
 
-		[CliParam(["b", "bb", "bbb"], ValueName = "beta", Description = "bbb")]
+		[CliOption(["b", "bb", "bbb"], ValueName = "beta", Description = "bbb")]
 		public int Beta { get; init; }
 
-		[CliParam(["c", "cc", "ccc"])]
+		[CliOption(["c", "cc", "ccc"])]
 		public int Gamma { get; init; }
 	}
 }
 
 
 
-partial class SampleOption: ICliOption<SampleOption>
+partial class SampleOption3: ICliParameters<SampleOption3>
 {
-	public static SampleOption ParseArguments(IReadOnlyCollection<string> args) => Parse(CreateBuilder().Build(args));
-
-	public static SampleOption Parse(IArgumentCommand c) => new SampleOption
+	public static ParsedArguments<SampleOption3> Parse(IEnumerable<string> args, ArgumentsBuilder? builder = null)
 	{
-		Alpha = c.Parameters.Value<float>("alpha)", default),
-		Beta = c.Parameters.Value<float>("beta)", default),
-		Gamma = c.Parameters.Value<float>("gamma)", default),
-		Input = c.Parameters.Value<FileInfo?>("input)", default),
-		Output = c.Parameters.Value<FileInfo?>("output)", default),
-		Create = c.Command?.Name == "create" ? CommandCreate.Parse(c.Command) : null,
-		Delete = c.Command?.Name == "delete" ? CommandDelete.Parse(c.Command) : null,
-	};
+		Arguments arguments = CreateBuilder(builder).Build(args);
+		var error = new List<string>();
+		var obj = Parse(arguments, error);
+		return new ParsedArguments<SampleOption3>(arguments, obj, error);
+	}
+
+	public static SampleOption3 Parse(IArgumentCommand cmd, ICollection<string>? error)
+	{
+		if (cmd is null) throw new ArgumentNullException(nameof(cmd));
+
+		return new SampleOption3
+		{
+			Alpha = cmd.Parameters.GetValueOrDefault<float>("alpha", default),
+			Beta = cmd.Parameters.GetValueOrDefault<float>("beta", default),
+			Gamma = cmd.Parameters.GetValueOrDefault<float>("gamma", default),
+			Input = cmd.Parameters.GetValueOrDefault<FileInfo?>("input", default),
+			Output = cmd.Parameters.GetValueOrDefault<FileInfo?>("output", default),
+			Create = cmd.Command?.Name == "create" ? CommandCreate.Parse(cmd.Command, error): null,
+			Delete = cmd.Command?.Name == "delete" ? CommandDelete.Parse(cmd.Command, error): null,
+		};
+	}
 
 	public static ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null) => (builder ?? new ArgumentsBuilder())
 		.Parameter("alpha", __aliases[0], valueName: "alpha", description: "alpha option")
@@ -82,11 +92,11 @@ partial class SampleOption: ICliOption<SampleOption>
 
 	private static readonly string[][] __aliases = [["a"], ["b", "bt"], ["c", "g"], ["i"], ["o"], ["new"], ["del"]];
 
-	partial class CommandCreate: ICliOption<CommandCreate>
+	partial class CommandCreate: ICliParameters<CommandCreate>
 	{
-		public static CommandCreate ParseArguments(IReadOnlyCollection<string> args) => Parse(CreateBuilder().Build(args).Root);
+		public static CommandCreate ParseArguments(IEnumerable<string> args) => Parse(CreateBuilder().Build(args), null);
 
-		public static CommandCreate Parse(IArgumentCommand c) => new CommandCreate
+		public static CommandCreate Parse(IArgumentCommand c, ICollection<string>? error) => new CommandCreate
 		{
 			Alpha = c.Parameters.Value<int>("alpha)", default),
 			Beta = c.Parameters.Value<int>("beta)", default),
@@ -101,23 +111,33 @@ partial class SampleOption: ICliOption<SampleOption>
 		private static readonly string[][] __aliases = [["a"], ["b"], ["c"]];
 	}
 
-	partial class CommandDelete: ICliOption<CommandDelete>
+	partial class CommandDelete: ICliParameters<CommandDelete>
 	{
-		public static CommandDelete ParseArguments(IReadOnlyCollection<string> args) => Parse(CreateBuilder().Build(args).Root);
+		public static CommandDelete ParseArguments(IEnumerable<string> args, ICollection<string>? error = null) => Parse(CreateBuilder().Build(args), error);
 
-		public static CommandDelete Parse(IArgumentCommand c) => new CommandDelete
+		public static CommandDelete Parse(IArgumentCommand cmd, ICollection<string>? error = null)
 		{
-			Alpha = c.Parameters.Value<int>("alpha)", default),
-			Beta = c.Parameters.Value<int>("beta)", default),
-			Gamma = c.Parameters.Value<int>("gamma)", default),
-		};
+			if (cmd is null) throw new ArgumentNullException(nameof(cmd));
 
-		public static Arguments<CommandDelete> Parse2(IArgumentCommand c) => new CommandDelete
-		{
-			Alpha = c.Parameters.Value<int>("alpha)", default),
-			Beta = c.Parameters.Value<int>("beta)", default),
-			Gamma = c.Parameters.Value<int>("gamma)", default),
-		};
+			return new CommandDelete
+			{
+				Alpha = cmd.Parameters.GetValueOrDefault<int>("alpha", default),
+				Beta = cmd.Parameters.GetValueOrDefault<int>("beta", default),
+				Gamma = cmd.Parameters.GetValueOrDefault<int>("gamma", default),
+			};
+		}
+
+		//public static Arguments<CommandDelete> Parse(Arguments args)
+		//{
+		//	var error = new List<string>();
+		//	var v = Parse(args, error);
+		//	var r = new Arguments<CommandDelete>(args, v);
+		//	foreach (var item in error)
+		//	{
+		//		r.Errors.Add(item);
+		//	}
+		//	return r;
+		//}
 
 		public static ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null) => (builder ?? new ArgumentsBuilder())
 			.Parameter("alpha", __aliases[0])

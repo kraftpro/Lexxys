@@ -15,13 +15,13 @@ namespace Lexxys.Testing;
 /// </summary>
 public static class Rand
 {
-	private static IRand __rnd = new RndKnuth();
+	private static IRand __rnd = new RndSys();
 
 	/// <summary>
 	/// Resets the random number generator with the specified <paramref name="seed"/>.
 	/// </summary>
 	/// <param name="seed">Seed value for the random number generator.</param>
-	public static void Reset(int seed) => __rnd.Reset(seed);
+	public static void Reset(long seed) => __rnd.Reset(seed);
 
 	/// <summary>
 	/// Sets the random number generator.
@@ -36,11 +36,11 @@ public static class Rand
 	/// <param name="length">Size of the array.</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentOutOfRangeException"></exception>
-	public static byte[] Bits(int length)
+	public static byte[] Bytes(int length)
 	{
 		if (length < 0) throw new ArgumentOutOfRangeException(nameof(length), length, null);
-		if (length == 0)
-			return Array.Empty<byte>();
+		if (length == 0) return [];
+
 		byte[] result = new byte[length];
 		__rnd.NextBytes(result);
 		return result;
@@ -52,20 +52,20 @@ public static class Rand
 	/// <param name="minValue">The inclusive lower bound of the random number returned.</param>
 	/// <param name="maxValue">The exclusive upper bound of the random number returned.</param>
 	/// <returns></returns>
-	public static int Int(int minValue, int maxValue) => __rnd.NextInt(minValue, maxValue);
+	public static int Int(int minValue, int maxValue) => __rnd.NextInt32(minValue, maxValue);
 
 	/// <summary>
 	/// Returns a random integer value greater or equal to zero and less than <paramref name="maxValue"/>.
 	/// </summary>
 	/// <param name="maxValue">The exclusive upper bound of the random number returned.</param>
 	/// <returns></returns>
-	public static int Int(int maxValue) => __rnd.NextInt(maxValue);
+	public static int Int(int maxValue) => __rnd.NextInt32(maxValue);
 
 	/// <summary>
 	/// Returns a random integer value.
 	/// </summary>
 	/// <returns></returns>
-	public static int Int() => __rnd.NextInt();
+	public static int Int() => __rnd.NextInt32();
 
 	/// <summary>
 	/// Returns a random long value grater or equal to <paramref name="minValue"/> and less than <paramref name="maxValue"/>.
@@ -73,20 +73,20 @@ public static class Rand
 	/// <param name="minValue">The inclusive lower bound of the random number returned.</param>
 	/// <param name="maxValue">the exclusive upper bound of the random number returned.</param>
 	/// <returns></returns>
-	public static long Long(long minValue, long maxValue) => __rnd.NextLong(minValue, maxValue);
+	public static long Long(long minValue, long maxValue) => __rnd.NextInt64(minValue, maxValue);
 
 	/// <summary>
 	/// Returns a random long value greater or equal to zero and less than <paramref name="maxValue"/>.
 	/// </summary>
 	/// <param name="maxValue">the exclusive upper bound of the random number returned.</param>
 	/// <returns></returns>
-	public static long Long(long maxValue) => __rnd.NextLong(maxValue);
+	public static long Long(long maxValue) => __rnd.NextInt64(maxValue);
 
 	/// <summary>
 	/// Returns non-negative random long value.
 	/// </summary>
 	/// <returns></returns>
-	public static long Long() => __rnd.NextLong();
+	public static long Long() => __rnd.NextInt64();
 
 	/// <summary>
 	/// Returns random boolean value.

@@ -2,13 +2,14 @@
 
   <PropertyGroup>
     <!--<TargetFramework>net7.0</TargetFramework>-->
-    <TargetFrameworks>net7.0;net6.0;net472</TargetFrameworks>
+    <TargetFrameworks>net8.0;net6.0;net462</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Lexxys.DataContext\Lexxys.DataContext.csproj" />
     <ProjectReference Include="..\Lexxys\Lexxys.csproj" />
   </ItemGroup>
   <ItemGroup>

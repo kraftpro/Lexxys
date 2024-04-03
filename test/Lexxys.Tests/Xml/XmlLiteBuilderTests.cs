@@ -29,7 +29,10 @@
 			var x = xmlt.GetNodes();
 			Assert.AreEqual(2, x.Count);
 			Assert.AreEqual(3, x[0].Elements.Count);
-			Assert.AreEqual("<data><node one=\"1\" tho=\"2\">text</node><second><td>2018-05-15</td></second><self name=\"self\"/></data><item script1='execute(\"\");' script2=\"'execute(&quot;&quot;);'\"/>", String.Join("", x));
+			Assert.AreEqual("""
+				<data><node one="1" tho="2">text</node><second><td>2018-05-15</td></second><self name="self"/></data><item script1="execute(&quot;&quot;);" script2="&#39;execute(&quot;&quot;);&#39;"/>
+				""",
+				String.Join("", x));
 		}
 
 		[TestMethod]
@@ -56,7 +59,10 @@
 			var x = xmlt.GetNodes();
 			Assert.AreEqual(2, x.Count);
 			Assert.AreEqual(3, x[0].Elements.Count);
-			Assert.AreEqual("<data><node one=\"1\" tho=\"2\">text</node><second><td>2018-05-15</td></second><self name=\"self\"/></data><item script1='execute(\"\");' script2=\"'execute(&quot;&quot;);'\"/>", String.Join("", x));
+			Assert.AreEqual("""
+				<data><node one="1" tho="2">text</node><second><td>2018-05-15</td></second><self name="self"/></data><item script1="execute(&quot;&quot;);" script2="&#39;execute(&quot;&quot;);&#39;"/>
+				""",
+				String.Join("", x));
 		}
 	}
 }

@@ -36,7 +36,7 @@ class DataContextImplementation: IDisposable
 	{
 		_connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
 		_connection = connectionFactory() ?? throw new InvalidOperationException("cannot create a connection");
-		_broadcast = new Dictionary<object, ICommitAction>();
+		_broadcast = [];
 		_commandTimeout = _defaultCommandTimeout = commandTimeout;
 		if (_timeSyncMap.TryGetValue(_connection.ConnectionString, out var sync))
 		{
@@ -57,10 +57,7 @@ class DataContextImplementation: IDisposable
 			else
 				value.Invoke();
 		}
-		remove
-		{
-			_committed -= value;
-		}
+		remove => _committed -= value;
 	}
 	public event Action Cancelled
 	{
@@ -69,10 +66,7 @@ class DataContextImplementation: IDisposable
 			if (TransactionsCount > 0)
 				_cancelled += value;
 		}
-		remove
-		{
-			_cancelled -= value;
-		}
+		remove => _cancelled -= value;
 	}
 
 	public ICommitAction SetCommitAction(object key, Func<ICommitAction> factory)
@@ -106,9 +100,9 @@ class DataContextImplementation: IDisposable
 				for (; ; )
 				{
 					now = DateTime.Now;
-					var dbnow = (DateTime)cmd.ExecuteScalar()!;
+					var dbNow = (DateTime)cmd.ExecuteScalar()!;
 					long duration = (DateTime.Now - now).Ticks;
-					offset = (dbnow - now).Ticks - duration / 2;
+					offset = (dbNow - now).Ticks - duration / 2;
 					if (duration < delta)
 					{
 						delta = duration;
@@ -389,10 +383,7 @@ class DataContextImplementation: IDisposable
 
 	public TimeSpan CommandTimeout
 	{
-		get
-		{
-			return _commandTimeout;
-		}
+		get => _commandTimeout;
 		set
 		{
 			if (value.Ticks < 0)
@@ -403,10 +394,7 @@ class DataContextImplementation: IDisposable
 
 	internal TimeSpan DefaultCommandTimeout
 	{
-		get
-		{
-			return _defaultCommandTimeout;
-		}
+		get => _defaultCommandTimeout;
 		set
 		{
 			if (value.Ticks < 0)
@@ -486,7 +474,7 @@ class DataAudit
 		_commandAudit = commandAudit;
 		_batchAudit = batchAudit;
 		_log = log;
-		_timingGroupItems = new List<TimingNode>();
+		_timingGroupItems = [];
 	}
 
 	public TimeSpan TransactTime => WatchTimer.ToTimeSpan(_transactTime);
@@ -593,17 +581,5 @@ class DataAudit
 		}
 	}
 
-	struct TimingNode
-	{
-		public readonly long Stamp;
-		public readonly long Length;
-		public readonly string Statement;
-
-		public TimingNode(long stamp, long length, string statement)
-		{
-			Stamp = stamp;
-			Length = length;
-			Statement = statement;
-		}
-	}
+	record struct TimingNode(long Stamp, long Length, string Statement);
 }

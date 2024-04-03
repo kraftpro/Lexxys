@@ -10,6 +10,7 @@ using System.Text;
 using System.Xml;
 using System.Diagnostics.CodeAnalysis;
 using System;
+using System.Reflection;
 
 namespace Lexxys;
 
@@ -108,19 +109,19 @@ public static partial class Strings
 						text.Append("\\0");
 						break;
 					default:
-						text.Append("\\x00");
-						text.Append(__hex[(c & 0xF0) >> 4]);
-						text.Append(__hex[c & 0xF]);
+						text.Append("\\x00")
+							.Append(HexDigits[(c & 0xF0) >> 4])
+							.Append(HexDigits[c & 0xF]);
 						break;
 				}
 			}
 			else if (c >= '\xd800')
 			{
 				text.Append("\\x");
-				text.Append(__hex[(c & 0xF000) >> 12]);
-				text.Append(__hex[(c & 0xF00) >> 8]);
-				text.Append(__hex[(c & 0xF0) >> 4]);
-				text.Append(__hex[c & 0xF]);
+				text.Append(HexDigits[(c & 0xF000) >> 12]);
+				text.Append(HexDigits[(c & 0xF00) >> 8]);
+				text.Append(HexDigits[(c & 0xF0) >> 4]);
+				text.Append(HexDigits[c & 0xF]);
 			}
 			else if (c == marker)
 			{
@@ -188,18 +189,18 @@ public static partial class Strings
 						break;
 					default:
 						text.Write("\\x00");
-						text.Write(__hex[(c & 0xF0) >> 4]);
-						text.Write(__hex[c & 0xF]);
+						text.Write(HexDigits[(c & 0xF0) >> 4]);
+						text.Write(HexDigits[c & 0xF]);
 						break;
 				}
 			}
 			else if (c >= '\xd800')
 			{
 				text.Write("\\x");
-				text.Write(__hex[(c & 0xF000) >> 12]);
-				text.Write(__hex[(c & 0xF00) >> 8]);
-				text.Write(__hex[(c & 0xF0) >> 4]);
-				text.Write(__hex[c & 0xF]);
+				text.Write(HexDigits[(c & 0xF000) >> 12]);
+				text.Write(HexDigits[(c & 0xF00) >> 8]);
+				text.Write(HexDigits[(c & 0xF0) >> 4]);
+				text.Write(HexDigits[c & 0xF]);
 			}
 			else if (c == marker)
 			{
@@ -218,8 +219,7 @@ public static partial class Strings
 		if (marker != '\0')
 			text.Write(marker);
 	}
-
-	private static readonly char[] __hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
+	private static readonly char[] HexDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
 
 	/// <summary>
 	/// Escapes string for use in C#/JavaScript using the specified strings marker and appends the result to the specified UTF8 stream.
@@ -283,8 +283,8 @@ public static partial class Strings
 							buffer[i++] = (byte)'u';
 							buffer[i++] = (byte)'0';
 							buffer[i++] = (byte)'0';
-							buffer[i++] = __hexB[(c & 0xF0) >> 4];
-							buffer[i++] = __hexB[c & 0xF];
+							buffer[i++] = HexByteDigits[(c & 0xF0) >> 4];
+							buffer[i++] = HexByteDigits[c & 0xF];
 							break;
 					}
 				}
@@ -293,10 +293,10 @@ public static partial class Strings
 			{
 				buffer[i++] = (byte)'\\';
 				buffer[i++] = (byte)'u';
-				buffer[i++] = __hexB[(c & 0xF000) >> 12];
-				buffer[i++] = __hexB[(c & 0xF00) >> 8];
-				buffer[i++] = __hexB[(c & 0xF0) >> 4];
-				buffer[i++] = __hexB[c & 0xF];
+				buffer[i++] = HexByteDigits[(c & 0xF000) >> 12];
+				buffer[i++] = HexByteDigits[(c & 0xF00) >> 8];
+				buffer[i++] = HexByteDigits[(c & 0xF0) >> 4];
+				buffer[i++] = HexByteDigits[c & 0xF];
 			}
 			else
 			{
@@ -323,7 +323,7 @@ public static partial class Strings
 			return i;
 		}
 	}
-	private static readonly byte[] __hexB = [(byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f'];
+	private static readonly byte[] HexByteDigits = [(byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f'];
 
 	/// <summary>
 	/// Removes extra braces from the string.
@@ -344,14 +344,14 @@ public static partial class Strings
 	}
 
 	/// <summary>
-	/// Splits the string <paramref name="identifier"/> by capital nad/or nod word letters.
+	/// Splits the string <paramref name="identifier"/> by capital and by non-word letters.
 	/// </summary>
 	/// <param name="identifier">The string to split.</param>
 	/// <returns></returns>
 	public static IList<(int Index, int Length)> SplitByCapitals(string? identifier) => SplitByCapitals(identifier.AsSpan());
 
 	/// <summary>
-	/// Splits the string <paramref name="identifier"/> by capital nad/or nod word letters.
+	/// Splits the string <paramref name="identifier"/> by capital and by non-word letters.
 	/// </summary>
 	/// <param name="identifier">The string to split.</param>
 	/// <returns></returns>
@@ -473,7 +473,7 @@ public static partial class Strings
 		for (int i = width; i > 0; --i)
 		{
 			char c = value[i];
-			if (char.IsLetter(c))
+			if (Char.IsLetter(c))
 				continue;
 			if (Char.IsWhiteSpace(c))
 				return i;
@@ -494,7 +494,7 @@ public static partial class Strings
 	/// <param name="value">The string to convert.</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static unsafe string ToTitleCase(string value) => value is null ? throw new ArgumentNullException(nameof(value)): ToTitleCase(value.AsSpan());
+	public static string ToTitleCase(string value) => value is null ? throw new ArgumentNullException(nameof(value)): ToTitleCase(value.AsSpan());
 
 	/// <summary>
 	/// Converts the first character of the string to upper case and the rest of string to the lower case.
@@ -532,11 +532,11 @@ public static partial class Strings
 			return String.Empty;
 
 		bool upper = false;
-		var ax = new char[value.Length].AsSpan();
+		Span<char> ax = value.Length < Tools.MaxStackAllocSize ? stackalloc char[value.Length]: new char[value.Length];
 		value.ToLowerInvariant(ax);
 		foreach (var (index, length) in SplitByCapitals(value))
 		{
-			var f = ax[index];
+			char f = ax[index];
 			if (length == 1 && f == '_')
 				continue;
 			bool letter = Char.IsLetter(f); 
@@ -566,7 +566,7 @@ public static partial class Strings
 		if (value.Length == 0)
 			return String.Empty;
 
-		var ax = new char[value.Length].AsSpan();
+		Span<char> ax = value.Length < Tools.MaxStackAllocSize ? stackalloc char[value.Length]: new char[value.Length];
 		value.ToLowerInvariant(ax);
 		foreach (var (index, _) in SplitByCapitals(value))
 		{
@@ -630,8 +630,22 @@ public static partial class Strings
 	}
 	private static readonly char[] __dashes = ['-'];
 
-	public static string ToNamingRule(string value, NamingCaseRule rule) => value is null ? throw new ArgumentNullException(nameof(value)): ToNamingRule(value.AsSpan(), rule); 
-	
+	/// <summary>
+	/// Converts the specified string <paramref name="value"/> according to the specified naming rule.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <param name="rule">The naming rule.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static string ToNamingRule(string value, NamingCaseRule rule) => value is null ? throw new ArgumentNullException(nameof(value)): ToNamingRule(value.AsSpan(), rule);
+
+	/// <summary>
+	/// Converts the specified string <paramref name="value"/> according to the specified naming rule.
+	/// </summary>
+	/// <param name="value">The string to convert.</param>
+	/// <param name="rule">The naming rule.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
 	public static string ToNamingRule(ReadOnlySpan<char> value, NamingCaseRule rule)
 	{
 		if (value.Length == 0) return String.Empty;
@@ -646,10 +660,10 @@ public static partial class Strings
 
 		return (rule & ~(NamingCaseRule.Force | NamingCaseRule.Separators)) switch
 		{
-			NamingCaseRule.PreferLowerCase => delimiter is null ? ToLowerString(value): Strings.ToDashed(value, ToLower, delimiter),
-			NamingCaseRule.PreferCamelCase => delimiter is null ? Strings.ToCamelCase(value): FirstCharToLower(Strings.ToDashed(value, ToPascal, delimiter)),
-			NamingCaseRule.PreferPascalCase => delimiter is null ? Strings.ToPascalCase(value): Strings.ToDashed(value, ToPascal, delimiter),
-			NamingCaseRule.PreferUpperCase => delimiter is null ? ToUpperString(value): Strings.ToDashed(value, ToUpper, delimiter),
+			NamingCaseRule.PreferLowerCase => delimiter is null ? ToLowerString(value): ToDashed(value, ToLower, delimiter),
+			NamingCaseRule.PreferCamelCase => delimiter is null ? ToCamelCase(value): FirstCharToLower(ToDashed(value, ToPascal, delimiter)),
+			NamingCaseRule.PreferPascalCase => delimiter is null ? ToPascalCase(value): ToDashed(value, ToPascal, delimiter),
+			NamingCaseRule.PreferUpperCase => delimiter is null ? ToUpperString(value): ToDashed(value, ToUpper, delimiter),
 			_ => value.ToString(),
 		};
 		
@@ -694,16 +708,32 @@ public static partial class Strings
 	private static readonly char[] __underscoreChars = ['_', '-', '.'];
 	private static readonly char[] __dotChars = ['.', '_', '-'];
 
-	public static string Ellipsis(string value, int length, string? pad = null)
+	/// <summary>
+	/// Adds ellipsis to the string if it is longer than the specified length.
+	/// </summary>
+	/// <param name="value">The string to process.</param>
+	/// <param name="length">Required length.</param>
+	/// <param name="ellipsis">The ellipsis string. (default "&#2026;")</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static string Ellipsis(string value, int length, string? ellipsis = null)
 	{
 		if (value is null)
 			throw new ArgumentNullException(nameof(value));
 		if (value.Length <= length)
 			return value;
-		pad ??= "\u2026";
-		return length <= pad.Length ? pad.Substring(0, length): value.Substring(0, length - pad.Length) + pad;
+		ellipsis ??= "\u2026";
+		return length <= ellipsis.Length ? ellipsis.Substring(0, length): value.Substring(0, length - ellipsis.Length) + ellipsis;
 	}
 
+	/// <summary>
+	/// Joins the specified values using the specified <paramref name="comma"/> as a regular separator and <paramref name="and"/> as the last separator.
+	/// </summary>
+	/// <param name="values">Collection of values to join.</param>
+	/// <param name="comma">Regular separator. (default ", ")</param>
+	/// <param name="and">Last separator. (default " and ")</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
 	public static string JoinAnd(IEnumerable<string> values, string? comma = null, string? and = null)
 	{
 		if (values is null)
@@ -752,7 +782,7 @@ public static partial class Strings
 	{
 		fixed (byte* bits = bitsValue)
 		fixed (char* hexv = hexValue)
-		fixed (char* dgts = __hexDigits)
+		fixed (char* dgts = HexDigits)
 		{
 			var b = bits + offset;
 			var h = hexv + outOffset;
@@ -764,7 +794,6 @@ public static partial class Strings
 			}
 		}
 	}
-	private static readonly char[] __hexDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
 
 	public static void ToHexCharArray(byte[] bitsValue, int offset, int length, char[] hexValue, int outOffset)
 	{
@@ -815,19 +844,27 @@ public static partial class Strings
 		return chars;
 	}
 
-	public static string ToHexString(byte[] value, string? prefix = null)
+	public static string ToHexString(byte[] value, ReadOnlySpan<char> prefix = default)
 	{
 		if (value == null)
 			throw new ArgumentNullException(nameof(value));
-		int offset = prefix?.Length ?? 0;
-		int length = value.Length;
-		char[] chars = new char[offset + length * 2];
-		for (int i = 0; i < offset; ++i)
+		int offset = prefix.Length;
+		var array = ArrayPool<char>.Shared.Rent(offset + value.Length * 2);
+		var t = array.AsSpan();
+		if (offset > 0)
 		{
-			chars[i] = prefix![i];
+			prefix.CopyTo(t);
+			t = t.Slice(offset);
 		}
-		ToHexCharArrayInternal(value, 0, length, chars, offset);
-		return new string(chars);
+		foreach (var b in value.AsSpan())
+		{
+			t[0] = HexDigits[(b & 0xF0) >> 4];
+			t[1] = HexDigits[b & 0x0F];
+			t = t.Slice(2);
+		}
+		var result = new String(array);
+		ArrayPool<char>.Shared.Return(array);
+		return result;
 	}
 
 	public static string ToBitsString(byte[] value)
@@ -869,22 +906,7 @@ public static partial class Strings
 			var s = t.AsSpan();
 			if (s.IsWhiteSpace())
 				continue;
-			int column = 0;
-			foreach (var c in s)
-			{
-				if (c == '\t')
-					column += tabSize - (column % tabSize);
-				else if (c == ' ')
-					++column;
-				else
-					break;
-				if (column >= indent)
-					break;
-			}
-			if (column >= indent)
-				continue;
-
-			indent = column;
+			indent = GetIndent(s, indent, tabSize);
 			if (indent == 0)
 				break;
 		}
@@ -925,6 +947,23 @@ public static partial class Strings
 		return result.ToString(0, result.Length - newLine.Length);
 	}
 
+	private static int GetIndent(ReadOnlySpan<char> s, int indent, int tabSize)
+	{
+		int column = 0;
+		foreach (var c in s)
+		{
+			if (c == '\t')
+				column += tabSize - (column % tabSize);
+			else if (c == ' ')
+				++column;
+			else
+				break;
+			if (column >= indent)
+				break;
+		}
+		return Math.Min(column, indent);
+	}
+
 	public static string CutIndents(ReadOnlySpan<char> text, int tabSize = 4)
 	{
 		if (tabSize is <1 or >32)
@@ -939,33 +978,6 @@ public static partial class Strings
 		var result = new StringBuilder(text.Length);
 		int indent = Int32.MaxValue;
 
-		static (int Index, int Nl) NextNewLine(ReadOnlySpan<char> text)
-		{
-			int k = text.IndexOfAny(CrLf);
-			if (k < 0)
-				return (k, 0);
-			if (k < text.Length - 1 && text[k + 1] == (text[k] ^ ('\r' ^ '\n')))
-				return (k, 2);
-			return (k, 1);
-		}
-
-		static int GetIndent(ReadOnlySpan<char> s, int indent, int tabSize)
-		{
-			int column = 0;
-			foreach (var c in s)
-			{
-				if (c == '\t')
-					column += tabSize - (column % tabSize);
-				else if (c == ' ')
-					++column;
-				else
-					break;
-				if (column >= indent)
-					break;
-			}
-			return Math.Min(column, indent);
-		}
-
 		var rest = text;
 		do
 		{
@@ -979,7 +991,7 @@ public static partial class Strings
 			rest = rest.Slice(p.Index + p.Nl);
 			p = NextNewLine(rest);
 		} while (p.Nl > 0);
-		if (indent > 0)
+		if (indent > 0 && !rest.IsWhiteSpace())
 			indent = GetIndent(rest, indent, tabSize);
 		
 		if (indent is 0 or Int32.MaxValue)
@@ -1010,6 +1022,16 @@ public static partial class Strings
 
 		AppendLine(rest.TrimEnd());
 		return result.ToString();
+
+		static (int Index, int Nl) NextNewLine(ReadOnlySpan<char> text)
+		{
+			int k = text.IndexOfAny(CrLf);
+			if (k < 0)
+				return (k, 0);
+			if (k < text.Length - 1 && text[k + 1] == (text[k] ^ ('\r' ^ '\n')))
+				return (k, 2);
+			return (k, 1);
+		}
 
 		void AppendLine(ReadOnlySpan<char> value)
 		{

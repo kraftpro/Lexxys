@@ -4,7 +4,7 @@
     <!--<TargetFramework>net7.0</TargetFramework>-->
     <!--<TargetFrameworks>net7.0;net6.0;net472;netcoreapp3.1</TargetFrameworks>-->
     <!--<TargetFrameworks>net8.0;net7.0;net6.0;net472</TargetFrameworks>-->
-    <TargetFrameworks>net8.0;net6.0;net472</TargetFrameworks>
+    <TargetFrameworks>net8.0;net6.0;net462</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -18,15 +18,22 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.11" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
-    <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
-    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
+    <PackageReference Include="MSTest" Version="3.2.2" />
+    <!--
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.2.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.2.0" />
+    -->
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lexxis.Logging\Lexxys.Logging.csproj" />
+    <ProjectReference Include="..\..\src\Lexxys.DataContext\Lexxys.DataContext.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Testing\Lexxys.Testing.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Validation\Lexxys.Validation.csproj" />
     <ProjectReference Include="..\..\src\Lexxys\Lexxys.csproj" />

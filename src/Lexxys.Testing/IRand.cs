@@ -17,12 +17,20 @@ public interface IRand
 	/// </summary>
 	/// <param name="seed">Seed value for pseudo-random numbers sequence.</param>
 	/// <exception cref="NotSupportedException">The method is not supported</exception>
-	void Reset(int seed = 0);
+	void Reset(long seed = 0);
+
 	/// <summary>
 	/// Returns a non-negative random integer.
 	/// </summary>
 	/// <returns>A 32-bit signed integer that is greater than or equal to 0.</returns>
-	int NextInt();
+	int NextInt32();
+
+	/// <summary>
+	/// Returns a non-negative random long value.
+	/// </summary>
+	/// <returns>A 64-bit signed integer that is greater than or equal to 0.</returns>
+	long NextInt64();
+
 	/// <summary>
 	/// Returns a random floating-point number that is greater than or equal to 0.0, and less than 1.0.
 	/// </summary>
@@ -30,6 +38,7 @@ public interface IRand
 	/// A double-precision floating point number that is greater than or equal to 0.0, and less than 1.0.
 	/// </returns>
 	double NextDouble();
+
 	/// <summary>
 	/// Fills the elements of a specified array of bytes with random numbers.
 	/// </summary>

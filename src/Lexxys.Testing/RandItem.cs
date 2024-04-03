@@ -55,7 +55,8 @@ public readonly struct RandItem<T>: IFormattable
 	/// <param name="item">The item to be cloned</param>
 	public RandItem(double weight, RandItem<T> item)
 	{
-		if (weight != 0 && !item.IsEmpty)
+		if (weight is <= 0) throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
+		if (!item.IsEmpty)
 		{
 			_weight = weight;
 			_value = item._value;

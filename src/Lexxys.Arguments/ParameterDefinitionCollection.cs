@@ -1,8 +1,5 @@
 ﻿using System.Collections;
 
-// ReSharper disable VariableHidesOuterVariable
-// ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-
 namespace Lexxys;
 
 /// <summary>
@@ -50,7 +47,7 @@ public class ParameterDefinitionCollection: IReadOnlyList<ParameterDefinition>
 	/// </summary>
 	/// <param name="name"></param>
 	public ParameterDefinition? this[string name] => _parameters.FirstOrDefault(o => String.Equals(o.Name, name, _comparison));
-	
+
 	/// <inheritdoc />
 	public int Count => _parameters.Count;
 
@@ -87,19 +84,19 @@ public class ParameterDefinitionCollection: IReadOnlyList<ParameterDefinition>
 		_parameters.Add(parameter);
 	}
 
-	/// <summary>
-	/// Combines this collection with the given <paramref name="parameters"/> and returns a new collection.
-	/// </summary>
-	/// <param name="parameters">Collection of parameters to be added to the current collection.</param>
-	/// <returns></returns>
-	public ParameterDefinitionCollection Combine000(ParameterDefinitionCollection parameters)
-	{
-		if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+	///// <summary>
+	///// Combines this collection with the given <paramref name="parameters"/> and returns a new collection.
+	///// </summary>
+	///// <param name="parameters">Collection of parameters to be added to the current collection.</param>
+	///// <returns></returns>
+	//public ParameterDefinitionCollection Combine000(ParameterDefinitionCollection parameters)
+	//{
+	//	if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 
-		List<ParameterDefinition> collection = new List<ParameterDefinition>(_parameters);
-		collection.AddRange(parameters._parameters);
-		return new ParameterDefinitionCollection(collection, _comparison);
-	}
+	//	List<ParameterDefinition> collection = new List<ParameterDefinition>(_parameters);
+	//	collection.AddRange(parameters._parameters);
+	//	return new ParameterDefinitionCollection(collection, _comparison);
+	//}
 
 	/// <inheritdoc/>
 	public IEnumerator<ParameterDefinition> GetEnumerator() => ((IEnumerable<ParameterDefinition>)_parameters).GetEnumerator();

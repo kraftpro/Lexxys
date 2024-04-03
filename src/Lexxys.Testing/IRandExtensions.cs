@@ -19,11 +19,11 @@ public static class RandExtensions
 	/// <param name="maxValue">Maximum value (exclusive).</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static int NextInt(this IRand rnd, int maxValue)
+	public static int NextInt32(this IRand rnd, int maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
 		if (maxValue < 0) throw new ArgumentOutOfRangeException(nameof(maxValue), maxValue, null);
-		return maxValue == 0 ? 0 : rnd.NextInt() % maxValue;
+		return maxValue == 0 ? 0 : rnd.NextInt32() % maxValue;
 	}
 
 	/// <summary>
@@ -35,12 +35,12 @@ public static class RandExtensions
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is negative or <paramref name="maxValue"/> is less than <paramref name="minValue"/>.</exception>
-	public static int NextInt(this IRand rnd, int minValue, int maxValue)
+	public static int NextInt32(this IRand rnd, int minValue, int maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
 		if (minValue < 0) throw new ArgumentOutOfRangeException(nameof(minValue), minValue, null);
 		if (maxValue < minValue) throw new ArgumentOutOfRangeException(nameof(maxValue), maxValue, null);
-		return minValue == maxValue ? minValue : minValue + rnd.NextInt() % (maxValue - minValue);
+		return minValue == maxValue ? minValue : minValue + rnd.NextInt32() % (maxValue - minValue);
 	}
 
 	/// <summary>
@@ -76,15 +76,17 @@ public static class RandExtensions
 	}
 
 	/// <summary>
-	/// Returns a non-negative random decimal value in range 0, 0.(9).
+	/// Returns a non-negative random decimal value in range 0, {<paramref name="scale"/>}.(9).
 	/// </summary>
 	/// <param name="rnd"></param>
+	/// <param name="scale">Number of digits before the decimal point in the return value.</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static decimal NextDecimal(this IRand rnd)
+	public static decimal NextDecimal(this IRand rnd, byte scale = 0)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
-		return new Decimal(rnd.NextInt(268435456), rnd.NextInt(1042612834), rnd.NextInt(542101087), false, 28);
+		if (scale is <0 or >28) throw new ArgumentOutOfRangeException(nameof(scale), scale, null);
+		return new Decimal(rnd.NextInt32(268435456), rnd.NextInt32(1042612834), rnd.NextInt32(542101087), false, (byte)(28 - scale));
 	}
 
 	/// <summary>
@@ -120,18 +122,6 @@ public static class RandExtensions
 	}
 
 	/// <summary>
-	/// Returns a non-negative random long value.
-	/// </summary>
-	/// <param name="rnd"></param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	public static long NextLong(this IRand rnd)
-	{
-		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
-		return (long)(rnd.NextDouble() * long.MaxValue);
-	}
-
-	/// <summary>
 	/// Returns a non-negative random long value less then <paramref name="maxValue"/>.
 	/// </summary>
 	/// <param name="rnd"></param>
@@ -139,11 +129,11 @@ public static class RandExtensions
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than zero.</exception>
-	public static long NextLong(this IRand rnd, long maxValue)
+	public static long NextInt64(this IRand rnd, long maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
 		if (maxValue < 0) throw new ArgumentOutOfRangeException(nameof(maxValue), maxValue, null);
-		return (long)(rnd.NextDouble() * maxValue);
+		return maxValue == 0 ? 0: rnd.NextInt64() % maxValue;
 	}
 
 	/// <summary>
@@ -155,11 +145,11 @@ public static class RandExtensions
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is less than zero or <paramref name="maxValue"/> is less than <paramref name="minValue"/>.</exception>
-	public static long NextLong(this IRand rnd, long minValue, long maxValue)
+	public static long NextInt64(this IRand rnd, long minValue, long maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
 		if (minValue < 0) throw new ArgumentOutOfRangeException(nameof(minValue), minValue, null);
 		if (maxValue < minValue) throw new ArgumentOutOfRangeException(nameof(maxValue), maxValue, null);
-		return minValue + (long)(rnd.NextDouble() * (maxValue - minValue));
+		return minValue + rnd.NextInt64(maxValue - minValue);
 	}
 }

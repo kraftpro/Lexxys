@@ -1,7 +1,7 @@
 // Lexxys Infrastructural library.
 // file: LocalFileStorageProvider.cs
 //
-// Copyright (c) 2001-2014, Kraft Pro Utilities.
+// Copyright (c) 2001-2014, ANN, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
 
@@ -28,8 +28,8 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// <exception cref="ArgumentNullException"><paramref name="location"/> is null.</exception>
 	public virtual bool CanOpen(Uri location)
 	{
-		if (location is null)
-			throw new ArgumentNullException(nameof(location));
+		if (location is null) throw new ArgumentNullException(nameof(location));
+
 		return !location.IsAbsoluteUri || location.IsFile;
 	}
 
@@ -41,8 +41,8 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// <exception cref="ArgumentNullException"><paramref name="location"/> is null.</exception>
 	public IBlobInfo? GetFileInfo(Uri location)
 	{
-		if (location is null)
-			throw new ArgumentNullException(nameof(location));
+		if (location is null) throw new ArgumentNullException(nameof(location));
+
 		return CanOpen(location) ? new LocalFileInfo(GetPath(location)): null;
 	}
 
@@ -70,16 +70,13 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="location"/> is not a valid file location.</exception>
 	public void SaveFile(Uri location, Stream stream, bool overwrite)
 	{
-		if (location is null)
-			throw new ArgumentNullException(nameof(location));
-		if (stream == null)
-			throw new ArgumentNullException(nameof(stream));
-		if (!CanOpen(location))
-			throw new ArgumentOutOfRangeException(nameof(location), location, null);
+		if (location is null) throw new ArgumentNullException(nameof(location));
+		if (stream == null) throw new ArgumentNullException(nameof(stream));
+		if (!CanOpen(location)) throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
 		var path = GetPath(location);
 		CreateDirectory(path);
-		using var file = new FileStream(path, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.Write, FileShare.None, 8192, FileOptions.SequentialScan);
+		using var file = new FileStream(path, overwrite ? FileMode.Create: FileMode.CreateNew, FileAccess.Write, FileShare.None, 8192, FileOptions.SequentialScan);
 		stream.CopyTo(file);
 	}
 
@@ -92,22 +89,18 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <exception cref="ArgumentNullException">location or stream is null.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">location is not a valid file location.</exception>
-	public async Task SaveFileAsync(Uri location, Stream stream, bool overwrite,
-		CancellationToken cancellationToken = default)
+	public async Task SaveFileAsync(Uri location, Stream stream, bool overwrite, CancellationToken cancellationToken = default)
 	{
-		if (location is null)
-			throw new ArgumentNullException(nameof(location));
-		if (stream == null)
-			throw new ArgumentNullException(nameof(stream));
-		if (!CanOpen(location))
-			throw new ArgumentOutOfRangeException(nameof(location), location, null);
+		if (location is null) throw new ArgumentNullException(nameof(location));
+		if (stream == null) throw new ArgumentNullException(nameof(stream));
+		if (!CanOpen(location)) throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
 		var path = GetPath(location);
 		CreateDirectory(path);
 		#if !NETFRAMEWORK
 		await 
 		#endif
-		using var file = File.Open(path, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.Write);
+		using var file = File.Open(path, overwrite ? FileMode.Create: FileMode.CreateNew, FileAccess.Write);
 		int bufferSize = stream.CanSeek ? (int)Math.Min(DefaultBufferSize, stream.Length): DefaultBufferSize;
 		await stream.CopyToAsync(file, bufferSize, cancellationToken).ConfigureAwait(false);
 	}
@@ -121,14 +114,10 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// <exception cref="ArgumentOutOfRangeException">The source or destination is not a valid file location.</exception>
 	public void CopyFile(Uri source, Uri destination)
 	{
-		if (source is null)
-			throw new ArgumentNullException(nameof(source));
-		if (destination is null)
-			throw new ArgumentNullException(nameof(destination));
-		if (!CanOpen(source))
-			throw new ArgumentOutOfRangeException(nameof(source), source, null);
-		if (!CanOpen(destination))
-			throw new ArgumentOutOfRangeException(nameof(destination), destination, null);
+		if (source is null) throw new ArgumentNullException(nameof(source));
+		if (destination is null) throw new ArgumentNullException(nameof(destination));
+		if (!CanOpen(source)) throw new ArgumentOutOfRangeException(nameof(source), source, null);
+		if (!CanOpen(destination)) throw new ArgumentOutOfRangeException(nameof(destination), destination, null);
 
 		var path1 = GetPath(source);
 		var path2 = GetPath(destination);
@@ -146,14 +135,10 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="source"/> or <paramref name="destination"/> is not a valid file location.</exception>
 	public async Task CopyFileAsync(Uri source, Uri destination, CancellationToken cancellationToken = default)
 	{
-		if (source is null)
-			throw new ArgumentNullException(nameof(source));
-		if (destination is null)
-			throw new ArgumentNullException(nameof(destination));
-		if (!CanOpen(source))
-			throw new ArgumentOutOfRangeException(nameof(source), source, null);
-		if (!CanOpen(destination))
-			throw new ArgumentOutOfRangeException(nameof(destination), destination, null);
+		if (source is null) throw new ArgumentNullException(nameof(source));
+		if (destination is null) throw new ArgumentNullException(nameof(destination));
+		if (!CanOpen(source)) throw new ArgumentOutOfRangeException(nameof(source), source, null);
+		if (!CanOpen(destination)) throw new ArgumentOutOfRangeException(nameof(destination), destination, null);
 
 		var path1 = GetPath(source);
 		var path2 = GetPath(destination);
@@ -187,14 +172,10 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="source"/> or <paramref name="destination"/> is not a valid file location.</exception>
 	public void MoveFile(Uri source, Uri destination)
 	{
-		if (source is null)
-			throw new ArgumentNullException(nameof(source));
-		if (destination is null)
-			throw new ArgumentNullException(nameof(destination));
-		if (!CanOpen(source))
-			throw new ArgumentOutOfRangeException(nameof(source), source, null);
-		if (!CanOpen(destination))
-			throw new ArgumentOutOfRangeException(nameof(destination), destination, null);
+		if (source is null) throw new ArgumentNullException(nameof(source));
+		if (destination is null) throw new ArgumentNullException(nameof(destination));
+		if (!CanOpen(source)) throw new ArgumentOutOfRangeException(nameof(source), source, null);
+		if (!CanOpen(destination)) throw new ArgumentOutOfRangeException(nameof(destination), destination, null);
 
 		var path1 = GetPath(source);
 		var path2 = GetPath(destination);
@@ -224,10 +205,8 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="location"/> is not a valid file location.</exception>
 	public void DeleteFile(Uri location)
 	{
-		if (location is null)
-			throw new ArgumentNullException(nameof(location));
-		if (!CanOpen(location))
-			throw new ArgumentOutOfRangeException(nameof(location), location, null);
+		if (location is null) throw new ArgumentNullException(nameof(location));
+		if (!CanOpen(location)) throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
 		var path = GetPath(location);
 		if (File.Exists(path))

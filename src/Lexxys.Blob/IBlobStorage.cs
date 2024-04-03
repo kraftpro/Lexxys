@@ -1,7 +1,7 @@
 ﻿// Lexxys Infrastructural library.
 // file: BlobStorage.cs
 //
-// Copyright (c) 2001-2014, Kraft Pro Utilities.
+// Copyright (c) 2001-2014, ANN, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
 

@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 
 namespace Lexxys;
 
@@ -81,7 +82,7 @@ public class ArgumentCommand: IArgumentCommand
 
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public class CliArgumentsAttribute: Attribute
+public class CliParametersAttribute: Attribute
 {
 	public bool IgnoreCase { get; init; }
 	public bool AllowSlash { get; init; }
@@ -105,17 +106,11 @@ public class CliCommandAttribute: Attribute
 
 	public CliCommandAttribute() { }
 
-	public CliCommandAttribute(string? name, string[]? alias = null)
-	{
-		Name = name;
-		Alias = alias;
-	}
-
-	public CliCommandAttribute(string[]? alias) => Alias = alias;
+	public CliCommandAttribute(params string[] alias) => Alias = alias;
 }
 
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public class CliParamAttribute: Attribute
+public class CliOptionAttribute: Attribute
 {
 	public string[]? Alias { get; init; }
 	public string? Name { get; init; }
@@ -124,18 +119,49 @@ public class CliParamAttribute: Attribute
 	public bool Required { get; init; }
 	public bool Positional { get; init; }
 
-	public CliParamAttribute() { }
+	public CliOptionAttribute() { }
 
-	public CliParamAttribute(string? name, string[]? alias = null)
-	{
-		Name = name;
-		Alias = alias;
-	}
-
-	public CliParamAttribute(string[]? alias = null) => Alias = alias;
+	public CliOptionAttribute(params string[] alias) => Alias = alias;
 }
 
 #pragma warning disable CA2252
+
+public interface ICliParameters<T>
+{
+	static abstract ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null);
+	static abstract T Parse(IArgumentCommand c, ICollection<string>? error = null);
+}
+
+public static class IParametersExtensions
+{
+	public static ArgumentsBuilder CreateBuilder<T>(ArgumentsBuilderSettings? settings) where T: ICliParameters<T> => T.CreateBuilder(new ArgumentsBuilder(settings));
+
+	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string[]? abbreviation, string? description = null) where T: ICliParameters<T> 
+	{
+		builder.BeginCommand(name, abbreviation, description);
+		T.CreateBuilder(builder);
+		return builder.EndCommand();
+	}
+
+	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string? description = null) where T : ICliParameters<T>
+	{
+		builder.BeginCommand(name, description);
+		T.CreateBuilder(builder);
+		return builder.EndCommand();
+	}
+}
+
+public interface ICliParameters2<T>
+{
+	public Arguments? Arguments { get; init; }
+
+	//public IList<string> Errors { get; }
+	//public bool HasErrors => Errors.Count > 0;
+
+	static abstract ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null);
+	static abstract T Parse(IArgumentCommand c);
+}
+
 
 public interface ICliOption<T>
 {
@@ -145,7 +171,7 @@ public interface ICliOption<T>
 
 public static class ICliOptionExtensions
 {
-	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string[]? abbreviation, string? description = null) where T: ICliOption<T>
+	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string[]? abbreviation, string? description = null) where T : ICliOption<T>
 	{
 		builder.BeginCommand(name, abbreviation, description);
 		T.CreateBuilder(builder);

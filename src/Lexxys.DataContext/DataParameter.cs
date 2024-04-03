@@ -9,7 +9,7 @@ using System.Data.Common;
 
 namespace Lexxys.Data;
 
-public class DataParameter
+public class DataParameter: IDataParameter
 {
 	public DataParameter(string name, object? value = null, DbType? type = null, int? size = null)
 	{
@@ -38,11 +38,11 @@ public static class DataParameterExtensions
 			command.Parameters.Clear();
 		if (parameters == null)
 			return command;
-		foreach (var p in parameters)
+		foreach (DataParameter? p in parameters)
 		{
 			if (p == null)
 				continue;
-			var q = command.CreateParameter();
+			DbParameter q = command.CreateParameter();
 			q.ParameterName = p.Name;
 			q.Value = p.Value;
 			if (p.Size != null)
@@ -63,7 +63,7 @@ public static class DataParameterExtensions
 		if (parameters == null || parameters.Count == 0)
 			return;
 
-		foreach (var parameter in parameters)
+		foreach (DataParameter? parameter in parameters)
 		{
 			if (parameter.Direction is ParameterDirection.InputOutput or ParameterDirection.Output or ParameterDirection.ReturnValue &&
 				command.Parameters.Contains(parameter.Name))

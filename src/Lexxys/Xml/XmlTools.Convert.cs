@@ -229,7 +229,7 @@ public static partial class XmlTools
 					'<' => "&lt;".AsSpan(),
 					'>' => "&gt;".AsSpan(),
 					'"' => "&quot;".AsSpan(),
-					'\'' => "&39;".AsSpan(),
+					'\'' => "&#39;".AsSpan(),
 					'&' => "&amp;".AsSpan(),
 					_ => ReadOnlySpan<char>.Empty,
 				});

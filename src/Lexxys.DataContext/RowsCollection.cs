@@ -264,7 +264,8 @@ public sealed class RowsCollection
 			{
 				null => null,
 				byte[] b => new RowVersion(b),
-				long l => new RowVersion(l),
+				long l => new RowVersion((ulong)l),
+				ulong ul => new RowVersion(ul),
 				_ => throw new InvalidOperationException()
 			};
 		}

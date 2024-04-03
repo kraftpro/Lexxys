@@ -13,6 +13,7 @@
     <Copyright>Copyright © 2001-2016</Copyright>
     <Authors>Kraft Pro Utilities</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!--<PackageReadmeFile>readme.md</PackageReadmeFile>-->
     <!--<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>-->
   </PropertyGroup>
 
@@ -31,6 +32,51 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Configuration\ConfigurationSource\DatabaseConfigurationSource.cs" />
+    <Compile Remove="Data\RowsCollection.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.Runtime.CompilerServices" />
+    <Using Include="System.Diagnostics.CodeAnalysis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="8.0.0" />
+    <PackageReference Include="System.Runtime.Caching" Version="8.0.0" />
+    <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).Logging" />
+    <InternalsVisibleTo Include="$(AssemblyName).Legacy" />
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+    <InternalsVisibleTo Include="$(AssemblyName).Xml" />
+    <InternalsVisibleTo Include="$(AssemblyName).Test.Console" />
+    <InternalsVisibleTo Include="$(AssemblyName).Validation" />
+    <InternalsVisibleTo Include="$(AssemblyName).Arguments" />
+    <InternalsVisibleTo Include="$(AssemblyName).DataContext" />
+    <InternalsVisibleTo Include="TestPizza" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="readme.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!--
+  <ItemGroup>
+    <AssemblyMetadata Include="ConfigFile" />
+    <Using Include="System.Runtime.CompilerServices" />
+    <Using Include="System.Diagnostics.CodeAnalysis" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Cube\**" />
     <Compile Remove="Tokenizer\~\**" />
     <EmbeddedResource Remove="Cube\**" />
@@ -45,12 +91,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.10.4" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.1" />
     <PackageReference Include="System.Diagnostics.EventLog" Version="8.0.0" />
     <PackageReference Include="System.Runtime.Caching" Version="8.0.0" />
     <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
@@ -66,4 +111,13 @@
     <InternalsVisibleTo Include="$(AssemblyName).Arguments" />
     <InternalsVisibleTo Include="TestPizza" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="readme.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+-->
+
 </Project>

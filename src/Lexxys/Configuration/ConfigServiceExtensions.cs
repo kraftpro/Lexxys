@@ -47,5 +47,4 @@ public static class ConfigServiceExtensions
 		// service.AddConfiguration(new Uri(path, UriKind.RelativeOrAbsolute), parameters, tail);
 		return false;
 	}
-
 }

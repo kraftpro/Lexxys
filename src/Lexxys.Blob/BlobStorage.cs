@@ -1,7 +1,7 @@
 // Lexxys Infrastructural library.
 // file: BlobStorage.cs
 //
-// Copyright (c) 2001-2014, Kraft Pro Utilities.
+// Copyright (c) 2001-2014, ANN, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
 // Re Sharper disable ConditionIsAlwaysTrueOrFalse
@@ -24,8 +24,7 @@ public class BlobStorage: IBlobStorage
 	/// <exception cref="ArgumentNullException"></exception>
 	public IBlobStorageProvider? TryGetProvider(Uri location)
 	{
-		if (location is null)
-			throw new ArgumentNullException(nameof(location));
+		if (location is null) throw new ArgumentNullException(nameof(location));
 
 		if (!_schemes.TryGetValue(location.Scheme, out var providers))
 			providers = _providers;
@@ -40,8 +39,7 @@ public class BlobStorage: IBlobStorage
 	/// <exception cref="ArgumentNullException"><paramref name="provider"/> is null</exception>
 	public void Register(IBlobStorageProvider provider)
 	{
-		if (provider == null)
-			throw new ArgumentNullException(nameof(provider));
+		if (provider == null) throw new ArgumentNullException(nameof(provider));
 
 		foreach (var scheme in provider.SupportedSchemes)
 		{
@@ -49,6 +47,7 @@ public class BlobStorage: IBlobStorage
 				_schemes.Add(scheme, list = new List<IBlobStorageProvider>());
 			list.Add(provider);
 		}
+		_providers.Add(provider);
 	}
 }
 

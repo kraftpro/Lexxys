@@ -3,53 +3,53 @@ using System.Text.RegularExpressions;
 
 namespace Lexxys.Argument.Tests;
 
-[CliArguments(IgnoreCase = true)]
-partial class SampleOption: ICliOption<SampleOption>
+//[CliParameters(IgnoreCase = true)]
+partial class SampleOption
 {
-    [CliParam(["a"], ValueName = "alpha", Description = "alpha option")]
+    [CliOption("a", ValueName = "alpha", Description = "alpha option")]
     public float Alpha { get; init; }
 
-    [CliParam(["b", "bt"], ValueName = "beta", Description = "beta option")]
+    [CliOption("b", "bt", ValueName = "beta", Description = "beta option")]
     public float Beta { get; init; }
 
-    [CliParam(["c", "g"], ValueName = "gamma", Description = "gamma option")]
+    [CliOption("c", "g", ValueName = "gamma", Description = "gamma option")]
     public float Gamma { get; init; }
 
-	[CliParam(["i"], ValueName = "input", Description = "input file")]
+	[CliOption("i", ValueName = "input", Description = "input file")]
 	public FileInfo? Input { get; init; }
 
-	[CliParam(["o"], ValueName = "output", Description = "output file")]
+	[CliOption("o", ValueName = "output", Description = "output file")]
 	public FileInfo? Output { get; init; }
 
-	[CliCommand("new", Description = "Create something")]
+	[CliCommand(Name = "new", Description = "Create something")]
 	public CommandCreate? Create { get; init; }
 
-	[CliCommand("del", Description = "Delete something")]
+	[CliCommand(Name = "del", Description = "Delete something")]
 	public CommandDelete? Delete { get; init; }
 
-	[CliArguments]
+	//[CliParameters]
 	public partial class CommandCreate
 	{
-		[CliParam(["a"], Description = "alpha option")]
+		[CliOption("a", Description = "alpha option")]
 		public int Alpha { get; init; }
 
-		[CliParam(["b"], Description = "beta option")]
+		[CliOption("b", Description = "beta option")]
 		public int Beta { get; init; }
 
-		[CliParam(["c"], Description = "gamma option")]
+		[CliOption("c", Description = "gamma option")]
 		public int Gamma { get; init; }
 	}
 
-	[CliArguments]
-	public partial class CommandDelete: ICliOption<CommandDelete>
+	//[CliParameters]
+	public partial class CommandDelete
 	{
-		[CliParam(["a"])]
+		[CliOption("a")]
 		public int Alpha { get; init; }
 
-		[CliParam(["b", "bb", "bbb"], ValueName = "beta", Description = "bbb")]
+		[CliOption("b", "bb", "bbb", ValueName = "beta", Description = "bbb")]
 		public int Beta { get; init; }
 
-		[CliParam(["c", "cc", "ccc"])]
+		[CliOption("c", "cc", "ccc")]
 		public int Gamma { get; init; }
 	}
 }
@@ -117,11 +117,11 @@ partial class SampleOption: ICliOption<SampleOption>
 
 #endif
 
-//public interface ICliOption<T>
-//{
-//	static abstract ArgumentsBuilder Build(ArgumentsBuilder? builder = null);
-//	static abstract T Parse(ArgumentCommand c);
-//}
+public interface ICliOption<T>
+{
+	//static abstract ArgumentsBuilder Build(ArgumentsBuilder? builder = null);
+	//static abstract T Parse(ArgumentCommand c);
+}
 
 //public static class ICliOptionExtensions
 //{

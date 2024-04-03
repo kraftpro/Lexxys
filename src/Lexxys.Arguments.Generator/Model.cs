@@ -36,12 +36,14 @@ public class CliCommandModel
 {
 	public CliCommandModel() { }
 	
-	public CliCommandModel(string[]? alias, string? description)
+	public CliCommandModel(string? name, string[]? alias, string? description)
 	{
+		Name = name;
 		Alias = alias ?? [];
 		Description = description;
 	}
 
+	public string? Name { get; init; }
 	public string[] Alias { get; init; } = [];
 	public string? Description { get; init; }
 }
@@ -50,8 +52,9 @@ public class CliParamModel
 {
 	public CliParamModel() { }
 	
-	public CliParamModel(string[]? alias, string? valueName, string? description, string? required, string? positional)
+	public CliParamModel(string? name, string[]? alias, string? valueName, string? description, string? required, string? positional)
 	{
+		Name = name;
 		Alias = alias ?? [];
 		ValueName = valueName;
 		Description = description;
@@ -59,6 +62,7 @@ public class CliParamModel
 		Positional = positional;
 	}
 
+	public string? Name { get; init; }
 	public string[] Alias { get; init; } = [];
 	public string? ValueName { get; init; }
 	public string? Description { get; init; }
@@ -90,7 +94,7 @@ public class ArgumentPropertyModel
 	
 	public ArgumentPropertyModel(string? name, string? type, CliParamModel? paramAttribute = null, CliCommandModel? commandAttribute = null)
 	{
-		Name = name;
+		Name = paramAttribute?.Name ?? commandAttribute?.Name ?? name;
 		Type = type;
 		ParamAttribute = paramAttribute;
 		CommandAttribute = commandAttribute;

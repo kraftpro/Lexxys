@@ -17,11 +17,11 @@ public interface IConfigSection
 
 	void MapPath(string key, string value);
 
-	void SetValue<T>(string? key, T value);
-
 	IValue<T> GetValue<T>(string? key, Func<T>? defaultValue = null);
 
-	void SetCollection<T>(string? key, IReadOnlyList<T> value);
+	void SetValue<T>(string? key, T value);
 
 	IValue<IReadOnlyList<T>> GetCollection<T>(string? key);
+
+	void SetCollection<T>(string? key, IReadOnlyList<T> value);
 }

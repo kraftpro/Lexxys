@@ -4,15 +4,16 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+using System.Buffers;
 using System.Buffers.Text;
 using System.Collections;
 using System.Text;
+using System.Xml;
+
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Lexxys;
 
-using System.Xml;
-
-using Xml;
 
 [Serializable]
 public abstract class JsonItem
@@ -46,16 +47,9 @@ public abstract class JsonItem
 		_ => Value.ToString() ?? String.Empty
 	};
 
-	protected JsonItem()
-	{
-		Attributes = _noAttributes;
-	}
-	private static readonly IReadOnlyList<JsonPair> _noAttributes = Array.Empty<JsonPair>();
+	protected JsonItem() => Attributes = [];
 
-	protected JsonItem(IReadOnlyList<JsonPair>? attributes)
-	{
-		Attributes = attributes ?? _noAttributes;
-	}
+	protected JsonItem(IReadOnlyList<JsonPair>? attributes) => Attributes = attributes ?? [];
 
 	public virtual StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 	{
@@ -273,35 +267,45 @@ public class JsonScalar: JsonItem
 		_ => []
 	};
 
-	public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
+	public override StringBuilder ToString(StringBuilder text, string? indent = null, int maxVaueLength = 0, int arrayLimit = 0)
 	{
 		if (text is null)
 			throw new ArgumentNullException(nameof(text));
 
-		base.ToString(text, indent, stringLimit, arrayLimit);
+		base.ToString(text, indent, maxVaueLength, arrayLimit);
 		return Value switch
 		{
 			null => text.Append("null"),
-			string s => Escape(s),
-			bool b => text.Append(b ? "true" : "false"),
-			DateTime d => text.Append('"').Append(XmlConvert.ToString(d, XmlDateTimeSerializationMode.RoundtripKind)).Append('"'),
-			DateTimeOffset x => text.Append('"').Append(XmlConvert.ToString(x)).Append('"'),
-			TimeSpan t => text.Append('"').Append(XmlConvert.ToString(t)).Append('"'),
-			byte[] y => text.Append('"').Append(Convert.ToBase64String(y, Base64FormattingOptions.None)).Append('"'),
-			byte or sbyte or
-			short or ushort or
-			int or uint or
-			long or ulong or
-			float or double or
-			decimal => text.Append(Value),
-			_ => Escape(Value.ToString() ?? String.Empty)
+			string s => Escape(text, s, maxVaueLength),
+			bool bl => text.Append(bl ? "true" : "false"),
+			DateTime dt => text.Append('"').Append(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.RoundtripKind)).Append('"'),
+			DateTimeOffset dtx => text.Append('"').Append(XmlConvert.ToString(dtx)).Append('"'),
+			TimeSpan tm => text.Append('"').Append(XmlConvert.ToString(tm)).Append('"'),
+			byte[] ba => text.Append('"').Append(Convert.ToBase64String(ba, Base64FormattingOptions.None)).Append('"'),
+			byte b => text.Append(b),
+			sbyte sb => text.Append(sb),
+			short h => text.Append(h),
+			ushort uh => text.Append(uh),
+			int i => text.Append(i),
+			uint ui => text.Append(ui),
+			long l => text.Append(l),
+			ulong ul => text.Append(ul),
+#if NET6_0_OR_GREATER
+			float f => Single.IsFinite(f) ? text.Append(f): text.Append(Null),
+			double d => Double.IsFinite(d) ? text.Append(d): text.Append(Null),
+#else
+			float f => Single.IsNaN(f) || Single.IsInfinity(f) ? text.Append(f) : text.Append(Null),
+			double d => Double.IsNaN(d) || Double.IsInfinity(d) ? text.Append(d) : text.Append(Null),
+#endif
+			decimal m => text.Append(m),
+			_ => Escape(text, Value.ToString() ?? String.Empty, maxVaueLength)
 		};
 
-		StringBuilder Escape(string s)
+		static StringBuilder Escape(StringBuilder text, string s, int maxVaueLength)
 		{
-			if (stringLimit > 0 && s.Length > stringLimit)
+			if (maxVaueLength > 0 && s.Length > maxVaueLength - 3)
 			{
-				Strings.EscapeCsString(text, s.AsSpan(0, stringLimit));
+				Strings.EscapeCsString(text, s.AsSpan(0, Math.Min(maxVaueLength, 0)));
 				--text.Length;
 				text.Append("...\"");
 			}
@@ -318,53 +322,108 @@ public class JsonScalar: JsonItem
 		if (stream is null)
 			throw new ArgumentNullException(nameof(stream));
 
+		const int Size = 50;
+		Span<byte> digits = stackalloc byte[Size];
 		base.Write(stream);
-		if (Value == null)
+		switch (Value)
 		{
-			if (Attributes.Count == 0)
+			case null:
 				stream.Write(NullBytes);
-		}
-		else if (Value is string s)
-		{
-			Strings.EscapeUtf8CsString(stream, s.AsSpan());
-		}
-		else if (Value is bool b)
-		{
-			stream.Write(b ? TrueBytes: FalseBytes);
-		}
-		else if (Value is DateTime d)
-		{
-			stream.Write(Quote);
-			WriteDateTime(d, stream);
-			stream.Write(Quote);
-		}
-		else if (Value is DateTimeOffset x)
-		{
-			stream.Write(Quote);
-			WriteDateTimeOffset(x, stream);
-			stream.Write(Quote);
-		}
-		else if (Value is TimeSpan p)
-		{
-			stream.Write(Quote);
-			WriteTimeSpan(p, stream);
-			stream.Write(Quote);
-		}
-		else if (Value is byte[] y)
-		{
-			stream.Write(Quote);
-			ToBase64(y, stream);
-			stream.Write(Quote);
-		}
-		else
-		{
-			Strings.EscapeUtf8CsString(stream, (Value.ToString() ?? String.Empty).AsSpan());
+				break;
+			case string s:
+				Strings.EscapeUtf8CsString(stream, s.AsSpan());
+				break;
+			case bool bl:
+				stream.Write(bl ? TrueBytes: FalseBytes);
+				break;
+			case DateTime dt:
+				stream.Write(Quote);
+				WriteDateTime(dt, stream);
+				stream.Write(Quote);
+				break;
+			case DateTimeOffset dtx:
+				stream.Write(Quote);
+				WriteDateTimeOffset(dtx, stream);
+				stream.Write(Quote);
+				break;
+			case TimeSpan tm:
+				stream.Write(Quote);
+				WriteTimeSpan(tm, stream);
+				stream.Write(Quote);
+				break;
+			case byte[] ba:
+				stream.Write(Quote);
+				ToBase64(ba, stream);
+				stream.Write(Quote);
+				break;
+			case byte b:
+				stream.Write(digits.Slice(DigitsUInt(digits, Size, b)));
+				break;
+			case sbyte sb:
+				stream.Write(digits.Slice(DigitsInt(digits, Size, sb)));
+				break;
+			case short h:
+				stream.Write(digits.Slice(DigitsInt(digits, Size, h)));
+				break;
+			case ushort uh:
+				stream.Write(digits.Slice(DigitsUInt(digits, Size, uh)));
+				break;
+			case int i:
+				stream.Write(digits.Slice(DigitsInt(digits, Size, i)));
+				break;
+			case uint ui:
+				stream.Write(digits.Slice(DigitsUInt(digits, Size, ui)));
+				break;
+			case long l:
+				stream.Write(digits.Slice(DigitsLong(digits, Size, l)));
+				break;
+			case ulong ul:
+				stream.Write(digits.Slice(DigitsULong(digits, Size, ul)));
+				break;
+			case float f:
+#if NET8_0_OR_GREATER
+				if (Single.IsFinite(f) && f.TryFormat(digits, out var nf))
+					stream.Write(digits.Slice(0, nf));
+				else
+					stream.Write(NullBytes);
+#else
+				if (Single.IsNaN(f) || Single.IsInfinity(f))
+					stream.Write(NullBytes);
+				else
+					stream.Write(Encoding.UTF8.GetBytes(f.ToString()));
+#endif
+				break;
+			case double d:
+#if NET8_0_OR_GREATER
+				if (Double.IsFinite(d) && d.TryFormat(digits, out var nd))
+					stream.Write(digits.Slice(0, nd));
+				else
+					stream.Write(NullBytes);
+#else
+				if (Double.IsNaN(d) || Double.IsInfinity(d))
+					stream.Write(NullBytes);
+				else
+					stream.Write(Encoding.UTF8.GetBytes(d.ToString()));
+#endif
+				break;
+			case decimal m:
+#if NET8_0_OR_GREATER
+				m.TryFormat(digits, out var nm);
+				stream.Write(digits.Slice(0, nm));
+#else
+				stream.Write(Encoding.UTF8.GetBytes(m.ToString()));
+#endif
+				break;
+
+			default:
+				Strings.EscapeUtf8CsString(stream, (Value.ToString() ?? String.Empty).AsSpan());
+				break;
 		}
 
 		static void ToBase64(byte[] data, Stream stream)
 		{
 			const int BufferSize = 4096;
-			var base64 = new byte[BufferSize];
+			var base64 = ArrayPool<byte>.Shared.Rent(BufferSize);
 			var buffer = base64.AsSpan();
 			int left = data.Length;
 			var bytes = data.AsSpan();
@@ -375,6 +434,7 @@ public class JsonScalar: JsonItem
 				bytes = bytes.Slice(count);
 				stream.Write(base64, 0, written);
 			}
+			ArrayPool<byte>.Shared.Return(base64);
 		}
 
 		static void WriteTimeSpan(TimeSpan value, Stream stream)
@@ -423,7 +483,7 @@ public class JsonScalar: JsonItem
 		{
 			if (value <= 0)
 				return index;
-			mem[index--] = (byte)sign;
+			mem[--index] = (byte)sign;
 			return Digits(mem, index, value);
 		}
 
@@ -431,7 +491,45 @@ public class JsonScalar: JsonItem
 		{
 			do
 			{
-				mem[index--] = (byte)(value % 10 + '0');
+				mem[--index] = (byte)(value % 10 + '0');
+				value /= 10;
+			} while (value > 0);
+			return index;
+		}
+
+		static int DigitsInt(Span<byte> mem, int index, int value)
+		{
+			if (value >= 0)
+				return DigitsUInt(mem, index, (uint)value);
+			index = DigitsUInt(mem, index, (uint)(-value));
+			mem[--index] = (byte)'-';
+			return index;
+		}
+
+		static int DigitsUInt(Span<byte> mem, int index, uint value)
+		{
+			do
+			{
+				mem[--index] = (byte)(value % 10 + '0');
+				value /= 10;
+			} while (value > 0);
+			return index;
+		}
+
+		static int DigitsLong(Span<byte> mem, int index, long value)
+		{
+			if (value >= 0)
+				return DigitsULong(mem, index, (ulong)value);
+			index = DigitsULong(mem, index, (ulong)(-value));
+			mem[--index] = (byte)'-';
+			return index;
+		}
+
+		static int DigitsULong(Span<byte> mem, int index, ulong value)
+		{
+			do
+			{
+				mem[--index] = (byte)(value % 10 + '0');
 				value /= 10;
 			} while (value > 0);
 			return index;

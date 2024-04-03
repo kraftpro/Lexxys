@@ -27,22 +27,19 @@ public static class LogRecordFormatterExtensions
 {
 	public static TextWriter Write(this TextWriter writer, LogRecord record, ILogRecordFormatter format)
 	{
-		if (writer == null)
-			throw new ArgumentNullException(nameof(writer));
-		if (record is null)
-			throw new ArgumentNullException(nameof(record));
-		if (format == null)
-			throw new ArgumentNullException(nameof(format));
+		if (writer == null) throw new ArgumentNullException(nameof(writer));
+		if (record is null) throw new ArgumentNullException(nameof(record));
+		if (format == null) throw new ArgumentNullException(nameof(format));
+
 		format.Format(writer, record);
 		return writer;
 	}
 
 	public static StringBuilder Format(this ILogRecordFormatter formatter, StringBuilder? text, LogRecord record)
 	{
-		if (formatter == null)
-			throw new ArgumentNullException(nameof(formatter));
-		if (record is null)
-			throw new ArgumentNullException(nameof(record));
+		if (formatter == null) throw new ArgumentNullException(nameof(formatter));
+		if (record is null) throw new ArgumentNullException(nameof(record));
+
 		text ??= new StringBuilder();
 		using var s = new StringWriter(text);
 		formatter.Format(s, record);
@@ -51,10 +48,9 @@ public static class LogRecordFormatterExtensions
 
 	public static string Format(this ILogRecordFormatter formatter, LogRecord record)
 	{
-		if (formatter == null)
-			throw new ArgumentNullException(nameof(formatter));
-		if (record is null)
-			throw new ArgumentNullException(nameof(record));
+		if (formatter == null) throw new ArgumentNullException(nameof(formatter));
+		if (record is null) throw new ArgumentNullException(nameof(record));
+
 		var text = new StringBuilder();
 		using (var s = new StringWriter(text))
 			formatter.Format(s, record);

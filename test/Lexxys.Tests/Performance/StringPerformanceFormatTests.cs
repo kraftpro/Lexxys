@@ -6,9 +6,9 @@ using BenchmarkDotNet.Jobs;
 
 namespace Lexxys.Tests.Performance;
 
-[SimpleJob(RuntimeMoniker.Net472)]
+[SimpleJob(RuntimeMoniker.Net462)]
 [SimpleJob(RuntimeMoniker.Net60)]
-[SimpleJob(RuntimeMoniker.Net70)]
+[SimpleJob(RuntimeMoniker.Net80)]
 [MemoryDiagnoser]
 public class StringPerformanceFormatTests
 {

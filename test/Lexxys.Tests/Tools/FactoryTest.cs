@@ -22,10 +22,6 @@ namespace Lexxys.Tests.Tools
 
 		static FactoryTest()
 		{
-			var x = Config.AddConfiguration("application.config.txt");
-			if (!x)
-				Debugger.Break();
-			Assert.IsTrue(x);
 			var y = Config.Current.GetCollection<Lexxys.Xml.IXmlReadOnlyNode>(Factory.ConfigurationSynonyms);
 			if (y.Value is null || y.Value.Count == 0)
 				Debugger.Break();

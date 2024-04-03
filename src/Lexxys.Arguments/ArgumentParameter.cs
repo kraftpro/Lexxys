@@ -1,4 +1,7 @@
-﻿namespace Lexxys;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+
+namespace Lexxys;
 
 /// <summary>
 /// Represents a command line parameter with its value.
@@ -42,4 +45,10 @@ public class ArgumentParameter
 	/// Gets the parameter name.
 	/// </summary>
 	public string Name => Definition.Name;
+
+	public bool TryGetValue<T>([MaybeNullWhen(false)] out T result, ICollection<string>? errors = null)
+		=> Value.TryConvert<T>(Name, out result, Definition.IsRequired, errors);
+
+	public bool TryGetValue<T>(out T[] result, ICollection<string>? errors = null)
+		=> Value.TryConvert<T>(Name, out result, Definition.IsRequired, errors);
 }

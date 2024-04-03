@@ -7,6 +7,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -41,7 +42,7 @@ public static class Dc
 
 	private class SimpleDataFactory: IDataContextFactory
 	{
-		public IDataContext CreateContext(ConnectionStringInfo connectionInfo) => new DataContext(connectionInfo);
+		public IDataContext CreateContext(ConnectionStringInfo connectionInfo) => new MsSqlDataContext(connectionInfo);
 	}
 
 	public static IDataContext Instance => __instance ??= StaticDataFactory.CreateContext(__connectionInfo.Value);
@@ -58,14 +59,14 @@ public static class Dc
 	{
 		if (name is null)
 			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name : "@" + name, null, type) { Direction = direction };
+		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, null, type) { Direction = direction };
 	}
 
 	public static DataParameter Parameter(string name, object? value, DbType type, int size)
 	{
 		if (name is null)
 			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name : "@" + name, value ?? DBNull.Value, type, size);
+		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? DBNull.Value, type, size);
 	}
 
 	public static DataParameter Parameter(string name, object? value, DbType type)
@@ -170,14 +171,14 @@ public static class Dc
 	{
 		if (name is null)
 			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name : "@" + name, value.Amount, DbType.Currency);
+		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value.Amount, DbType.Currency);
 	}
 
 	public static DataParameter Parameter(string name, Money? value)
 	{
 		if (name is null)
 			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name : "@" + name, value?.Amount ?? (object)DBNull.Value, DbType.Currency);
+		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value?.Amount ?? (object)DBNull.Value, DbType.Currency);
 	}
 
 	public static DataParameter Parameter(string name, float value)
@@ -288,135 +289,39 @@ public static class Dc
 
 	public static string EmptySqlFilter => "(-1.18E-38)";
 
-	public static string Equal(string? value)
-	{
-		return value == null ? IsNullValue: "=" + Value(value);
-	}
-	public static string Equal(DateTime value)
-	{
-		return "=" + Value(value);
-	}
-	public static string Equal(DateTime? value)
-	{
-		return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	}
-	public static string Equal(Guid value)
-	{
-		return "=" + Value(value);
-	}
-	public static string Equal(Guid? value)
-	{
-		return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	}
-	public static string Equal(bool value)
-	{
-		return "=" + Value(value);
-	}
-	public static string Equal(bool? value)
-	{
-		return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	}
-	public static string Equal(int value)
-	{
-		return "=" + value.ToString();
-	}
-	public static string Equal(int? value)
-	{
-		return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	}
-	public static string Equal(long value)
-	{
-		return "=" + value.ToString();
-	}
-	public static string Equal(long? value)
-	{
-		return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	}
-	public static string Equal(double value)
-	{
-		return "=" + value.ToString(CultureInfo.InvariantCulture);
-	}
-	public static string Equal(double? value)
-	{
-		return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	}
-	public static string Equal(decimal value)
-	{
-		return "=" + value.ToString(CultureInfo.InvariantCulture);
-	}
-	public static string Equal(decimal? value)
-	{
-		return value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	}
-	public static string Equal(byte[]? value)
-	{
-		return value == null ? IsNullValue: "=0x" + new String(Strings.ToHexCharArray(value));
-	}
+	public static string Equal(string? value) => value == null ? IsNullValue: "=" + Value(value);
+	public static string Equal(DateTime value) => "=" + Value(value);
+	public static string Equal(DateTime? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static string Equal(Guid value) => "=" + Value(value);
+	public static string Equal(Guid? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static string Equal(bool value) => "=" + Value(value);
+	public static string Equal(bool? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static string Equal(int value) => "=" + value.ToString();
+	public static string Equal(int? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static string Equal(long value) => "=" + value.ToString();
+	public static string Equal(long? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static string Equal(double value) => "=" + value.ToString(CultureInfo.InvariantCulture);
+	public static string Equal(double? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static string Equal(decimal value) => "=" + value.ToString(CultureInfo.InvariantCulture);
+	public static string Equal(decimal? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static string Equal(byte[]? value) => value == null ? IsNullValue: Strings.ToHexString(value, "=0x".AsSpan());
 
-	public static string NotEqual(string? value)
-	{
-		return value == null ? IsNotNullValue: "<>" + Value(value);
-	}
-	public static string NotEqual(DateTime value)
-	{
-		return "<>" + Value(value);
-	}
-	public static string NotEqual(DateTime? value)
-	{
-		return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	}
-	public static string NotEqual(Guid value)
-	{
-		return "<>" + Value(value);
-	}
-	public static string NotEqual(Guid? value)
-	{
-		return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	}
-	public static string NotEqual(bool value)
-	{
-		return "<>" + Value(value);
-	}
-	public static string NotEqual(bool? value)
-	{
-		return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	}
-	public static string NotEqual(int value)
-	{
-		return "<>" + value.ToString();
-	}
-	public static string NotEqual(int? value)
-	{
-		return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	}
-	public static string NotEqual(long value)
-	{
-		return "<>" + value.ToString();
-	}
-	public static string NotEqual(long? value)
-	{
-		return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	}
-	public static string NotEqual(double value)
-	{
-		return "<>" + value.ToString(CultureInfo.InvariantCulture);
-	}
-	public static string NotEqual(double? value)
-	{
-		return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	}
-	public static string NotEqual(decimal value)
-	{
-		return "<>" + value.ToString(CultureInfo.InvariantCulture);
-	}
-	public static string NotEqual(decimal? value)
-	{
-		return value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	}
-	public static string NotEqual(byte[]? value)
-	{
-		return value == null ? IsNotNullValue: "<>0x" + new String(Strings.ToHexCharArray(value));
-	}
+	public static string NotEqual(string? value) => value == null ? IsNotNullValue: "<>" + Value(value);
+	public static string NotEqual(DateTime value) => "<>" + Value(value);
+	public static string NotEqual(DateTime? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static string NotEqual(Guid value) => "<>" + Value(value);
+	public static string NotEqual(Guid? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static string NotEqual(bool value) => "<>" + Value(value);
+	public static string NotEqual(bool? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static string NotEqual(int value) => "<>" + value.ToString();
+	public static string NotEqual(int? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static string NotEqual(long value) => "<>" + value.ToString();
+	public static string NotEqual(long? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static string NotEqual(double value) => "<>" + value.ToString(CultureInfo.InvariantCulture);
+	public static string NotEqual(double? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static string NotEqual(decimal value) => "<>" + value.ToString(CultureInfo.InvariantCulture);
+	public static string NotEqual(decimal? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static string NotEqual(byte[]? value) => value == null ? IsNotNullValue: "<>0x" + new String(Strings.ToHexCharArray(value));
 
 	public static string IdFilter(IEnumerable<int>? ids)
 	{
@@ -426,38 +331,14 @@ public static class Dc
 		return result.Length == 0 ? EmptySqlFilter: "(" + result + ")";
 	}
 
-	public static string Id(int value)
-	{
-		return value > 0 ? value.ToString(): "0";
-	}
-	public static string Id(int? value)
-	{
-		return value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(): "0";
-	}
-	public static string Id(string? value)
-	{
-		return Int32.TryParse(value, out int id) && id > 0 ? id.ToString(): "0";
-	}
-	public static string IdOrNull(int? value)
-	{
-		return value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(): NullValue;
-	}
-	public static string IdOrNull(string? value)
-	{
-		return Int32.TryParse(value, out int id) && id > 0 ? id.ToString(): NullValue;
-	}
-	public static string DateValue(DateTime? value)
-	{
-		return value == null ? NullValue: DateValue(value.GetValueOrDefault());
-	}
-	public static string DateValue(DateTime value)
-	{
-		return value.ToString(@"\'yyyyMMdd\'", CultureInfo.InvariantCulture);
-	}
-	public static string TimeValue(DateTime value)
-	{
-		return value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
-	}
+	public static string Id(int value) => value > 0 ? value.ToString(): "0";
+	public static string Id(int? value) => value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(): "0";
+	public static string Id(string? value) => Int32.TryParse(value, out int id) && id > 0 ? id.ToString(): "0";
+	public static string IdOrNull(int? value) => value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(): NullValue;
+	public static string IdOrNull(string? value) => Int32.TryParse(value, out int id) && id > 0 ? id.ToString(): NullValue;
+	public static string DateValue(DateTime? value) => value == null ? NullValue: DateValue(value.GetValueOrDefault());
+	public static string DateValue(DateTime value) => value.ToString(@"\'yyyyMMdd\'", CultureInfo.InvariantCulture);
+	public static string TimeValue(DateTime value) => value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
 	public static string Name(string? value)
 	{
 		if (value == null)
@@ -466,15 +347,12 @@ public static class Dc
 		return String.Join("", m.Groups[1].Captures.Cast<Capture>().Select(o => NamePart(o.Value) + ".")) + NamePart(m.Groups[2].Value);
 
 		static string NamePart(string name)
-			=> name.Length == 0 || (name[0] == '[' && name[name.Length - 1] == ']') ? name : "[" + name.Replace("]", "]]") + "]";
+			=> name.Length == 0 || (name[0] == '[' && name[name.Length - 1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
 
 	}
 	private static readonly Regex __objectPartsRex = new Regex(@"\A(?:(?<a>\[(?:[^\]]|]])*\]|[^\.\[]*)\.){0,3}(?<b>.*)?\z", RegexOptions.IgnoreCase);
 
-	public static string TextValue(string? value, bool unicode = false)
-	{
-		return value == null ? NullValue: (unicode ? "'": "N'") + value.Replace("'", "''") + "'";
-	}
+	public static string TextValue(string? value, bool unicode = false) => value == null ? NullValue: (unicode ? "'": "N'") + value.Replace("'", "''") + "'";
 
 	public static string EscapeLike(string? value)
 	{
@@ -507,82 +385,25 @@ public static class Dc
 			value = value.Substring(0, MaxStrLen);
 		return "'" + value.Replace("'", "''") + "'";
 	}
-	public static string Value(DateTime? value)
-	{
-		return value == null ? NullValue: Value(value.GetValueOrDefault());
-	}
-	public static string Value(DateTime value)
-	{
-		return value.ToString(value.TimeOfDay == default ? @"\'yyyyMMdd\'": @"\'yyyyMMdd HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
-	}
-	public static string Value(TimeSpan? value)
-	{
-		return value == null ? NullValue: Value(value.GetValueOrDefault());
-	}
-	public static string Value(TimeSpan value)
-	{
-		return value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
-	}
-	public static string Value(Guid value)
-	{
-		return "cast ('" + value.ToString("D") + "' as uniqueidentifier)";
-	}
-	public static string Value(bool value)
-	{
-		return value ? "1": "0";
-	}
-	public static string Value(int? value)
-	{
-		return value == null ? NullValue: Value(value.GetValueOrDefault());
-	}
-	public static string Value(int value)
-	{
-		return value.ToString();
-	}
-	public static string Value(long? value)
-	{
-		return value == null ? NullValue: Value(value.GetValueOrDefault());
-	}
-	public static string Value(long value)
-	{
-		return value.ToString();
-	}
-	public static string Value(ulong value)
-	{
-		return value.ToString();
-	}
-	public static string Value(double? value)
-	{
-		return value == null ? NullValue: Value(value.GetValueOrDefault());
-	}
-	public static string Value(double value)
-	{
-		return value.ToString(CultureInfo.InvariantCulture);
-	}
-	public static string Value(decimal? value)
-	{
-		return value == null ? NullValue: Value(value.GetValueOrDefault());
-	}
-	public static string Value(decimal value)
-	{
-		return value.ToString(CultureInfo.InvariantCulture);
-	}
-	public static string Value(Money? value)
-	{
-		return value == null ? NullValue : Value(value.GetValueOrDefault());
-	}
-	public static string Value(Money value)
-	{
-		return value.Amount.ToString(CultureInfo.InvariantCulture);
-	}
-	public static string Value(byte[]? value)
-	{
-		return value == null ? NullValue: Strings.ToHexString(value, "0x");
-	}
-	public static string Value(IEnum? value)
-	{
-		return value == null ? NullValue: Value(value.Value);
-	}
+	public static string Value(DateTime? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static string Value(DateTime value) => value.ToString(value.TimeOfDay == default ? @"\'yyyyMMdd\'": @"\'yyyyMMdd HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
+	public static string Value(TimeSpan? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static string Value(TimeSpan value) => value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
+	public static string Value(Guid value) => "cast ('" + value.ToString("D") + "' as uniqueidentifier)";
+	public static string Value(bool value) => value ? "1": "0";
+	public static string Value(int? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static string Value(int value) => value.ToString();
+	public static string Value(long? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static string Value(long value) => value.ToString();
+	public static string Value(ulong value) => value.ToString();
+	public static string Value(double? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static string Value(double value) => value.ToString(CultureInfo.InvariantCulture);
+	public static string Value(decimal? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static string Value(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+	public static string Value(Money? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static string Value(Money value) => value.Amount.ToString(CultureInfo.InvariantCulture);
+	public static string Value(byte[]? value) => value == null ? NullValue: Strings.ToHexString(value, "0x".AsSpan());
+	public static string Value(IEnum? value) => value == null ? NullValue: Value(value.Value);
 	public static string Value(Enum? value)
 	{
 		if (value == null)
@@ -609,57 +430,34 @@ public static class Dc
 		if (type.IsEnum)
 			type = Enum.GetUnderlyingType(type);
 
-		switch (Type.GetTypeCode(type))
+		return Type.GetTypeCode(type) switch
 		{
-			case TypeCode.Empty:
-			case TypeCode.DBNull:
-				return NullValue;
-			case TypeCode.Boolean:
-				return Value((bool)value);
-			case TypeCode.Byte:
-				return Value((byte)value);
-			case TypeCode.Char:
-				return Value((char)value);
-			case TypeCode.DateTime:
-				return Value((DateTime)value);
-			case TypeCode.Decimal:
-				return Value((decimal)value);
-			case TypeCode.Double:
-				return Value((double)value);
-			case TypeCode.Int16:
-				return Value((short)value);
-			case TypeCode.Int32:
-				return Value((int)value);
-			case TypeCode.Int64:
-				return Value((long)value);
-			case TypeCode.SByte:
-				return Value((sbyte)value);
-			case TypeCode.Single:
-				return Value((float)value);
-			case TypeCode.String:
-				return Value((string)value);
-			case TypeCode.UInt16:
-				return Value((ushort)value);
-			case TypeCode.UInt32:
-				return Value((uint)value);
-			case TypeCode.UInt64:
-				return Value((ulong)value);
-
-			//case TypeCode.Object:
-			default:
-				if (value is Money money)
-					return Value(money);
-				if (value is TimeSpan span)
-					return Value(span);
-				if (value is Guid guid)
-					return Value(guid);
-				if (value is byte[] bytes)
-					return Value(bytes);
-				if (value is IEnum enm)
-					return Value(enm.Value);
-
-				throw new ArgumentTypeException(nameof(value), type);
-		}
+			TypeCode.Empty or TypeCode.DBNull => NullValue,
+			TypeCode.Boolean => Value((bool)value),
+			TypeCode.Byte => Value((byte)value),
+			TypeCode.Char => Value((char)value),
+			TypeCode.DateTime => Value((DateTime)value),
+			TypeCode.Decimal => Value((decimal)value),
+			TypeCode.Double => Value((double)value),
+			TypeCode.Int16 => Value((short)value),
+			TypeCode.Int32 => Value((int)value),
+			TypeCode.Int64 => Value((long)value),
+			TypeCode.SByte => Value((sbyte)value),
+			TypeCode.Single => Value((float)value),
+			TypeCode.String => Value((string)value),
+			TypeCode.UInt16 => Value((ushort)value),
+			TypeCode.UInt32 => Value((uint)value),
+			TypeCode.UInt64 => Value((ulong)value),
+			_ => value switch
+			{
+				Money money => Value(money),
+				TimeSpan span => Value(span),
+				Guid guid => Value(guid),
+				byte[] bytes => Value(bytes),
+				IEnum enm => Value(enm.Value),
+				_ => throw new ArgumentTypeException(nameof(value), value.GetType())
+			}
+		};
 	}
 	#endregion
 
@@ -672,12 +470,12 @@ public static class Dc
 			var value = cmd.ExecuteScalar();
 			if (value == null || Convert.IsDBNull(value))
 				return default;
-			return AnonymousType<T>.Construct(new[] { value });
+			return AnonymousType<T>.Construct([value]);
 		}
 		else
 		{
 			using DbDataReader reader = cmd.ExecuteReader();
-			return reader.Read() ? AnonymousType<T>.Construct(reader) : default;
+			return reader.Read() ? AnonymousType<T>.Construct(reader): default;
 		}
 	}
 
@@ -685,15 +483,15 @@ public static class Dc
 	{
 		if (AnonymousType<T>.IsBuiltinType)
 		{
-			var value = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
+			object? value = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
 			if (value == null || Convert.IsDBNull(value))
 				return default;
-			return AnonymousType<T>.Construct(new[] { value });
+			return AnonymousType<T>.Construct([value]);
 		}
 		else
 		{
-			using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
-			return await reader.ReadAsync().ConfigureAwait(false) ? AnonymousType<T>.Construct(reader) : default;
+			using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+			return await reader.ReadAsync().ConfigureAwait(false) ? AnonymousType<T>.Construct(reader): default;
 		}
 	}
 
@@ -724,27 +522,26 @@ public static class Dc
 		if (text == null)
 			throw new ArgumentNullException(nameof(text));
 		bool here = false;
-		using (var reader = cmd.ExecuteReader())
+		using var reader = cmd.ExecuteReader();
+		do
 		{
-			do
+			int width = -1;
+			while (reader.Read())
 			{
-				int width = -1;
-				while (reader.Read())
-				{
-					if (width == -1)
-						width = reader.FieldCount;
+				if (width == -1)
+					width = reader.FieldCount;
 
-					for (int i = 0; i < width; ++i)
+				for (int i = 0; i < width; ++i)
+				{
+					if (!reader.IsDBNull(i))
 					{
-						if (!reader.IsDBNull(i))
-						{
-							text.Write(reader.GetString(i));
-							here = true;
-						}
+						text.Write(reader.GetString(i));
+						here = true;
 					}
 				}
-			} while (reader.NextResult());
-		}
+			}
+		} while (reader.NextResult());
+
 		return here;
 	}
 
@@ -753,31 +550,30 @@ public static class Dc
 		if (text == null)
 			throw new ArgumentNullException(nameof(text));
 		bool here = false;
-		using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+		using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+		do
 		{
-			do
+			int width = -1;
+			while (await reader.ReadAsync().ConfigureAwait(false))
 			{
-				int width = -1;
-				while (await reader.ReadAsync().ConfigureAwait(false))
-				{
-					if (width == -1)
-						width = reader.FieldCount;
+				if (width == -1)
+					width = reader.FieldCount;
 
-					for (int i = 0; i < width; ++i)
+				for (int i = 0; i < width; ++i)
+				{
+					if (!await reader.IsDBNullAsync(i).ConfigureAwait(false))
 					{
-						if (!await reader.IsDBNullAsync(i).ConfigureAwait(false))
-						{
-							await text.WriteAsync(reader.GetString(i)).ConfigureAwait(false);
-							here = true;
-						}
+						await text.WriteAsync(reader.GetString(i)).ConfigureAwait(false);
+						here = true;
 					}
 				}
-			} while (await reader.NextResultAsync().ConfigureAwait(false));
-		}
+			}
+		} while (await reader.NextResultAsync().ConfigureAwait(false));
+
 		return here;
 	}
 
-	internal static List<Xml.IXmlReadOnlyNode> XmlMapper(DbCommand cmd)
+	internal static List<IXmlReadOnlyNode> XmlMapper(DbCommand cmd)
 	{
 		var builder = XmlFragBuilder.Create<IXmlReadOnlyNode>();
 		using (var reader = cmd.ExecuteReader())
@@ -801,7 +597,7 @@ public static class Dc
 		return builder.Build();
 	}
 
-	internal static async Task<List<Xml.IXmlReadOnlyNode>> XmlMapperAsync(DbCommand cmd)
+	internal static async Task<List<IXmlReadOnlyNode>> XmlMapperAsync(DbCommand cmd)
 	{
 		var builder = XmlFragBuilder.Create<IXmlReadOnlyNode>();
 		using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
@@ -828,12 +624,13 @@ public static class Dc
 	private static class AnonymousType<T>
 	{
 		private static readonly SortedList<int, Func<object?[], object?>> Constructors = CollectConstructors();
+		
 		public static bool IsBuiltinType { get; } = __systemTypes.ContainsKey(typeof(T));
 
 		public static T Construct(object?[] values)
 		{
 			if (!Constructors.TryGetValue(values.Length, out var constructor))
-				throw new InvalidOperationException(SR.Factory_CannotFindConstructor(typeof(T), values.Length));
+				throw new InvalidOperationException(Lexxys.SR.Factory_CannotFindConstructor(typeof(T), values.Length));
 			for (int i = 0; i < values.Length; ++i)
 			{
 				if (Convert.IsDBNull(values[i]))
@@ -952,11 +749,11 @@ public static class Dc
 
 	internal class Connecting: IContextHolder
 	{
-		private readonly DataContext _context;
+		private readonly MsSqlDataContext _context;
 		private readonly int _count;
 		private bool _disposed;
 
-		public Connecting(DataContext context)
+		public Connecting(MsSqlDataContext context)
 		{
 			_context = context;
 			_count = context.Context.Connect();
@@ -977,11 +774,11 @@ public static class Dc
 
 	internal sealed class Transacting: ITransactable
 	{
-		private readonly DataContext _context;
+		private readonly MsSqlDataContext _context;
 		private readonly bool _autoCommit;
 		private bool _disposed;
 
-		public Transacting(DataContext context, bool autoCommit, IsolationLevel isolationLevel)
+		public Transacting(MsSqlDataContext context, bool autoCommit, IsolationLevel isolationLevel)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 			_context.Context.Begin(isolationLevel);
@@ -990,15 +787,9 @@ public static class Dc
 
 		public IDataContext Context => _context;
 
-		public void Commit()
-		{
-			Close(true, false);
-		}
+		public void Commit() => Close(true, false);
 
-		public void Rollback()
-		{
-			Close(false, false);
-		}
+		public void Rollback() => Close(false, false);
 
 		public void Dispose()
 		{
@@ -1042,11 +833,11 @@ public static class Dc
 
 	internal sealed class TimeoutLocker: IContextHolder
 	{
-		private readonly DataContext _context;
+		private readonly MsSqlDataContext _context;
 		private readonly TimeSpan _timeout;
 		private bool _disposed;
 
-		public TimeoutLocker(DataContext context, TimeSpan timeout)
+		public TimeoutLocker(MsSqlDataContext context, TimeSpan timeout)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 			_timeout = _context.Context.DefaultCommandTimeout;
@@ -1067,10 +858,10 @@ public static class Dc
 
 	internal sealed class TimingLocker: IContextHolder
 	{
-		private readonly DataContext _context;
+		private readonly MsSqlDataContext _context;
 		private bool _disposed;
 
-		public TimingLocker(DataContext context)
+		public TimingLocker(MsSqlDataContext context)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 			_context.Context.Audit.LockTiming();
@@ -1090,10 +881,10 @@ public static class Dc
 
 	internal sealed class TimeHolder: IContextHolder
 	{
-		private readonly DataContext _context;
+		private readonly MsSqlDataContext _context;
 		private bool _disposed;
 
-		public TimeHolder(DataContext context)
+		public TimeHolder(MsSqlDataContext context)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 			if (!_context.Context.LockNow(_context.Context.Now))

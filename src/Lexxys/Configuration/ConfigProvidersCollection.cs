@@ -26,17 +26,17 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 	public ConfigProvidersCollection()
 	{
 		_version = 1;
-		Factory.AssemblyLoad += FactoryAssemblyLoad;
+		//AppDomain.CurrentDomain.AssemblyLoad += FactoryAssemblyLoad;
 
-		void FactoryAssemblyLoad(object? sender, AssemblyLoadEventArgs e)
-		{
-			var assembly = e?.LoadedAssembly;
-			if (assembly == null)
-				return;
-			var location = GetConfigurationLocation(assembly);
-			if (location != null)
-				AddConfiguration(location);
-		}
+		//void FactoryAssemblyLoad(object? sender, AssemblyLoadEventArgs e)
+		//{
+		//	var assembly = e?.LoadedAssembly;
+		//	if (assembly == null)
+		//		return;
+		//	var location = GetConfigurationLocation(assembly);
+		//	if (location != null)
+		//		AddConfiguration(location);
+		//}
 	}
 
 	public ConfigProvidersCollection(IEnumerable<IConfigSource> providers) : this()

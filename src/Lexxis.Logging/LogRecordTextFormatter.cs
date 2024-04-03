@@ -220,7 +220,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 									item.Format[1] == 'X' ?
 										__severity5[(int)record.LogType].ToUpperInvariant() :
 										__severity5[(int)record.LogType],
-							"D" => record.LogType.ToString(item.Format),
+							"D" => ((int)record.LogType).ToString(),
 							_ => __severity5[(int)record.LogType],
 						};
 					writer.Write(s);
@@ -243,7 +243,6 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 	{
 		Span<char> buffer = stackalloc char[26];
 		Span<char> b = buffer;
-		var n = 0;
 		if (useDate)
 		{
 			Write4(b, date.Year);
@@ -268,7 +267,6 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		b[2] = '.';
 		b = b.Slice(3);
 		Write5(b, (int)(date.Ticks % TicksPerSecond / TicksPerFraction));
-		b = b.Slice(5);
 		// 14
 		writer.Write(buffer.Slice(0, useDate ? 11 + 14: 14));
 
@@ -479,23 +477,30 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 					text = template.ToString();
 					return template.Length;
 				}
+				if (!(k + 1 < template.Length && template[k + 1] == brace))
+				{
+					text = template.Slice(0, k).ToString();
+					return k + 1;
+				}
 
-				string ta = template.Slice(0, k).ToString();
+				var ta = new StringBuilder().Append(template.Slice(0, k));
 				int pad = 1;
-				while (k + 1 < template.Length && template[k + 1] == brace)
+				do
 				{
 					pad += k + 2;
-					ta += brace.ToString();
+					ta.Append(brace);
 					template = template.Slice(k + 2);
 					k = template.IndexOf(brace);
 					if (k < 0)
 					{
-						text = String.Concat(ta, template);
+						ta.Append(template);
+						text = ta.ToString();
 						return pad + template.Length - 1;
 					}
-					ta = String.Concat(ta, template.Slice(0, k));
-				}
-				text = ta;
+					ta.Append(template.Slice(0, k));
+				} while (k + 1 < template.Length && template[k + 1] == brace);
+
+				text = ta.ToString();
 				return pad + k;
 			}
 		}

@@ -1,7 +1,11 @@
 ﻿using System.Collections;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Lexxys;
+
+public delegate bool ParameterValueConverter<T>(string value, out T result, ref string? error);
 
 /// <summary>
 /// Represents a command line parameter value supporting both string and array of string values.
@@ -106,11 +110,11 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 		return _value switch
 		{
 			null => new ParameterValue(value),
-			string s => new ParameterValue(new[] { s, value }),
-			_ => new ParameterValue(Append1(Unsafe.As<string[]>(_value), value)),
+			string s => new ParameterValue([s, value]),
+			_ => new ParameterValue(AppendValue(Unsafe.As<string[]>(_value), value)),
 		};
 
-		static string[] Append1(string[] array, string value)
+		static string[] AppendValue(string[] array, string value)
 		{
 			var tmp = new string[array.Length + 1];
 			Array.Copy(array, tmp, array.Length);
@@ -132,18 +136,18 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 		return _value switch
 		{
 			null => new ParameterValue(value is string[] array ? array: value.ToArray()),
-			string s => new ParameterValue(Append1(s, value)),
-			_ => new ParameterValue(Append2(Unsafe.As<string[]>(_value), value)),
+			string s => new ParameterValue(PrependValue(s, value)),
+			_ => new ParameterValue(JoinCollections(Unsafe.As<string[]>(_value), value)),
 		};
 
-		static string[] Append1(string s, IReadOnlyCollection<string> value)
+		static string[] PrependValue(string s, IReadOnlyCollection<string> value)
 		{
 			var tmp = new string[value.Count + 1];
 			tmp[0] = s;
 			return CopyItems(value, tmp, 1);
 		}
 
-		static string[] Append2(string[] array, IReadOnlyCollection<string> value)
+		static string[] JoinCollections(string[] array, IReadOnlyCollection<string> value)
 		{
 			var tmp = new string[value.Count + array.Length];
 			Array.Copy(array, 0, tmp, 0, array.Length);
@@ -213,6 +217,132 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 	/// <param name="value"></param>
 	/// <returns></returns>
 	public static implicit operator ParameterValue(string[]? value) => new ParameterValue(value);
+
+	public bool TryConvert<T>(string name, [MaybeNullWhen(false)] out T result, bool required = false, ICollection<string>? errors = null)
+	{
+		if (IsEmpty)
+		{
+			if (required)
+				errors?.Add($"parameter {name} is required");
+			result = default;
+			return false;
+		}
+
+		var value = StringValue!;
+		return TryConvertValue(name, value, out result, errors);
+	}
+
+	public bool TryConvert<T>(string name, out T[] result, bool required = false, ICollection<string>? errors = null)
+	{
+		if (IsEmpty)
+		{
+			if (required)
+				errors?.Add($"parameter {name} is required");
+			result = [];
+			return false;
+		}
+
+		var value = ArrayValue!;
+
+		if (typeof(T) == typeof(string))
+		{
+			result = Unsafe.As<string[], T[]>(ref value);
+			return true;
+		}
+
+		T[] rr = new T[value.Length];
+		int i = 0;
+		int j = 0;
+		bool error = false;
+		while (i < value.Length)
+		{
+			var v = value[i++];
+			if (string.IsNullOrWhiteSpace(v))
+				continue;
+			if (TryConvertValue<T>($"{name}.{i}", v, out var r, errors))
+				rr[j++] = r;
+			else
+				error = true;
+		}
+		if (error)
+		{
+			result = [];
+			return false;
+		}
+
+		if (j < rr.Length)
+			Array.Resize(ref rr, j);
+		result = rr;
+		return true;
+	}
+
+	public static void AddConverter<T>(ParameterValueConverter<T> converter)
+	{
+		__converters[typeof(T)] = converter;
+	}
+
+	private static bool FileInfoConverter(string value, out FileInfo result, ref string? error)
+	{
+		result = new FileInfo(value);
+		return true;
+	}
+
+	private static bool DirectoryInfoConverter(string value, out DirectoryInfo result, ref string? error)
+	{
+		result = new DirectoryInfo(value);
+		return true;
+	}
+
+	private static bool UriConverter(string value, out Uri result, ref string? error)
+	{
+		result = new Uri(value, UriKind.RelativeOrAbsolute);
+		return true;
+	}
+
+	private static readonly ConcurrentDictionary<Type, object> __converters = new ConcurrentDictionary<Type, object>()
+	{
+		[typeof(Uri)] = (ParameterValueConverter<Uri>)UriConverter,
+		[typeof(FileInfo)] = (ParameterValueConverter<FileInfo>)FileInfoConverter,
+		[typeof(DirectoryInfo)] = (ParameterValueConverter<DirectoryInfo>)DirectoryInfoConverter,
+	};
+
+	private static bool TryConvertValue<T>(string name, string value, [MaybeNullWhen(false)] out T result, ICollection<string>? errors = null)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			result = default;
+			errors?.Add($"missing value for parameter {name}");
+			return false;
+		}
+		if (__converters.TryGetValue(typeof(T), out var obj))
+		{
+			var converter = (ParameterValueConverter<T>)obj;
+			string? error = null;
+			if (converter(value, out result, ref error))
+				return true;
+			if (error == null)
+				errors?.Add($"invalid value for parameter {name}: {value}");
+			else
+				errors?.Add($"invalid value for parameter {name}: {value}. {error}");
+			return false;
+		}
+
+		if (Strings.TryGetValue(value, out result))
+			return true;
+
+		string message = $"invalid value for parameter {name}: {value}";
+		if (typeof(T).IsEnum)
+		{
+			var names = Enum.GetNames(typeof(T));
+			for (int i = 0; i < names.Length; ++i)
+			{
+				names[i] = names[i].ToLowerInvariant();
+			}
+			message += $". The valid values are: {String.Join(", ", names)}";
+		}
+		errors?.Add(message);
+		return false;
+	}
 
 	private struct Enumerator: IEnumerator<string>
 	{

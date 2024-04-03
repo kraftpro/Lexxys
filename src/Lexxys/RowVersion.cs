@@ -88,7 +88,7 @@ namespace Lexxys
 
 		public int CompareTo(RowVersion other) => Value.CompareTo(other.Value);
 
-		public int CompareTo(object? obj) => obj is RowVersion version ? CompareTo(version) : 2;
+		public int CompareTo(object? obj) => obj is RowVersion version ? CompareTo(version): 2;
 
 		public override int GetHashCode() => Value.GetHashCode();
 

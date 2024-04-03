@@ -14,10 +14,10 @@ namespace Lexxys.Tests.Usage
 		public static void NullableDc(DbCommand command, IDataContext context)
 		{
 			{
-				int i1 = Dc.ValueMapper<int>(command);
-				int i2 = Dc.ValueMapperAsync<int>(command).Result;
-				string? s1 = Dc.ValueMapper<string>(command);
-				string? s2 = Dc.ValueMapperAsync<string>(command).Result;
+				var i1 = Dc.ValueMapper<int>(command);
+				var i2 = Dc.ValueMapperAsync<int>(command).Result;
+				var s1 = Dc.ValueMapper<string>(command);
+				var s2 = Dc.ValueMapperAsync<string>(command).Result;
 			}
 			{
 				int i1 = context.Map<int>(c => default, "");
@@ -63,8 +63,8 @@ namespace Lexxys.Tests.Usage
 			var c2b = Statics.GetService<IConfigSection>().GetSection(settingsNode).GetCollection<string>("proxy");
 			
 			var cf = Statics.GetService<IConfigService>();
-			IConfigProvider provider = new EnvironmentConfigurationProvider();
-			cf.AddConfiguration(provider, true);
+			IConfigSource provider = new EnvironmentConfigurationProvider();
+			cf.AddConfiguration(provider, 0);
 
 		}
 	}

@@ -13,7 +13,7 @@ public class LoggingParameters: ILoggingParameters
 	public LoggingParameters(IServiceCollection services)
 	{
 		Services = services ?? throw new ArgumentNullException(nameof(services));
-		_parameters = new List<ILogWriterParameters>();
+		_parameters = [];
 	}
 
 	public IServiceCollection Services { get; }

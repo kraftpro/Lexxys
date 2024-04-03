@@ -54,7 +54,9 @@ public class XmlConfigurationProvider: IConfigSource
 
 	public bool Equals(IConfigSource? other)
 	{
-		throw new NotImplementedException();
+		return other is not null && (
+			ReferenceEquals(this, other) ||
+			(other is XmlConfigurationProvider xml && Comparer.Equals(_source.Content, xml._source.Content)));
 	}
 
 	public static XmlConfigurationProvider? TryCreate(Uri location, IReadOnlyCollection<string>? parameters)

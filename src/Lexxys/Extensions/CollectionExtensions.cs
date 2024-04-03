@@ -280,6 +280,23 @@ public static class CollectionExtensions
 			array[i++] = item;
 		}
 	}
+
+	public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> elements)
+	{
+		if (collection is null) throw new ArgumentNullException(nameof(collection));
+		if (elements is null) throw new ArgumentNullException(nameof(elements));
+		if (collection is List<T> list)
+		{
+			list.AddRange(elements);
+		}
+		else
+		{
+			foreach (var item in elements)
+			{
+				collection.Add(item);
+			}
+		}
+	}
 }
 
 

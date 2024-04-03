@@ -30,7 +30,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Argument.Tests", "te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Arguments.Generator", "src\Lexxys.Arguments.Generator\Lexxys.Arguments.Generator.csproj", "{7B045770-6CC5-49E6-936C-9F7A1C9D6989}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lexxys.Arguments.Generator.Tests", "test\Lexxys.Arguments.Generator.Tests\Lexxys.Arguments.Generator.Tests.csproj", "{C8D742A8-3BE0-4A94-BBF2-B24DC52BC697}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lexxys.Arguments.Generator.Tests", "test\Lexxys.Arguments.Generator.Tests\Lexxys.Arguments.Generator.Tests.csproj", "{C8D742A8-3BE0-4A94-BBF2-B24DC52BC697}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lexxys.DataContext", "src\Lexxys.DataContext\Lexxys.DataContext.csproj", "{C8A7C8A8-A331-42F8-BD8D-6538B7CEEAC5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -82,6 +84,10 @@ Global
 		{C8D742A8-3BE0-4A94-BBF2-B24DC52BC697}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C8D742A8-3BE0-4A94-BBF2-B24DC52BC697}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8D742A8-3BE0-4A94-BBF2-B24DC52BC697}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8A7C8A8-A331-42F8-BD8D-6538B7CEEAC5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8A7C8A8-A331-42F8-BD8D-6538B7CEEAC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8A7C8A8-A331-42F8-BD8D-6538B7CEEAC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8A7C8A8-A331-42F8-BD8D-6538B7CEEAC5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

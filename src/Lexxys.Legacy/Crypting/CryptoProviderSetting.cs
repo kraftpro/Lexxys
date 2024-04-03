@@ -39,8 +39,8 @@ public class CryptoProviderSettingItem
 			if (_type == null)
 			{
 				_type = Factory.GetType(Class);
-				if (_type == null && Assembly != null && Factory.TryLoadAssembly(Assembly, false) != null)
-					_type = Factory.GetType(Class);
+				if (_type == null && Assembly != null)
+					_type = Factory.LoadAssembly(Assembly).GetType(Class);
 				if (_type == null)
 					throw new InvalidOperationException(SR.CR_CannotCreateAlgorithm(Class));
 			}

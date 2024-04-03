@@ -12,10 +12,7 @@ public static partial class LoggingParametersExtensions
 		param ??= new LoggingConsoleParameters
 			{
 				Name = "Console",
-				Rules = new List<LogWriterFilter>
-				{
-					new LogWriterFilter(LogTypeFilter.Information)
-				}
+				Rules = [ new LogWriterFilter(LogTypeFilter.Information) ]
 			};
 		config?.Invoke(param);
 		parameters.Add(param);
@@ -29,10 +26,7 @@ public static partial class LoggingParametersExtensions
 				Name = "./logs/YMD.log",
 				Path = "./logs/{YMD}.log",
 				Formatter = new LogRecordTextParameters(),
-				Rules = new List<LogWriterFilter>
-				{
-					new LogWriterFilter(LogTypeFilter.Information)
-				}
+				Rules = [ new LogWriterFilter(LogTypeFilter.Information) ]
 			};
 		config?.Invoke(param);
 		parameters.Add(param);
@@ -45,10 +39,7 @@ public static partial class LoggingParametersExtensions
 		param ??= new LoggingEventParameters
 			{
 				Name = "EventLog",
-				Rules = new List<LogWriterFilter>
-				{
-					new LogWriterFilter(LogTypeFilter.Information)
-				}
+				Rules = [ new LogWriterFilter(LogTypeFilter.Information) ]
 			};
 		config?.Invoke(param);
 		parameters.Add(param);
@@ -61,10 +52,7 @@ public static partial class LoggingParametersExtensions
 		param ??= new LoggingDebugParameters
 			{
 				Name = "Debugger",
-				Rules = new List<LogWriterFilter>
-				{
-					new LogWriterFilter(LogTypeFilter.Debug)
-				}
+				Rules = [ new LogWriterFilter(LogTypeFilter.Debug) ]
 			};
 		config?.Invoke(param);
 		parameters.Add(param);
@@ -77,10 +65,7 @@ public static partial class LoggingParametersExtensions
 		param ??= new LoggingTraceParameters
 			{
 				Name = "Trace",
-				Rules = new List<LogWriterFilter>
-				{
-					new LogWriterFilter(LogTypeFilter.Trace)
-				}
+				Rules = [ new LogWriterFilter(LogTypeFilter.Trace) ]
 			};
 		config?.Invoke(param);
 		parameters.Add(param);

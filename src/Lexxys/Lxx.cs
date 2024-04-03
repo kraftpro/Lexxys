@@ -18,11 +18,7 @@ public static class Lxx
 	private static bool _initialized;
 
 	public const string Framework =
-#if NETFRAMEWORK
-		"framework";
-#elif NETSTANDARD
-		"standard";
-#elif NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 		"net8";
 #elif NET7_0_OR_GREATER
 		"net7";
@@ -30,6 +26,10 @@ public static class Lxx
 		"net6";
 #elif NET5_0_OR_GREATER
 		"net5";
+#elif NETSTANDARD
+		"standard";
+#elif NETFRAMEWORK
+		"framework";
 #else
 		"unknown";
 #endif
@@ -97,7 +97,7 @@ public static class Lxx
 					if (sender is IConfigService service)
 						service.Changed += OnConfigChanged;
 					AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
-					Type? type = Factory.GetType("System.Windows.Forms.Application", Factory.SystemAssemblies);
+					Type? type = Factory.GetType("System.Windows.Forms.Application");
 					if (type != null)
 					{
 						EventInfo? te = type.GetEvent("ThreadException");
