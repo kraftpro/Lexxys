@@ -62,44 +62,23 @@ public readonly struct CharPosition: IEquatable<CharPosition>
 	/// <param name="culture">An object that supplies culture-specific formatting information.</param>
 	/// <returns></returns>
 	[Pure]
-	public string ToString(CultureInfo? culture)
-	{
-		return SR.CHR_AtPosition(culture, Line + 1, Column + 1, Position);
-	}
+	public string ToString(CultureInfo? culture) => SR.CHR_AtPosition(culture, Line + 1, Column + 1, Position);
 
 	/// <inheritdoc />
-	public override string ToString()
-	{
-		return ToString(null);
-	}
+	public override string ToString() => ToString(null);
 
 	/// <inheritdoc />
-	public override bool Equals(object? obj)
-	{
-		return obj is CharPosition position && this == position;
-	}
+	public override bool Equals(object? obj) => obj is CharPosition position && this == position;
 
 	/// <inheritdoc />
-	public bool Equals(CharPosition other)
-	{
-		return this == other;
-	}
+	public bool Equals(CharPosition other) => this == other;
 
 	/// <inheritdoc />
-	public override int GetHashCode()
-	{
-		return HashCode.Join(Position.GetHashCode(), Line.GetHashCode(), Column.GetHashCode());
-	}
+	public override int GetHashCode() => HashCode.Join(Position.GetHashCode(), Line.GetHashCode(), Column.GetHashCode());
 
-	public static bool operator ==(CharPosition left, CharPosition right)
-	{
-		return left.Position == right.Position && left.Line == right.Line && left.Column == right.Column;
-	}
+	public static bool operator ==(CharPosition left, CharPosition right) => left.Position == right.Position && left.Line == right.Line && left.Column == right.Column;
 
-	public static bool operator !=(CharPosition left, CharPosition right)
-	{
-		return left.Position != right.Position || left.Line != right.Line || left.Column != right.Column;
-	}
+	public static bool operator !=(CharPosition left, CharPosition right) => left.Position != right.Position || left.Line != right.Line || left.Column != right.Column;
 
 	public CharPosition Next(ReadOnlySpan<char> text, int offset, int tab)
 	{

@@ -47,14 +47,7 @@ public class SequenceTokenRule: LexicalTokenRule
 	{
 	}
 
-	public override string? BeginningChars
-	{
-		get
-		{
-			Sort();
-			return _beginning;
-		}
-	}
+	public override string? BeginningChars => _isSorted ? _beginning: Sort();
 
 	public LexicalTokenType TokenType { get; }
 
@@ -107,7 +100,7 @@ public class SequenceTokenRule: LexicalTokenRule
 		return this;
 	}
 
-	private void Sort()
+	private string? Sort()
 	{
 		if (_isSorted) return;
 		_isSorted = true;
@@ -131,6 +124,7 @@ public class SequenceTokenRule: LexicalTokenRule
 				_length = s.Length;
 		}
 		_beginning = _ignoreCase ? new string(line): new string(line, 0, n);
+		return _beginning;
 	}
 
 	private struct Element

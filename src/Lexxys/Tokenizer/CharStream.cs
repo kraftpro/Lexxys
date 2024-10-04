@@ -95,7 +95,7 @@ public ref struct CharStream
 	/// <summary>
 	/// It indicates that the end of the stream has been encountered.
 	/// </summary>
-	public bool Eof => _buffer.Length == 0;
+	public readonly bool Eof => _buffer.Length == 0;
 
 	/// <summary>
 	/// Sets the stream position.
