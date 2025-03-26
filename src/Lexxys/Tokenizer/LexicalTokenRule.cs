@@ -13,6 +13,16 @@ namespace Lexxys.Tokenizer;
 [Serializable]
 public abstract class LexicalTokenRule
 {
+	protected LexicalTokenRule()
+	{
+		RuleName = GetType().Name;
+	}
+
+	/// <summary>
+	/// Gets the name of the rule.
+	/// </summary>
+	public virtual string RuleName { get; init; }
+
 	/// <summary>
 	/// List of the possible starting characters for the parsing token.
 	/// </summary>
@@ -31,13 +41,13 @@ public abstract class LexicalTokenRule
 	public virtual bool TestBeginning(char value)
 	{
 		string? s = BeginningChars;
-		return s == null || s.IndexOf(value) >= 0;
+		return s == null || s.Contains(value);
 	}
 
 	/// <summary>
 	/// Tries to extract a token from the <paramref name="stream"/>.
 	/// </summary>
 	/// <param name="stream"></param>
-	/// <returns>Extracted token or null.</returns>
+	/// <returns>Extracted token or <see cref="LexicalToken.Empty"/>.</returns>
 	public abstract LexicalToken TryParse(ref CharStream stream);
 }

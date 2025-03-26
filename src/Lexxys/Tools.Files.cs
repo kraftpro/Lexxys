@@ -41,7 +41,11 @@ public static class Files
 		}
 	}
 
-	private static string OrderedName() => SixBitsCoder.Thirty(((ulong)DateTime.UtcNow.Ticks - _base) ^ (ulong)__random.Next(32767));
+	private static string OrderedName() => SixBitsCoder.Thirty(((ulong)DateTime.UtcNow.Ticks - _base) ^ (ulong)__random.Next(Int16.MaxValue));
+#if NET6_0_OR_GREATER
+	private static readonly Random __random = Random.Shared;
+#else
 	private static readonly Random __random = new Random();
-	private static ulong _base = (ulong)new DateTime(DateTime.Today.Year - DateTime.Today.Year % 10, 1, 1).Ticks;
+#endif
+	private static readonly ulong _base = (ulong)new DateTime(DateTime.Today.Year - DateTime.Today.Year % 10, 1, 1).Ticks;
 }

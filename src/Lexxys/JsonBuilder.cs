@@ -138,7 +138,7 @@ public abstract class JsonBuilder
 	}
 
 	/// <summary>
-	/// Writes the end of an array or a object.
+	/// Writes the end of an array or an object.
 	/// </summary>
 	/// <returns></returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -417,7 +417,10 @@ public abstract class JsonBuilder
 	public JsonBuilder Val(float value)
 	{
 		Comma();
-		Text(value.ToString(CultureInfo.InvariantCulture));
+		if (Single.IsNaN(value) || Single.IsInfinity(value))
+			Text(NullValue);
+		else
+			Text(value.ToString(CultureInfo.InvariantCulture));
 		_state = State.Value;
 		return this;
 	}
@@ -430,7 +433,10 @@ public abstract class JsonBuilder
 	public JsonBuilder Val(double value)
 	{
 		Comma();
-		Text(value.ToString(CultureInfo.InvariantCulture));
+		if (Double.IsNaN(value) || Double.IsInfinity(value))
+			Text(NullValue);
+		else
+			Text(value.ToString(CultureInfo.InvariantCulture));
 		_state = State.Value;
 		return this;
 	}
@@ -479,6 +485,40 @@ public abstract class JsonBuilder
 		_state = State.Value;
 		return this;
 	}
+
+#if NET6_0_OR_GREATER
+
+	/// <summary>
+	/// Writes a <see cref="DateOnly"/> value.
+	/// </summary>
+	/// <param name="value">The <see cref="DateOnly"/> value to write</param>
+	/// <returns></returns>
+	public JsonBuilder Val(DateOnly value)
+	{
+		Comma();
+		Text('"');
+		Text(XmlTools.Convert(value));
+		Text('"');
+		_state = State.Value;
+		return this;
+	}
+
+	/// <summary>
+	/// Writes a <see cref="TimeOnly"/> value.
+	/// </summary>
+	/// <param name="value">The <see cref="TimeOnly"/> value to write</param>
+	/// <returns></returns>
+	public JsonBuilder Val(TimeOnly value)
+	{
+		Comma();
+		Text('"');
+		Text(XmlTools.Convert(value));
+		Text('"');
+		_state = State.Value;
+		return this;
+	}
+
+#endif
 
 	/// <summary>
 	/// Writes a <see cref="Guid"/> value.

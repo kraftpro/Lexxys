@@ -7,14 +7,13 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-using Lexxys.Xml;
-
 using Microsoft.Extensions.Logging;
+using Lexxys.Xml;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Lexxys.Data;
 
@@ -23,10 +22,10 @@ public static class Dc
 	public const IsolationLevel DefaultIsolationLevel = IsolationLevel.ReadCommitted;
 	public const string ConfigSection = "database.connection";
 
-	public static ILogger Log => __log ??= Statics.GetLogger("Dc");
+	public static ILogger Log => __log ??= Statics.TryGetLogger("Dc") ?? NullLogger.Instance;
 	private static ILogger? __log;
 
-	public static ILogger Timing => __logTrace ??= Statics.GetLogger("Dc-Timing");
+	public static ILogger Timing => __logTrace ??= Statics.TryGetLogger("Dc-Timing") ?? NullLogger.Instance;
 	private static ILogger? __logTrace;
 
 	private static readonly IValue<ConnectionStringInfo> __connectionInfo = Config.Current.GetValue<ConnectionStringInfo>(ConfigSection);
@@ -50,8 +49,8 @@ public static class Dc
 
 	#region Tools
 
-	private const int MaxNStrLen = 4000;
-	private const int MaxStrLen = 8000;
+	const int MaxNStrLen = 4000;
+	const int MaxStrLen = 8000;
 
 	#region Parameters
 
@@ -490,6 +489,9 @@ public static class Dc
 		}
 		else
 		{
+			#if NET6_0_OR_GREATER
+			await 
+			#endif
 			using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
 			return await reader.ReadAsync().ConfigureAwait(false) ? AnonymousType<T>.Construct(reader): default;
 		}
@@ -499,20 +501,27 @@ public static class Dc
 	{
 		using DbDataReader reader = cmd.ExecuteReader();
 		var result = new List<T>();
+		var values = new object[reader.FieldCount];
 		while (reader.Read())
 		{
-			result.Add(AnonymousType<T>.Construct(reader));
+			reader.GetValues(values);
+			result.Add(AnonymousType<T>.Construct(values));
 		}
 		return result;
 	}
 
 	internal static async Task<List<T>> ListMapperAsync<T>(DbCommand cmd)
 	{
-		using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+#if NET6_0_OR_GREATER
+		await
+#endif
+		using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
 		var result = new List<T>();
+		var values = new object[reader.FieldCount];
 		while (await reader.ReadAsync().ConfigureAwait(false))
 		{
-			result.Add(AnonymousType<T>.Construct(reader));
+			reader.GetValues(values);
+			result.Add(AnonymousType<T>.Construct(values));
 		}
 		return result;
 	}
@@ -550,7 +559,10 @@ public static class Dc
 		if (text == null)
 			throw new ArgumentNullException(nameof(text));
 		bool here = false;
-		using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+#if NET6_0_OR_GREATER
+		await
+#endif
+		using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
 		do
 		{
 			int width = -1;
@@ -600,24 +612,25 @@ public static class Dc
 	internal static async Task<List<IXmlReadOnlyNode>> XmlMapperAsync(DbCommand cmd)
 	{
 		var builder = XmlFragBuilder.Create<IXmlReadOnlyNode>();
-		using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+#if NET6_0_OR_GREATER
+		await
+#endif
+		using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+		do
 		{
-			do
+			int width = -1;
+			while (await reader.ReadAsync().ConfigureAwait(false))
 			{
-				int width = -1;
-				while (await reader.ReadAsync().ConfigureAwait(false))
-				{
-					if (width == -1)
-						width = reader.FieldCount;
+				if (width == -1)
+					width = reader.FieldCount;
 
-					for (int i = 0; i < width; ++i)
-					{
-						if (!await reader.IsDBNullAsync(i).ConfigureAwait(false))
-							builder.Xml(reader.GetString(i));
-					}
+				for (int i = 0; i < width; ++i)
+				{
+					if (!await reader.IsDBNullAsync(i).ConfigureAwait(false))
+						builder.Xml(reader.GetString(i));
 				}
-			} while (await reader.NextResultAsync().ConfigureAwait(false));
-		}
+			}
+		} while (await reader.NextResultAsync().ConfigureAwait(false));
 		return builder.Build();
 	}
 

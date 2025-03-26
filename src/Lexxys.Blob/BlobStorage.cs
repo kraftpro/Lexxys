@@ -26,10 +26,13 @@ public class BlobStorage: IBlobStorage
 	{
 		if (location is null) throw new ArgumentNullException(nameof(location));
 
-		if (!_schemes.TryGetValue(location.Scheme, out var providers))
-			providers = _providers;
+		lock (_schemes)
+		{
+			if (!_schemes.TryGetValue(location.Scheme, out var providers))
+				providers = _providers;
 
-		return providers.FirstOrDefault(o => o.CanOpen(location));
+			return providers.FirstOrDefault(o => o.CanOpen(location));
+		}
 	}
 
 	/// <summary>
@@ -41,13 +44,16 @@ public class BlobStorage: IBlobStorage
 	{
 		if (provider == null) throw new ArgumentNullException(nameof(provider));
 
-		foreach (var scheme in provider.SupportedSchemes)
+		lock (_schemes)
 		{
-			if (!_schemes.TryGetValue(scheme, out var list))
-				_schemes.Add(scheme, list = new List<IBlobStorageProvider>());
-			list.Add(provider);
+			foreach (var scheme in provider.SupportedSchemes)
+			{
+				if (!_schemes.TryGetValue(scheme, out var list))
+					_schemes.Add(scheme, list = new List<IBlobStorageProvider>());
+				list.Add(provider);
+			}
+			_providers.Add(provider);
 		}
-		_providers.Add(provider);
 	}
 }
 

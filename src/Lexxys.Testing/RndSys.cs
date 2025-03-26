@@ -13,6 +13,7 @@ public class RndSys: IRand
 	/// <inheritdoc/>
 	public int NextInt32() => _r.Next();
 
+	/// <inheritdoc/>
 #if NET6_0_OR_GREATER
 	public long NextInt64() => _r.NextInt64();
 #else
@@ -23,5 +24,14 @@ public class RndSys: IRand
 	public double NextDouble() => _r.NextDouble();
 
 	/// <inheritdoc/>
-	public void NextBytes(byte[] buffer) => _r.NextBytes(buffer);
+#if NET6_0_OR_GREATER
+	public void NextBytes(Span<byte> buffer) => _r.NextBytes(buffer);
+#else
+	public void NextBytes(Span<byte> buffer)
+	{
+		byte[] bb = new byte[buffer.Length];
+		_r.NextBytes(bb);
+		bb.AsSpan().CopyTo(buffer);
+	}
+#endif
 }

@@ -1,20 +1,38 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Lexxys;
+#pragma warning disable CA1416 // Validate platform compatibility
 
+/// <summary>
+/// Encapsulates the Windows Event Log and Debugger console
+/// </summary>
 public static class SystemLog
 {
+	/// <summary>
+	/// Type of log message
+	/// </summary>
 	public const string EventSource = "Lexxys";
+	/// <summary>
+	/// Maximum length of the log message
+	/// </summary>
 	public const int MaxEventLogMessage = 30000;
 
-	private static readonly bool _eventLogSupported = TestEventLog(EventSource, "Application");
+	private static readonly bool EventLogSupported = TestEventLog(EventSource, "Application");
 	private static bool _useEventLog = true;
 
-	public static bool UseSystemEventLog { get => _eventLogSupported && _useEventLog; set => _useEventLog = value; }
+	/// <summary>
+	/// Use Windows Event Log. Returns true if the Windows Event Log is supported and enabled
+	/// </summary>
+	public static bool UseSystemEventLog { get => EventLogSupported && _useEventLog; set => _useEventLog = value; }
 
 	internal static bool TestEventLog(string eventSource, string logName)
 	{
+#if !NETFRAMEWORK
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			return false;
+#endif
 		try
 		{
 			if (EventLog.SourceExists(eventSource))
@@ -49,7 +67,7 @@ public static class SystemLog
 	/// <param name="source">Source of message</param>
 	/// <param name="message">The message</param>
 	/// <param name="arguments">Optional parameters</param>
-	public static void WriteDebugMessage(string source, string message, IDictionary? arguments = null)
+	public static void WriteDebugMessage(string source, string message, IEnumerable<NameValueTuple<string, object?>>? arguments = null)
 	{
 		if (Debugger.IsLogging())
 			Debugger.Log(1, EventSource, Format(LogType.Debug, source, message, arguments));
@@ -61,7 +79,7 @@ public static class SystemLog
 	/// <param name="source">Source of message</param>
 	/// <param name="message">The message</param>
 	/// <param name="arguments">Optional parameters</param>
-	public static void WriteErrorMessage(string? source, string message, IDictionary? arguments = null)
+	public static void WriteErrorMessage(string? source, string message, IEnumerable<NameValueTuple<string, object?>>? arguments = null)
 	{
 		if (!UseSystemEventLog && !Debugger.IsLogging())
 			return;
@@ -74,7 +92,7 @@ public static class SystemLog
 	/// <param name="source">Source of message</param>
 	/// <param name="exception">Exception info</param>
 	/// <param name="arguments">Optional parameters</param>
-	public static void WriteErrorMessage(string? source, Exception exception, IDictionary? arguments = null)
+	public static void WriteErrorMessage(string? source, Exception exception, IEnumerable<NameValueTuple<string, object?>>? arguments = null)
 	{
 		if (!UseSystemEventLog && !Debugger.IsLogging())
 			return;
@@ -87,7 +105,7 @@ public static class SystemLog
 	/// <param name="source">Source of message</param>
 	/// <param name="message">The message</param>
 	/// <param name="arguments">Optional arguments</param>
-	public static void WriteEventLogMessage(string? source, string? message, IDictionary? arguments = null)
+	public static void WriteEventLogMessage(string? source, string? message, IEnumerable<NameValueTuple<string, object?>>? arguments = null)
 	{
 		if (!UseSystemEventLog && !Debugger.IsLogging())
 			return;
@@ -102,7 +120,7 @@ public static class SystemLog
 			EventLog.WriteEntry(EventSource, message.Length > MaxEventLogMessage ? message.Substring(0, MaxEventLogMessage): message, LogEntryType(type));
 	}
 
-	private static string Format(LogType type, string? source, string? message, IDictionary? arguments)
+	private static string Format(LogType type, string? source, string? message, IEnumerable<NameValueTuple<string, object?>>? arguments)
 	{
 		var dump = new DumpStringWriter();
 		dump.Text('[').Text(type.ToString().ToUpperInvariant()).Text(']');
@@ -118,24 +136,24 @@ public static class SystemLog
 
 		if (arguments != null)
 		{
-			foreach (DictionaryEntry item in arguments)
+			foreach (var item in arguments)
 			{
-				dump.Text(item.Key?.ToString() ?? "(null)").Text('=').Dump(item.Value).Text('\n');
+				dump.Text(item.Name ?? "(null)").Text('=').Dump(item.Value).Text('\n');
 			}
 		}
 		return dump.ToString();
 	}
 
-	private static string Format(LogType type, string? source, Exception exception, IDictionary? arguments)
+	private static string Format(LogType type, string? source, Exception exception, IEnumerable<NameValueTuple<string, object?>>? arguments)
 	{
 		var dump = new DumpStringWriter();
 		dump.Text('[').Text(type.ToString().ToUpperInvariant()).Text(']');
 		Format(dump, source, exception);
 		if (arguments != null)
 		{
-			foreach (DictionaryEntry item in arguments)
+			foreach (var item in arguments)
 			{
-				dump.Text(item.Key?.ToString() ?? "(null)").Text('=').Dump(item.Value).Text('\n');
+				dump.Text(item.Name ?? "(null)").Text('=').Dump(item.Value).Text('\n');
 			}
 		}
 		return dump.ToString();
@@ -143,15 +161,11 @@ public static class SystemLog
 
 	private static void Format(DumpWriter dump, string? source, Exception exception)
 	{
-		source = source ?? exception.Source;
-		var message = exception.Message;
+		source ??= exception.Source;
+		string message = exception.Message;
 		if (source != null)
-			if (message != null)
-				dump.Text(source).Text(": ").Text(message).Text('\n');
-			else
-				dump.Text(source).Text(":\n");
-		else if (message != null)
-			dump.Text(message).Text('\n');
+			dump.Text(source).Text(": ");
+		dump.Text(message).Text('\n');
 		if (exception.StackTrace != null)
 		{
 			dump.Text(exception.StackTrace).Text('\n');

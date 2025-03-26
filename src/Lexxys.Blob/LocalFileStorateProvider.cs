@@ -13,7 +13,7 @@ namespace Lexxys;
 public class LocalFileStorageProvider: IBlobStorageProvider
 {
 	private const int DefaultBufferSize = 81920;
-	private static readonly IReadOnlyCollection<string> _schemes = ReadOnly.Wrap(new[] { Uri.UriSchemeFile, "" })!;
+	private static readonly IReadOnlyCollection<string> _schemes = ReadOnly.Wrap([Uri.UriSchemeFile, ""]);
 
 	/// <summary>
 	/// Collection of supported schemes ("file:" or empty).
@@ -226,10 +226,9 @@ public class LocalFileStorageProvider: IBlobStorageProvider
 		return Task.CompletedTask;
 	}
 
-	private class LocalFileInfo: IBlobInfo
+	private class LocalFileInfo(string filename): IBlobInfo
 	{
-		private readonly FileInfo _fileInfo;
-		public LocalFileInfo(string filename) => _fileInfo = new FileInfo(filename);
+		private readonly FileInfo _fileInfo = new(filename);
 
 		public bool Exists => _fileInfo.Exists;
 

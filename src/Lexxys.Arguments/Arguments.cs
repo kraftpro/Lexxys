@@ -105,6 +105,7 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	/// Copy constructor.
 	/// </summary>
 	/// <param name="other"></param>
+	/// <param name="errors"></param>
 	internal Arguments(Arguments other, IReadOnlyCollection<string>? errors = null)
 	{
 		_allowSlash = other._allowSlash;

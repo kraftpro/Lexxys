@@ -1,4 +1,4 @@
-﻿// Lexxys Infrastructural library.
+// Lexxys Infrastructural library.
 // file: Config.cs
 //
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
@@ -15,10 +15,10 @@ public class ConfigurationEventArgs: EventArgs
 	public static ConfigurationEventArgs Default => _default;
 	private static readonly ConfigurationEventArgs _default = new ConfigurationEventArgs();
 
-    public ConfigurationEventArgs()
-    {
-        
-    }
+	public ConfigurationEventArgs()
+	{
+		
+	}
 }
 
 public static class Config
@@ -73,15 +73,11 @@ public static class Config
 
 	internal static Uri[] GetLocalFiles(string path, IEnumerable<string>? directories)
 	{
-		var matched = __configExtRex.IsMatch(path);
+		bool matched = __configExtRex.IsMatch(path);
 		if (Path.IsPathRooted(path) || directories == null)
-		{
-			if (matched)
-				return File.Exists(path) ? [new Uri(path)]: [];
-			return CollectFiles(path) ?? [];
-		}
+			return !matched ? CollectFiles(path) ?? []: File.Exists(path) ? [new Uri(path)]: [];
 
-		foreach (var dir in directories)
+		foreach (string dir in directories)
 		{
 			if (matched)
 			{
@@ -104,7 +100,7 @@ public static class Config
 				i = path.LastIndexOf('/');
 			if (i < 0)
 				return null;
-			var dir = path.Substring(0, i);
+			string dir = path.Substring(0, i);
 			if (Directory.Exists(dir))
 				return Array.ConvertAll(Directory.GetFiles(dir, path.Substring(i + 1) + ".config.*"), o => new Uri(o));
 			return null;
@@ -117,7 +113,7 @@ public static class Config
 		if (value is null)
 			throw new ArgumentNullException(nameof(value));
 		value = value.Trim();
-		var xx = value.Split(SpaceSeparator, StringSplitOptions.RemoveEmptyEntries);
+		string[] xx = value.Split(SpaceSeparator, StringSplitOptions.RemoveEmptyEntries);
 		if (xx.Length == 1)
 			return (value, null);
 		if (xx.Length == 2)

@@ -11,7 +11,7 @@ using Xml;
 
 class EnvironmentConfigurationProvider: IConfigSource
 {
-	private static readonly Uri Uri = new Uri("system:environment");
+	//private static readonly Uri Uri = new Uri("system:environment");
 
 	public int Version => 1;
 
@@ -21,7 +21,7 @@ class EnvironmentConfigurationProvider: IConfigSource
 			throw new ArgumentNullException(nameof(reference));
 		if (reference.StartsWith("env::", StringComparison.OrdinalIgnoreCase))
 			reference = reference.Substring(5);
-		return Strings.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out var result) ? result: null;
+		return Strings.TryGetValue(Environment.GetEnvironmentVariable(reference), returnType, out object? result) ? result: null;
 	}
 
 	public IReadOnlyList<T> GetList<T>(string reference)
@@ -33,7 +33,7 @@ class EnvironmentConfigurationProvider: IConfigSource
 			reference = reference.Substring(5);
 		if (Strings.TryGetValue<T>(Environment.GetEnvironmentVariable(reference), out var value))
 			return ReadOnly.Wrap(new[] { value! })!;
-		return Array.Empty<T>();
+		return [];
 	}
 
 	bool IEquatable<IConfigSource>.Equals(IConfigSource? other) => other is EnvironmentConfigurationProvider;

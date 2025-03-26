@@ -10,7 +10,7 @@ using System.Diagnostics;
 namespace Lexxys;
 
 /// <summary>
-/// Represents in-local memory cache using a dictionary to store cache items.
+/// Represents local cache using a dictionary to store cache items.
 /// </summary>
 /// <typeparam name="TKey">Type of the cache item key.</typeparam>
 /// <typeparam name="TValue">Type of the cache item value.</typeparam>
@@ -25,7 +25,7 @@ public class LocalCache<TKey, TValue> where TKey: notnull
 
 	private readonly ConcurrentDictionary<TKey, CacheItem> _cache;
 	private readonly string? _name;
-	private int _capacity;
+	private readonly int _capacity;
 	private readonly long _timeToLive;
 	private readonly long _slidingExpiration;
 	private readonly Func<TKey, TValue>? _factory;
@@ -59,8 +59,8 @@ public class LocalCache<TKey, TValue> where TKey: notnull
 			capacity = MinCapacity;
 		else if (capacity > MaxCapacity)
 			capacity = MaxCapacity;
-		if (concurrencyLevel == 0)
-			concurrencyLevel = 4 * Environment.ProcessorCount;
+		if (concurrencyLevel <= 0)
+			concurrencyLevel = Environment.ProcessorCount;
 		_cache = new ConcurrentDictionary<TKey, CacheItem>(concurrencyLevel, Math.Max((MinCapacity + 1) / 2, capacity / 8), comparer ?? EqualityComparer<TKey>.Default);
 		_capacity = capacity;
 		_factory = factory;
@@ -168,10 +168,18 @@ public class LocalCache<TKey, TValue> where TKey: notnull
 		dirty.Sort((p, q) => -CompareItems(p.Value, q.Value));
 		int n1 = dirty.Count / 4;
 		if (_name != null)
-			Lxx.Log?.Trace($"LocalCache '{_name}' capacity ({_capacity}) is low: {n1} valid item(s) have been cleared. (TTL={TimeSpan.FromTicks(_timeToLive)}, EXP={TimeSpan.FromTicks(_slidingExpiration)}).");
-		for (int i = 0; i < n1; ++i)
 		{
-			_cache.TryRemove(dirty[i].Key, out _);
+			Microsoft.Extensions.Logging.ILogger? log = Lxx.Log;
+			ILogging? lg = Lxx.Log as ILogging;
+			if (lg != null && log != null)
+			{
+				ILoggerExtensions.Trace(log, $"LocalCache '{_name}'");
+			}
+			//			Lxx.Log.Trace($"LocalCache '{_name}' capacity ({_capacity}) is low: {n1} valid item(s) have been cleared. (TTL={TimeSpan.FromTicks(_timeToLive)}, EXP={TimeSpan.FromTicks(_slidingExpiration)}).");
+			for (int i = 0; i < n1; ++i)
+			{
+				_cache.TryRemove(dirty[i].Key, out _);
+			}
 		}
 
 		int CompareItems(CacheItem left, CacheItem right)

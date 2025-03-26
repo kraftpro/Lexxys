@@ -53,8 +53,7 @@ public static class RuntimeCache
 	/// <param name="key">An object identifying the requested entry.</param>
 	/// <param name="producer">A function produces a new value if the item not found.</param>
 	/// <param name="timeToLive">Time to live for the item.</param>
-	public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive = default)
-		where TValue: class
+	public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive = default) where TValue: class
 	{
 		if (Default[key] is TValue value)
 			return value;
@@ -79,8 +78,7 @@ public static class RuntimeCache
 	/// <param name="producer">A function produces a new value if the item not found.</param>
 	/// <param name="timeToLive">The time to live for the item.</param>
 	/// <param name="slidingExpiration">The sliding expiration.</param>
-	public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive, TimeSpan slidingExpiration)
-		where TValue: class
+	public static TValue Get<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive, TimeSpan slidingExpiration) where TValue: class
 	{
 		if (Default[key] is TValue value)
 			return value;
@@ -111,10 +109,9 @@ public static class RuntimeCache
 	/// <param name="key">An object identifying the requested entry.</param>
 	/// <param name="producer">A function produces a new value if the item not found.</param>
 	/// <param name="timeToLive">Time to live for the item.</param>
-	public static TValue GetValue<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive = default)
-		where TValue : struct
+	public static TValue GetValue<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive = default) where TValue: struct
 	{
-		return (TValue?)Get(key, () => (object)producer(), timeToLive) ?? default;
+		return (TValue)Get(key, () => (object)producer(), timeToLive);
 	}
 
 	/// <summary>
@@ -124,49 +121,29 @@ public static class RuntimeCache
 	/// <param name="producer">A function produces a new value if the item not found.</param>
 	/// <param name="timeToLive">The time to live for the item.</param>
 	/// <param name="slidingExpiration">The sliding expiration.</param>
-	public static TValue GetValue<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive, TimeSpan slidingExpiration)
-		where TValue : struct
+	public static TValue GetValue<TValue>(string key, Func<TValue> producer, TimeSpan timeToLive, TimeSpan slidingExpiration) where TValue: struct
 	{
-		return (TValue?)Get(key, () => (object)producer(), timeToLive, slidingExpiration) ?? default;
+		return (TValue)Get(key, () => (object)producer(), timeToLive, slidingExpiration);
 	}
 
 	/// <summary>
 	/// Removes the object associated with the given key.
 	/// </summary>
 	/// <param name="key">An object identifying the entry.</param>
-	public static void Remove(string key)
+	public static void Remove(string key) => Default.Remove(key);
+
+	private readonly struct CollectionDefinition(Func<object> constructor, TimeSpan timeToLive): IEquatable<CollectionDefinition>
 	{
-		Default.Remove(key);
+		public readonly Func<object> Constructor = constructor;
+		public readonly TimeSpan TimeToLive = timeToLive;
+
+		public override bool Equals(object? obj) => obj is CollectionDefinition definition && Equals(definition);
+
+		public bool Equals(CollectionDefinition other) => Object.ReferenceEquals(Constructor, other.Constructor) && TimeToLive == other.TimeToLive;
+
+		public override int GetHashCode() => HashCode.Join(Constructor?.GetHashCode() ?? 0, TimeToLive.GetHashCode());
 	}
-
-	private readonly struct CollectionDefinition: IEquatable<CollectionDefinition>
-	{
-		public readonly Func<object> Constructor;
-		public readonly TimeSpan TimeToLive;
-
-		public CollectionDefinition(Func<object> constructor, TimeSpan timeToLive)
-		{
-			Constructor = constructor;
-			TimeToLive = timeToLive;
-		}
-
-		public override bool Equals(object? obj)
-		{
-			return obj is CollectionDefinition definition && Equals(definition);
-		}
-
-		public bool Equals(CollectionDefinition other)
-		{
-			return Object.ReferenceEquals(Constructor, other.Constructor) &&
-				TimeToLive == other.TimeToLive;
-		}
-
-		public override int GetHashCode()
-		{
-			return HashCode.Join(Constructor?.GetHashCode() ?? 0, TimeToLive.GetHashCode());
-		}
-	}
-	private static readonly ConcurrentDictionary<string, CollectionDefinition> __collectionDefinitions = new ConcurrentDictionary<string, CollectionDefinition>();
+	private static readonly ConcurrentDictionary<string, CollectionDefinition> __collectionDefinitions = [];
 
 	/// <summary>
 	/// Defines a new caches collection for the specified <paramref name="key"/> and the collection parameters. 
@@ -182,17 +159,17 @@ public static class RuntimeCache
 	/// <typeparam name="TValue"></typeparam>
 	/// <returns>The <see cref="CollectionKey{TKey,TValue}"/> for the created collection definition.</returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static CollectionKey<TKey, TValue> DefineCollection<TKey, TValue>(string key, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, TimeSpan collectionTimeToLive = default, int capacity = 0, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null)
-		where TKey: notnull
+	public static CollectionKey<TKey, TValue> DefineCollection<TKey, TValue>(string key, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, TimeSpan collectionTimeToLive = default, int capacity = 0, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null) where TKey: notnull
 	{
-		if (key == null || key.Length <= 0)
+		if (key is not { Length: >0 })
 			throw new ArgumentNullException(nameof(key));
 		if (collectionTimeToLive < MinTimeToLive)
 			collectionTimeToLive = DefaultCollectionTimeToLive;
 
-		object Fact() => new LocalCache<TKey, TValue>(key, capacity, timeToLive: timeToLive, slidingExpiration: slidingExpiration, factory: factory, comparer: comparer);
 		__collectionDefinitions.AddOrUpdate(key, new CollectionDefinition(Fact, collectionTimeToLive), (_, _) => new CollectionDefinition(Fact, collectionTimeToLive));
 		return new CollectionKey<TKey, TValue>(key);
+
+		object Fact() => new LocalCache<TKey, TValue>(key, capacity, timeToLive: timeToLive, slidingExpiration: slidingExpiration, factory: factory, comparer: comparer);
 	}
 
 	/// <summary>
@@ -204,13 +181,12 @@ public static class RuntimeCache
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
 	/// <exception cref="ArgumentOutOfRangeException"></exception>
-	public static LocalCache<TKey, TValue> Collection<TKey, TValue>(CollectionKey<TKey, TValue> key)
-		where TKey : notnull
+	public static LocalCache<TKey, TValue> Collection<TKey, TValue>(CollectionKey<TKey, TValue> key) where TKey: notnull
 	{
 		if (key == null)
 			throw new ArgumentNullException(nameof(key));
 
-		var value = Default.Get(key.Value);
+		object? value = Default.Get(key.Value);
 		if (value != null)
 			return value as LocalCache<TKey, TValue> ?? throw new ArgumentOutOfRangeException(nameof(key), key, $"Wrong collection type. Expected: {typeof(LocalCache<TKey, TValue>).FullName}, actual: {value.GetType().FullName}.");
 		if (!__collectionDefinitions.TryGetValue(key.Value, out var definition))
@@ -230,13 +206,11 @@ public static class RuntimeCache
 /// </summary>
 /// <typeparam name="TKey"></typeparam>
 /// <typeparam name="TValue"></typeparam>
-public class CollectionKey<TKey, TValue>
+/// <remarks>
+/// Created a collection key.
+/// </remarks>
+/// <param name="value">The collection key value.</param>
+public class CollectionKey<TKey, TValue>(string value)
 {
-	internal string Value { get; }
-
-	/// <summary>
-	/// Created a collection key.
-	/// </summary>
-	/// <param name="value">The collection key value.</param>
-	public CollectionKey(string value) => Value = value;
+	internal string Value { get; } = value;
 }

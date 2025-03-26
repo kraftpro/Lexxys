@@ -44,5 +44,5 @@ public interface IRand
 	/// </summary>
 	/// <param name="buffer">An array of bytes to contain random numbers.</param>
 	/// <exception cref="ArgumentNullException">buffer is null</exception>
-	void NextBytes(byte[] buffer);
+	void NextBytes(Span<byte> buffer);
 }

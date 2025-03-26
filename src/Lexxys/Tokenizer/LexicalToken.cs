@@ -5,6 +5,8 @@
 // You may use this code under the terms of the MIT license
 //
 
+using System;
+
 namespace Lexxys.Tokenizer;
 
 /// <summary>
@@ -13,7 +15,7 @@ namespace Lexxys.Tokenizer;
 [Serializable]
 public readonly struct LexicalToken
 {
-	public delegate object? Getter(LexicalTokenType token, ReadOnlySpan<char> buffer);
+	public delegate object? Getter(LexicalToken token, ReadOnlySpan<char> buffer);
 		
 	public static readonly LexicalToken Empty = new();
 
@@ -81,16 +83,16 @@ public readonly struct LexicalToken
 	public bool HasValue => _getter != null;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public object? GetValue(ReadOnlySpan<char> buffer) => _getter is null ? buffer.Slice(Position, Length).ToString(): _getter(TokenType, buffer);
+	public object? GetValue(ReadOnlySpan<char> buffer) => _getter is null ? GetSpan(buffer).ToString(): _getter(this, GetSpan(buffer));
 		
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public object? GetValue(in CharStream stream) => _getter is null ? stream.Chunk(Position, Length).ToString(): _getter(TokenType, stream.Chunk(0, stream.Capacity));
+	public object? GetValue(in CharStream stream) => _getter is null ? GetSpan(stream).ToString(): _getter(this, GetSpan(stream));
 		
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public string GetString(ReadOnlySpan<char> buffer) => _getter is null ? buffer.Slice(Position, Length).ToString(): _getter(TokenType, buffer)?.ToString() ?? String.Empty;
+	public string GetString(ReadOnlySpan<char> buffer) => _getter is null ? GetSpan(buffer).ToString(): _getter(this, GetSpan(buffer))?.ToString() ?? String.Empty;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public string GetString(in CharStream stream) => _getter is null ? stream.Chunk(Position, Length).ToString(): _getter(TokenType, stream.Chunk(0, stream.Capacity))?.ToString() ?? String.Empty;
+	public string GetString(in CharStream stream) => _getter is null ? GetSpan(stream).ToString(): _getter(this, GetSpan(stream))?.ToString() ?? String.Empty;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ReadOnlySpan<char> GetSpan(ReadOnlySpan<char> buffer) => buffer.Slice(Position, Length);

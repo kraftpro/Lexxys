@@ -15,7 +15,7 @@ namespace Lexxys.Tokenizer;
 [Serializable]
 public class LexicalTokenType
 {
-	private static readonly ConcurrentDictionary<(short, short), LexicalTokenType> _lexicalTokenTypes = new();
+	private static readonly ConcurrentDictionary<(short, short), LexicalTokenType> _lexicalTokenTypes = [];
 
 	public static readonly LexicalTokenType EMPTY		= LexicalTokenType.Create(0, 0, "empty");
 	public static readonly LexicalTokenType EOF			= LexicalTokenType.Create(0, 1, "eof");

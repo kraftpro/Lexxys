@@ -11,7 +11,7 @@ namespace Lexxys.Tests
 		[DataRow("a'\tb\"", @"'a\'\tb""'", '\'')]
 		[DataRow("a\t\0b\"", @"a\t\0b""", '\0')]
 		[DataRow("a\v\x0b-ad", @"a\v\v-ad", '\0')]
-		[DataRow("a\t\f\v\0b\"\x0e-ad", @"a\t\f\v\0b""\x000e-ad", '\0')]
+		[DataRow("a\t\f\v\0b\"\x0e-ad", @"a\t\f\v\0b""\x000E-ad", '\0')]
 		public void EscapeCsStringTest(string value, string escaped, char marker)
 		{
 			Assert.AreEqual(escaped, Strings.EscapeCsString(value, marker));
@@ -20,8 +20,8 @@ namespace Lexxys.Tests
 		[TestMethod]
 		[DataRow("", "")]
 		[DataRow(" (  ", "(")]
-        [DataRow("( ( )", "(")]
-        [DataRow("( ( .   ) )", ".")]
+		[DataRow("( ( )", "(")]
+		[DataRow("( ( .   ) )", ".")]
 		public void RemoveExtraBracesTest(string original, string expected)
 		{
 			var value = Strings.RemoveExtraBraces(original);
@@ -64,67 +64,82 @@ namespace Lexxys.Tests
 		[TestMethod]
 		public void ToTitleCaseTest()
 		{
-			Assert.Inconclusive();
+			var value = "hello world hello_world HELLO2WORLD helloworld";
+			var expected = "Hello world hello_world hello2world helloworld";
+			var result = Strings.ToTitleCase(value);
+			Assert.AreEqual(expected, result);
 		}
 
 		[TestMethod]
 		public void ToCamelCaseTest()
 		{
-			Assert.Inconclusive();
+			var value = "HelloWORLD HELLO2WORLD helloworld";
+			var expected = "helloWorld hello2World helloworld";
+			var result = Strings.ToCamelCase(value);
+			Assert.AreEqual(expected, result);
 		}
 
 		[TestMethod]
 		public void ToPascalCaseTest()
 		{
-			Assert.Inconclusive();
+			var value = "hello world HELLO_WORLD hello2world helloworld";
+			var expected = "Hello World Hello_World Hello2World Helloworld";
+			var result = Strings.ToPascalCase(value);
+			Assert.AreEqual(expected, result);
 		}
 
 		[TestMethod]
-		public void EllipsisTest()
+		[DataRow("hello world", 40)]
+		[DataRow("hello world", 11)]
+		[DataRow("hello world", 10)]
+		[DataRow("hello world", 0)]
+		public void EllipsisTest(string value, int length)
 		{
-			Assert.Inconclusive();
+			var expected = value.Length > length ? length > 0 ? value.Substring(0, length - 1) + "…": "": value;
+			var result = Strings.Ellipsis(value, length);
+			Assert.AreEqual(expected, result);
 		}
 
 		[TestMethod]
 		public void JoinAndTest()
 		{
-			Assert.Inconclusive();
+			var values = new List<string> { "apple", "banana", "orange" };
+			var expected = "apple, banana, and orange";
+			var result = Strings.JoinAnd(values);
+			Assert.AreEqual(expected, result);
 		}
 
 		[TestMethod]
 		public void ToHexCharArrayTest()
 		{
-			Assert.Inconclusive();
-		}
-
-		[TestMethod]
-		public void ToHexCharArrayTest1()
-		{
-			Assert.Inconclusive();
-		}
-
-		[TestMethod]
-		public void ToHexCharArrayTest2()
-		{
-			Assert.Inconclusive();
+			var value = new byte[] { 0x12, 0x34, 0x56, 0x78 };
+			var expected = new char[] { '1', '2', '3', '4', '5', '6', '7', '8' };
+			var result = Strings.ToHexCharArray(value);
+			CollectionAssert.AreEqual(expected, result);
 		}
 
 		[TestMethod]
 		public void ToHexStringTest()
 		{
-			Assert.Inconclusive();
+			var value = new byte[] { 0x12, 0x34, 0x56, 0x78 };
+			var expected = "12345678";
+			var result = Strings.ToHexString(value);
+			Assert.AreEqual(expected, result);
 		}
 
 		[TestMethod]
 		public void ToBitsStringTest()
 		{
-			Assert.Inconclusive();
+			var value = new byte[] { 0x12, 0x34, 0x56, 0x78 };
+			var expected = "00010010 00110100 01010110 01111000";
+			var result = Strings.ToBitsString(value);
+			Assert.AreEqual(expected, result);
 		}
 
 		[TestMethod]
 		public void CutIndentsTest()
 		{
-			var lines = new []
+			var lines = new[]
 			{
 				"\t\tselect",
 				"\t\t\t1,",
@@ -159,19 +174,6 @@ namespace Lexxys.Tests
 				"  from Here";
 			actual = Strings.CutIndents(lines, 4);
 			Assert.AreEqual(expected, actual);
-		}
-
-		[TestMethod]
-		public void EncodeUrlTest()
-		{
-			//Strings.EncodeUrl
-			Assert.Inconclusive();
-		}
-
-		[TestMethod]
-		public void DecodeUrlTest()
-		{
-			Assert.Inconclusive();
 		}
 	}
 }

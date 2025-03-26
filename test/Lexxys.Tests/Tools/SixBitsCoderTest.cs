@@ -16,23 +16,11 @@ namespace Lexxys.Tests.Tools
 	[TestClass()]
 	public class SixBitsCoderTest
 	{
-		private TestContext _testContextInstance;
-
 		/// <summary>
 		///Gets or sets the test context which provides
 		///information about and functionality for the current test run.
 		///</summary>
-		public TestContext TestContext
-		{
-			get
-			{
-				return _testContextInstance;
-			}
-			set
-			{
-				_testContextInstance = value;
-			}
-		}
+		public TestContext TestContext { get; set; }
 
 		#region Additional test attributes
 		// 
@@ -71,11 +59,10 @@ namespace Lexxys.Tests.Tools
 		[TestMethod()]
 		public void EncodeDecodeTest()
 		{
-			Random r = new Random();
-			for (int i = 0; i < 200; ++i)
+			Random r = new Random(456);
+			for (int i = 0; i < 1024; ++i)
 			{
-				int n = r.Next(128);
-				byte[] expected = new byte[n];
+				byte[] expected = new byte[i];
 				r.NextBytes(expected);
 				string value = SixBitsCoder.Encode(expected);
 				byte[] actual = SixBitsCoder.Decode(value);

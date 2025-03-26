@@ -2,32 +2,53 @@
 
 namespace Lexxys.Testing;
 
-#pragma warning disable CA1724
+// #pragma warning disable CA1724
 
 /// <summary>
 /// Provides access to the random generators loaded from resource files.
 /// </summary>
 public static partial class Resources
 {
+	public const string DefaultResourceFile = "resource*.json";
+
+	/// <summary>
+	/// Returns a <see cref="IDictionary{TKey,TValue}"/> of the random generators loaded from default resource file.
+	/// </summary>
+	public static IDictionary<string, RandItem<string>> Resource => _resource ??= GetResources(DefaultResourceFile);
+	private static IDictionary<string, RandItem<string>>? _resource;
+
 	/// <summary>
 	/// Loads the random generators from the specified resource files.
 	/// </summary>
 	/// <param name="resourceFiles">Collection of the resource files to load.</param>
-	/// <returns></returns>
+	/// <returns>True if at least one resource file was loaded.</returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static IDictionary<string, RandItem<string>> LoadResources(params string[] resourceFiles)
+	public static bool LoadResources(params string[] resourceFiles)
+	{
+		_resource = GetResources(resourceFiles);
+		return _resource.Count > 0;
+	}
+
+	/// <summary>
+	/// Get the random generators from the specified resource files.
+	/// </summary>
+	/// <param name="resourceFiles">Collection of the resource files to load.</param>
+	/// <returns>The random generators loaded from the specified resource files.</returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static IDictionary<string, RandItem<string>> GetResources(params string[] resourceFiles)
 	{
 		if (resourceFiles is not { Length: >0 }) throw new ArgumentNullException(nameof(resourceFiles));
 
 		var dd = new List<string>();
 		var d1 = Directory.GetCurrentDirectory();
-		var d2 = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-		var d3 = Path.GetDirectoryName(typeof(Resources).Assembly.Location);
-		if (d1 != null && d1.Length > 0)
+		var d2 = Path.GetDirectoryName(typeof(Resources).Assembly.Location);
+		var d3 = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory + "/x.jpg");
+
+		if (d1 is { Length: >0 })
 			dd.Add(d1);
-		if (d2 != null && d2.Length > 0 && d2 != d1)
+		if (d2 is { Length: > 0 } && d2 != d1)
 			dd.Add(d2);
-		if (d3 != null && d3.Length > 0 && d3 != d1 && d3 != d2)
+		if (d3 is { Length: > 0 } && d3 != d1 && d3 != d2)
 			dd.Add(d3);
 
 		var resource = new SafeDictionary<string, RandItem<string>>(StringComparer.OrdinalIgnoreCase, RandItem<string>.Empty);
@@ -42,13 +63,20 @@ public static partial class Resources
 				foreach (var file in files)
 				{
 					if (!File.Exists(file)) continue;
-					var j = (JsonMap)JsonParser.Parse(File.ReadAllText(file));
-					foreach (var (name, item) in j)
+					try
 					{
-						var i = ParseItem(item, resource);
-						resource[name] = i;
+						var j = (JsonMap)JsonParser.Parse(File.ReadAllText(file));
+						foreach (var (name, item) in j)
+						{
+							var i = ParseItem(item, resource);
+							resource[name] = i;
+						}
+						found = true;
 					}
-					found = true;
+					catch (Exception flaw)
+					{
+						Lxx.Log?.Error($"Error loading resource file: {file} ({flaw.Message})");
+					}
 				}
 				if (found) break;
 			}

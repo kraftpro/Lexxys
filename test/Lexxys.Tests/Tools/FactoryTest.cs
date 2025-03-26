@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace Lexxys.Tests.Tools
 {
-	[TestClass()]
+	[TestClass]
 	[DeploymentItem("application.config.txt")]
 	public class FactoryTest
 	{
@@ -29,7 +29,7 @@ namespace Lexxys.Tests.Tools
 			Assert.IsTrue(y.Value.Count > 0);
 		}
 
-		[TestMethod()]
+		[TestMethod]
 		[DataRow("Id", typeof(int))]
 		[DataRow("Id?", typeof(int?))]
 		[DataRow("int", typeof(int))]

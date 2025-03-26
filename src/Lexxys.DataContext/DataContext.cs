@@ -36,8 +36,8 @@ public sealed class MsSqlDataContext: IDataContext
 
 	public MsSqlDataContext(ConnectionStringInfo connectionInfo, Func<string, DbConnection>? connectionFactory = null)
 	{
-		if (connectionInfo == null)
-			throw new ArgumentNullException(nameof(connectionInfo));
+		if (connectionInfo == null) throw new ArgumentNullException(nameof(connectionInfo));
+
 		connectionFactory ??= __defaultConnectionFactory;
 		string connectionString = connectionInfo.GetConnectionString();
 		_context = new DataContextImplementation(() => connectionFactory(connectionString), connectionInfo.CommandTimeout, new DataAudit(connectionInfo.ConnectionAuditThreshold, connectionInfo.ConnectionAuditThreshold, connectionInfo.BatchAuditThreshold));
@@ -95,12 +95,9 @@ public sealed class MsSqlDataContext: IDataContext
 
 	public T Map<T>(Func<DbCommand, T> mapper, DbCommand command)
 	{
-		if (mapper == null)
-			throw new ArgumentNullException(nameof(mapper));
-		if (command == null)
-			throw new ArgumentNullException(nameof(command));
-		if (command.CommandText is not { Length: > 0 })
-			throw new ArgumentException("CommandText parameter is empty", nameof(command));
+		if (mapper == null) throw new ArgumentNullException(nameof(mapper));
+		if (command == null) throw new ArgumentNullException(nameof(command));
+		if (command.CommandText is not { Length: > 0 }) throw new ArgumentException("CommandText parameter is empty", nameof(command));
 
 		long t = 0;
 		int connect = 0;
@@ -115,14 +112,13 @@ public sealed class MsSqlDataContext: IDataContext
 		catch (Exception flaw)
 		{
 			flaw.Add(nameof(command), command.CommandText)
-				.Add("type", typeof(T));
+				.Add(nameof(T), typeof(T));
 			if (command.Parameters is { Count: >0 })
 			{
 				for (int i = 0; i < command.Parameters.Count; ++i)
 				{
 					var param = command.Parameters[i];
-					if (param != null)
-						flaw.Add(param.ParameterName, $"{param.DbType}, {param.Value}.");
+					flaw.Add(param.ParameterName, $"{param.DbType}, {param.Value}.");
 				}
 			}
 			flaw.Add(t);
@@ -140,18 +136,15 @@ public sealed class MsSqlDataContext: IDataContext
 
 	public async Task<T> MapAsync<T>(Func<DbCommand, Task<T>> mapper, DbCommand command)
 	{
-		if (mapper == null)
-			throw new ArgumentNullException(nameof(mapper));
-		if (command == null)
-			throw new ArgumentNullException(nameof(command));
-		if (command.CommandText is not { Length: >0 })
-			throw new ArgumentException("CommandText parameter is empty", nameof(command));
+		if (mapper == null) throw new ArgumentNullException(nameof(mapper));
+		if (command == null) throw new ArgumentNullException(nameof(command));
+		if (command.CommandText is not { Length: >0 }) throw new ArgumentException("CommandText parameter is empty", nameof(command));
 
 		long t = 0;
 		int connect = 0;
 		try
 		{
-			connect = await _context.ConnectAsync().ConfigureAwait(false);
+			connect = _context.Connect();
 			command.Connection = _context.Connection;
 			t = _context.Audit.Start();
 			var result = await mapper(command).ConfigureAwait(false);
@@ -166,8 +159,7 @@ public sealed class MsSqlDataContext: IDataContext
 				for (int i = 0; i < command.Parameters.Count; ++i)
 				{
 					var param = command.Parameters[i];
-					if (param != null)
-						flaw.Add(param.ParameterName, $"{param.DbType}, {param.Value}.");
+					flaw.Add(param.ParameterName, $"{param.DbType}, {param.Value}.");
 				}
 			}
 			flaw.Add(t);
@@ -184,8 +176,7 @@ public sealed class MsSqlDataContext: IDataContext
 
 	public int Execute(DbCommand command)
 	{
-		if (command == null)
-			throw new ArgumentNullException(nameof(command));
+		if (command == null) throw new ArgumentNullException(nameof(command));
 
 		long t = 0;
 		int connect = 0;
@@ -215,14 +206,13 @@ public sealed class MsSqlDataContext: IDataContext
 
 	public async Task<int> ExecuteAsync(DbCommand command)
 	{
-		if (command == null)
-			throw new ArgumentNullException(nameof(command));
+		if (command == null) throw new ArgumentNullException(nameof(command));
 
 		long t = 0;
 		int connect = 0;
 		try
 		{
-			connect = await _context.ConnectAsync().ConfigureAwait(false);
+			connect = _context.Connect();
 			command.Connection = _context.Connection;
 			command.Transaction = _context.Transaction;
 			t = _context.Audit.Start();
@@ -244,10 +234,7 @@ public sealed class MsSqlDataContext: IDataContext
 		}
 	}
 
-	public void Dispose()
-	{
-		_context.Dispose();
-	}
+	public void Dispose() => _context.Dispose();
 }
 
 static class ExceptionExtensions

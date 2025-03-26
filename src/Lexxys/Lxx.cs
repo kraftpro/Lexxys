@@ -18,7 +18,9 @@ public static class Lxx
 	private static bool _initialized;
 
 	public const string Framework =
-#if NET8_0_OR_GREATER
+#if NET9_0_OR_GREATER
+		"net9";
+#elif NET8_0_OR_GREATER
 		"net8";
 #elif NET7_0_OR_GREATER
 		"net7";
@@ -56,8 +58,8 @@ public static class Lxx
 	public static string? ProductName => __productName.Value;
 	private static readonly Lazy<string?> __productName = new Lazy<string?>(() => FileVersionInfo.GetVersionInfo(AssemblyLocation).ProductName, true);
 
-	private static string AssemblyLocation => __assemblyName.Value;
-	private static readonly Lazy<string> __assemblyName = new Lazy<string>(() => GetEntry().Location, true);
+	private static string AssemblyLocation => __assemblyLocation.Value;
+	private static readonly Lazy<string> __assemblyLocation = new Lazy<string>(() => GetEntry().Location, true);
 
 	private static Assembly GetEntry()
 	{
@@ -83,7 +85,7 @@ public static class Lxx
 		return a;
 	}
 
-	public static string HomeDirectory { get => __appDirectory.Value; set => __appDirectory = new Lazy<string>(() => value); }
+	public static string AppDirectory { get => __appDirectory.Value; set => __appDirectory = new Lazy<string>(() => value); }
 	private static Lazy<string> __appDirectory = new Lazy<string>(() => (AppDomain.CurrentDomain.RelativeSearchPath ?? AppDomain.CurrentDomain.BaseDirectory).TrimEnd('/', '\\'));
 
 	internal static void OnConfigurationInitialized(object? sender, ConfigurationEventArgs e)
@@ -101,8 +103,7 @@ public static class Lxx
 					if (type != null)
 					{
 						EventInfo? te = type.GetEvent("ThreadException");
-						if (te != null)
-							te.AddEventHandler(null, OnGuiUnhandedException);
+						te?.AddEventHandler(null, OnGuiUnhandedException);
 					}
 					_initialized = true;
 				}

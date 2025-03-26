@@ -13,37 +13,66 @@ public class SequenceTokenRule: LexicalTokenRule
 	private bool _isSorted;
 	private string? _beginning;
 	private int _length;
-	private readonly List<Element> _sequence;
+	private readonly List<(short Id, string Text)> _sequence;
 	private readonly bool _ignoreCase;
 
-	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase, params string[] sequence)
+	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase, IEnumerable<(int Id, string Value)> sequence)
 	{
-		if (sequence == null)
-			throw new ArgumentNullException(nameof(sequence));
+		if (sequence == null) throw new ArgumentNullException(nameof(sequence));
 
 		TokenType = tokenType;
 		_ignoreCase = ignoreCase;
-		_sequence = new List<Element>(sequence.Length);
-		for (int i = 0; i < sequence.Length; ++i)
+		_sequence = new List<(short Id, string Text)> ();
+		foreach (var item in sequence)
 		{
-			if (sequence[i] == null || sequence[i].Length == 0)
-				throw new ArgumentOutOfRangeException($"sequence[{i}]");
-			_sequence.Add(new Element((short)(i + 1), ignoreCase ? sequence[i].ToUpperInvariant() : sequence[i]));
+			if (item.Value is not { Length: >0 })
+				throw new ArgumentOutOfRangeException($"sequence.{item.Id}");
+			_sequence.Add(((short)item.Id, ignoreCase ? item.Value.ToUpperInvariant(): item.Value));
 		}
 	}
 
-	public SequenceTokenRule(LexicalTokenType tokenType, params string[] sequence)
-		: this(tokenType, false, sequence)
+	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase, params (int Id, string Value)[] sequence)
+		: this(tokenType, ignoreCase, (IEnumerable<(int Id, string Value)>)sequence)
 	{
 	}
 
-	public SequenceTokenRule(bool ignoreCase, params string[] sequence)
-		: this(LexicalTokenType.SEQUENCE, ignoreCase, sequence)
+	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase, params string[] sequence)
+		: this(tokenType, ignoreCase, sequence.Select((o, i) => (i + 1, o)))
+	{
+	}
+
+	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase)
+		: this(tokenType, ignoreCase, Array.Empty<(int, string)>())
+	{
+	}
+
+	public SequenceTokenRule(LexicalTokenType tokenType, params (int Id, string Value)[] sequence)
+		: this(tokenType, false, (IEnumerable<(int Id, string Value)>)sequence)
+	{
+	}
+
+	public SequenceTokenRule(LexicalTokenType tokenType, params string[] sequence)
+		: this(tokenType, false, sequence.Select((o, i) => (i + 1, o)))
+	{
+	}
+
+	public SequenceTokenRule(LexicalTokenType tokenType)
+		: this(tokenType, false, Array.Empty<(int, string)>())
+	{
+	}
+
+	public SequenceTokenRule(params (int Id, string Value)[] sequence)
+		: this(LexicalTokenType.SEQUENCE, false, sequence)
 	{
 	}
 
 	public SequenceTokenRule(params string[] sequence)
 		: this(LexicalTokenType.SEQUENCE, false, sequence)
+	{
+	}
+
+	public SequenceTokenRule()
+		: this(LexicalTokenType.SEQUENCE, false, Array.Empty<(int, string)>())
 	{
 	}
 
@@ -95,14 +124,14 @@ public class SequenceTokenRule: LexicalTokenRule
 			throw new ArgumentNullException(nameof(text));
 		if (id is <=0 or >Int16.MaxValue)
 			throw new ArgumentOutOfRangeException(nameof(id), id, null);
-		_sequence.Add(new Element((short)id, text));
+		_sequence.Add(((short)id, text));
 		_isSorted = false;
 		return this;
 	}
 
 	private string? Sort()
 	{
-		if (_isSorted) return;
+		if (_isSorted) return _beginning;
 		_isSorted = true;
 		_sequence.Sort((x, y) => String.CompareOrdinal(y.Text, x.Text));
 		int n = _sequence.Count;
@@ -125,17 +154,5 @@ public class SequenceTokenRule: LexicalTokenRule
 		}
 		_beginning = _ignoreCase ? new string(line): new string(line, 0, n);
 		return _beginning;
-	}
-
-	private struct Element
-	{
-		public readonly short Id;
-		public readonly string Text;
-
-		public Element(short id, string text)
-		{
-			Id = id;
-			Text = text;
-		}
 	}
 }

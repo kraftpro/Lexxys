@@ -1,4 +1,4 @@
-﻿// Lexxys Infrastructural library.
+// Lexxys Infrastructural library.
 // file: Tools.cs
 //
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
@@ -28,23 +28,25 @@ public static partial class Strings
 		=> EscapeCsString(new StringBuilder(), value.AsSpan(), '"').ToString();
 
 	/// <summary>
-	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// Escapes string for use in C#/JavaScript using the specified string's marker.
 	/// </summary>
 	/// <param name="value">The string to escape.</param>
 	/// <param name="marker">Strings merger.</param>
+	/// <param name="escape">Escape character.</param>
 	/// <returns></returns>
-	public static string EscapeCsString(string value, char marker)
-		=> EscapeCsString(new StringBuilder(), value.AsSpan(), marker).ToString();
+	public static string EscapeCsString(string value, char marker = '"', char escape = '\\')
+		=> EscapeCsString(new StringBuilder(), value.AsSpan(), marker, escape).ToString();
 
 	/// <summary>
-	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// Escapes string for use in C#/JavaScript using the specified string's marker.
 	/// </summary>
 	/// <param name="text">The string builder to append the result.</param>
 	/// <param name="value">The string to escape.</param>
 	/// <param name="marker">Strings merger.</param>
+	/// <param name="escape">Escape character.</param>
 	/// <returns></returns>
-	public static StringBuilder EscapeCsString(StringBuilder text, string value, char marker = '"')
-		=> EscapeCsString(text, value.AsSpan(), marker);
+	public static StringBuilder EscapeCsString(StringBuilder text, string value, char marker = '"', char escape = '\\')
+		=> EscapeCsString(text, value.AsSpan(), marker, escape);
 
 	/// <summary>
 	/// Escapes string for use in C#/JavaScript.
@@ -55,26 +57,27 @@ public static partial class Strings
 		=> EscapeCsString(value, '"');
 
 	/// <summary>
-	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// Escapes string for use in C#/JavaScript using the specified string's marker.
 	/// </summary>
 	/// <param name="value">The string to escape.</param>
 	/// <param name="marker">Strings merger.</param>
+	/// <param name="escape">Escape character.</param>
 	/// <returns></returns>
-	public static string EscapeCsString(ReadOnlySpan<char> value, char marker)
-		=> EscapeCsString(new StringBuilder(), value, marker).ToString();
+	public static string EscapeCsString(ReadOnlySpan<char> value, char marker = '"', char escape = '\\')
+		=> EscapeCsString(new StringBuilder(), value, marker, escape).ToString();
 
 	/// <summary>
-	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// Escapes string for use in C#/JavaScript using the specified string's marker.
 	/// </summary>
 	/// <param name="text">The string builder to append the result.</param>
 	/// <param name="value">The string to escape.</param>
 	/// <param name="marker">Strings merger.</param>
+	/// <param name="escape">Escape character.</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static StringBuilder EscapeCsString(StringBuilder text, ReadOnlySpan<char> value, char marker = '"')
+	public static StringBuilder EscapeCsString(StringBuilder text, ReadOnlySpan<char> value, char marker = '"', char escape = '\\')
 	{
 		if (text == null) throw new ArgumentNullException(nameof(text));
-		if (value == null) throw new ArgumentNullException(nameof(value));
 
 		if (marker != '\0')
 			text.Append(marker);
@@ -82,34 +85,35 @@ public static partial class Strings
 		{
 			if (c < ' ' || c == 127)
 			{
+				text.Append(escape);
 				switch (c)
 				{
 					case '\n':
-						text.Append("\\n");
+						text.Append('n');
 						break;
 					case '\r':
-						text.Append("\\r");
+						text.Append('r');
 						break;
 					case '\t':
-						text.Append("\\t");
+						text.Append('t');
 						break;
 					case '\f':
-						text.Append("\\f");
+						text.Append('f');
 						break;
 					case '\v':
-						text.Append("\\v");
+						text.Append('v');
 						break;
 					case '\a':
-						text.Append("\\a");
+						text.Append('a');
 						break;
 					case '\b':
-						text.Append("\\b");
+						text.Append('b');
 						break;
 					case '\0':
-						text.Append("\\0");
+						text.Append('0');
 						break;
 					default:
-						text.Append("\\x00")
+						text.Append("x00")
 							.Append(HexDigits[(c & 0xF0) >> 4])
 							.Append(HexDigits[c & 0xF]);
 						break;
@@ -117,22 +121,16 @@ public static partial class Strings
 			}
 			else if (c >= '\xd800')
 			{
-				text.Append("\\x");
+				text.Append(escape).Append('x');
 				text.Append(HexDigits[(c & 0xF000) >> 12]);
 				text.Append(HexDigits[(c & 0xF00) >> 8]);
 				text.Append(HexDigits[(c & 0xF0) >> 4]);
 				text.Append(HexDigits[c & 0xF]);
 			}
-			else if (c == marker)
-			{
-				text.Append('\\').Append(marker);
-			}
-			else if (c == '\\')
-			{
-				text.Append("\\\\");
-			}
 			else
 			{
+				if (c == marker || c == escape)
+					text.Append(escape);
 				text.Append(c);
 			}
 		}
@@ -142,82 +140,93 @@ public static partial class Strings
 	}
 
 	/// <summary>
-	/// Escapes string for use in C#/JavaScript using the specified strings marker.
+	/// Escapes string for use in C#/JavaScript using the specified string's marker.
 	/// </summary>
 	/// <param name="text">The <see cref="TextWriter"/> to append the result.</param>
 	/// <param name="value">The string to escape.</param>
 	/// <param name="marker">Strings merger.</param>
+	/// <param name="escape">Escape character.</param>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static void EscapeCsString(TextWriter text, ReadOnlySpan<char> value, char marker = '"')
+	public static void EscapeCsString(TextWriter text, ReadOnlySpan<char> value, char marker = '"', char escape = '\\')
 	{
-		if (text == null)
-			throw new ArgumentNullException(nameof(text));
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
+		if (text == null) throw new ArgumentNullException(nameof(text));
 
-		if (marker != '\0')
-			text.Write(marker);
-		foreach (char c in value)
+		char[] buffer = ArrayPool<char>.Shared.Rent(6);
+		try
 		{
-			if (c < ' ' || c == 127)
+			if (marker != '\0')
+				text.Write(marker);
+			foreach (char c in value)
 			{
-				switch (c)
+				if (c < ' ' || c == 127)
 				{
-					case '\n':
-						text.Write("\\n");
-						break;
-					case '\r':
-						text.Write("\\r");
-						break;
-					case '\t':
-						text.Write("\\t");
-						break;
-					case '\f':
-						text.Write("\\f");
-						break;
-					case '\v':
-						text.Write("\\v");
-						break;
-					case '\a':
-						text.Write("\\a");
-						break;
-					case '\b':
-						text.Write("\\b");
-						break;
-					case '\0':
-						text.Write("\\0");
-						break;
-					default:
-						text.Write("\\x00");
-						text.Write(HexDigits[(c & 0xF0) >> 4]);
-						text.Write(HexDigits[c & 0xF]);
-						break;
+					buffer[0] = escape;
+					int len = 2;
+					switch (c)
+					{
+						case '\n':
+							buffer[1] = 'n';
+							break;
+						case '\r':
+							buffer[1] = 'r';
+							break;
+						case '\t':
+							buffer[1] = 't';
+							break;
+						case '\f':
+							buffer[1] = 'f';
+							break;
+						case '\v':
+							buffer[1] = 'v';
+							break;
+						case '\a':
+							buffer[1] = 'a';
+							break;
+						case '\b':
+							buffer[1] = 'b';
+							break;
+						case '\0':
+							buffer[1] = '0';
+							break;
+						default:
+							buffer[1] = 'x';
+							buffer[2] = '0';
+							buffer[3] = '0';
+							buffer[4] = HexDigits[(c & 0xF0) >> 4];
+							buffer[5] = HexDigits[c & 0xF];
+							len = 6;
+							break;
+					}
+					text.Write(buffer, 0, len);
+				}
+				else if (c >= '\xd800')
+				{
+					buffer[0] = escape;
+					buffer[1] = 'x';
+					buffer[2] = HexDigits[(c & 0xF000) >> 12];
+					buffer[3] = HexDigits[(c & 0xF00) >> 8];
+					buffer[4] = HexDigits[(c & 0xF0) >> 4];
+					buffer[5] = HexDigits[c & 0xF];
+					text.Write(buffer, 0, 6);
+				}
+				else if (c == marker || c == escape)
+				{
+					buffer[0] = escape;
+					buffer[1] = c;
+					text.Write(buffer, 0, 2);
+				}
+				else
+				{
+					text.Write(c);
 				}
 			}
-			else if (c >= '\xd800')
-			{
-				text.Write("\\x");
-				text.Write(HexDigits[(c & 0xF000) >> 12]);
-				text.Write(HexDigits[(c & 0xF00) >> 8]);
-				text.Write(HexDigits[(c & 0xF0) >> 4]);
-				text.Write(HexDigits[c & 0xF]);
-			}
-			else if (c == marker)
-			{
-				text.Write('\\');
+			if (marker != '\0')
 				text.Write(marker);
-			}
-			else if (c == '\\')
-			{
-				text.Write("\\\\");
-			}
-			else
-			{
-				text.Write(c);
-			}
 		}
-		if (marker != '\0')
-			text.Write(marker);
+		finally
+		{
+			ArrayPool<char>.Shared.Return(buffer);
+		}
 	}
 	private static readonly char[] HexDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -227,13 +236,15 @@ public static partial class Strings
 	/// <param name="stream">The <see cref="Stream"/> to append the result.</param>
 	/// <param name="value">The string to escape.</param>
 	/// <param name="marker">Strings merger.</param>
+	/// <param name="escape">Escape character.</param>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static void EscapeUtf8CsString(Stream stream, ReadOnlySpan<char> value, char marker = '"')
+	public static void EscapeUtf8CsString(Stream stream, ReadOnlySpan<char> value, char marker = '"', char escape = '\\')
 	{
 		if (stream == null) throw new ArgumentNullException(nameof(stream));
-		if (value == null) throw new ArgumentNullException(nameof(value));
-
-		byte[] buffer = ArrayPool<byte>.Shared.Rent(value.Length * 6 + 10);
+		int k = escape < 128 ? 1: Encoding.UTF8.GetByteCount([escape]);
+		int len = (value.Length + 2) * (k + 5);
+		byte[]? array = len > Tools.SafeStackAllocByte ? ArrayPool<byte>.Shared.Rent(len): null;
+		var buffer = array == null ? stackalloc byte[len]: array.AsSpan();
 		int i = 0;
 		if (marker != '\0')
 			if (marker < 128)
@@ -252,7 +263,7 @@ public static partial class Strings
 				}
 				else
 				{
-					buffer[i++] = (byte)'\\';
+					buffer[i++] = (byte)escape;
 					switch (c)
 					{
 						case '\n':
@@ -291,7 +302,7 @@ public static partial class Strings
 			}
 			else if (c >= '\xd800')
 			{
-				buffer[i++] = (byte)'\\';
+				buffer[i++] = (byte)escape;
 				buffer[i++] = (byte)'u';
 				buffer[i++] = HexByteDigits[(c & 0xF000) >> 12];
 				buffer[i++] = HexByteDigits[(c & 0xF00) >> 8];
@@ -300,21 +311,22 @@ public static partial class Strings
 			}
 			else
 			{
-				if (c == marker)
-					buffer[i++] = (byte)'\\';
+				if (c == marker || c == escape)
+					buffer[i++] = (byte)escape;
 				i = WriteChar(buffer, i, c);
 			}
 		}
 		if (marker != '\0')
 			if (marker < 128)
-				stream.WriteByte((byte)marker);
+				buffer[i++] = (byte)marker;
 			else
 				i = WriteChar(buffer, i, marker);
 
-		stream.Write(buffer, 0, i);
-		ArrayPool<byte>.Shared.Return(buffer);
+		stream.Write(buffer.Slice(0, i));
+		if (array != null)
+			ArrayPool<byte>.Shared.Return(array);
 
-		static unsafe int WriteChar(byte[] buffer, int i, char value)
+		static unsafe int WriteChar(Span<byte> buffer, int i, char value)
 		{
 			var bytes = stackalloc byte[4];
 			var count = Encoding.UTF8.GetBytes(&value, 1, bytes, 4);
@@ -336,7 +348,7 @@ public static partial class Strings
 		if (value is null) throw new ArgumentNullException(nameof(value));
 		
 		var str = value.AsSpan().Trim();
-		while (str.Length > 1 && str[0] == '(' && str[str.Length - 1] == ')')
+		while (str.Length > 1 && str[0] == '(' && str[^1] == ')')
 		{
 			str = str.Slice(1, str.Length - 2).Trim();
 		}
@@ -606,8 +618,9 @@ public static partial class Strings
 		var c = dash[0];
 
 		var ix = 0;
-		var buffer = ArrayPool<char>.Shared.Rent(value.Length * 2);
-		var ax = buffer.AsSpan();
+		int len = value.Length * 2;
+		char[]? buffer = len > Tools.MaxStackAllocSize ? ArrayPool<char>.Shared.Rent(len): null;
+		var ax = buffer == null ? stackalloc char[len]: buffer.AsSpan();
 		foreach (var (index, length) in SplitByCapitals(value))
 		{
 			var s = value.Slice(index, length).Trim(dash);
@@ -625,7 +638,8 @@ public static partial class Strings
 			ix += length;
 		}
 		var result = ax.Slice(0, ix).ToString();
-		ArrayPool<char>.Shared.Return(buffer);
+		if (buffer != null)
+			ArrayPool<char>.Shared.Return(buffer);
 		return result;
 	}
 	private static readonly char[] __dashes = ['-'];
@@ -753,20 +767,20 @@ public static partial class Strings
 			}
 			else
 			{
-                if (two)
+				if (two)
 					text.Append(pad);
 				else
 					two = true;
-                text.Append(value);
+				text.Append(value);
 			}
 			value = item;
 		}
 		if (text.Length == 0)
 			return value;
-        if (two && comma == null && and == null)
-            text.Append(", and ").Append(value);
+		if (two && comma == null && and == null)
+			text.Append(", and ").Append(value);
 		else
-	        text.Append(and ?? " and ").Append(value);
+			text.Append(and ?? " and ").Append(value);
 		return text.ToString();
 	}
 
@@ -849,8 +863,10 @@ public static partial class Strings
 		if (value == null)
 			throw new ArgumentNullException(nameof(value));
 		int offset = prefix.Length;
-		var array = ArrayPool<char>.Shared.Rent(offset + value.Length * 2);
-		var t = array.AsSpan();
+		int len = offset + value.Length * 2;
+		char[]? array = len > Tools.SafeStackAllocChar ? ArrayPool<char>.Shared.Rent(len): null;
+		Span<char> s = array == null ? stackalloc char[len]: array.AsSpan();
+		Span<char> t = s;
 		if (offset > 0)
 		{
 			prefix.CopyTo(t);
@@ -862,8 +878,9 @@ public static partial class Strings
 			t[1] = HexDigits[b & 0x0F];
 			t = t.Slice(2);
 		}
-		var result = new String(array);
-		ArrayPool<char>.Shared.Return(array);
+		var result = s.ToString();
+		if (array != null)
+			ArrayPool<char>.Shared.Return(array);
 		return result;
 	}
 

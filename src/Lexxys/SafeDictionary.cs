@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 
 namespace Lexxys
 {
@@ -10,7 +10,7 @@ namespace Lexxys
 
 		public SafeDictionary(TValue emptyValue = default!)
 		{
-			_map = new Dictionary<TKey, TValue>();
+			_map = [];
 			_emptyValue = emptyValue;
 		}
 

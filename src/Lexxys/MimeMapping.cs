@@ -36,7 +36,7 @@ public static class MimeMapping
 			//   and
 			// mime type -> extension
 			//
-			// any mime types on left side not pre-loaded on right side, are added automatically
+			// any mime types on left side not preloaded on right side, are added automatically
 			// some mime types can map to multiple extensions, so to get a deterministic mapping,
 			// add those to the dictionary specifically
 			//
@@ -710,7 +710,7 @@ public static class MimeMapping
 		{
 			mappings.TryAdd(mapping.Value, mapping.Key);
 		}
-		return ReadOnly.Wrap(mappings)!;
+		return ReadOnly.Wrap(mappings);
 	}
 
 	public const string ApplicationOctetStream = "application/octet-stream";

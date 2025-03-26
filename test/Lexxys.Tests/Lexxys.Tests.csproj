@@ -1,34 +1,35 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!--<TargetFramework>net7.0</TargetFramework>-->
-    <!--<TargetFrameworks>net7.0;net6.0;net472;netcoreapp3.1</TargetFrameworks>-->
-    <!--<TargetFrameworks>net8.0;net7.0;net6.0;net472</TargetFrameworks>-->
-    <TargetFrameworks>net8.0;net6.0;net462</TargetFrameworks>
-    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net9.0;net8.0;net6.0;netcoreapp3.1;net462</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	  <IsTestProject>true</IsTestProject>
-    <GenerateProgramFile>false</GenerateProgramFile>
+    <IsTestProject>true</IsTestProject>
+    <!--<GenerateProgramFile>false</GenerateProgramFile>-->
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <MSBuildWarningsAsMessages>
+      $(MSBuildWarningsAsMessages);MSB3277
+    </MSBuildWarningsAsMessages>
   </PropertyGroup>
 
   <ItemGroup>
     <AssemblyMetadata Include="ConfigFile" Value="test.config.txt" />
   </ItemGroup>
-  
+
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
-    <PackageReference Include="MSTest" Version="3.2.2" />
-    <!--
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
-    <PackageReference Include="MSTest.TestAdapter" Version="3.2.0" />
-    <PackageReference Include="MSTest.TestFramework" Version="3.2.0" />
-    -->
-    <PackageReference Include="coverlet.collector" Version="6.0.2">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.*" />
+    <PackageReference Include="MSTest" Version="3.7.0" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.*" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.*" />
+    <PackageReference Include="System.Formats.Asn1" Version="9.0.*" />
+    <PackageReference Include="System.Private.Uri" Version="4.3.*" />
+    <PackageReference Include="System.Text.Json" Version="9.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +42,10 @@
 
   <ItemGroup>
     <Compile Remove="Crypting\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Program.cs" />
   </ItemGroup>
 
   <ItemGroup>

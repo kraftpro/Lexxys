@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 	private ConcurrentQueue<EventEntry>? _messages;
 	private volatile int _version;
 	private int _top;
-	private volatile List<IConfigSource> _providers = new List<IConfigSource>();
+	private volatile List<IConfigSource> _providers = [];
 	private readonly object _syncObj = new Object();
 
 	public ConfigProvidersCollection()
@@ -55,6 +56,12 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 	#region IConfigService
 
 	public int Version => _version;
+
+	public int Count => _providers.Count;
+
+	public IEnumerator<IConfigSource> GetEnumerator() => _providers.GetEnumerator();
+ 
+	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 	public event EventHandler<ConfigurationEventArgs>? Changed;
 
@@ -99,9 +106,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 			else
 				(list ??= new List<T>(temp)).AddRange(x);
 		}
-		IReadOnlyList<T> result =
-			temp == null ? Array.Empty<T>():
-			list == null ? temp: ReadOnly.Wrap(list)!;
+		IReadOnlyList<T> result = temp == null ? []: list == null ? temp: ReadOnly.Wrap(list)!;
 		return result;
 	}
 
@@ -282,7 +287,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		{
 			try
 			{
-				var obj = method.Invoke(null, parameters);
+				object? obj = method.Invoke(null, parameters);
 				if (obj is T result)
 					return result;
 			}
@@ -314,7 +319,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		do
 		{
 			providers = _providers;
-			var i = providers.FindIndex(o => o.Equals(provider));
+			int i = providers.FindIndex(o => o.Equals(provider));
 			if (i >= 0)
 				return ~i;
 			updated = new(providers);
@@ -336,9 +341,9 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 	{
 		if (provider.GetValue("applicationDirectory", typeof(string)) is string home)
 		{
-			var dir = home.Trim().TrimEnd('/', '\\').TrimToNull();
+			string? dir = home.Trim().TrimEnd('/', '\\').TrimToNull();
 			if (dir != null)
-				Lxx.HomeDirectory = dir;
+				Lxx.AppDirectory = dir;
 		}
 
 		foreach (string s in provider.GetList<string>("include"))
@@ -354,7 +359,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 			if (value is null) throw new ArgumentNullException(nameof(value));
 			
 			value = value.Trim();
-			var xx = value.Split(SpaceSeparator, StringSplitOptions.RemoveEmptyEntries);
+			string[] xx = value.Split(SpaceSeparator, StringSplitOptions.RemoveEmptyEntries);
 			return xx.Length switch
 			{
 				1 => (value, null),
@@ -433,7 +438,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 #if NETFRAMEWORK
 			AddSystem(new Uri("system:configuration"), new SystemConfigurationProvider(), _top);
 #endif
-			foreach (var item in Directory.EnumerateFiles(".", "Lexxys.config.*"))
+			foreach (string item in Directory.EnumerateFiles(".", "Lexxys.config.*"))
 			{
 				AddConfiguration(new Uri("file:///" + Path.GetFullPath(item)), null, true);
 			}
@@ -463,9 +468,9 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 #if NETFRAMEWORK
 		string[]? directories = System.Configuration.ConfigurationManager.AppSettings.GetValues(ConfigurationDirectoryKey);
 		if (directories == null)
-			return new [] { Lxx.HomeDirectory };
+			return new [] { Lxx.AppDirectory };
 		
-		var configurationDirectory = new List<string> { Lxx.HomeDirectory };
+		var configurationDirectory = new List<string> { Lxx.AppDirectory };
 		foreach (var entry in directories)
 		{
 			foreach (var item in entry.Split(__separators, StringSplitOptions.RemoveEmptyEntries))
@@ -477,7 +482,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		}
 		return configurationDirectory;
 #else
-		return new [] { Lxx.HomeDirectory };
+		return new [] { Lxx.AppDirectory };
 #endif
 	}
 #if NETFRAMEWORK
@@ -487,7 +492,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 	private static Uri? GetConfigurationLocation(Assembly? assembly)
 	{
 		if (assembly is null || assembly.IsDynamic || String.IsNullOrEmpty(assembly.Location)) return null;
-		if (!TryConfigFile(assembly, out var name) && !TryMetadata(assembly, out name)) return null;
+		if (!(TryConfigFile(assembly, out string? name) || TryMetadata(assembly, out name))) return null;
 
 		var path = String.IsNullOrEmpty(name) ?
 			Path.ChangeExtension(assembly.Location, null):
@@ -502,7 +507,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 				return false;
 			}
 			var a = assembly.GetCustomAttributes(typeof(ConfigFileAttribute), false)
-				.OfType<ConfigFileAttribute>().FirstOrDefault();
+				.FirstOrDefault() as ConfigFileAttribute;
 			name = a?.Name;
 			return a != null;
 		}
@@ -533,7 +538,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 #endif
 		cc.AddRange(AppDomain.CurrentDomain.GetAssemblies().Select(GetConfigurationLocation).Where(o => o != null)!);
 
-		var locator = new Uri("file:///" + Lxx.HomeDirectory + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile);
+		var locator = new Uri("file:///" + Lxx.AppDirectory + Path.DirectorySeparatorChar + Lxx.AnonymousConfigurationFile);
 		cc.Add(locator);
 		return cc;
 	}

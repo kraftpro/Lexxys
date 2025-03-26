@@ -6,8 +6,6 @@
 //
 using System.Collections;
 using System.Reflection;
-using System.Text;
-using System.Xml;
 
 namespace Lexxys.Xml;
 
@@ -20,7 +18,7 @@ public static class XmlFragBuilder
 
 	public static IXmlReadOnlyNode EmptyReadOnly => EmptyXmlNode.Instance;
 
-	public static T EmptyNode<T>() => typeof(T).IsAssignableFrom(typeof(IXmlNode)) ? (T)(object)Empty: throw new ArgumentException($"Invalid type {typeof(T).FullName}", nameof(T));
+	public static T EmptyNode<T>() => typeof(T).IsAssignableFrom(typeof(IXmlNode)) ? (T)Empty: throw new ArgumentException($"Invalid type {typeof(T).FullName}", nameof(T));
 
 	/// <summary>
 	/// Creates a new <see cref="IXmlNodeBuilder{TNode}"/>.
@@ -35,7 +33,7 @@ public static class XmlFragBuilder
 	/// Creates a new <see cref="IXmlNodeBuilder{TNode}"/>.
 	/// </summary>
 	/// <typeparam name="T">Type of XML node</typeparam>
-	/// <param name="comparer">String comparer to compare elements names and attributies</param>
+	/// <param name="comparer">String comparer to compare elements names and attributes</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentException"></exception>
 	public static IXmlNodeBuilder<T> Create<T>(StringComparer? comparer = null)
@@ -69,10 +67,6 @@ public static class XmlFragBuilder
 		public StringComparer Comparer => StringComparer.Ordinal;
 		public bool IsEmpty => true;
 
-		public XmlReader ReadSubtree() => XmlReader.Create(Stream.Null);
-
-		public StringBuilder WriteXml(StringBuilder text, bool innerXml, string prefix) => text;
-
 		public IXmlReadOnlyNode AsReadOnly() => this;
 
 		IReadOnlyList<KeyValuePair<string, string>> IXmlReadOnlyNode.Attributes => Array.Empty<KeyValuePair<string, string>>();
@@ -97,7 +91,7 @@ internal class XmNodeBuilder<T>: IXmlNodeBuilder<T> where T: IXmlReadOnlyNode
 	/// Creates a new instance of <see cref="XmNodeBuilder{T}" />.
 	/// </summary>
 	/// <param name="constructor">Node constructor to create a new XML node</param>
-	/// <param name="comparer">A <see cref="IEqualityComparer{T}"/> implementation to use when comparing names of elements and attributes.</param>
+	/// <param name="comparer">An <see cref="IEqualityComparer{T}"/> implementation to use when comparing names of elements and attributes.</param>
 	public XmNodeBuilder(NodeConstructor constructor, StringComparer? comparer)
 	{
 		_constructor = constructor;

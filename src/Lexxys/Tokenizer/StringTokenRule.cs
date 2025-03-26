@@ -11,12 +11,21 @@ namespace Lexxys.Tokenizer;
 [Serializable]
 public class StringTokenRule: LexicalTokenRule
 {
-	public const char NoEscape = Char.MaxValue;
+	public const char Nil = '\0';
+	private readonly Func<string, string>? _macro;
+	private (string? Start, string? End) _template;
 
-	public StringTokenRule(char escapeChar = '\0', LexicalTokenType? tokenType = default)
+	public StringTokenRule(char escapeChar, Func<string, string>? macro = default, (string? Start, string? End) template = default)
+		: this(LexicalTokenType.STRING, escapeChar, macro, template)
 	{
-		EscapeChar = escapeChar == '\0' ? '\\': escapeChar;
+	}
+
+	public StringTokenRule(LexicalTokenType? tokenType = default, char escapeChar = '\\', Func<string, string>? macro = default, (string? Start, string? End) template = default)
+	{
+		EscapeChar = escapeChar;
 		TokenType = tokenType == default ? LexicalTokenType.STRING: tokenType;
+		_macro = macro;
+		_template = template.Start is { Length: >0 } && template.End is { Length: >0 } ? template: default;
 	}
 
 	public char EscapeChar { get; }
@@ -26,165 +35,239 @@ public class StringTokenRule: LexicalTokenRule
 	public override bool TestBeginning(char value) => value is '"' or '\'';
 
 	public override LexicalToken TryParse(ref CharStream stream)
-		=> stream[0] is '"' or '\'' ? ParseString(TokenType, ref stream, EscapeChar): LexicalToken.Empty;
+		=> stream[0] is '"' or '\'' ? ParseString(TokenType, ref stream, EscapeChar, _macro, _template): LexicalToken.Empty;
 
-	public static LexicalToken ParseString(LexicalTokenType tokenType, ref CharStream stream, char escapeChar)
+	public static LexicalToken ParseString(LexicalTokenType tokenType, ref CharStream stream, char escapeChar, Func<string, string>? macro = null, (string? Start, string? End) template = default)
 	{
+		if (macro == null || !(template.Start is { Length: >0 } && template.End is { Length: >0 }))
+			template = default;
 		char c0 = stream[0];
-		StringBuilder sb = new StringBuilder();
+		var sb = new StringBuilder();
 		int i = 1;
 		int j0 = stream.IndexOf(c0, i);
-		int j1 = escapeChar == NoEscape ? -1: stream.IndexOf(escapeChar, i);
+		int j1 = escapeChar == Nil ? -1: stream.IndexOf(escapeChar, i);
+		int j2 = template.Start == null ? -1: stream.IndexOf(template.Start, i);
+
+		if (j0 < 0)
+			throw stream.SyntaxException(SR.EofInStringConstant());
+		if ((j1 < 0 || j1 > j0) && (j2 < 0 || j2 > j0) && (escapeChar != Nil || stream[j0 + 1] != c0))
+			return stream.Token(tokenType, j0 + 1, (t, s) => s[1..^1].ToString());
 
 		while (true)
 		{
-			int j = j0 < j1 ? j0: j1;
-			if (j < 0)
-			{
-				if (j0 < 0)
-					throw stream.SyntaxException(SR.EofInStringConstant());
-				j = j0;
-			}
+			if (j0 < 0)
+				throw stream.SyntaxException(SR.EofInStringConstant());
+			var j = j0;
+			if (j1 >= 0 && j1 < j)
+				j = j1;
+			if (j2 >= 0 && j2 < j)
+				j = j2;
 			sb.Append(stream.Slice(i, j - i));
-			if (j == j0)
+			if (j == j0)    // end of string
 			{
-				if (stream[j + 1] != c0)
+				if (escapeChar == Nil && stream[j + 1] == c0)   // double quote
 				{
-					LexicalToken result;
-					if (sb.Length == j - i)
-					{
-						result = new LexicalToken(tokenType, stream.Position + i, j - i);
-					}
-					else
-					{
-						string value = sb.ToString();
-						result = new LexicalToken(tokenType, stream.Position + i, j - i, (_, _) => value);
-					}
-					stream.Forward(j + 1);
-					return result;
+					i = j + 2;
+					j0 = stream.IndexOf(c0, i);
+					sb.Append(c0);
 				}
-				i = j + 2;
-				j0 = stream.IndexOf(c0, i);
-				sb.Append(c0);
+				else
+				{
+					string value = sb.ToString();
+					return stream.Token(tokenType, j + 1, (_, _) => value);
+				}
 			}
-			else
+			else if (j == j1)   // escape sequence
 			{
-				char ch = ParseEscape(ref stream, j + 1, out i);
+				i = j + 1;
+				char ch = ParseEscape(stream.Slice(i, Math.Min(stream.Length - i, 5)), out var len);
+				if (len < 0)
+					throw stream.SyntaxException(SR.UnrecognizedEscapeSequence(stream.Substring(i, -len)));
+				i += len;
 				sb.Append(ch);
 				j1 = stream.IndexOf(escapeChar, i);
 				if (j0 < i)
 					j0 = stream.IndexOf(c0, i);
+				if (j2 >= 0 && j2 < i)
+					j2 = stream.IndexOf(template.Start, i);
+			}
+			else // begin macro
+			{
+				i = j + template.Start!.Length;
+				var k = stream.IndexOf(template.End, i);
+				while (IsEscaped(stream, escapeChar, k))
+					k = stream.IndexOf(template.End, k + 1);
+				var k0 = stream.IndexOf(c0, i);
+				while (IsEscaped(stream, escapeChar, k0))
+					k0 = stream.IndexOf(c0, k0 + 1);
+				if (k < 0 || k0 < k)
+				{
+					sb.Append(template.Start);
+					j2 = -1;
+					continue;
+				}
+				sb.Append(macro!(UnEscape(stream.Slice(i, k - i), escapeChar)));
+				i = k + template.End!.Length;
+				if (j0 < i)
+					j0 = stream.IndexOf(c0, i);
+				if (j1 >= 0 && j1 < i)
+					j1 = stream.IndexOf(escapeChar, i);
+				j2 = stream.IndexOf(template.Start, i);
 			}
 		}
+
+		static bool IsEscaped(in CharStream stream, char escape, int index) => index > 0 && stream[index - 1] == escape && !IsEscaped(stream, escape, index - 1);
 	}
 
-	private static char ParseEscape(ref CharStream stream, int position, out int next)
+	public static string UnEscape(ReadOnlySpan<char> value, char escapeChar)
 	{
-		int k;
-		int i = position;
-		int j;
-		char c;
-		switch (stream[i])
+		int j = value.IndexOf(escapeChar);
+		if (j < 0)
+			return value.ToString();
+		var sb = new StringBuilder();
+
+		do
 		{
-			// C++ standard escape sequence: \[abfnrtv]
+			sb.Append(value[..j]);
+			value = value.Slice(j + 1);
+			char ch = ParseEscape(value, out var len);
+			if (len < 0)
+			{
+				len = -len;
+				sb.Append(escapeChar).Append(value.Slice(0, len));
+			}
+			sb.Append(ch);
+			value = value.Slice(len);
+			j = value.IndexOf(escapeChar);
+		} while (j >= 0);
+		sb.Append(value);
+		return sb.ToString();
+	}
+
+	public static char ParseEscape(ReadOnlySpan<char> value, out int length)
+	{
+		if (value.Length == 0)
+		{
+			length = 0;
+			return '\0';
+		}	
+		char c;
+		length = 1;
+		c = value[0];
+		switch (c)
+		{
+			// escape sequence: \[abfnrtv] \[eN_LP] \c[A-Z] \0 \xHHHH \uHHHH 
 			case 'a':
-				c = '\a';
-				break;
+				return '\a';
 			case 'b':
-				c = '\b';
-				break;
+				return '\b';
 			case 'f':
-				c = '\f';
-				break;
+				return '\f';
 			case 'n':
-				c = '\n';
-				break;
+				return '\n';
 			case 'r':
-				c = '\r';
-				break;
+				return '\r';
 			case 't':
-				c = '\t';
-				break;
+				return '\t';
 			case 'v':
-				c = '\v';
-				break;
+				return '\v';
 			case 'e':
-				c = '\x18';
-				break;
+				return '\x18';
 			case 'N':
-				c = '\x85';
-				break;
+				return '\x85';
 			case '_':
-				c = '\xA0';
-				break;
+				return '\xA0';
 			case 'L':
-				c = '\u2028';
-				break;
+				return '\u2028';
 			case 'P':
-				c = '\u2029';
-				break;
+				return '\u2029';
+			case '0':
+				return '\0';
 
 			// Ctrl+CHAR symbol: \c[A-Z]
 			case 'c':
-				c = stream[++i];
+				if (value.Length < 2)
+				{
+					length = -value.Length;
+					return '\0';
+				}
+				c = value[1];
 				if (c is < 'A' or > 'Z')
-					throw stream.SyntaxException(SR.UnrecognizedEscapeSequence(c));
-				c = (char)(c - 'A' + 1);
-				break;
-
-			// Octal value: \0[0-7]?[0-7]?[0-7]?
-			case '0':
-				k = 0;
-				for (j = 0; j < 3; ++j)
 				{
-					c = stream[++i];
-					if (c is not (>= '0' and <= '7'))
-					{
-						--i;
-						break;
-					}
-					k = k * 8 + (c - '0');
+					length = -2;
+					return '\0';
 				}
-				c = (char)k;
-				break;
+				length = 2;
+				return (char)(c - 'A' + 1);
 
-			// Hexadecimal unicode symbol: \[ux][0-9a-f]?[0-9a-f]?[0-9a-f]?[0-9a-f]?
+			// Hexadecimal symbol: \x[0-9a-f][0-9a-f]([0-9a-f][0-9a-f])?
 			case 'x':
-			case 'u':
-				k = 0;
-				for (j = 0; j < 4; ++j)
+				if (value.Length < 3)
 				{
-					c = stream[++i];
-					int l;
-					if (c is >= '0' and <= '9')
-					{
-						l = (c - '0');
-					}
-					else
-					{
-						c |= ' ';
-						if (c is >= 'a' and <= 'f')
-						{
-							l = (c - 'a' + 10);
-						}
-						else
-						{
-							--i;
-							break;
-						}
-					}
-					k = k * 16 + l;
+					length = -value.Length;
+					return '\0';
 				}
-				if (j == 0)
-					throw stream.SyntaxException(SR.UnrecognizedEscapeSequence(stream.Substring(0, 2)));
-				c = (char)k;
-				break;
+				var h1 = HexPair(value[1], value[2]);
+				if (h1 < 0)
+				{
+					length = -3;
+					return '\0';
+				}
+				var h2 = value.Length < 5 ? -1: HexPair(value[3], value[4]);
+				if (h2 < 0)
+				{
+					length = 3;
+					return (char)h1;
+				}
+				else
+				{
+					length = 5;
+					return (char)((h1 << 8) + h2);
+				}
+
+			// Hexadecimal unicode symbol: \u[0-9a-f][0-9a-f][0-9a-f][0-9a-f]
+			case 'u':
+				if (value.Length < 5)
+				{
+					length = -value.Length;
+					return '\0';
+				}
+				var h11 = HexPair(value[1], value[2]);
+				if (h11 < 0)
+				{
+					length = -5;
+					return '\0';
+				}	
+				var h12 = HexPair(value[3], value[4]);
+				if (h12 < 0)
+				{
+					length = -5;
+					return '\0';
+				}
+				length = 5;
+				return (char)((h11 << 8) + h12);
 
 			default:
-				c = stream[i];
-				break;
+				return c;
 		}
-		next = i + 1;
-		return c;
+
+		static int HexPair(char c1, char c2)
+		{
+			int i = HexDigit(c1);
+			if (i < 0)
+				return -1;
+			int j = HexDigit(c2);
+			if (j < 0)
+				return -1;
+			return (i << 4) + j;
+		}
+
+		static int HexDigit(char c) => c switch
+		{
+			>= '0' and <= '9' => c - '0',
+			>= 'a' and <= 'f' => c - 'a' + 10,
+			>= 'A' and <= 'F' => c - 'A' + 10,
+			_ => -1
+		};
 	}
 }

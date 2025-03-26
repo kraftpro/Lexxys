@@ -13,7 +13,7 @@ using Xml;
 [Serializable]
 public class ConfigurationException: InvalidOperationException
 {
-	public const string DicNodeName = "Node";
+	public const string DataNodeName = "node";
 
 	public ConfigurationException()
 	{
@@ -22,7 +22,7 @@ public class ConfigurationException: InvalidOperationException
 	public ConfigurationException(IXmlReadOnlyNode? config)
 	{
 		if (config != null)
-			base.Data[DicNodeName] = config.ToString();
+			base.Data[DataNodeName] = config.ToString();
 	}
 
 	public ConfigurationException(string? message): base(message)
@@ -36,7 +36,7 @@ public class ConfigurationException: InvalidOperationException
 	public ConfigurationException(string? message, IXmlReadOnlyNode? config): base(message)
 	{
 		if (config != null)
-			base.Data[DicNodeName] = config.ToString();
+			base.Data[DataNodeName] = config.ToString();
 	}
 
 	public ConfigurationException(string? message, Exception? exception): base(message, exception)
@@ -46,7 +46,7 @@ public class ConfigurationException: InvalidOperationException
 	public ConfigurationException(string? message, IXmlReadOnlyNode? config, Exception? exception): base(message, exception)
 	{
 		if (config != null)
-			base.Data[DicNodeName] = config.ToString();
+			base.Data[DataNodeName] = config.ToString();
 	}
 
 #if !NET8_0_OR_GREATER

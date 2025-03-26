@@ -10,7 +10,14 @@ public static class LoggingTools
 		var logType = ToLogType(logLevel);
 		if (log == null || !log.IsEnabled(logType))
 			return;
-		IDictionary? args = state as IDictionary;
+		IEnumerable<NameValueTuple<string, object?>>? args = state switch
+		{
+			IEnumerable<NameValueTuple<string, object?>> list => list,
+			IEnumerable<KeyValuePair<string, object?>> dictionary => dictionary.Select(o => new NameValueTuple<string, object?>(o.Key, o.Value)),
+			IEnumerable<(string Name, object? Value)> tuple => tuple.Select(o => new NameValueTuple<string, object?>(o.Name, o.Value)),
+			IDictionary dictionary => dictionary.Cast<DictionaryEntry>().Select(o => new NameValueTuple<string, object?>(o.Key?.ToString() ?? String.Empty, o.Value)),
+			_ => null
+		};
 		string? message = null;
 		if (formatter != null)
 			message = formatter(state, exception);

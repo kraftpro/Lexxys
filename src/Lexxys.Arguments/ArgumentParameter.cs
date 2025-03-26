@@ -47,8 +47,8 @@ public class ArgumentParameter
 	public string Name => Definition.Name;
 
 	public bool TryGetValue<T>([MaybeNullWhen(false)] out T result, ICollection<string>? errors = null)
-		=> Value.TryConvert<T>(Name, out result, Definition.IsRequired, errors);
+		=> Value.TryConvert(Name, out result, Definition.IsRequired, errors);
 
 	public bool TryGetValue<T>(out T[] result, ICollection<string>? errors = null)
-		=> Value.TryConvert<T>(Name, out result, Definition.IsRequired, errors);
+		=> Value.TryConvert(Name, out result, Definition.IsRequired, errors);
 }

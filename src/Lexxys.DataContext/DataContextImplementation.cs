@@ -157,82 +157,78 @@ class DataContextImplementation: IDisposable
 	public int Connect()
 	{
 		var t = Audit.Start();
-		if (_connectionsCount > 0)
+		lock (_connectLock)
 		{
-			Debug.Assert(_connection.State != ConnectionState.Closed);
-
-			++_connectionsCount;
+			if (_connectionsCount > 0)
+			{
+				Debug.Assert(_connection.State != ConnectionState.Closed);
+				Audit.ConnectionEnd(t);
+				++_connectionsCount;
+			}
+			else
+			{
+				Debug.Assert(_connection.State == ConnectionState.Closed);
+				_connection.Open();
+				_connectionsCount = 1;
+				if (_timeSyncStamp + TimeSyncInterval < DateTime.Now)
+					SyncTime();
+			}
+			Audit.ConnectionEnd(t);
+			return _connectionsCount;
 		}
-		else
-		{
-			Debug.Assert(_connection.State == ConnectionState.Closed);
-
-			_connection.Open();
-			_connectionsCount = 1;
-			if (_timeSyncStamp + TimeSyncInterval < DateTime.Now)
-				SyncTime();
-		}
-		Audit.ConnectionEnd(t);
-		return _connectionsCount;
 	}
 
-	public async Task<int> ConnectAsync()
-	{
-		var t = Audit.Start();
-		if (_connectionsCount > 0)
-		{
-			Debug.Assert(_connection.State != ConnectionState.Closed);
+	private readonly object _connectLock = new object();
 
-			++_connectionsCount;
-		}
-		else
-		{
-			Debug.Assert(_connection.State == ConnectionState.Closed);
-
-			await _connection.OpenAsync().ConfigureAwait(false);
-			_connectionsCount = 1;
-			if (_timeSyncStamp + TimeSyncInterval < DateTime.Now)
-				SyncTime();
-		}
-		Audit.ConnectionEnd(t);
-		return _connectionsCount;
-	}
+	//public Task<int> ConnectAsync()
+	//{
+	//	return Task.FromResult(Connect());
+	//}
 
 	public int Disconnect()
 	{
-		Debug.Assert(_connection.State != ConnectionState.Closed);
-		if (_connectionsCount > 1)
-			return --_connectionsCount;
-
 		var t = Audit.Start();
-
-		_connection.Close();	// throws error when connection is closed already
-		_connectionsCount = 0;
-
-		Audit.ConnectionEnd(t);
-
-		return _connectionsCount;
+		lock (_connectLock)
+		{
+			if (--_connectionsCount > 0)
+			{
+				Debug.Assert(_connection.State != ConnectionState.Closed);
+			}
+			else
+			{
+				Debug.Assert(_connection.State != ConnectionState.Closed);
+				if (_connectionsCount < 0)
+				{
+					_connectionsCount = 0;
+					Dc.Log.Error("Dc.Disconnect", "ConnectionCount == 0", null, null);
+				}
+				_connection.Close();
+			}
+			Audit.ConnectionEnd(t);
+			return _connectionsCount;
+		}
 	}
 
 	private void SafeDisconnect()
 	{
 		var t = Audit.Start();
-		if (_connectionsCount > 1)
+		lock (_connectLock)
 		{
-			--_connectionsCount;
-			if (_connection.State == ConnectionState.Closed)
+			if (--_connectionsCount > 0)
 			{
-				_connection.Open();
-				Audit.ConnectionEnd(t);
+				if (_connection.State == ConnectionState.Closed)
+					_connection.Open();
 			}
-		}
-		else
-		{
-			if (_connectionsCount < 1)
-				Dc.Log.Error("Dc.SafeDisconnect", "ConnectionCount == 0", null, null);
-			if (_connection.State != ConnectionState.Closed)
-				_connection.Close();
-			_connectionsCount = 0;
+			else
+			{
+				if (_connectionsCount < 0)
+				{
+					_connectionsCount = 0;
+					Dc.Log.Error("Dc.SafeDisconnect", "ConnectionCount == 0", null, null);
+				}
+				if (_connection.State != ConnectionState.Closed)
+					_connection.Close();
+			}
 			Audit.ConnectionEnd(t);
 		}
 	}

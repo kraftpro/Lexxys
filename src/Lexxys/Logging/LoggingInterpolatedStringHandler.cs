@@ -1,5 +1,7 @@
 ﻿#if NET6_0_OR_GREATER
 
+using Microsoft.Extensions.Logging;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,17 +11,15 @@ using System.Threading.Tasks;
 
 namespace Lexxys;
 
-
 [InterpolatedStringHandler]
 public ref struct LoggingInterpolatedStringHandler
 {
 	private DefaultInterpolatedStringHandler _handler;
 	private bool _isValid;
 
-	public LoggingInterpolatedStringHandler(int literalLength, int formattedCount, ILogging logger, LogType logType, out bool handlerIdValid)
+	public LoggingInterpolatedStringHandler(int literalLength, int formattedCount, ILogger logger, LogType logType, out bool handlerIdValid)
 	{
-		if (logger == null)
-			throw new ArgumentNullException(nameof(logger));
+		if (logger == null) throw new ArgumentNullException(nameof(logger));
 		if (logger.IsEnabled(logType))
 		{
 			_isValid = true;
@@ -44,6 +44,7 @@ public ref struct LoggingInterpolatedStringHandler
 
 	public string ToStringAndClear() => _isValid ? _handler.ToStringAndClear(): String.Empty;
 }
+
 #region Trace
 //.?
 
@@ -53,11 +54,10 @@ public ref struct LoggingTraceInterpolatedStringHandler
 	private DefaultInterpolatedStringHandler _handler;
 	private bool _isValid;
 
-	public LoggingTraceInterpolatedStringHandler(int literalLength, int formattedCount, ILogging logger, out bool handlerIdValid)
+	public LoggingTraceInterpolatedStringHandler(int literalLength, int formattedCount, ILogger logger, out bool handlerIdValid)
 	{
-		if (logger is null)
-			throw new ArgumentNullException(nameof(logger));
-		if (logger.IsEnabled(LogType.Trace))
+		if (logger is null) throw new ArgumentNullException(nameof(logger));
+		if (logger.IsEnabled(LogLevel.Trace))
 		{
 			_isValid = true;
 			_handler = new DefaultInterpolatedStringHandler(literalLength, formattedCount);
@@ -82,11 +82,11 @@ public ref struct LoggingTraceInterpolatedStringHandler
 	public string ToStringAndClear() => _isValid ? _handler.ToStringAndClear(): String.Empty;
 }
 
-//.?$X = above("LogType.Trace", "Trace");
+//.?$X = above("LogLevel.Trace", "Trace");
 #endregion
 
 #region Debug
-//.#back($X, "LogType.Debug", "Debug")
+//.#back($X, "LogLevel.Debug", "Debug")
 
 [InterpolatedStringHandler]
 public ref struct LoggingDebugInterpolatedStringHandler
@@ -94,11 +94,10 @@ public ref struct LoggingDebugInterpolatedStringHandler
 	private DefaultInterpolatedStringHandler _handler;
 	private bool _isValid;
 
-	public LoggingDebugInterpolatedStringHandler(int literalLength, int formattedCount, ILogging logger, out bool handlerIdValid)
+	public LoggingDebugInterpolatedStringHandler(int literalLength, int formattedCount, ILogger logger, out bool handlerIdValid)
 	{
-		if (logger is null)
-			throw new ArgumentNullException(nameof(logger));
-		if (logger.IsEnabled(LogType.Debug))
+		if (logger is null) throw new ArgumentNullException(nameof(logger));
+		if (logger.IsEnabled(LogLevel.Debug))
 		{
 			_isValid = true;
 			_handler = new DefaultInterpolatedStringHandler(literalLength, formattedCount);
@@ -127,7 +126,7 @@ public ref struct LoggingDebugInterpolatedStringHandler
 #endregion
 
 #region Info
-//.#back($X, "LogType.Information", "Info")
+//.#back($X, "LogLevel.Information", "Info")
 
 [InterpolatedStringHandler]
 public ref struct LoggingInfoInterpolatedStringHandler
@@ -135,11 +134,10 @@ public ref struct LoggingInfoInterpolatedStringHandler
 	private DefaultInterpolatedStringHandler _handler;
 	private bool _isValid;
 
-	public LoggingInfoInterpolatedStringHandler(int literalLength, int formattedCount, ILogging logger, out bool handlerIdValid)
+	public LoggingInfoInterpolatedStringHandler(int literalLength, int formattedCount, ILogger logger, out bool handlerIdValid)
 	{
-		if (logger is null)
-			throw new ArgumentNullException(nameof(logger));
-		if (logger.IsEnabled(LogType.Information))
+		if (logger is null) throw new ArgumentNullException(nameof(logger));
+		if (logger.IsEnabled(LogLevel.Information))
 		{
 			_isValid = true;
 			_handler = new DefaultInterpolatedStringHandler(literalLength, formattedCount);
@@ -168,7 +166,7 @@ public ref struct LoggingInfoInterpolatedStringHandler
 #endregion
 
 #region Warning
-//.#back($X, "LogType.Warning", "Warning")
+//.#back($X, "LogLevel.Warning", "Warning")
 
 [InterpolatedStringHandler]
 public ref struct LoggingWarningInterpolatedStringHandler
@@ -176,11 +174,10 @@ public ref struct LoggingWarningInterpolatedStringHandler
 	private DefaultInterpolatedStringHandler _handler;
 	private bool _isValid;
 
-	public LoggingWarningInterpolatedStringHandler(int literalLength, int formattedCount, ILogging logger, out bool handlerIdValid)
+	public LoggingWarningInterpolatedStringHandler(int literalLength, int formattedCount, ILogger logger, out bool handlerIdValid)
 	{
-		if (logger is null)
-			throw new ArgumentNullException(nameof(logger));
-		if (logger.IsEnabled(LogType.Warning))
+		if (logger is null) throw new ArgumentNullException(nameof(logger));
+		if (logger.IsEnabled(LogLevel.Warning))
 		{
 			_isValid = true;
 			_handler = new DefaultInterpolatedStringHandler(literalLength, formattedCount);
@@ -209,7 +206,7 @@ public ref struct LoggingWarningInterpolatedStringHandler
 #endregion
 
 #region Error
-//.#back($X, "LogType.Error", "Error")
+//.#back($X, "LogLevel.Error", "Error")
 
 [InterpolatedStringHandler]
 public ref struct LoggingErrorInterpolatedStringHandler
@@ -217,11 +214,10 @@ public ref struct LoggingErrorInterpolatedStringHandler
 	private DefaultInterpolatedStringHandler _handler;
 	private bool _isValid;
 
-	public LoggingErrorInterpolatedStringHandler(int literalLength, int formattedCount, ILogging logger, out bool handlerIdValid)
+	public LoggingErrorInterpolatedStringHandler(int literalLength, int formattedCount, ILogger logger, out bool handlerIdValid)
 	{
-		if (logger is null)
-			throw new ArgumentNullException(nameof(logger));
-		if (logger.IsEnabled(LogType.Error))
+		if (logger is null) throw new ArgumentNullException(nameof(logger));
+		if (logger.IsEnabled(LogLevel.Error))
 		{
 			_isValid = true;
 			_handler = new DefaultInterpolatedStringHandler(literalLength, formattedCount);
@@ -250,7 +246,7 @@ public ref struct LoggingErrorInterpolatedStringHandler
 #endregion
 
 #region Write
-//.#back($X, "LogType.Output", "Write")
+//.#back($X, "LogLevel.Critical", "Write")
 
 [InterpolatedStringHandler]
 public ref struct LoggingWriteInterpolatedStringHandler
@@ -258,11 +254,10 @@ public ref struct LoggingWriteInterpolatedStringHandler
 	private DefaultInterpolatedStringHandler _handler;
 	private bool _isValid;
 
-	public LoggingWriteInterpolatedStringHandler(int literalLength, int formattedCount, ILogging logger, out bool handlerIdValid)
+	public LoggingWriteInterpolatedStringHandler(int literalLength, int formattedCount, ILogger logger, out bool handlerIdValid)
 	{
-		if (logger is null)
-			throw new ArgumentNullException(nameof(logger));
-		if (logger.IsEnabled(LogType.Output))
+		if (logger is null) throw new ArgumentNullException(nameof(logger));
+		if (logger.IsEnabled(LogLevel.Critical))
 		{
 			_isValid = true;
 			_handler = new DefaultInterpolatedStringHandler(literalLength, formattedCount);

@@ -1,10 +1,6 @@
 ﻿using System.Buffers;
-using System.Collections;
 using System.Globalization;
 using System.Text;
-using System.Xml;
-
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Lexxys.Xml;
 
@@ -16,25 +12,86 @@ public static partial class XmlTools
 
 	public static string Convert(Guid? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(DateTime value, XmlDateTimeSerializationMode mode = XmlDateTimeSerializationMode.Unspecified)
-		=> value.Ticks % TimeSpan.TicksPerDay == 0 ? value.ToString("yyyy-MM-dd"): XmlConvert.ToString(value, mode);
+	/// <summary>
+	/// Convert DateTime to string in ISO 8601 format.
+	/// </summary>
+	/// <param name="value">The DateTime value to convert.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public static string Convert(DateTime value, bool omitTimeZone = false)
+	{
+		string format;
+		if (value.Ticks % TimeSpan.TicksPerSecond != 0)
+			format = omitTimeZone || value.Kind == DateTimeKind.Unspecified ? @"yyyy-MM-ddThh:mm:ss.fffff": value.Kind == DateTimeKind.Utc ? @"yyyy-MM-ddThh:mm:ss.fffff\Z" : @"yyyy-MM-ddThh:mm:ss.fffffzzz";
+		else if (value.Ticks % TimeSpan.TicksPerDay != 0)
+			format = omitTimeZone || value.Kind == DateTimeKind.Unspecified ? @"yyyy-MM-ddThh:mm:ss": value.Kind == DateTimeKind.Utc ? @"yyyy-MM-ddThh:mm:ss\Z" : @"yyyy-MM-ddThh:mm:sszzz";
+		else
+			format = omitTimeZone || value.Kind == DateTimeKind.Unspecified ? @"yyyy-MM-dd": value.Kind == DateTimeKind.Utc ? @"yyyy-MM-dd\Z" : @"yyyy-MM-ddzzz";
+		return value.ToString(format, CultureInfo.InvariantCulture);
+	}
 
-	public static string Convert(DateTime? value, XmlDateTimeSerializationMode mode = XmlDateTimeSerializationMode.Unspecified)
-		=> value.HasValue ? Convert(value.GetValueOrDefault(), mode): "";
+	public static string Convert(DateTime? value, bool omitTimeZone = false) => value.HasValue ? Convert(value.GetValueOrDefault(), omitTimeZone): "";
 
-	public static string Convert(DateTime value, string format) => value.ToString(format, CultureInfo.InvariantCulture);
-
-	public static string Convert(DateTime? value, string format) => value.HasValue ? Convert(value.GetValueOrDefault(), format): "";
-
-	public static string Convert(DateTimeOffset value) => XmlConvert.ToString(value);
+	public static string Convert(DateTimeOffset value)
+	{
+		string format =
+			value.Ticks % TimeSpan.TicksPerSecond != 0 ? @"yyyy-MM-ddThh:mm:ss.fffffzzz":
+			value.Ticks % TimeSpan.TicksPerDay != 0 ? @"yyyy-MM-ddThh:mm:sszzz": @"yyyy-MM-ddzzz";
+		return value.ToString(format, CultureInfo.InvariantCulture);
+	}
 
 	public static string Convert(DateTimeOffset? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(DateTimeOffset value, string format) => value.ToString(format, CultureInfo.InvariantCulture);
+	public static string Convert(TimeSpan value)
+	{
+		StringBuilder text = new StringBuilder(12);
+		long ticks = value.Ticks;
+		if (ticks < 0)
+		{
+			text.Append('-');
+			ticks = -ticks;
+		}
+		text.Append('P');
+		if (ticks >= TimeSpan.TicksPerDay)
+		{
+			text.Append(ticks / TimeSpan.TicksPerDay).Append('D');
+			ticks %= TimeSpan.TicksPerDay;
+			if (ticks == 0)
+				return text.ToString();
+		}
+		text.Append('T');
+		if (ticks >= TimeSpan.TicksPerHour)
+		{
+			text.Append(ticks / TimeSpan.TicksPerHour).Append('H');
+			ticks %= TimeSpan.TicksPerHour;
+		}
+		if (ticks >= TimeSpan.TicksPerMinute)
+		{
+			text.Append(ticks / TimeSpan.TicksPerMinute).Append('M');
+			ticks %= TimeSpan.TicksPerMinute;
+		}
+		if (ticks > 0)
+		{
+			text.Append(ticks / TimeSpan.TicksPerSecond);
+			ticks %= TimeSpan.TicksPerSecond;
+			if (ticks > 0)
+				text.Append('.').Append(ticks.ToString("d7").TrimEnd('0'));
+			text.Append('S');
+		}
+		return text.Length < 4 ? "P0D": text.ToString();
+	}
 
-	public static string Convert(DateTimeOffset? value, string format) => value.HasValue ? Convert(value.GetValueOrDefault(), format): "";
+#if NET6_0_OR_GREATER
 
-	public static string Convert(TimeSpan value) => XmlConvert.ToString(value);
+	public static string Convert(DateOnly value) => value.ToString("o");
+
+	public static string Convert(DateOnly? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
+
+	public static string Convert(TimeOnly value) => value.Ticks % TimeSpan.TicksPerSecond == 0 ? value.ToString("o").Substring(0, 8): value.ToString("o").TrimEnd('0');
+
+	public static string Convert(TimeOnly? value) => value.HasValue ? Convert(value.GetValueOrDefault()) : "";
+
+#endif
 
 	public static string Convert(TimeSpan? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
@@ -74,11 +131,17 @@ public static partial class XmlTools
 
 	public static string Convert(decimal? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(float value) => XmlConvert.ToString(value);
+	public static string Convert(float value) =>
+		Single.IsPositiveInfinity(value) ? "INF":
+		Single.IsNegativeInfinity(value) ? "-INF":
+		value.ToString("R", NumberFormatInfo.InvariantInfo);
 
 	public static string Convert(float? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(double value) => XmlConvert.ToString(value);
+	public static string Convert(double value) =>
+		Double.IsPositiveInfinity(value) ? "INF":
+		Double.IsNegativeInfinity(value) ? "-INF":
+		value.ToString("R", NumberFormatInfo.InvariantInfo);
 
 	public static string Convert(double? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 

@@ -268,19 +268,15 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 
 	#region Internal classes
 
-	private readonly struct KeyCollection: ICollection<TKey>, ICollection
+	private readonly struct KeyCollection(OrderedBag<TKey, TValue> bag): ICollection<TKey>, ICollection
 	{
-		private readonly OrderedBag<TKey, TValue> _bag;
-
-		public KeyCollection(OrderedBag<TKey, TValue> dictionary) => _bag = dictionary;
-
 		public void Add(TKey item) => throw new NotImplementedException();
 
 		public bool Remove(TKey item) => throw new NotImplementedException();
 
 		public void Clear() => throw new NotImplementedException();
 
-		public bool Contains(TKey item) => _bag.IndexOf(item) >= 0;
+		public bool Contains(TKey item) => bag.IndexOf(item) >= 0;
 
 		public void CopyTo(TKey[] array, int index)
 		{
@@ -288,12 +284,12 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 				throw new ArgumentNullException(nameof(array));
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index), index, null);
-			if (array.Length - index < _bag.Count)
-				throw new ArgumentException($"The number of elements in the collection ({_bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
+			if (array.Length - index < bag.Count)
+				throw new ArgumentException($"The number of elements in the collection ({bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
 
-			for (int i = 0; i < _bag._list.Count; ++i)
+			for (int i = 0; i < bag._list.Count; ++i)
 			{
-				array[index++] = _bag._list[i].Key;
+				array[index++] = bag._list[i].Key;
 			}
 		}
 
@@ -303,16 +299,16 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 				throw new ArgumentNullException(nameof(array));
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index), index, null);
-			if (array.Length - index < _bag.Count)
-				throw new ArgumentException($"The number of elements in the collection ({_bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
+			if (array.Length - index < bag.Count)
+				throw new ArgumentException($"The number of elements in the collection ({bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
 
-			for (int i = 0; i < _bag._list.Count; ++i)
+			for (int i = 0; i < bag._list.Count; ++i)
 			{
-				array.SetValue(_bag._list[i].Key, index++);
+				array.SetValue(bag._list[i].Key, index++);
 			}
 		}
 
-		public int Count => _bag.Count;
+		public int Count => bag.Count;
 
 		public bool IsReadOnly => true;
 
@@ -322,7 +318,7 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 
 		public IEnumerator<TKey> GetEnumerator()
 		{
-			foreach (var item in _bag._list)
+			foreach (var item in bag._list)
 			{
 				yield return item.Key;
 			}
@@ -330,26 +326,22 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-			foreach (var item in _bag._list)
+			foreach (var item in bag._list)
 			{
 				yield return item.Key;
 			}
 		}
 	}
 
-	private readonly struct ValueCollection: ICollection<TValue>, ICollection
+	private readonly struct ValueCollection(OrderedBag<TKey, TValue> bag): ICollection<TValue>, ICollection
 	{
-		private readonly OrderedBag<TKey, TValue> _bag;
-		
-		public ValueCollection(OrderedBag<TKey, TValue> dictionary) => _bag = dictionary;
-
 		public void Add(TValue item) => throw new NotImplementedException();
 
 		public bool Remove(TValue item) => throw new NotImplementedException();
 
 		public void Clear() => throw new NotImplementedException();
 
-		public bool Contains(TValue item) => _bag._list.FindIndex(o => Object.Equals(o.Value, item)) >= 0;
+		public bool Contains(TValue item) => bag._list.FindIndex(o => Object.Equals(o.Value, item)) >= 0;
 
 		public void CopyTo(TValue[] array, int index)
 		{
@@ -357,12 +349,12 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 				throw new ArgumentNullException(nameof(array));
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index), index, null);
-			if (array.Length - index < _bag.Count)
-				throw new ArgumentException($"The number of elements in the collection ({_bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
+			if (array.Length - index < bag.Count)
+				throw new ArgumentException($"The number of elements in the collection ({bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
 
-			for (int i = 0; i < _bag._list.Count; ++i)
+			for (int i = 0; i < bag._list.Count; ++i)
 			{
-				array[index++] = _bag._list[i].Value;
+				array[index++] = bag._list[i].Value;
 			}
 		}
 
@@ -372,16 +364,16 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 				throw new ArgumentNullException(nameof(array));
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index), index, null);
-			if (array.Length - index < _bag.Count)
-				throw new ArgumentException($"The number of elements in the collection ({_bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
+			if (array.Length - index < bag.Count)
+				throw new ArgumentException($"The number of elements in the collection ({bag.Count}) is greater than the available space ({array.Length - index}) from index to the end of the destination array.", nameof(array));
 
-			for (int i = 0; i < _bag._list.Count; ++i)
+			for (int i = 0; i < bag._list.Count; ++i)
 			{
-				array.SetValue(_bag._list[i].Value, index++);
+				array.SetValue(bag._list[i].Value, index++);
 			}
 		}
 
-		public int Count => _bag.Count;
+		public int Count => bag.Count;
 
 		public bool IsReadOnly => true;
 
@@ -391,7 +383,7 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 
 		public IEnumerator<TValue> GetEnumerator()
 		{
-			foreach (var item in _bag._list)
+			foreach (var item in bag._list)
 			{
 				yield return item.Value;
 			}
@@ -399,18 +391,16 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-			foreach (var item in _bag._list)
+			foreach (var item in bag._list)
 			{
 				yield return item.Value;
 			}
 		}
 	}
 
-	private struct DictionaryEnumerator: IDictionaryEnumerator
+	private struct DictionaryEnumerator(OrderedBag<TKey, TValue> bag): IDictionaryEnumerator
 	{
-		private List<(TKey Key, TValue Value)>.Enumerator _parent;
-
-		public DictionaryEnumerator(OrderedBag<TKey, TValue> dictionary) => _parent = dictionary._list.GetEnumerator();
+		private List<(TKey Key, TValue Value)>.Enumerator _parent = bag._list.GetEnumerator();
 
 		public DictionaryEntry Entry => new DictionaryEntry(_parent.Current.Key!, _parent.Current.Value);
 

@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net6.0</TargetFrameworks>
-    <!--<TargetFrameworks>net8.0;net6.0;netstandard2.0;net472</TargetFrameworks>-->
+    <TargetFrameworks>net9.0;net8.0;net6.0;netstandard2.0;net462</TargetFrameworks>
     <RootNamespace>Lexxys</RootNamespace>
     <LangVersion>preview</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -12,10 +11,13 @@
     <ProjectReference Include="..\Lexxys\Lexxys.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.*" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Lexxys\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 
 </Project>

@@ -88,10 +88,10 @@ public abstract class XmlBuilder
 	{
 		if (((int)NamingRule & 8) != 0)
 			name = Rename(name);
-		return XmlConvert.EncodeName(name)!;
+		return XmlConvert.EncodeName(name);
 	}
 
-	private string PreferName(string name) => XmlConvert.EncodeName(Rename(name))!;
+	private string PreferName(string name) => XmlConvert.EncodeName(Rename(name));
 
 	private string Rename(string value) => Strings.ToNamingRule(value, NamingRule);
 
@@ -191,398 +191,235 @@ public abstract class XmlBuilder
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, string value)
-	{
-		return AppendItem(name, value);
-	}
+	public XmlBuilder Item(string name, string value) => AppendItem(name, value);
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, bool value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, bool value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, sbyte value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, sbyte value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, byte value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, byte value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, short value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, short value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, ushort value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, ushort value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, int value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, int value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, uint value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, uint value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, long value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, long value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, ulong value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, ulong value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, float value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, float value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, double value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, double value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, decimal value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, decimal value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, Guid value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, Guid value) => AppendItem(name, XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, TimeSpan value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
+	public XmlBuilder Item(string name, TimeSpan value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, DateTime value, bool omitTimeZone = false) => AppendItem(name, XmlTools.Convert(value, omitTimeZone));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, DateTimeOffset value, bool omitTimeZone = false) => AppendItem(name, XmlTools.Convert(value, omitTimeZone));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTime value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
-	/// <summary>
-	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="dateTimeOption">How to treat the <paramref name="value"/>.</param>
-	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTime value, XmlDateTimeSerializationMode dateTimeOption)
-	{
-		return AppendItem(name, XmlTools.Convert(value, dateTimeOption));
-	}
-	/// <summary>
-	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted.</param>
-	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTime value, string format)
-	{
-		return AppendItem(name, XmlTools.Convert(value, format));
-	}
+	public XmlBuilder Item(string name, bool? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTimeOffset value)
-	{
-		return AppendItem(name, XmlTools.Convert(value));
-	}
-	/// <summary>
-	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted.</param>
-	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTimeOffset value, string format)
-	{
-		return AppendItem(name, XmlTools.Convert(value, format));
-	}
-
+	public XmlBuilder Item(string name, sbyte? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, bool? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, byte? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, sbyte? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, short? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, byte? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, ushort? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, short? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, int? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, ushort? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, uint? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, int? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, long? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, uint? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, ulong? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, long? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, float? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, ulong? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, double? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, float? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, decimal? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, double? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, Guid? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, decimal? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, TimeSpan? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, Guid? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Item(string name, DateTime? value, bool omitTimeZone = false) => AppendItem(name, value == null ? null: XmlTools.Convert(value, omitTimeZone));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
 	/// <returns></returns>
-	public XmlBuilder Item(string name, TimeSpan? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value));
-	}
-	/// <summary>
-	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTime? value)
-	{
-		return value == null ? AppendItem(name, null): Item(name, value.GetValueOrDefault());
-	}
-	/// <summary>
-	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="dateTimeOption">How to treat the <paramref name="value"/>.</param>
-	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTime? value, XmlDateTimeSerializationMode dateTimeOption)
-	{
-		return value == null ? AppendItem(name, null): Item(name, value.GetValueOrDefault(), dateTimeOption);
-	}
-	/// <summary>
-	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted.</param>
-	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTime? value, string format)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault(), format));
-	}
-	/// <summary>
-	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTimeOffset? value)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
-	}
-	/// <summary>
-	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted.</param>
-	/// <returns></returns>
-	public XmlBuilder Item(string name, DateTimeOffset? value, string format)
-	{
-		return AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault(), format));
-	}
-
+	public XmlBuilder Item(string name, DateTimeOffset? value, bool omitTimeZone = false) => AppendItem(name, value == null ? null: XmlTools.Convert(value, omitTimeZone));
 	/// <summary>
 	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -658,350 +495,202 @@ public abstract class XmlBuilder
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(bool value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(bool value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(sbyte value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(sbyte value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(byte value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(byte value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(short value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(short value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(ushort value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(ushort value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(int value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(int value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(uint value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(uint value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(long value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(long value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(ulong value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(ulong value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(float value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(float value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(double value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(double value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(decimal value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(decimal value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(Guid value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(Guid value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(TimeSpan value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(TimeSpan value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(DateTime value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(DateTime value) => AppendValue(XmlTools.Convert(value));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
-	/// <param name="dateTimeOption"></param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(DateTime value, XmlDateTimeSerializationMode dateTimeOption)
-	{
-		return AppendValue(XmlTools.Convert(value, dateTimeOption));
-	}
-	/// <summary>
-	///  Writes the value of the current XML element or attribute.
-	/// </summary>
-	/// <param name="value">The value to write.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted</param>
-	/// <returns></returns>
-	public XmlBuilder Value(DateTime value, string format)
-	{
-		return AppendValue(XmlTools.Convert(value, format));
-	}
+	public XmlBuilder Value(DateTime value, bool omitTimeZone = false) => AppendValue(XmlTools.Convert(value, omitTimeZone));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(DateTimeOffset value)
-	{
-		return AppendValue(XmlTools.Convert(value));
-	}
-	/// <summary>
-	///  Writes the value of the current XML element or attribute.
-	/// </summary>
-	/// <param name="value">The value to write.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted</param>
-	/// <returns></returns>
-	public XmlBuilder Value(DateTimeOffset value, string format)
-	{
-		return AppendValue(XmlTools.Convert(value, format));
-	}
+	public XmlBuilder Value(DateTimeOffset value) => AppendValue(XmlTools.Convert(value));
 
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(bool? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(bool? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(sbyte? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(sbyte? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(byte? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(byte? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(short? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(short? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(ushort? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(ushort? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(int? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(int? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(uint? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(uint? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(long? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(long? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(ulong? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(ulong? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(float? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(float? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(double? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(double? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(decimal? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(decimal? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(Guid? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
+	public XmlBuilder Value(Guid? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(TimeSpan? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value));
-	}
+	public XmlBuilder Value(TimeSpan? value) => value == null ? this: AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(DateTime? value, bool omitTimeZone = false) => value == null ? this: AppendValue(XmlTools.Convert(value, omitTimeZone));
 	/// <summary>
 	///  Writes the value of the current XML element or attribute.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public XmlBuilder Value(DateTime? value)
-	{
-		return value == null ? this : Value(value.GetValueOrDefault());
-	}
-	/// <summary>
-	///  Writes the value of the current XML element or attribute.
-	/// </summary>
-	/// <param name="value">The value to write.</param>
-	/// <param name="dateTimeOption"></param>
-	/// <returns></returns>
-	public XmlBuilder Value(DateTime? value, XmlDateTimeSerializationMode dateTimeOption)
-	{
-		return value == null ? this : Value(value.GetValueOrDefault(), dateTimeOption);
-	}
-	/// <summary>
-	///  Writes the value of the current XML element or attribute.
-	/// </summary>
-	/// <param name="value">The value to write.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted</param>
-	/// <returns></returns>
-	public XmlBuilder Value(DateTime? value, string format)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault(), format));
-	}
-	/// <summary>
-	///  Writes the value of the current XML element or attribute.
-	/// </summary>
-	/// <param name="value">The value to write.</param>
-	/// <returns></returns>
-	public XmlBuilder Value(DateTimeOffset? value)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
-	}
-	/// <summary>
-	///  Writes the value of the current XML element or attribute.
-	/// </summary>
-	/// <param name="value">The value to write.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted</param>
-	/// <returns></returns>
-	public XmlBuilder Value(DateTimeOffset? value, string format)
-	{
-		return value == null ? this : AppendValue(XmlTools.Convert(value.GetValueOrDefault(), format));
-	}
+	public XmlBuilder Value(DateTimeOffset? value) => value == null ? this: AppendValue(XmlTools.Convert(value));
 
 	#endregion
 
@@ -1010,10 +699,7 @@ public abstract class XmlBuilder
 	/// </summary>
 	/// <param name="value">The value to write</param>
 	/// <returns></returns>
-	public XmlBuilder Value(IDumpXml? value)
-	{
-		return value == null ? this: value.ToXmlContent(this);
-	}
+	public XmlBuilder Value(IDumpXml? value) => value == null ? this: value.ToXmlContent(this);
 
 	/// <summary>
 	/// Writes collection of values
@@ -1037,10 +723,7 @@ public abstract class XmlBuilder
 	/// </summary>
 	/// <param name="value">Value to write</param>
 	/// <returns><see cref="XmlBuilder"/></returns>
-	public XmlBuilder Value(object? value)
-	{
-		return value == null ? this : Value(value, PreferElements);
-	}
+	public XmlBuilder Value(object? value) => value == null ? this: Value(value, PreferElements);
 
 	/// <summary>
 	/// Writes object value.
@@ -1048,10 +731,7 @@ public abstract class XmlBuilder
 	/// <param name="value">Value to write</param>
 	/// <param name="elements">Use XML elements instead of attributes for properties of <paramref name="value"/></param>
 	/// <returns><see cref="XmlBuilder"/></returns>
-	public XmlBuilder Value(object? value, bool elements)
-	{
-		return value is IDumpXml dump ? dump.ToXmlContent(this) : Object(value, elements);
-	}
+	public XmlBuilder Value(object? value, bool elements) => value is IDumpXml dump ? dump.ToXmlContent(this): Object(value, elements);
 
 	/// <summary>
 	/// Writes object value ignoring <see cref="IDumpXml"/> implementation.
@@ -1073,24 +753,21 @@ public abstract class XmlBuilder
 
 	private XmlBuilder ComplexObject(object value, bool elements = false)
 	{
-		if (_visited.Contains(value))
+		if (!_visited.Add(value))
 			return Value(ReferenceValue(value));
-		_visited.Add(value);
 
-		if (value is IEnumerable enumerable)
-		{
-			var itemName = Rename("item");
-			foreach (var item in enumerable)
-			{
-				if (item is IDumpXml dumpXml)
-					Element(dumpXml.XmlElementName).Value(dumpXml).End();
-				else
-					Element(itemName).Value(item, elements).End();
-			}
-		}
-		else
+		if (value is not IEnumerable enumerable)
 		{
 			AppendProperties(value, elements);
+			return this;
+		}
+		var itemName = Rename("item");
+		foreach (var item in enumerable)
+		{
+			if (item is IDumpXml dumpXml)
+				Element(dumpXml.XmlElementName).Value(dumpXml).End();
+			else
+				Element(itemName).Value(item, elements).End();
 		}
 		return this;
 	}
@@ -1101,10 +778,7 @@ public abstract class XmlBuilder
 	/// <param name="name">Name of the XML element</param>
 	/// <param name="value">Value of the XML element</param>
 	/// <returns></returns>
-	public XmlBuilder Element(string name, object? value)
-	{
-		return Element(name).Value(value, PreferElements).End();
-	}
+	public XmlBuilder Element(string name, object? value) => Element(name).Value(value, PreferElements).End();
 
 	/// <summary>
 	/// Writes XML element and value.
@@ -1113,10 +787,7 @@ public abstract class XmlBuilder
 	/// <param name="value">Value of the XML element</param>
 	/// <param name="elements">Use XML elements instead of attributes for properties of <paramref name="value"/></param>
 	/// <returns></returns>
-	public XmlBuilder Element(string name, object? value, bool elements)
-	{
-		return Element(name).Value(value, elements).End();
-	}
+	public XmlBuilder Element(string name, object? value, bool elements) => Element(name).Value(value, elements).End();
 
 	/// <summary>
 	/// Writes XML element and value.
@@ -1124,10 +795,7 @@ public abstract class XmlBuilder
 	/// <param name="name">Name of the XML element</param>
 	/// <param name="value">Value of the XML element</param>
 	/// <returns></returns>
-	public XmlBuilder Element(string name, IDumpXml? value)
-	{
-		return Element(name).Value(value).End();
-	}
+	public XmlBuilder Element(string name, IDumpXml? value) => Element(name).Value(value).End();
 
 	/// <summary>
 	/// Writes XML element and collection of sub-elements.
@@ -1136,10 +804,7 @@ public abstract class XmlBuilder
 	/// <param name="value">Value of the XML element</param>
 	/// <param name="itemName">Optional name of the collection item</param>
 	/// <returns></returns>
-	public XmlBuilder Element(string name, IEnumerable<IDumpXml>? value, string? itemName = null)
-	{
-		return Element(name).Value(value, itemName).End();
-	}
+	public XmlBuilder Element(string name, IEnumerable<IDumpXml>? value, string? itemName = null) => Element(name).Value(value, itemName).End();
 
 	private void AppendElement(string name, object? value, bool elements)
 	{
@@ -1156,12 +821,11 @@ public abstract class XmlBuilder
 			return;
 		}
 
-		if (_visited.Contains(value))
+		if (!_visited.Add(value))
 		{
 			Element(name).AppendValue(ReferenceValue(value)).End();
 			return;
 		}
-		_visited.Add(value);
 
 		if (value is not IEnumerable enumerable)
 		{

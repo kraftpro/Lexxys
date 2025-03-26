@@ -4,6 +4,8 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+using Lexxys;
+
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
@@ -17,30 +19,28 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 {
 	private const char NameDelimiter = ':';
 	private const char GroupDelimiter = ';';
-	private const string NameDelimiterStr = ":";
 
-	private readonly SortedSet<string> _set;
+	private readonly HashSet<string> _set;
 
-	public FlagSet(IComparer<string>? comparer = null)
+	public FlagSet(IEqualityComparer<string>? comparer = null)
 	{
-		_set = new SortedSet<string>(comparer ?? StringComparer.OrdinalIgnoreCase);
+		_set = new HashSet<string>(comparer ?? StringComparer.OrdinalIgnoreCase);
 	}
 
-	public FlagSet(FlagSet? value)
+	public FlagSet(FlagSet value)
 	{
-		_set = value is null ?
-			new SortedSet<string>(StringComparer.OrdinalIgnoreCase):
-			new SortedSet<string>(value._set, value._set.Comparer);
+		if (value is null) throw new ArgumentNullException(nameof(value));
+		_set = new HashSet<string>(value._set, value._set.Comparer);
 	}
 
-	public FlagSet(string? value, IComparer<string>? comparer = null)
+	public FlagSet(string? value, IEqualityComparer<string>? comparer = null)
 	{
-		_set = value is null ?
-			new SortedSet<string>(comparer ?? StringComparer.OrdinalIgnoreCase):
-			new SortedSet<string>(Split(value), comparer ?? StringComparer.OrdinalIgnoreCase);
+		_set = value is { Length: >0 } ?
+			new HashSet<string>(Split(value), comparer ?? StringComparer.OrdinalIgnoreCase):
+			new HashSet<string>(comparer ?? StringComparer.OrdinalIgnoreCase);
 	}
 
-	public static string? Clean(string? item)
+	private static string? Clean(string? item)
 	{
 		if (String.IsNullOrEmpty(item))
 			return default;
@@ -60,13 +60,11 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 			s = s.Slice(0, i + 1);
 		}
 		
-		static bool IsBlankOrDelimiter(char c)
-			=> IsBlank(c) || c is NameDelimiter or GroupDelimiter;
-		static bool IsBlank(char c)
-			=> c is <= '\u0020' or >= '\u007F' and <= '\u00A0' or >= '\uD800';
+		static bool IsBlankOrDelimiter(char c) => IsBlank(c) || c is NameDelimiter or GroupDelimiter;
+		static bool IsBlank(char c) => c is <= '\u0020' or >= '\u007F' and <= '\u00A0' or >= '\uD800';
 
-		using var mem = MemoryPool<char>.Shared.Rent(s.Length);
-		var buf = mem.Memory.Span;
+		char[]? mem = s.Length > Tools.SafeStackAllocChar ? ArrayPool<char>.Shared.Rent(s.Length): null;
+		var buf = mem == null ? stackalloc char[s.Length]: mem.AsSpan();
 		int n = 0;
 		bool colon = false;
 		bool group = false;
@@ -99,7 +97,10 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 			}
 		}
 
-		return buf.Slice(0, n).ToString();
+		var result = buf.Slice(0, n).ToString();
+		if (mem != null)
+			ArrayPool<char>.Shared.Return(mem);
+		return result;
 	}
 
 	private static IEnumerable<string> Split(string? value)
@@ -108,22 +109,10 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 		if (s is null)
 			yield break;
 
-		int k = s.IndexOf(GroupDelimiter);
-		if (k < 0)
-		{
-			int i = s.IndexOf(NameDelimiter);
-			while (i > 0)
-			{
-				yield return s.Substring(0, i);
-				i = s.IndexOf(NameDelimiter, i + 1);
-			}
-			yield return s;
-			yield break;
-		}
-
 		int l = 0;
-		for (;;)
+		do
 		{
+			int k = GroupIndex(s, l);
 			int i = s.IndexOf(NameDelimiter, l);
 			while (i > 0 && i < k)
 			{
@@ -132,62 +121,58 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 			}
 
 			yield return s.Substring(l, k - l);
-			if (k == s.Length)
-				yield break;
 			l = k + 1;
-			k = s.IndexOf(GroupDelimiter, l);
-			if (k < 0)
-				k = s.Length;
+		} while (l < s.Length);
+
+		static int GroupIndex(string value, int startIndex)
+		{
+			int i = value.IndexOf(GroupDelimiter, startIndex);
+			return i < 0 ? value.Length: i;
 		}
 	}
 	
-	public static FlagSet? operator +(FlagSet? left, FlagSet? right)
+	public static FlagSet operator +(FlagSet? left, FlagSet? right)
 	{
-		if (right is null || right.Count == 0)
-			return left is null && right is null ? null: new FlagSet(left);
-		if (left is null || left.Count == 0)
+		if (right is not { Count: >0 })
+			return left is { Count: >0 } ? new FlagSet(left): [];
+		if (left is not  { Count: >0 })
 			return new FlagSet(right);
 		var result = new FlagSet(left);
 		result._set.UnionWith(right._set);
 		return result;
 	}
 
-	public static FlagSet? operator +(FlagSet? left, string? right)
+	public static FlagSet operator +(FlagSet? left, string? right)
 	{
 		if (String.IsNullOrEmpty(right))
-			return left is null ? null: new FlagSet(left);
-		return left is null || left.Count == 0 ?
-			new FlagSet(right):
-			new FlagSet(left) { right };
+			return left is { Count: >0 } ? new FlagSet(left): new FlagSet();
+		return left is { Count: >0 } ? new FlagSet(left) { right }: new FlagSet(right);
 	}
 
-	public static FlagSet? operator -(FlagSet? left, FlagSet? right)
+	public static FlagSet operator -(FlagSet? left, FlagSet? right)
 	{
-		if (left is null)
-			return null;
+		if (left is not { Count: >0 })
+			return new FlagSet();
 		var result = new FlagSet(left);
-		if (right is null || right.Count == 0)
-			return result;
-		result._set.ExceptWith(right._set);
+		if (right is { Count: >0 })
+			result._set.ExceptWith(right._set);
 		return result;
 	}
 
-	public static FlagSet? operator -(FlagSet? left, string? right)
+	public static FlagSet operator -(FlagSet? left, string? right)
 	{
-		if (left is null)
-			return null;
+		if (left is not { Count: > 0 })
+			return new FlagSet();
 		var result = new FlagSet(left);
-		if (String.IsNullOrEmpty(right))
-			return result;
 		result.Remove(right);
 		return result;
 	}
 
-	public static FlagSet? Parse(string? value) => value == null ? null : new FlagSet(value);
+	public static FlagSet Parse(string? value) => new FlagSet(value);
 
-	public static explicit operator FlagSet?(string? value) => value == null ? null : new FlagSet(value);
+	public static explicit operator FlagSet(string? value) => new FlagSet(value);
 
-	public static explicit operator string?(FlagSet? value) => value?.ToString();
+	public static explicit operator string(FlagSet value) => value.ToString();
 
 	public static bool operator ==(FlagSet? left, FlagSet? right) => right?.Equals(left) ?? left is null;
 
@@ -197,46 +182,34 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 
 	public override bool Equals(object? obj) => obj is FlagSet other && Equals(other);
 
-	public bool Equals(FlagSet? other)
-	{
-		if (other is null)
-			return false;
-		if (ReferenceEquals(this, other))
-			return true;
+	public bool Equals(FlagSet? other) => other is not null && (ReferenceEquals(this, other) || _set.SetEquals(other._set));
 
-		if (_set.Count != other._set.Count)
-			return false;
-		if (_set.Count == 0)
-			return true;
-
-		using IEnumerator<string> a = _set.GetEnumerator();
-		using IEnumerator<string> b = other._set.GetEnumerator();
-		var comparer = _set.Comparer;
-		while (a.MoveNext() && b.MoveNext())
-		{
-			if (comparer.Compare(a.Current, b.Current) != 0)
-				return false;
-		}
-		return true;
-	}
-
-	public override string ToString() => ToString(false);
-
-	public string ToString(bool fast)
+	public override string ToString()
 	{
 		if (Count == 0)
-			return "";
+			return String.Empty;
 
 		var text = new StringBuilder();
 		text.Append(GroupDelimiter);
 		string? last = null;
-		foreach (var item in _set)
+		var items = _set.ToArray();
+		Array.Sort(items);
+		foreach (var item in items)
 		{
-			if (last is not null && !item.StartsWith(last, StringComparison.Ordinal))
-				text.Append(last).Append(GroupDelimiter);
-			last = item + NameDelimiterStr;
+			if (last is not null && !PartOf(item, last))
+				text.Append(last).Append(NameDelimiter).Append(GroupDelimiter);
+			last = item;
 		}
-		return text.Append(last).Append(GroupDelimiter).ToString();
+		return text.Append(last).Append(NameDelimiter).Append(GroupDelimiter).ToString();
+
+		static bool PartOf(string current, string previous)
+		{
+			if (current.Length <= previous.Length)
+				return false;
+			if (!current.StartsWith(previous, StringComparison.Ordinal))
+				return false;
+			return current[previous.Length] == NameDelimiter;
+		}
 	}
 
 	#region ISet<string>

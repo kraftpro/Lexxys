@@ -98,18 +98,16 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			WriteException(writer, "Exception: ", record.Exception, newLine, Setting.Indent);
 	}
 
-	private static void WriteArgs(TextWriter writer, IDictionary args, string newLine, string indent)
+	private static void WriteArgs(TextWriter writer, IEnumerable<NameValueTuple<string, object?>> args, string newLine, string indent)
 	{
 		var newLine2 = newLine + indent;
-		foreach (DictionaryEntry arg in args)
+		foreach (var arg in args)
 		{
 			writer.Write(newLine);
-			if (arg.Key == null)
+			if (arg.Name == null)
 				writer.Write(NullValue);
-			else if (arg.Key == DBNull.Value)
-				writer.Write(DbNullValue);
 			else
-				writer.Write(arg.Key.ToString().AsSpan().Trim());
+				writer.Write(arg.Name.AsSpan().Trim());
 
 			writer.Write(" = ");
 			if (arg.Value is string str)

@@ -51,7 +51,7 @@ public abstract class DumpWriter
 		MaxCapacity = maxCapacity <= 0 ? DefaultMaxCapacity : maxCapacity;
 		MaxDepth = maxDepth <= 0 ? DefaultMaxDepth : Math.Min(maxDepth, MaxMaxDepth);
 		Left = MaxCapacity;
-		Observed = new List<object>();
+		Observed = [];
 		StringLimit = stringLimit <= 0 ? DefaultStringLimit: stringLimit;
 		BlobLimit = blobLimit <= 0 ? DefaultBlobLimit: blobLimit;
 		ArrayLimit = arrayLimit <= 0 ? DefaultArrayLimit: arrayLimit;
@@ -85,7 +85,7 @@ public abstract class DumpWriter
 	/// <summary>
 	/// The remaining capacity of the dumping stream.
 	/// </summary>
-	public int Left { get; protected set; }
+	protected int Left { get; set; }
 	/// <summary>
 	/// Indicates whether to format dumped objects values.
 	/// </summary>
@@ -324,7 +324,7 @@ public abstract class DumpWriter
 	/// <returns></returns>
 	public DumpWriter Dump(decimal value)
 	{
-		return Text(value.ToString($"F{value.GetScale()}", CultureInfo.InvariantCulture));
+		return Text(value.ToString($"F{value.GetPrecision()}", CultureInfo.InvariantCulture));
 	}
 
 	/// <summary>
@@ -462,8 +462,8 @@ public abstract class DumpWriter
 		try
 		{
 			int i = 0;
-			var pad = '[';
-			foreach (var item in value)
+			char pad = '[';
+			foreach (object? item in value)
 			{
 				if (Left <= 0)
 					return this;
@@ -500,7 +500,7 @@ public abstract class DumpWriter
 		try
 		{
 			int i = 0;
-			var pad = '[';
+			char pad = '[';
 			while (value.MoveNext())
 			{
 				if (Left <= 0)
@@ -537,8 +537,9 @@ public abstract class DumpWriter
 		try
 		{
 			int i = 0;
-			var pad = '[';
+			char pad = '[';
 			IDictionaryEnumerator enumerator = value.GetEnumerator();
+			using var disposable = enumerator as IDisposable;
 			while (enumerator.MoveNext() && Left > 0)
 			{
 				if (Left <= 0)
@@ -970,7 +971,7 @@ public abstract class DumpWriter
 	{
 		if (value == null)
 			return Text(NullValue);
-		var byref = value.GetType().IsClass;
+		bool byref = value.GetType().IsClass;
 		if (byref && Observed.Contains(value))
 			return Text($"^{Observed.IndexOf(value) + 1}");
 		if (Depth > MaxDepth)
@@ -998,40 +999,40 @@ public abstract class DumpWriter
 		if (!skipIDump && value is IDump u)
 			return Dump(u, contentOnly);
 
-		if (value is IConvertible ic)
+		switch (value)
 		{
-			if (value is Enum)
+			case Enum:
 				return Text(value.ToString());
-			return ic.GetTypeCode() switch
-			{
-				TypeCode.DBNull or TypeCode.Empty => Text(NullValue),
-				TypeCode.Boolean => Dump((bool)value),
-				TypeCode.Char => Dump((char)value),
-				TypeCode.SByte => Dump((sbyte)value),
-				TypeCode.Byte => Dump((byte)value),
-				TypeCode.Int16 => Dump((short)value),
-				TypeCode.UInt16 => Dump((ushort)value),
-				TypeCode.Int32 => Dump((int)value),
-				TypeCode.UInt32 => Dump((uint)value),
-				TypeCode.Int64 => Dump((long)value),
-				TypeCode.UInt64 => Dump((ulong)value),
-				TypeCode.Single => Dump((float)value),
-				TypeCode.Double => Dump((double)value),
-				TypeCode.Decimal => Dump((Decimal)value),
-				TypeCode.DateTime => Dump((DateTime)value),
-				TypeCode.String => Dump((string)value),
-				_ => Text(ic.ToString(CultureInfo.InvariantCulture)),
-			};
+			case IConvertible ic:
+				return ic.GetTypeCode() switch
+				{
+					TypeCode.DBNull or TypeCode.Empty => Text(NullValue),
+					TypeCode.Boolean => Dump((bool)value),
+					TypeCode.Char => Dump((char)value),
+					TypeCode.SByte => Dump((sbyte)value),
+					TypeCode.Byte => Dump((byte)value),
+					TypeCode.Int16 => Dump((short)value),
+					TypeCode.UInt16 => Dump((ushort)value),
+					TypeCode.Int32 => Dump((int)value),
+					TypeCode.UInt32 => Dump((uint)value),
+					TypeCode.Int64 => Dump((long)value),
+					TypeCode.UInt64 => Dump((ulong)value),
+					TypeCode.Single => Dump((float)value),
+					TypeCode.Double => Dump((double)value),
+					TypeCode.Decimal => Dump((decimal)value),
+					TypeCode.DateTime => Dump((DateTime)value),
+					TypeCode.String => Dump((string)value),
+					_ => Text(ic.ToString(CultureInfo.InvariantCulture)),
+				};
+			case IEnumerable e:
+				return Dump(e, ignoreToString);
+			case IEnumerator r:
+				return Dump(r, ignoreToString);
+			case TimeSpan span:
+				return Dump(span);
+			case DictionaryEntry entry:
+				return Dump(entry, ignoreToString);
 		}
-
-		if (value is IEnumerable e)
-			return Dump(e, ignoreToString);
-		if (value is IEnumerator r)
-			return Dump(r, ignoreToString);
-		if (value is TimeSpan span)
-			return Dump(span);
-		if (value is DictionaryEntry entry)
-			return Dump(entry, ignoreToString);
 
 		int depth = Depth++;
 
@@ -1053,7 +1054,7 @@ public abstract class DumpWriter
 			else
 			{
 				var typeName = type.ToString();
-				string shortName = ShortName(typeName);
+				var shortName = ShortName(typeName);
 				if (!ignoreToString)
 				{
 					var sv = value.ToString();
@@ -1086,38 +1087,36 @@ public abstract class DumpWriter
 			}
 			foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
 			{
-				if (item.CanRead &&
-				    item.GetIndexParameters().Length == 0 &&
-				    item.PropertyType is { IsGenericTypeDefinition: false, IsGenericParameter: false })
+				if (!item.CanRead ||
+					item.GetIndexParameters().Length != 0 ||
+					item.PropertyType is not { IsGenericTypeDefinition: false, IsGenericParameter: false })
+					continue;
+				if (Left == 0)
+					return this;
+				try
 				{
-					if (Left == 0)
-						return this;
-					try
-					{
-						object? v = item.GetValue(value);
-						if (pad != '\0')
-							Text(pad);
-						NewLine();
-						Text(item.Name);
-						Text('=');
-						DumpIt(v, skipIDump, false, ignoreToString);
-						pad = ',';
-					}
-					catch
-					{
-						// ignore all internal exceptions
-					}
+					object? v = item.GetValue(value);
+					if (pad != '\0')
+						Text(pad);
+					NewLine();
+					Text(item.Name);
+					Text('=');
+					DumpIt(v, skipIDump, false, ignoreToString);
+					pad = ',';
+				}
+				catch
+				{
+					// ignore all internal exceptions
 				}
 			}
 
 			if (pad != ',')
 				Text($"{value}");
-			if (!contentOnly && pad != '{')
-			{
-				NewLine();
-				return Text('}');
-			}
-			return this;
+			if (contentOnly || pad == '{')
+				return this;
+
+			NewLine();
+			return Text('}');
 		}
 		finally
 		{

@@ -8,51 +8,22 @@ using System.Diagnostics;
 
 namespace Lexxys;
 
-class CollectionDebugView<T>
+class CollectionDebugView<T>(ICollection<T> data)
 {
-	readonly ICollection<T> _data;
-
-	public CollectionDebugView(ICollection<T> data)
-	{
-		_data = data;
-	}
-
 	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-	public T[] Values => _data.ToArray();
+	public T[] Values => [.. data];
 }
 
-class ReadOnlyCollectionDebugView<T>
+class ReadOnlyCollectionDebugView<T>(IReadOnlyCollection<T> data)
 {
-	readonly IReadOnlyCollection<T> _data;
-
-	public ReadOnlyCollectionDebugView(IReadOnlyCollection<T> data)
-	{
-		_data = data;
-	}
-
 	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-	public T[] Values => _data.ToArray();
+	public T[] Values => [.. data];
 }
 
-class DictionaryDebugView<TKey, TValue>
+class DictionaryDebugView<TKey, TValue>(IDictionary<TKey, TValue> data)
 {
-	private readonly IDictionary<TKey, TValue> _data;
-
-	public DictionaryDebugView(IDictionary<TKey, TValue> data)
-	{
-		_data = data;
-	}
-
 	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-	public KeyValuePair<TKey, TValue>[] Items
-	{
-		get
-		{
-			var tmp = new KeyValuePair<TKey, TValue>[_data.Count];
-			_data.CopyTo(tmp, 0);
-			return tmp;
-		}
-	}
+	public KeyValuePair<TKey, TValue>[] Items => [.. data];
 }
 
 

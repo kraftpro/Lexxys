@@ -159,7 +159,7 @@ public static class Lingua
 			string result;
 			if (_spec.IsMatch(word))
 			{
-				word = PluralLc4(word[word.Length - 1] == '\'' ? word.Substring(0, word.Length - 1): word.Substring(0, word.Length - 2), toPlural, classicalEnglish);
+				word = PluralLc4(word[^1] == '\'' ? word.Substring(0, word.Length - 1): word.Substring(0, word.Length - 2), toPlural, classicalEnglish);
 				result = word.EndsWith("s", StringComparison.OrdinalIgnoreCase) ? word + "'": word + "'s";
 			}
 			else
@@ -718,52 +718,36 @@ public static class Lingua
 			//}
 		}
 
-		readonly struct Ending
+		readonly struct Ending(int length, string end)
 		{
-			public readonly int Length;
-			public readonly string End;
-
-			public Ending(int length, string end)
-			{
-				Length = length;
-				End = end;
-			}
+			public readonly int Length = length;
+			public readonly string End = end;
 		}
 
-		class OneWay
+		class OneWay(Dictionary<string, string> map)
 		{
-			public readonly Dictionary<string, string> Map;
-			public readonly List<Ending> Ending;
+			public readonly Dictionary<string, string> Map = map;
+			public readonly List<Ending> Ending = new();
 			public Regex? Rex;
-
-			public OneWay(Dictionary<string, string> map)
-			{
-				Map = map;
-				Ending = new List<Ending>();
-			}
 		}
 
-		class Rule
+		class Rule(
+			Dictionary<string, string> pluralUniversal,
+			Dictionary<string, string> pluralClassic,
+			Dictionary<string, string> adjPlural,
+			Dictionary<string, string> adjSingular)
 		{
-			public readonly OneWay Spu;
-			public readonly OneWay Spc;
-			public readonly OneWay Psu;
-			public readonly OneWay Psc;
-
-			public Rule(Dictionary<string, string> pluralUniversal, Dictionary<string, string> pluralClassic, Dictionary<string, string> adjPlural, Dictionary<string, string> adjSingular)
-			{
-				Psu = new OneWay(Join(Reverse(pluralUniversal), adjSingular));
-				Psc = new OneWay(Reverse(pluralClassic));
-				Spu = new OneWay(Join(pluralUniversal, adjPlural));
-				Spc = new OneWay(pluralClassic);
-			}
+			public readonly OneWay Spu = new(Join(pluralUniversal, adjPlural));
+			public readonly OneWay Spc = new(pluralClassic);
+			public readonly OneWay Psu = new(Join(Reverse(pluralUniversal), adjSingular));
+			public readonly OneWay Psc = new(Reverse(pluralClassic));
 		}
 
 		private static Dictionary<string, string> Join(Dictionary<string, string> left, Dictionary<string, string> right)
 		{
 			foreach (var item in right)
 			{
-				left.Add(item.Key, item.Value);
+				left[item.Key] = item.Value;
 			}
 			return left;
 		}
@@ -1040,7 +1024,7 @@ public static class Lingua
 
 		private static string Mill(int index)
 		{
-			return index >= __mill.Length ? __mill[__mill.Length - 1]: __mill[index];
+			return index >= __mill.Length ? __mill[^1]: __mill[index];
 		}
 
 		private static string Ten(string value, int mill)

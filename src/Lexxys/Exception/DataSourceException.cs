@@ -12,6 +12,10 @@ namespace Lexxys;
 [Serializable]
 public class DataSourceException: Exception
 {
+	public const string DataConnectionName = "connection";
+	public const string DataStatementName = "statement";
+	public const string DataParameterPrefix = "parameter.";
+
 	public DataSourceException()
 	{
 	}
@@ -22,7 +26,7 @@ public class DataSourceException: Exception
 
 	public DataSourceException(string? message, string? connectionInfo): base(message)
 	{
-		base.Data["connection"] = connectionInfo;
+		base.Data[DataConnectionName] = connectionInfo;
 	}
 
 	public DataSourceException(string? message, Exception? exception): base(message, exception)
@@ -31,29 +35,31 @@ public class DataSourceException: Exception
 
 	public DataSourceException(string? message, string? connectionInfo, Exception? exception): base(message, exception)
 	{
-		base.Data["connection"] = connectionInfo;
+		if (connectionInfo is { Length: > 0 })
+			base.Data[DataConnectionName] = connectionInfo;
 	}
 
 	public DataSourceException(string? message, string? connectionInfo, string? statement, Exception? exception): base(message, exception)
 	{
 		if (connectionInfo is { Length: >0 })
-			base.Data["connection"] = connectionInfo;
-
-		base.Data["statement"] = statement;
+			base.Data[DataConnectionName] = connectionInfo;
+		if (statement is { Length: > 0 })
+			base.Data[DataStatementName] = statement;
 	}
 
-	public DataSourceException(string? message, string? connectionInfo, string? statement, IEnumerable<DbParameter>? dbParameters, Exception? exception): base(message, exception)
+	public DataSourceException(string? message, string? connectionInfo, string? statement, IEnumerable<DbParameter?>? dbParameters, Exception? exception): base(message, exception)
 	{
 		if (connectionInfo is { Length: >0 })
-			base.Data["connection"] = connectionInfo;
+			base.Data[DataConnectionName] = connectionInfo;
+		if (statement is { Length: > 0 })
+			base.Data[DataStatementName] = statement;
 
-		base.Data["statement"] = statement;
 		if (dbParameters != null)
 		{
 			foreach (var item in dbParameters)
 			{
 				if (item != null)
-					this.Add(item.ParameterName, item.Value);
+					this.Add(DataParameterPrefix + item.ParameterName, item.Value);
 			}
 		}
 	}

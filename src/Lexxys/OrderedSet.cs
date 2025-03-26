@@ -24,7 +24,7 @@ public class OrderedSet<T>: IList<T>, ISet<T>
 	public OrderedSet()
 	{
 		_comparer = EqualityComparer<T>.Default;
-		_list = new List<T>();
+		_list = [];
 	}
 
 	public OrderedSet(IEnumerable<T> items)
@@ -33,7 +33,7 @@ public class OrderedSet<T>: IList<T>, ISet<T>
 			throw new ArgumentNullException(nameof(items));
 
 		_comparer = EqualityComparer<T>.Default;
-		_list = new List<T>();
+		_list = [];
 		foreach (var item in items)
 		{
 			Add(item);
@@ -43,7 +43,7 @@ public class OrderedSet<T>: IList<T>, ISet<T>
 	public OrderedSet(IEqualityComparer<T> comparer)
 	{
 		_comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
-		_list = new List<T>();
+		_list = [];
 	}
 
 	public OrderedSet(IEnumerable<T> items, IEqualityComparer<T> comparer)
@@ -52,7 +52,7 @@ public class OrderedSet<T>: IList<T>, ISet<T>
 			throw new ArgumentNullException(nameof(items));
 
 		_comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
-		_list = new List<T>();
+		_list = [];
 		foreach (var item in items)
 		{
 			Add(item);

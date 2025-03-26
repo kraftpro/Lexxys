@@ -16,7 +16,7 @@ using System.Text.RegularExpressions;
 namespace Lexxys.Logging;
 using Xml;
 
-public class FileLogWriter: LogWriter
+public partial class FileLogWriter: LogWriter
 {
 	private const string LogSource = "Lexxys.Logging.FileLogWriter";
 
@@ -117,7 +117,7 @@ public class FileLogWriter: LogWriter
 		DateTime tm = DateTime.Now;
 		var digits = stackalloc char[4];
 
-		return __fileMaskRe.Replace(logFileMask, match =>
+		return FileMaskRe.Replace(logFileMask, match =>
 		{
 			string s = match.Value;
 			var r = new StringBuilder();
@@ -189,7 +189,13 @@ public class FileLogWriter: LogWriter
 			return digits;
 		}
 	}
-	private static readonly Regex __fileMaskRe = new Regex(@"\{[^\}]*\}");
+	private static readonly Regex FileMaskRe = GetFileMaskRe();
+#if NET7_0_OR_GREATER
+	[GeneratedRegex(@"\{[^\}]*\}")]
+	private static partial Regex GetFileMaskRe();
+#else
+	private static Regex GetFileMaskRe() => new Regex(@"\{[^\}]*\}");
+#endif
 
 	private static StreamWriter? OpenLogStream(string? fileName, TimeSpan timeout, bool truncate)
 	{
@@ -380,7 +386,7 @@ public class EventLogLogWriter: LogWriter
 		_eventSource = GetEventSource(parameters.EventSource, parameters.LogName);
 	}
 
-	private string? GetEventSource(string? eventSource, string? logName)
+	private static string? GetEventSource(string? eventSource, string? logName)
 	{
 		eventSource ??= SystemLog.EventSource;
 		logName ??= "Application";

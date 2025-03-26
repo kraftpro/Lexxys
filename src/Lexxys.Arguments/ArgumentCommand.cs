@@ -126,13 +126,15 @@ public class CliOptionAttribute: Attribute
 
 #pragma warning disable CA2252
 
+#if NET7_0_OR_GREATER
+
 public interface ICliParameters<T>
 {
 	static abstract ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null);
 	static abstract T Parse(IArgumentCommand c, ICollection<string>? error = null);
 }
 
-public static class IParametersExtensions
+public static class ParametersExtensions
 {
 	public static ArgumentsBuilder CreateBuilder<T>(ArgumentsBuilderSettings? settings) where T: ICliParameters<T> => T.CreateBuilder(new ArgumentsBuilder(settings));
 
@@ -162,14 +164,13 @@ public interface ICliParameters2<T>
 	static abstract T Parse(IArgumentCommand c);
 }
 
-
 public interface ICliOption<T>
 {
 	static abstract ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null);
 	static abstract T Parse(IArgumentCommand c);
 }
 
-public static class ICliOptionExtensions
+public static class CliOptionExtensions
 {
 	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string[]? abbreviation, string? description = null) where T : ICliOption<T>
 	{
@@ -185,3 +186,5 @@ public static class ICliOptionExtensions
 		return builder.EndCommand();
 	}
 }
+
+#endif

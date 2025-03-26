@@ -6,6 +6,7 @@
 //
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Extensions.Logging;
@@ -26,7 +27,7 @@ public class Logger<T>: Logger, ILogging<T>
 
 		public IDisposable? BeginScope<TState>(TState state) where TState: notnull => null;
 
-		public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => null;
+		public IDisposable? Enter(LogType logType, string? sectionName, IEnumerable<NameValueTuple<string, object?>>? args) => null;
 
 		public bool IsEnabled(LogType logType) => false;
 
@@ -36,7 +37,7 @@ public class Logger<T>: Logger, ILogging<T>
 		{
 		}
 
-		public void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IDictionary? args)
+		public void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IEnumerable<NameValueTuple<string, object?>>? args)
 		{
 		}
 
@@ -99,7 +100,7 @@ public class Logger: ILogging
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IDictionary? args)
+	public void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IEnumerable<NameValueTuple<string, object?>>? args)
 	{
 		Log(new LogRecord(logType, eventId, source, message, exception, args));
 	}
@@ -120,7 +121,7 @@ public class Logger: ILogging
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public IDisposable? Enter(LogType logType, string? section, IDictionary? args)
+	public IDisposable? Enter(LogType logType, string? section, IEnumerable<NameValueTuple<string, object?>>? args)
 	{
 		if (!IsEnabled(logType))
 			return null;
@@ -180,19 +181,19 @@ public class Logger: ILogging
 		private readonly long _stamp;
 		private readonly long _threshold;
 		private readonly LogType _logType;
-		private readonly IDictionary? _arg;
+		private readonly IReadOnlyCollection<NameValueTuple<string, object?>>? _arg;
 
-		private Entry(Logger log, string? endMessage, LogType logType, int threshold, IDictionary? arg)
+		private Entry(Logger log, string? endMessage, LogType logType, int threshold, IEnumerable<NameValueTuple<string, object?>>? arg)
 		{
 			_log = log;
 			_endMessage = endMessage ?? "exiting";
 			_threshold = threshold * WatchTimer.TicksPerMillisecond;
 			_logType = logType;
-			_arg = arg;
+			_arg = arg?.ToIReadOnlyCollection();
 			_stamp = WatchTimer.Start();
 		}
 
-		public static Entry Create(Logger log, string? sectionName, LogType logType, int threshold, IDictionary? arg)
+		public static Entry Create(Logger log, string? sectionName, LogType logType, int threshold, IEnumerable<NameValueTuple<string, object?>>? arg)
 		{
 			if (threshold == 0)
 			{
@@ -202,7 +203,7 @@ public class Logger: ILogging
 			return new Entry(log, (sectionName == null ? SR.LOG_EndSection() : SR.LOG_EndSection(sectionName)), logType, threshold, threshold == 0 ? null : arg);
 		}
 
-		public static Entry Create(Logger log, string? startMessage, string? endMessage, LogType logType, int threshold, IDictionary? arg)
+		public static Entry Create(Logger log, string? startMessage, string? endMessage, LogType logType, int threshold, IEnumerable<NameValueTuple<string, object?>>? arg)
 		{
 			if (threshold == 0)
 			{
@@ -236,13 +237,13 @@ public class Logger: ILogging
 
 		public IDisposable? BeginScope<TState>(TState state) where TState: notnull => null;
 
-		public IDisposable? Enter(LogType logType, string? sectionName, IDictionary? args) => null;
+		public IDisposable? Enter(LogType logType, string? sectionName, IEnumerable<NameValueTuple<string, object?>>? args) => null;
 
 		public bool IsEnabled(LogType logType) => false;
 
 		public bool IsEnabled(LogLevel logLevel) => false;
 
-		public void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IDictionary? args)
+		public void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IEnumerable<NameValueTuple<string, object?>>? args)
 		{
 		}
 

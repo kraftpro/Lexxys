@@ -165,12 +165,12 @@ public static class XmlNodeBuilderExtensions
 			if (n == 0)
 				return value;
 			if (value is not { Length: > 0 })
-				return n >= node.Length ? node : node.Substring(0, n);
+				return n >= node.Length ? node: node.Substring(0, n);
 
 			if (!IsCrLf(node[0]) || !IsCrLf(value[value.Length - 1]))
-				return value + (n >= node.Length ? node : node.Substring(0, n));
+				return value + (n >= node.Length ? node: node.Substring(0, n));
 			else
-				return value + (n > 1 && (node[0] ^ node[1]) == ('\r' ^ '\n') ? node.Substring(2, n - 2) : node.Substring(1, n - 1));
+				return value + (n > 1 && (node[0] ^ node[1]) == ('\r' ^ '\n') ? node.Substring(2, n - 2): node.Substring(1, n - 1));
 		}
 
 		static int TrimRight(string value)
@@ -337,18 +337,9 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="builder"></param>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
-	/// <param name="dateTimeOption">How to treat the <paramref name="value"/>.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTime value, XmlDateTimeSerializationMode dateTimeOption) => builder.Attrib(name, XmlTools.Convert(value, dateTimeOption));
-	/// <summary>
-	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted.</param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTime value, string format) => builder.Attrib(name, XmlTools.Convert(value, format));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTime value, bool omitTimeZone = false) => builder.Attrib(name, XmlTools.Convert(value, omitTimeZone));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -357,15 +348,6 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
 	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTimeOffset value) => builder.Attrib(name, XmlTools.Convert(value));
-	/// <summary>
-	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted.</param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTimeOffset value, string format) => builder.Attrib(name, XmlTools.Convert(value, format));
 
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
@@ -374,7 +356,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, bool? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, bool? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -382,7 +364,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, sbyte? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, sbyte? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -390,7 +372,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, byte? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, byte? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -398,7 +380,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, short? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, short? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -406,7 +388,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, ushort? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, ushort? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -414,7 +396,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, int? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, int? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -422,7 +404,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, uint? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, uint? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -430,7 +412,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, long? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, long? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -438,7 +420,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, ulong? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, ulong? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -446,7 +428,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, float? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, float? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -454,7 +436,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, double? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, double? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -462,7 +444,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, decimal? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, decimal? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -470,7 +452,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, Guid? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, Guid? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -478,7 +460,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, TimeSpan? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, TimeSpan? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value));
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -486,25 +468,16 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTime? value) => value == null ? builder.Attrib(name, (string?)null) : builder.Attrib(name, value.GetValueOrDefault());
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTime? value) => value == null ? builder.Attrib(name, (string?)null): builder.Attrib(name, value.GetValueOrDefault());
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
 	/// <param name="builder"></param>
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
-	/// <param name="dateTimeOption">How to treat the <paramref name="value"/>.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTime? value, XmlDateTimeSerializationMode dateTimeOption) => value == null ? builder.Attrib(name, (string?)null) : builder.Attrib(name, value.GetValueOrDefault(), dateTimeOption);
-	/// <summary>
-	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted.</param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTime? value, string format) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault(), format));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTime? value, bool omitTimeZone) => value == null ? builder.Attrib(name, (string?)null): builder.Attrib(name, value.GetValueOrDefault(), omitTimeZone);
 	/// <summary>
 	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
 	/// </summary>
@@ -512,16 +485,7 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="name">The name of the attribute.</param>
 	/// <param name="value">The value of the attribute.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTimeOffset? value) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault()));
-	/// <summary>
-	/// Writes an attribute or element with <paramref name="name"/> and <paramref name="value"/>.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="name">The name of the attribute.</param>
-	/// <param name="value">The value of the attribute.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted.</param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTimeOffset? value, string format) => builder.Attrib(name, value == null ? null : XmlTools.Convert(value.GetValueOrDefault(), format));
+	public static IXmlNodeBuilder<T> Attrib<T>(this IXmlNodeBuilder<T> builder, string name, DateTimeOffset? value) => builder.Attrib(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
 
 	#endregion
 
@@ -630,24 +594,9 @@ public static class XmlNodeBuilderExtensions
 	/// </summary>
 	/// <param name="builder"></param>
 	/// <param name="value">The value to write.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTime value) => builder.Value(XmlTools.Convert(value));
-	/// <summary>
-	/// Writes value of an XML element or attribute.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="value">The value to write.</param>
-	/// <param name="dateTimeOption"></param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTime value, XmlDateTimeSerializationMode dateTimeOption) => builder.Value(XmlTools.Convert(value, dateTimeOption));
-	/// <summary>
-	/// Writes value of an XML element or attribute.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="value">The value to write.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted</param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTime value, string format) => builder.Value(XmlTools.Convert(value, format));
+	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTime value, bool omitTimeZone = false) => builder.Value(XmlTools.Convert(value, omitTimeZone));
 	/// <summary>
 	/// Writes value of an XML element or attribute.
 	/// </summary>
@@ -655,14 +604,6 @@ public static class XmlNodeBuilderExtensions
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
 	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTimeOffset value) => builder.Value(XmlTools.Convert(value));
-	/// <summary>
-	/// Writes value of an XML element or attribute.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="value">The value to write.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted</param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTimeOffset value, string format) => builder.Value(XmlTools.Convert(value, format));
 
 	/// <summary>
 	/// Writes value of an XML element or attribute.
@@ -767,39 +708,16 @@ public static class XmlNodeBuilderExtensions
 	/// </summary>
 	/// <param name="builder"></param>
 	/// <param name="value">The value to write.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTime? value) => value == null ? builder: builder.Value(value.GetValueOrDefault());
-	/// <summary>
-	/// Writes value of an XML element or attribute.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="value">The value to write.</param>
-	/// <param name="dateTimeOption"></param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTime? value, XmlDateTimeSerializationMode dateTimeOption) => value == null ? builder: builder.Value(value.GetValueOrDefault(), dateTimeOption);
-	/// <summary>
-	/// Writes value of an XML element or attribute.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="value">The value to write.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted</param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTime? value, string format) => value == null ? builder: builder.Value(XmlTools.Convert(value.GetValueOrDefault(), format));
+	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTime? value, bool omitTimeZone = false) => value == null ? builder: builder.Value(value.GetValueOrDefault(), omitTimeZone);
 	/// <summary>
 	/// Writes value of an XML element or attribute.
 	/// </summary>
 	/// <param name="builder"></param>
 	/// <param name="value">The value to write.</param>
 	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTimeOffset? value) => value == null ? builder: builder.Value(XmlTools.Convert(value.GetValueOrDefault()));
-	/// <summary>
-	/// Writes value of an XML element or attribute.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <param name="value">The value to write.</param>
-	/// <param name="format">The format to which <paramref name="value"/> is converted</param>
-	/// <returns></returns>
-	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTimeOffset? value, string format) => value == null ? builder: builder.Value(XmlTools.Convert(value.GetValueOrDefault(), format));
+	public static IXmlNodeBuilder<T> Value<T>(this IXmlNodeBuilder<T> builder, DateTimeOffset? value) => value == null ? builder: builder.Value(value.GetValueOrDefault());
 
 	#endregion
 }

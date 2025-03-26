@@ -9,27 +9,23 @@ namespace Lexxys.Arguments.Generator;
 [Generator]
 public class ArgumentCodeGen: ISourceGenerator
 {
-	const string CliOptionInterface = "ICliParameters";
-	const string CliParameters = "CliParameters";
-	const string CliCommand = "CliCommand";
-	const string CliOption = "CliOption";
-
-	public ArgumentCodeGen()
-	{
-	}
+	private const string CliOptionInterface = "ICliParameters";
+	private const string CliParameters = "CliParameters";
+	private const string CliCommand = "CliCommand";
+	private const string CliOption = "CliOption";
 
 	public void Initialize(GeneratorInitializationContext context)
 	{
 		context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
 	}
 
-	private static readonly DiagnosticDescriptor CollectedArgumentWarning = new DiagnosticDescriptor(
-		id: "ARG001",
-		title: "Couldn't parse XML file",
-		messageFormat: "Collected attribute: '{0}'",
-		category: "Design",
-		DiagnosticSeverity.Warning,
-		isEnabledByDefault: true);
+	// private static readonly DiagnosticDescriptor CollectedArgumentWarning = new DiagnosticDescriptor(
+	// 	id: "ARG001",
+	// 	title: "Couldn't parse XML file",
+	// 	messageFormat: "Collected attribute: '{0}'",
+	// 	category: "Design",
+	// 	DiagnosticSeverity.Warning,
+	// 	isEnabledByDefault: true);
 
 	public void Execute(GeneratorExecutionContext context)
 	{
@@ -58,7 +54,7 @@ public class ArgumentCodeGen: ISourceGenerator
 
 		""");
 
-		models.Sort((x, y) => x.FullName.CompareTo(y.FullName));
+		models.Sort((x, y) => String.CompareOrdinal(x.FullName, y.FullName));
 
 		string lastName = String.Empty;
 		string lastNamespace = String.Empty;
@@ -114,8 +110,6 @@ public class ArgumentCodeGen: ISourceGenerator
 			GenerateClass(indent, text, model);
 			++indent;
 		}
-
-		int j = lastName.IndexOf('+');
 
 		while (indent > 0)
 		{
@@ -188,7 +182,7 @@ public class ArgumentCodeGen: ISourceGenerator
 			{
 				Array.Sort(aliases[i]);
 			}
-			aliases.Distinct(AliasEqualityComparer.Instance);
+			aliases = aliases.Distinct(AliasEqualityComparer.Instance).ToList();
 		}
 
 		text.AppendLine();
@@ -257,10 +251,10 @@ public class ArgumentCodeGen: ISourceGenerator
 			=> String.Compare(x.Model.FullName, y.Model.FullName, StringComparison.Ordinal);
 
 		public int Compare(ArgumentClassModel x, ArgumentClassModel y)
-			=> String.Compare(x?.FullName, y?.FullName, StringComparison.Ordinal);
+			=> String.Compare(x.FullName, y.FullName, StringComparison.Ordinal);
 	}
 
-	class AliasEqualityComparer: EqualityComparer<string[]?>
+	private class AliasEqualityComparer: EqualityComparer<string[]?>
 	{
 		public static readonly EqualityComparer<string[]?> Instance = new AliasEqualityComparer();
 
@@ -278,13 +272,7 @@ public class ArgumentCodeGen: ISourceGenerator
 
 		public override int GetHashCode(string[]? obj)
 		{
-			if (obj is null) return 0;
-			int hash = obj.Length;
-			foreach (string s in obj)
-			{
-				hash = unchecked(hash * 31 + s.GetHashCode());
-			}
-			return hash;
+			return obj is null ? 0: obj.Aggregate(obj.Length, (current, s) => unchecked(current * 31 + s.GetHashCode()));
 		}
 	}
 
@@ -387,7 +375,7 @@ public class ArgumentCodeGen: ISourceGenerator
 	private CliCommandModel? GetCommandAttribute(MemberDeclarationSyntax? member)
 	{
 		if (member == null) return null;
-		AttributeSyntax attrib = member.AttributeLists.SelectMany(o => o.Attributes).FirstOrDefault(a => a.Name.ToString() is CliCommand or CliCommand + "Attribute");
+		AttributeSyntax? attrib = member.AttributeLists.SelectMany(o => o.Attributes).FirstOrDefault(a => a.Name.ToString() is CliCommand or CliCommand + "Attribute");
 		if (attrib == null) return null;
 
 		string[] alias = GetAliasParameter(attrib);
@@ -443,7 +431,7 @@ public class ArgumentCodeGen: ISourceGenerator
 	private CliParamModel? GetParamAttribute(MemberDeclarationSyntax? member)
 	{
 		if (member == null) return null;
-		AttributeSyntax attrib = member.AttributeLists.SelectMany(o => o.Attributes).FirstOrDefault(a => a.Name.ToString() is CliOption or CliOption + "Attribute");
+		AttributeSyntax? attrib = member.AttributeLists.SelectMany(o => o.Attributes).FirstOrDefault(a => a.Name.ToString() is CliOption or CliOption + "Attribute");
 		if (attrib == null) return null;
 
 		string[] alias = GetAliasParameter(attrib);
@@ -500,61 +488,61 @@ public class ArgumentCodeGen: ISourceGenerator
 		}
 	}
 
-	class ContextReceiver: ISyntaxContextReceiver
-	{
-		public List<AttributeSyntax> Attributes { get; } = new List<AttributeSyntax>();
-
-		public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
-		{
-			if (context.Node is not AttributeSyntax attribute) return;
-			var attributeName = attribute.Name.ToString();
-			if (attributeName is CliParameters or CliParameters + "Attribute" or CliCommand or CliCommand + "Attribute" or CliOption or CliOption + "Attribute")
-			{
-				Attributes.Add(attribute);
-			}
-		}
-	}
-
-	class EmptyDictionary<TKey, TValue>: IDictionary<TKey, TValue>
-	{
-		public static readonly IDictionary<TKey, TValue> Instance = new EmptyDictionary<TKey, TValue>();
-
-		public TValue this[TKey key] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-		public ICollection<TKey> Keys => Array.Empty<TKey>();
-
-		public ICollection<TValue> Values => Array.Empty<TValue>();
-
-		public int Count => 0;
-
-		public bool IsReadOnly => true;
-
-		public void Add(TKey key, TValue value) => throw new NotImplementedException();
-
-		public void Add(KeyValuePair<TKey, TValue> item) => throw new NotImplementedException();
-
-		public void Clear() { }
-
-		public bool Contains(KeyValuePair<TKey, TValue> item) => false;
-
-		public bool ContainsKey(TKey key) => false;
-
-		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
-
-		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => Enumerable.Empty<KeyValuePair<TKey, TValue>>().GetEnumerator();
-
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-		public bool Remove(TKey key) => false;
-
-		public bool Remove(KeyValuePair<TKey, TValue> item) => false;
-
-		public bool TryGetValue(TKey key, out TValue value)
-		{
-			value = default!;
-			return false;
-		}
-	}
+	// class ContextReceiver: ISyntaxContextReceiver
+	// {
+	// 	public List<AttributeSyntax> Attributes { get; } = new List<AttributeSyntax>();
+	//
+	// 	public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
+	// 	{
+	// 		if (context.Node is not AttributeSyntax attribute) return;
+	// 		var attributeName = attribute.Name.ToString();
+	// 		if (attributeName is CliParameters or CliParameters + "Attribute" or CliCommand or CliCommand + "Attribute" or CliOption or CliOption + "Attribute")
+	// 		{
+	// 			Attributes.Add(attribute);
+	// 		}
+	// 	}
+	// }
+	//
+	// class EmptyDictionary<TKey, TValue>: IDictionary<TKey, TValue>
+	// {
+	// 	public static readonly IDictionary<TKey, TValue> Instance = new EmptyDictionary<TKey, TValue>();
+	//
+	// 	public TValue this[TKey key] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+	//
+	// 	public ICollection<TKey> Keys => Array.Empty<TKey>();
+	//
+	// 	public ICollection<TValue> Values => Array.Empty<TValue>();
+	//
+	// 	public int Count => 0;
+	//
+	// 	public bool IsReadOnly => true;
+	//
+	// 	public void Add(TKey key, TValue value) => throw new NotImplementedException();
+	//
+	// 	public void Add(KeyValuePair<TKey, TValue> item) => throw new NotImplementedException();
+	//
+	// 	public void Clear() { }
+	//
+	// 	public bool Contains(KeyValuePair<TKey, TValue> item) => false;
+	//
+	// 	public bool ContainsKey(TKey key) => false;
+	//
+	// 	public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
+	//
+	// 	public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => Enumerable.Empty<KeyValuePair<TKey, TValue>>().GetEnumerator();
+	//
+	// 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+	//
+	// 	public bool Remove(TKey key) => false;
+	//
+	// 	public bool Remove(KeyValuePair<TKey, TValue> item) => false;
+	//
+	// 	public bool TryGetValue(TKey key, out TValue value)
+	// 	{
+	// 		value = default!;
+	// 		return false;
+	// 	}
+	// }
 }
 
 internal static class Extensions

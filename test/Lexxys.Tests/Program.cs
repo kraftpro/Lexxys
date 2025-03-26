@@ -14,8 +14,8 @@ using Lexxys.Logging;
 using Lexxys.Tests;
 using Lexxys.Xml;
 
-BenchmarkRunner.Run<Lexxys.Tests.Performance.FactoryPerfTest>();
-return;
+// BenchmarkRunner.Run<Lexxys.Tests.Performance.FactoryPerfTest>();
+// return;
 
 Statics.AddServices(s => s
 	.AddConfigService()

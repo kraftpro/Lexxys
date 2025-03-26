@@ -133,12 +133,12 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 			{
 				text.Append(';').Append(_insertArgTemplate);
 				int line = 0;
-				foreach (DictionaryEntry item in record.Data)
+				foreach (var item in record.Data)
 				{
 					if (++line >= MaxInsertRowsCount)
 						break;
 					text.Append("\n (@id,")
-						.Append(Dc.Value(item.Key.ToString())).Append(',')
+						.Append(Dc.Value(item.Name)).Append(',')
 						.Append(Dc.TextValue(item.Value?.ToString())).Append(')');
 				}
 				text.Append(';');

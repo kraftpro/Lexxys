@@ -147,7 +147,7 @@ public class ArgumentParameterCollection: IReadOnlyCollection<ArgumentParameter>
 	/// </summary>
 	/// <typeparam name="T">The type of the array elements.</typeparam>
 	/// <param name="name">Name of the parameter.</param>
-	/// <param name="defaultItem">Default value of the array item if the item cannot be converted to the specified type <typeparamref name="T"/>.</param>
+	/// <param name="errors">The collection of errors found.</param>
 	/// <returns>An array of the parameter values or <c>null</c> if error occurs.</returns>
 	/// <exception cref="ArgumentNullException">The <paramref name="name"/> is <c>null</c>.</exception>
 	public T[]? Collection<T>(string name, ICollection<string>? errors = null) => TryGetCollection<T>(name, out var value, errors) ? value: null;

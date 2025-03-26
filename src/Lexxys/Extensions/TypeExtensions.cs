@@ -1,9 +1,17 @@
-﻿using System.Text;
+using System.Text;
 
 namespace Lexxys;
 
 public static class TypeExtensions
 {
+
+	/// <summary>
+	/// Gets the full name of the specified type, including namespace if <paramref name="fullName"/> is true.
+	/// </summary>
+	/// <param name="type">The <see cref="Type"/> to get the name of.</param>
+	/// <param name="fullName">If true, includes the namespace in the type name.</param>
+	/// <returns>The name of the type.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="type"/> is null.</exception>
 	public static string GetTypeName(this Type type, bool fullName = false)
 	{
 		if (type == null)
@@ -15,43 +23,28 @@ public static class TypeExtensions
 		return text.ToString();
 	}
 
-	static void BuildTypeName(StringBuilder text, Type type)
+	private static StringBuilder BuildTypeName(StringBuilder text, Type type)
 	{
 		if (type.HasElementType)
-		{
-			if (type.IsArray)
-			{
-				BuildArrayTypeName(text, type);
-				return;
-			}
-			BuildTypeName(text, type.GetElementType() ?? typeof(void));
-			text.Append(type.IsPointer ? '*': '^');
-			return;
-		}
+			return type.IsArray ?
+				BuildArrayTypeName(text, type):
+				BuildTypeName(text, type.GetElementType() ?? typeof(void)).Append(type.IsPointer ? '*': '^');
 
 		if (type.IsGenericParameter)
-		{
-			text.Append(type.Name);
-			return;
-		}
+			return text.Append(type.Name);
 
 		if (type.IsGenericType || type.IsGenericTypeDefinition)
 		{
 			var genericArguments = type.GetGenericArguments();
-			BuildGenericTypeName(text, type, genericArguments, genericArguments.Length);
-			return;
+			return BuildGenericTypeName(text, type, genericArguments, genericArguments.Length);
 		}
 
 		if (type.DeclaringType != null)
-		{
-			BuildTypeName(text, type.DeclaringType);
-			text.Append('.');
-		}
-
-		text.Append(SimpleName(type));
+			BuildTypeName(text, type.DeclaringType).Append('.');
+		return text.Append(SimpleName(type));
 	}
 
-	private static void BuildArrayTypeName(StringBuilder text, Type type)
+	private static StringBuilder BuildArrayTypeName(StringBuilder text, Type type)
 	{
 		Type elementType = type;
 		while (elementType.IsArray)
@@ -66,26 +59,22 @@ public static class TypeExtensions
 			text.Append(']');
 			type = type.GetElementType()!;
 		}
+		return text;
 	}
 
-	private static void BuildGenericTypeName(StringBuilder text, Type type, Type[] args, int length)
+	private static StringBuilder BuildGenericTypeName(StringBuilder text, Type type, Type[] args, int length)
 	{
 		int offset = 0;
 		if (type.IsNested)
 			offset = type.DeclaringType!.GetGenericArguments().Length;
 		if (type.DeclaringType != null)
-		{
-			BuildGenericTypeName(text, type.DeclaringType, args, offset);
-			text.Append('.');
-		}
+			BuildGenericTypeName(text, type.DeclaringType, args, offset).Append('.');
 
 		var name = type.Name;
 		int index = name.IndexOf('`');
 		if (index < 0)
-		{
-			text.Append(SimpleName(type));
-			return;
-		}
+			return text.Append(SimpleName(type));
+
 		char c;
 		bool valueType = name.StartsWith("ValueTuple`", StringComparison.Ordinal);
 		if (valueType)
@@ -103,12 +92,12 @@ public static class TypeExtensions
 			BuildTypeName(text, args[i]);
 			c = ',';
 		}
-		text.Append(valueType ? ')' : '>');
+		return text.Append(valueType ? ')' : '>');
 	}
 
-	private static string SimpleName(Type type) => __builtinTypes.TryGetValue(type, out var s) ? s : type.Name;
+	private static string SimpleName(Type type) => __builtInTypes.TryGetValue(type, out var s) ? s : type.Name;
 
-	private static readonly Dictionary<Type, string> __builtinTypes = new()
+	private static readonly Dictionary<Type, string> __builtInTypes = new()
 	{
 		{ typeof(void), "void" },
 		{ typeof(bool), "bool" },

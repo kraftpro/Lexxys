@@ -1,5 +1,3 @@
-﻿using System.Collections;
-
 using Microsoft.Extensions.Logging;
 
 namespace Lexxys;
@@ -20,9 +18,9 @@ public interface ILogging: ILogger
 {
 	string Source { get; set; }
 	bool IsEnabled(LogType logType);
-	void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IDictionary? args);
-	IDisposable? Enter(LogType logType, string? section, IDictionary? args);
-	IDisposable? Timing(LogType logType, string? section, TimeSpan threshold);
+	void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IEnumerable<NameValueTuple<string, object?>>? args);
+	IDisposable? Enter(LogType logType, string section, IEnumerable<NameValueTuple<string, object?>>? args);
+	IDisposable? Timing(LogType logType, string section, TimeSpan threshold);
 
 #if NET6_0_OR_GREATER
 	void ILogger.Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string?>? formatter)
@@ -31,7 +29,7 @@ public interface ILogging: ILogger
 	bool ILogger.IsEnabled(LogLevel logLevel)
 		=> LoggingTools.IsEnabled(this, logLevel);
 
-	IDisposable ILogger.BeginScope<TState>(TState state)
+	IDisposable? ILogger.BeginScope<TState>(TState state)
 		=> LoggingTools.BeginScope(this, state);
 #endif
 

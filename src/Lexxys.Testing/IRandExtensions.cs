@@ -5,6 +5,8 @@
 // You may use this code under the terms of the MIT license
 //
 
+using System.Runtime.InteropServices;
+
 namespace Lexxys.Testing;
 
 /// <summary>
@@ -76,13 +78,14 @@ public static class RandExtensions
 	}
 
 	/// <summary>
-	/// Returns a non-negative random decimal value in range 0, {<paramref name="scale"/>}.(9).
+	/// Returns a non-negative random decimal value greater or equal to 0 and less then 1 * (10 ^ <paramref name="scale"/>).
 	/// </summary>
 	/// <param name="rnd"></param>
 	/// <param name="scale">Number of digits before the decimal point in the return value.</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public static decimal NextDecimal(this IRand rnd, byte scale = 0)
+	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="scale"/> is less than zero or greater than 28.</exception>
+	public static decimal NextDecimal(this IRand rnd, int scale = 0)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
 		if (scale is <0 or >28) throw new ArgumentOutOfRangeException(nameof(scale), scale, null);
@@ -118,7 +121,8 @@ public static class RandExtensions
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
 		if (minValue < 0) throw new ArgumentOutOfRangeException(nameof(minValue), minValue, null);
 		if (maxValue < minValue) throw new ArgumentOutOfRangeException(nameof(maxValue), maxValue, null);
-		return minValue + rnd.NextDecimal() * (maxValue - minValue);
+		var precision = Math.Max(minValue.GetPrecision(true), maxValue.GetPrecision(true));
+		return Math.Round(minValue + rnd.NextDecimal() * (maxValue - minValue), precision);
 	}
 
 	/// <summary>

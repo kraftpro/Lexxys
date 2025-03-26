@@ -137,8 +137,9 @@ public class IndentFilter: ITokenFilter
 			return tmp;
 		}
 
-		if (parser is null)
-			throw new ArgumentNullException(nameof(parser));
+		if (parser is null) throw new ArgumentNullException(nameof(parser));
+
+		CharPosition at = stream.GetCharPosition(stream.Position, _last);
 		LexicalToken token = parser.GetNextToken(scanner, ref stream);
 		if (token.IsEmpty)
 		{
@@ -147,12 +148,11 @@ public class IndentFilter: ITokenFilter
 			_indent.Pop();
 			return new LexicalToken(LexicalTokenType.UNDENT, _last.Position, 0);
 		}
-		CharPosition at = stream.GetCharPosition(token.Position, _last);
 		if (_indent.Count == 0)
 			_indent.Push(at.Position);
 		var line = _last.Line;
 		_last = at;
-		if (line >= at.Line || token.Is(LexicalTokenType.COMMENT) || token.Is(LexicalTokenType.WHITESPACE) || token.Is(LexicalTokenType.NEWLINE))
+		if (line >= at.Line || token.Is(LexicalTokenType.IGNORE) || token.Is(LexicalTokenType.COMMENT) || token.Is(LexicalTokenType.WHITESPACE) || token.Is(LexicalTokenType.NEWLINE))
 			return token;
 
 		if (at.Column == _indent.Peek())

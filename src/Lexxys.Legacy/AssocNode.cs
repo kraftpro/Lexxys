@@ -194,23 +194,23 @@ public class AssocNode
 	private void CheckMisReference(AssocNode node)
 	{
 		if (HasForward(node) ^ node.HasBackward(this))
-			throw new InvalidOperationException(SR.AssocNodeMissReference());
+			throw new InvalidOperationException(SR1.AssocNodeMissReference());
 		if (HasBackward(node) ^ node.HasForward(this))
-			throw new InvalidOperationException(SR.AssocNodeMissReference());
+			throw new InvalidOperationException(SR1.AssocNodeMissReference());
 	}
 
 	[Conditional("DEBUG")]
 	private void CheckBackward(AssocNode node)
 	{
 		if (!node.HasForward(this))
-			throw new InvalidOperationException(SR.AssocNodeMissReference());
+			throw new InvalidOperationException(SR1.AssocNodeMissReference());
 	}
 
 	[Conditional("DEBUG")]
 	private void CheckForward(AssocNode node)
 	{
 		if (!node.HasBackward(this))
-			throw new InvalidOperationException(SR.AssocNodeMissReference());
+			throw new InvalidOperationException(SR1.AssocNodeMissReference());
 	}
 
 	private class DumpContext

@@ -10,6 +10,8 @@ namespace Lexxys.Tests.Configuration
 	using Lexxys.Configuration;
 	using Lexxys.Xml;
 
+	using System.Text;
+
 	/// <summary>
 	///This is a test class for XmlConfigurationProviderTest and is intended
 	///to contain all XmlConfigurationProviderTest Unit Tests
@@ -18,37 +20,6 @@ namespace Lexxys.Tests.Configuration
 	public class XmlConfigurationProviderTest
 	{
 		public TestContext TestContext { get; set; }
-
-		#region Additional test attributes
-		// 
-		//You can use the following additional attributes as you write your tests:
-		//
-		//Use ClassInitialize to run code before running the first test in the class
-		//[ClassInitialize()]
-		//public static void MyClassInitialize(TestContext testContext)
-		//{
-		//}
-		//
-		//Use ClassCleanup to run code after all tests in a class have run
-		//[ClassCleanup()]
-		//public static void MyClassCleanup()
-		//{
-		//}
-		//
-		//Use TestInitialize to run code before running each test
-		//[TestInitialize()]
-		//public void MyTestInitialize()
-		//{
-		//}
-		//
-		//Use TestCleanup to run code after each test has run
-		//[TestCleanup()]
-		//public void MyTestCleanup()
-		//{
-		//}
-		//
-		#endregion
-
 
 		/// <summary>
 		///A test for GetValue
@@ -67,7 +38,7 @@ namespace Lexxys.Tests.Configuration
 			Assert.IsNotNull(test.IntBasedItem);
 			Assert.AreEqual(200, test.IntBasedItem.Value);
 			CollectionAssert.AreEqual(
-				new int[] { 1, 2, 3 },
+				expected123,
 				test.IntArray);
 			CollectionAssert.AreEqual(
 				new int[] { 1, 2, 3 },
@@ -128,50 +99,85 @@ namespace Lexxys.Tests.Configuration
 			TestContext.WriteLine("Reflection: {0}, XmlLiteNode: {1}", WatchTimer.ToString(x, false), WatchTimer.ToString(y, false));
 		}
 
-
-		private static IConfigSource GetConfiguration()
+		[TestMethod]
+		public void TextConfigSourceTest()
 		{
-			return CreateConfig(
-@"string:[txt]?
-%%ignore-case
-Setting
-	:intItem		100
-	:dateTimeItem	2010-01-12 #comment
-	stringItem		Aa Bb <#inline comment #>Cc
-	intBasedItem	200
-	intArray
-		item	1 # comments
-		item	2 // comments
-		item	3
-	newIntArray [1, 2, 3] <#
-	params (p1=1, p2:""pe = p2
-	#>
-	params (p1=1, p2:""pe = p2""
-		p3:true,
-		p5:false)
-	item2s
-		%item	name	value
-		-		one		1.1
-		-		two		2.2
-	ItemsIList
-		%item	name	value
-		-		ONE		11.11
-		-
-			Name	TWO
-			Value	22.22
-	moreIntArray
-		[
-			1,
-			2,
-			1,
-# 345
-		]
-		
-			
-		
-	
-", null);
+			const string expected = """
+				Setting:intItem=100
+				Setting:dateTimeItem=2010-01-12
+				Setting:stringItem:0=Aa Bb Cc
+				Setting:intBasedItem:0=200
+				Setting:intArray:0:0=1
+				Setting:intArray:0:1=2
+				Setting:intArray:0:2=3
+				Setting:newIntArray:0:0=1
+				Setting:newIntArray:0:1=2
+				Setting:newIntArray:0:2=3
+				Setting:params:0:p1=1
+				Setting:params:0:p2=pe = p2
+				Setting:params:0:p3=true
+				Setting:params:0:p5=false
+				Setting:item2s:0:0:name=one
+				Setting:item2s:0:0:value=1.1
+				Setting:item2s:0:1:name=two
+				Setting:item2s:0:1:value=2.2
+				Setting:ItemsIList:0:0:name=ONE
+				Setting:ItemsIList:0:0:value=11.11
+				Setting:ItemsIList:0:1:Name:0=TWO
+				Setting:ItemsIList:0:1:Value:0=22.22
+				Setting:moreIntArray:0:0=1
+				Setting:moreIntArray:0:1=2
+				Setting:moreIntArray:0:2=1
+				""";
+
+			var map = TextConfigurationParser.Parse(GetConfigurationStream()).Select(o => $"{o.Key}={o.Value}").ToArray();
+			Assert.AreEqual(25, map.Length);
+			Assert.AreEqual(expected, String.Join("\n", map));
 		}
+
+		private static IConfigSource GetConfiguration() => CreateConfig("string:[txt]?" + ConfigText1, null);
+		private static Stream GetConfigurationStream() => new MemoryStream(Encoding.UTF8.GetBytes(ConfigText1));
+
+		private const string ConfigText1 = """
+			%%ignore-case
+			Setting
+				:intItem		100
+				:dateTimeItem	2010-01-12 #comment
+				stringItem		Aa Bb <#inline comment #>Cc
+				intBasedItem	200
+				intArray
+					item	1 # comments
+					item	2 // comments
+					item	3
+				newIntArray [1, 2, 3] <#
+				params (p1=1, p2:"pe = p2
+				#>
+				params (p1=1, p2:"pe = p2"
+					p3:true,
+					p5:false)
+				item2s
+					%item	name	value
+					-		one		1.1
+					-		two		2.2
+				ItemsIList
+					%item	name	value
+					-		ONE		11.11
+					-
+						Name	TWO
+						Value	22.22
+				moreIntArray
+					[
+						1,
+						2,
+						1,
+			# 345
+					]
+						
+					
+				
+			
+			""";
+		private static readonly int[] expected123 = new int[] { 1, 2, 3 };
 
 		class Setting2: Setting
 		{

@@ -9,14 +9,9 @@ using Microsoft.Extensions.Options;
 namespace Lexxys
 {
 	[Serializable]
-	public class Out<T>: IValue<T>
+	public class Out<T>(Func<T> getter): IValue<T>
 	{
-		private readonly Func<T> _getter;
-
-		public Out(Func<T> getter)
-		{
-			_getter = getter ?? throw new ArgumentNullException(nameof(getter));
-		}
+		private readonly Func<T> _getter = getter ?? throw new ArgumentNullException(nameof(getter));
 
 		public virtual T Value
 		{
@@ -30,14 +25,9 @@ namespace Lexxys
 	}
 
 	[Serializable]
-	public sealed class Ref<T>: Out<T>, IValueRef<T>
+	public sealed class Ref<T>(Func<T> getter, Action<T> setter): Out<T>(getter), IValueRef<T>
 	{
-		private readonly Action<T> _setter;
-
-		public Ref(Func<T> getter, Action<T> setter): base(getter)
-		{
-			_setter = setter ?? throw new ArgumentNullException(nameof(setter));
-		}
+		private readonly Action<T> _setter = setter ?? throw new ArgumentNullException(nameof(setter));
 
 		public override T Value
 		{
@@ -64,14 +54,9 @@ namespace Lexxys
 
 
 	[Serializable]
-	public class OptOut<T>: IValue<T>, IOptions<T> where T: class
+	public class OptOut<T>(Func<T> getter): IValue<T>, IOptions<T> where T: class
 	{
-		internal readonly Func<T> _getter;
-
-		public OptOut(Func<T> getter)
-		{
-			_getter = getter ?? throw new ArgumentNullException(nameof(getter));
-		}
+		internal readonly Func<T> _getter = getter ?? throw new ArgumentNullException(nameof(getter));
 
 		public virtual T Value
 		{
@@ -86,14 +71,9 @@ namespace Lexxys
 	}
 
 	[Serializable]
-	public sealed class OptRef<T>: OptOut<T> where T: class
+	public sealed class OptRef<T>(Func<T> getter, Action<T> setter): OptOut<T>(getter) where T: class
 	{
-		private readonly Action<T> _setter;
-
-		public OptRef(Func<T> getter, Action<T> setter): base(getter)
-		{
-			_setter = setter ?? throw new ArgumentNullException(nameof(setter));
-		}
+		private readonly Action<T> _setter = setter ?? throw new ArgumentNullException(nameof(setter));
 
 		public override T Value
 		{

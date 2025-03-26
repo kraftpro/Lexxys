@@ -53,9 +53,9 @@ namespace Lexxys.Tests.Tools
 		#endregion
 
 		[TestMethod]
-		[DataRow("", "")]
 		[DataRow("man", "men")]
 		[DataRow("bug", "bugs")]
+		[DataRow("", "")]
 		public void PluralTest(string value, string expected)
 		{
 			string actual = Lingua.Plural(value);

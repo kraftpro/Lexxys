@@ -632,7 +632,7 @@ public static class R
 			if (m.Index > l)
 			{
 				string txt = picture.Substring(l, m.Index - l);
-				if (txt.EndsWith(" ", StringComparison.InvariantCulture))
+				if (txt.EndsWith(' '))
 				{
 					pad = " ";
 					txt = txt.Substring(0, txt.Length - 1);
@@ -644,7 +644,7 @@ public static class R
 			string value = m.Value;
 			string s = value;
 			RandItem<string> item;
-			if (!s.StartsWith("{", StringComparison.InvariantCulture))
+			if (!s.StartsWith('{'))
 			{
 				int len = s.Length;
 				item = I(() => pad + new String(R.DigitChar.Collect(len)));
@@ -666,7 +666,7 @@ public static class R
 				item = I(() => Pad(pad, GetResourceItem(p, s, f)));
 			}
 			items.Add(item);
-			return "";
+			return String.Empty;
 		}
 	}
 	private static readonly Regex __pic = new Regex(@"#+|\{[^}]*}");

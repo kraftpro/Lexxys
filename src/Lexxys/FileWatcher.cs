@@ -23,18 +23,11 @@ public sealed class FileWatcher: IDisposable
 	private readonly FileSystemWatcher _watcher;
 	private WatchingFileInfo _watching;
 
-	readonly struct WatchingFileInfo
+	readonly struct WatchingFileInfo(FileInfo fileInfo)
 	{
-		private readonly string _fullName;
-		private readonly int _length;
-		private readonly DateTime _lastWriteTime;
-
-		public WatchingFileInfo(FileInfo fileInfo)
-		{
-			_fullName = fileInfo.FullName;
-			_length = (int)fileInfo.Length;
-			_lastWriteTime = fileInfo.LastWriteTimeUtc;
-		}
+		private readonly string _fullName = fileInfo.FullName;
+		private readonly int _length = (int)fileInfo.Length;
+		private readonly DateTime _lastWriteTime = fileInfo.LastWriteTimeUtc;
 
 		public bool IsWatched(string? fullName) => fullName == _fullName;
 
@@ -96,7 +89,7 @@ public sealed class FileWatcher: IDisposable
 				fw.FileChanged = null;
 			else
 				fw.FileChanged -= watcher;
-			if (fw.FileChanged is null) return;
+			if (fw.FileChanged != null && fw.FileChanged.GetInvocationList().Length > 0) return;
 
 			__fileWatchersMap.Remove(fi.FullName);
 			fw.Dispose();

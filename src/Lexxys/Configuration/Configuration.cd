@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Interface Name="Lexxys.Configuration.IConfigLogger">
+    <Position X="1.25" Y="5.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AEAAAAAAAAAAAAAABAAAAAAAAAAAgAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Configuration\IConfigLogger.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Lexxys.Configuration.IConfigSection">
+    <Position X="1.25" Y="1.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>IAAAAAAAIACAAgAABAIAAAAAAAAAAAAAAAAEAEAAAAA=</HashCode>
+      <FileName>Configuration\IConfigSection.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Lexxys.Configuration.IConfigService">
+    <Position X="1.25" Y="7.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Configuration\IConfigService.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Lexxys.Configuration.IConfigSource">
+    <Position X="5" Y="7.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>IAAAAAAAIAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>Configuration\IConfigSource.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

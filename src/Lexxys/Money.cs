@@ -121,7 +121,7 @@ public readonly struct Money:
 	}
 
 	/// <summary>
-	/// Integer part of the the amount.
+	/// Integer part of the amount.
 	/// </summary>
 	public long MajorAmount => _value / Currency.Multiplier;
 	/// <summary>
@@ -138,7 +138,7 @@ public readonly struct Money:
 	public Currency Currency => _currency ?? Currency.ApplicationDefault;
 
 	/// <summary>
-	/// Splits the <see cref="Money"/> value into two baskets according to the the specified <paramref name="ratio"/>.
+	/// Splits the <see cref="Money"/> value into two baskets according to the specified <paramref name="ratio"/>.
 	/// </summary>
 	/// <param name="ratio">The ratio is used to splint the <see cref="Money"/> value.</param>
 	/// <returns></returns>
@@ -154,7 +154,7 @@ public readonly struct Money:
 	}
 
 	/// <summary>
-	/// Splits the <see cref="Money"/> value into two baskets according to the the specified ratio as <paramref name="numerator"/>/<paramref name="denominator"/>.
+	/// Splits the <see cref="Money"/> value into two baskets according to the specified ratio as <paramref name="numerator"/>/<paramref name="denominator"/>.
 	/// </summary>
 	/// <param name="numerator">Numerator value of the ratio.</param>
 	/// <param name="denominator">Denominator value of the ratio.</param>
@@ -264,7 +264,7 @@ public readonly struct Money:
 			total -= baskets[i];
 			result[i] = item;
 		}
-		result[result.Length - 1] = Create(rest, _currency);
+		result[^1] = Create(rest, _currency);
 		return result;
 	}
 
@@ -290,7 +290,7 @@ public readonly struct Money:
 			--count;
 			result[i] = item;
 		}
-		result[result.Length - 1] = Create(rest, _currency);
+		result[^1] = Create(rest, _currency);
 		return result;
 	}
 
@@ -627,7 +627,7 @@ public readonly struct Money:
 					result = default;
 					return false;
 				}
-				s = s.Slice(0, s.Length - 4).TrimEnd();
+				s = s.Substring(0, s.Length - 4).TrimEnd();
 			}
 		}
 		if (decimal.TryParse(s, style, provider, out var d))
@@ -670,7 +670,7 @@ public readonly struct Money:
 			return false;
 		}
 		Currency? currency = null;
-		if (s.Length > 4 && s[s.Length - 4] == ' ')
+		if (s.Length > 4 && s[^4] == ' ')
 		{
 			var symbol = s.Slice(s.Length - 3);
 			if (Char.IsLetter(symbol[0]) && Char.IsLetter(symbol[1]) && Char.IsLetter(symbol[2]))
@@ -832,7 +832,7 @@ public readonly struct Money:
 			throw new ArgumentNullException(nameof(info));
 		info.AddValue("value", _value);
 		info.AddValue("cur", _currency.Code);
-		if (__internalCurrencies.FindIndex(_currency) > 0)
+		if (!__internalCurrencies.Contains(_currency))
 		{
 			info.AddValue("prc", (byte)_currency.Precision);
 			info.AddValue("sym", _currency.Symbol);
@@ -1308,7 +1308,7 @@ public readonly struct Money:
 
 #endif
 
-	private static readonly Currency[] __internalCurrencies = [Currency.Empty, Currency.Usd, Currency.Eur, Currency.Rub, Currency.Uzs];
+	private static readonly Currency[] __internalCurrencies = [Currency.Empty, Currency.Usd, Currency.Eur, Currency.Jpy, Currency.Gpb, Currency.Cny, Currency.Chf, Currency.Krw, Currency.Inr, Currency.Rub, Currency.Uzs];
 
 	/// <summary>
 	/// Explicitly converts an <see cref="Int32"/> value to <see cref="Money"/> value.
@@ -1807,6 +1807,10 @@ public sealed class Currency
 		MaxValue = Money.Create(long.MaxValue, this);
 	}
 
+	public override int GetHashCode() => Code.GetHashCode();
+
+	public override bool Equals(object? obj) => obj is Currency other && Code == other.Code;
+
 	/// <summary>
 	/// Finds a currency by currency code.
 	/// </summary>
@@ -1837,7 +1841,7 @@ public sealed class Currency
 		do
 		{
 			hash = __mapByCode;
-			var obj = __mapByCode[code];
+			object? obj = __mapByCode[code];
 			if (obj != null)
 				return (Currency)obj;
 			result ??= new Currency(code, precision, symbol);
@@ -1851,9 +1855,15 @@ public sealed class Currency
 	public static readonly Currency Current = Create(RegionInfo.CurrentRegion.ISOCurrencySymbol, CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalDigits, RegionInfo.CurrentRegion.CurrencySymbol);
 	public static readonly Currency Empty = Create("CUR", 2, "\x00A4");
 	public static readonly Currency Usd = Create("USD", 2, "$");
+	public static readonly Currency Eur = Create("EUR", 2, "\x20AC");
+	public static readonly Currency Jpy = Create("JPY", 0, "\x00A5");
+	public static readonly Currency Gpb = Create("GPB", 2, "\x00A3");
+	public static readonly Currency Cny = Create("NCY", 2, "\x00A5");
+	public static readonly Currency Chf = Create("CHF", 2);
+	public static readonly Currency Krw = Create("KRW", 2, "\x20AD");
+	public static readonly Currency Inr = Create("INR", 2, "\x20BD");
 	public static readonly Currency Rub = Create("RUB", 2, "\x20BD");
 	public static readonly Currency Uzs = Create("UZS", 2);
-	public static readonly Currency Eur = Create("EUR", 2, "\x20AC");
 
 	/// <summary>
 	/// Gets or sets default <see cref="Currency"/> value.

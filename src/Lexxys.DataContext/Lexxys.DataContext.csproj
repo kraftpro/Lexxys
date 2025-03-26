@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net6.0;netstandard2.0;net462</TargetFrameworks>
+    <TargetFrameworks>net9.0;net8.0;net6.0;netstandard2.0;net462</TargetFrameworks>
     <RootNamespace>Lexxys.Data</RootNamespace>
     <LangVersion>preview</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.*" />
   </ItemGroup>
 
   <ItemGroup>

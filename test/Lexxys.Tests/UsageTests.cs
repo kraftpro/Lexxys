@@ -1,6 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 
 using Microsoft.Extensions.Logging;
+
+#nullable enable
 
 // ReSharper disable all
 namespace Lexxys.Tests
@@ -71,28 +73,28 @@ namespace Lexxys.Tests
 
 			public string Source { get => ""; set {} }
 
-			public IDisposable Enter(LogType logType, string sectionName, IDictionary args) => _logger.Enter(logType, sectionName, args);
+			public IDisposable? Enter(LogType logType, string sectionName, IEnumerable<NameValueTuple<string, object?>>? args) => _logger.Enter(logType, sectionName, args);
 
 			public bool IsEnabled(LogType logType) => _logger.IsEnabled(logType);
 
 			public bool IsEnabled(LogLevel logLevel) => _logger.IsEnabled(logLevel);
 
-			public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+			public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
 			{
 				throw new NotImplementedException();
 			}
 
-			public IDisposable BeginScope<TState>(TState state)
+			public IDisposable? BeginScope<TState>(TState state) where TState: notnull
 			{
 				throw new NotImplementedException();
 			}
 
-			public void Log(LogType logType, int eventId, string source, string message, Exception exception, IDictionary args)
+			public void Log(LogType logType, int eventId, string? source, string? message, Exception? exception, IEnumerable<NameValueTuple<string, object?>>? args)
 			{
 				throw new NotImplementedException();
 			}
 
-			public IDisposable Timing(LogType logType, string description, TimeSpan threshold) => _logger.Timing(logType, description, threshold);
+			public IDisposable? Timing(LogType logType, string description, TimeSpan threshold) => _logger.Timing(logType, description, threshold);
 		}
 
 		public void LoggingUsageTest()

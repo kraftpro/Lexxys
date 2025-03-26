@@ -9,9 +9,9 @@ public class RndPcg: IRand
 	private ulong _state;
 	private ulong _inc;
 
-	public RndPcg() => Reset(0, 0);
+	public RndPcg() => Reset((ulong)Environment.TickCount, 900719925);
 
-	public RndPcg(ulong seed, ulong seq) => Reset(seed, seq);
+	public RndPcg(ulong seed, ulong seq = 0) => Reset(seed, seq);
 
 	private void Reset(ulong seed, ulong seq)
 	{
@@ -32,11 +32,8 @@ public class RndPcg: IRand
 			ArrayPool<byte>.Shared.Return(bb);
 #endif
 		}
-		_state = 0U;
 		_inc = (seq << 1) | 1U;
-		NextUInt32();
-		_state += seed;
-		NextUInt32();
+		_state = (seed + _inc) * 6364136223846793005U + _inc;
 	}
 
 	public uint NextUInt32()
@@ -50,13 +47,11 @@ public class RndPcg: IRand
 
 	public ulong NextUInt64()
 	{
-		Span<uint> b = stackalloc uint[2];
-		b[0] = NextUInt32();
-		b[1] = NextUInt32();
+		Span<uint> b = [NextUInt32(), NextUInt32()];
 		return MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(b));
 	}
 
-	public void NextBytes(byte[] buffer)
+	public void NextBytes(Span<byte> buffer)
 	{
 		Span<byte> bb = buffer;
 		if (bb.Length >= sizeof(uint))

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Globalization;
@@ -300,7 +300,7 @@ public static partial class Strings
 			return true;
 		}
 		char c0 = text[0];
-		if (c0 == ':' || (c0 >= '0' && c0 <= '9'))
+		if (c0 is ':' or >= '0' and <= '9')
 			goto ShortFormat;
 
 		if (c0 is 'D' or 'd')
@@ -509,13 +509,13 @@ public static partial class Strings
 	}
 
 	[DebuggerDisplay("Number = {_left},{_right}; Scale={_scale}; Point={_point}")]
-	private struct NumberScale
+	private struct NumberScale(long left, long right, int width, int scale)
 	{
-		private int _width;
-		private long _left;
-		private long _right;
-		private int _scale;
-		private bool _point;
+		private int _width = width;
+		private long _left = left;
+		private long _right = right;
+		private int _scale = scale;
+		private bool _point = scale > 0;
 		private static readonly long[] ScaleTable;
 		private static readonly long[] OverflowTable;
 		private const int ScaleLength = 19;
@@ -533,15 +533,6 @@ public static partial class Strings
 			}
 		}
 
-		public NumberScale(long left, long right, int width, int scale)
-		{
-			_left = left;
-			_right = right;
-			_width = width;
-			_scale = scale;
-			_point = scale > 0;
-		}
-
 		public void Reset()
 		{
 			_width = 0;
@@ -551,12 +542,12 @@ public static partial class Strings
 			_point = false;
 		}
 
-		public long Left => _left;
-		public long Right => _right;
-		public int Scale => _scale;
-		public bool Point => _point;
-		public int Size => _width;
-		public decimal Value => _left + (decimal)_right / ScaleTable[_scale];
+		public readonly long Left => _left;
+		public readonly long Right => _right;
+		public readonly int Scale => _scale;
+		public readonly bool Point => _point;
+		public readonly int Size => _width;
+		// public readonly decimal Value => _left + (decimal)_right / ScaleTable[_scale];
 
 		public bool Append(char value, int position)
 		{
@@ -869,14 +860,14 @@ public static partial class Strings
 		return TryGetType(value, out Type? result) ? result: defaultValue;
 	}
 
-	public static bool TryGetType([NotNullWhen(true)] string? value, [MaybeNullWhen(false)] out Type result)
+	public static bool TryGetType([NotNullWhen(true)] string? value, [NotNullWhen(true)] out Type? result)
 	{
 		if (String.IsNullOrWhiteSpace(value))
 		{
-			result = null!;
+			result = null;
 			return false;
 		}
-		result = Factory.GetType(value)!;
+		result = Factory.GetType(value);
 		return result != null;
 	}
 

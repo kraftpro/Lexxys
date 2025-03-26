@@ -17,23 +17,11 @@ namespace Lexxys.Tests.Tokenizer
 	[TestClass()]
 	public class CharStreamTest
 	{
-		private TestContext _testContextInstance;
-
 		/// <summary>
 		///Gets or sets the test context which provides
 		///information about and functionality for the current test run.
 		///</summary>
-		public TestContext TestContext
-		{
-			get
-			{
-				return _testContextInstance;
-			}
-			set
-			{
-				_testContextInstance = value;
-			}
-		}
+		public TestContext TestContext { get; set; }
 
 		#region Additional test attributes
 		// 
@@ -202,23 +190,6 @@ namespace Lexxys.Tests.Tokenizer
 		///A test for IndexOf
 		///</summary>
 		[TestMethod()]
-		public void IndexOfRegexTest()
-		{
-			//CharStream charStream = null; // TODO: Initialize to an appropriate value
-			//CharStream target = new CharStream(charStream); // TODO: Initialize to an appropriate value
-			//Regex regex = null; // TODO: Initialize to an appropriate value
-			//int offset = 0; // TODO: Initialize to an appropriate value
-			//int expected = 0; // TODO: Initialize to an appropriate value
-			//int actual;
-			//actual = target.IndexOf(regex, offset);
-			//Assert.AreEqual(expected, actual);
-			Assert.Inconclusive("Verify the correctness of this test method.");
-		}
-
-		/// <summary>
-		///A test for IndexOf
-		///</summary>
-		[TestMethod()]
 		public void IndexOfStringTest()
 		{
 			for (int i = 0; i < 10; ++i)
@@ -326,24 +297,6 @@ namespace Lexxys.Tests.Tokenizer
 				Assert.AreEqual(expected, cs.GetCharPosition());
 			}
 		}
-
-		/// <summary>
-		///A test for Substring
-		///</summary>
-		[TestMethod()]
-		public void SubstringTest()
-		{
-			//CharStream charStream = null; // TODO: Initialize to an appropriate value
-			//CharStream target = new CharStream(charStream); // TODO: Initialize to an appropriate value
-			//int start = 0; // TODO: Initialize to an appropriate value
-			//int length = 0; // TODO: Initialize to an appropriate value
-			//string expected = string.Empty; // TODO: Initialize to an appropriate value
-			//string actual;
-			//actual = target.Substring(start, length);
-			//Assert.AreEqual(expected, actual);
-			Assert.Inconclusive("Verify the correctness of this test method.");
-		}
-
 
 		/// <summary>
 		///A test for Item

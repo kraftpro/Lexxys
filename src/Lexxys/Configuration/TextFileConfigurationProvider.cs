@@ -1,4 +1,4 @@
-﻿using Lexxys.Xml;
+using Lexxys.Xml;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
@@ -8,12 +8,8 @@ namespace Lexxys.Configuration;
 /// <summary>
 /// A <see cref="Lexxys.Xml.TextToXmlConverter">config.txt</see> file based <see cref="ConfigurationProvider"/>.
 /// </summary>
-public class TextFileConfigurationProvider: FileConfigurationProvider
+public class TextFileConfigurationProvider(FileConfigurationSource source): FileConfigurationProvider(source)
 {
-	public TextFileConfigurationProvider(FileConfigurationSource source) : base(source)
-	{
-	}
-
 	public override void Load(Stream stream) => Data = TextConfigurationParser.Parse(stream, Source.Path);
 }
 
@@ -81,10 +77,10 @@ static class TextConfigurationParser
 
 		foreach (var item in xml.Attributes)
 		{
-			var key = node + item.Key;
+			string key = node + item.Key;
 			if (!xml.Element(item.Key).IsEmpty)
 			{
-				(keys ??= new List<string>()).Add(item.Key);
+				(keys ??= []).Add(item.Key);
 				key += ConfigurationPath.KeyDelimiter + "0";
 			}
 			map.Add(key, item.Value);
@@ -96,20 +92,22 @@ static class TextConfigurationParser
 			{
 				int index = 0;
 				foreach (var item in items)
-					map.Add(node + index++, item.Value);
+				{
+					ScanNode(item, node + index++, map);
+				}
 			}
-			else if (items.Count() == 1)
-			{
-				var item = items.First();
-				var key = node + items.Key;
-				if (keys != null && keys.Contains(items.Key, StringComparer.OrdinalIgnoreCase))
-					key += ConfigurationPath.KeyDelimiter + "1";
-				ScanNode(item, key, map);
-			}
+			//else if (items.Count() == 1)
+			//{
+			//	var item = items.First();
+			//	var key = node + items.Key;
+			//	if (keys != null && keys.Contains(items.Key, StringComparer.OrdinalIgnoreCase))
+			//		key += ConfigurationPath.KeyDelimiter + "1";
+			//	ScanNode(item, key, map);
+			//}
 			else
 			{
 				int index = keys != null && keys.Contains(items.Key, StringComparer.OrdinalIgnoreCase) ? 1: 0;
-				var key = node + items.Key + ConfigurationPath.KeyDelimiter;
+				string key = node + items.Key + ConfigurationPath.KeyDelimiter;
 				foreach (var item in items)
 				{
 					ScanNode(item, key + index++, map);

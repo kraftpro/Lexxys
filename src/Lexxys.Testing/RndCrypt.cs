@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace Lexxys.Testing;
@@ -13,7 +15,17 @@ public class RndCrypt: IRand
 	private const double ToDoubleMult = (double)(SignificantValue - 1) / SignificantValue / long.MaxValue;
 
 	/// <inheritdoc/>
-	public void NextBytes(byte[] buffer) => _generator.GetBytes(buffer);
+#if NET6_0_OR_GREATER
+	public void NextBytes(Span<byte> buffer) => _generator.GetBytes(buffer);
+#else
+	public void NextBytes(Span<byte> buffer)
+	{
+		var bb = ArrayPool<byte>.Shared.Rent(buffer.Length);
+		_generator.GetBytes(bb);
+		bb.AsSpan().CopyTo(buffer);
+		ArrayPool<byte>.Shared.Return(bb);
+	}
+#endif
 
 	/// <inheritdoc/>
 	public int NextInt32()
@@ -33,9 +45,11 @@ public class RndCrypt: IRand
 		_generator.GetBytes(MemoryMarshal.AsBytes(val));
 		return val[0];
 #else
-		var val = new byte[sizeof(uint)];
+		var val = ArrayPool<byte>.Shared.Rent(sizeof(uint));
 		_generator.GetBytes(val);
-		return MemoryMarshal.Read<uint>(val);
+		var result = MemoryMarshal.Read<uint>(val);
+		ArrayPool<byte>.Shared.Return(val);
+		return result;
 #endif
 	}
 
@@ -46,21 +60,23 @@ public class RndCrypt: IRand
 		_generator.GetBytes(MemoryMarshal.AsBytes(val));
 		return val[0];
 #else
-		var val = new byte[sizeof(ulong)];
+		var val = ArrayPool<byte>.Shared.Rent(sizeof(ulong));
 		_generator.GetBytes(val);
-		return MemoryMarshal.Read<ulong>(val);
+		var result = MemoryMarshal.Read<ulong>(val);
+		ArrayPool<byte>.Shared.Return(val);
+		return result;
 #endif
 	}
 
 
-    /// <inheritdoc/>
-    public double NextDouble() => (NextUInt64() >> 11) * (1.0 / (1ul << 53));
+	/// <inheritdoc/>
+	public double NextDouble() => (NextUInt64() >> 11) * (1.0 / (1ul << 53));
 
-    /// <summary>
-    /// Throws <see cref="NotSupportedException"/> exception if <paramref name="seed"/> is greater than zero.
-    /// </summary>
-    /// <exception cref="NotSupportedException">The method is not supported</exception>
-    public void Reset(long seed = 0)
+	/// <summary>
+	/// Throws <see cref="NotSupportedException"/> exception if <paramref name="seed"/> is greater than zero.
+	/// </summary>
+	/// <exception cref="NotSupportedException">The method is not supported</exception>
+	public void Reset(long seed = 0)
 	{
 		if (seed != 0)
 			throw new NotSupportedException($"Method {nameof(Reset)} is not supported by {nameof(RndCrypt)}.");

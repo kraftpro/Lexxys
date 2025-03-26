@@ -4,12 +4,6 @@ namespace Lexxys.Testing;
 
 public static partial class Resources
 {
-	public const string DefaultResourceFile = "resource*.json";
-	
-	/// <summary>
-	/// Returns a <see cref="IDictionary{TKey,TValue}"/> of the random generators loaded from default resource file.
-	/// </summary>
-	public static IDictionary<string, RandItem<string>> Resource { get; } = LoadResources(DefaultResourceFile);
 
 	public static RandItem<string> Phone { get; } = R.Concat(
 		R.Picture("###-###-####", "(###) ###-####", "1-###-###-####", "###.###.####"),

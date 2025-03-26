@@ -1,34 +1,28 @@
+using System.Collections;
 using System.Collections.Concurrent;
-using System.Reflection;
-using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Configuration;
 
-internal class ConfigServiceCollection: IConfigService
+internal class ConfigService: IConfigService
 {
 	private volatile int _version;
 	private volatile IConfigSource[] _providers;
-	private ConcurrentDictionary<string, object?> _cachedValues = new ConcurrentDictionary<string, object?>();
-	private ConcurrentDictionary<string, object?> _cachedLists = new ConcurrentDictionary<string, object?>();
+	private readonly ConcurrentDictionary<string, object?> _cachedValues = [];
+	private readonly ConcurrentDictionary<string, object?> _cachedLists = [];
 
-	public ConfigServiceCollection()
+	public ConfigService()
 	{
 		_version = 1;
-		_providers = Array.Empty<IConfigSource>();
+		_providers = [];
 	}
 
-	public ConfigServiceCollection(IEnumerable<IConfigSource> sources) : this()
+	public ConfigService(IEnumerable<IConfigSource> sources) : this()
 	{
-		if (sources == null)
-			throw new ArgumentNullException(nameof(sources));
-		_version = 1;
-		foreach (var provider in sources)
-		{
-			AddConfiguration(provider);
-		}
-	}
+		if (sources == null) throw new ArgumentNullException(nameof(sources));
 
-	#region IConfigService
+		_version = 1;
+		_providers = sources.ToArray();
+	}
 
 	public int Version => _version;
 
@@ -36,10 +30,8 @@ internal class ConfigServiceCollection: IConfigService
 
 	public object? GetValue(string key, Type objectType)
 	{
-		if (objectType is null)
-			throw new ArgumentNullException(nameof(objectType));
-		if (key is null || key.Length <= 0)
-			throw new ArgumentNullException(nameof(key));
+		if (objectType is null) throw new ArgumentNullException(nameof(objectType));
+		if (key is null || key.Length <= 0) throw new ArgumentNullException(nameof(key));
 
 		string cacheKey = $"{key}::{objectType.FullName}";
 		return _cachedValues.GetOrAdd(cacheKey, GetConfigValue);
@@ -59,8 +51,7 @@ internal class ConfigServiceCollection: IConfigService
 
 	public IReadOnlyList<T> GetList<T>(string key)
 	{
-		if (key is null || key.Length <= 0)
-			throw new ArgumentNullException(nameof(key));
+		if (key is null || key.Length <= 0) throw new ArgumentNullException(nameof(key));
 
 		string cacheKey = $"{key}::{typeof(T).FullName}";
 		return (IReadOnlyList<T>)(_cachedValues.GetOrAdd(cacheKey, GetConfigList) ?? Array.Empty<T>());
@@ -85,8 +76,7 @@ internal class ConfigServiceCollection: IConfigService
 
 	public int AddConfiguration(IConfigSource source, int position = 0)
 	{
-		if (source is null)
-			throw new ArgumentNullException(nameof(source));
+		if (source is null) throw new ArgumentNullException(nameof(source));
 
 		int i = AddConfigurationInternal(source, position);
 		if (i >= 0)
@@ -96,11 +86,13 @@ internal class ConfigServiceCollection: IConfigService
 		return i;
 	}
 
+	public int Count => _providers.Length;
+
+	public IEnumerator<IConfigSource> GetEnumerator() => ((IEnumerable<IConfigSource>)_providers).GetEnumerator();
+
+	IEnumerator IEnumerable.GetEnumerator() => _providers.GetEnumerator();
+
 	bool IEquatable<IConfigSource>.Equals(IConfigSource? other) => ReferenceEquals(this, other);
-
-	#endregion
-
-	private void OnChanged() => OnChanged(null, ConfigurationEventArgs.Default);
 
 	private int AddConfigurationInternal(IConfigSource provider, int position)
 	{

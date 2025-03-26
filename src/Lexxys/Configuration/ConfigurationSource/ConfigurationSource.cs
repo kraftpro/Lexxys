@@ -27,7 +27,7 @@ internal static class ConfigurationSource
 
 		xs.Changed += eventHandler;
 
-		includes ??= new List<string>();
+		includes ??= [];
 		if (!includes.Contains(inc.ToString()))
 		{
 			includes.Add(inc.ToString());

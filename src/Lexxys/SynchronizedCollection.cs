@@ -13,7 +13,7 @@ namespace Lexxys
 		/// <param name="items">The collection whose elements are copied to the new <see cref="SynchronizedCollection{T}"/>.</param>
 		/// <param name="areNew">Indicates the all the items are new in the collection</param>
 		/// <param name="comparer">Optional equality comparer for the collection items</param>
-		/// <param name="readOnly">Indicated the the collection is read only</param>
+		/// <param name="readOnly">Indicated the collection is read only</param>
 		public static SynchronizedCollection<T> Create<T>(IEnumerable<T>? items, bool areNew = false, IEqualityComparer<T>? comparer = null, bool readOnly = false)
 		{
 			return new SynchronizedCollection<T>(items, areNew, comparer, readOnly);
@@ -32,24 +32,12 @@ namespace Lexxys
 		private readonly IEqualityComparer<T> _comparer;
 
 		/// <summary>Collection item</summary>
-		private readonly struct MarkedItem
+		private readonly struct MarkedItem(T value, bool isNew = false)
 		{
 			/// <summary>The item value</summary>
-			public readonly T Value;
+			public readonly T Value = value;
 			/// <summary>The item is new in the collection and will be added into the collection during Update.</summary>
-			public readonly bool IsNew;
-
-			public MarkedItem(T value)
-			{
-				Value = value;
-				IsNew = false;
-			}
-
-			public MarkedItem(T value, bool isNew)
-			{
-				Value = value;
-				IsNew = isNew;
-			}
+			public readonly bool IsNew = isNew;
 		}
 
 		/// <summary>
@@ -69,11 +57,11 @@ namespace Lexxys
 		/// <param name="items">The collection whose elements are copied to the new <see cref="SynchronizedCollection{T}"/>.</param>
 		/// <param name="areNew">Indicates the all the items are new in the collection</param>
 		/// <param name="comparer">Optional equality comparer for the collection items</param>
-		/// <param name="readOnly">Indicated the the collection is read only</param>
+		/// <param name="readOnly">Indicated the collection is read only</param>
 		public SynchronizedCollection(IEnumerable<T>? items, bool areNew = false, IEqualityComparer<T>? comparer = null, bool readOnly = false)
 		{
 			_comparer = comparer ?? EqualityComparer<T>.Default;
-			_items = items == null ? new List<MarkedItem>() : new List<MarkedItem>(items.AsEnumerable().Select(o => new MarkedItem(o, areNew)));
+			_items = items == null ? []: [..items.AsEnumerable().Select(o => new MarkedItem(o, areNew))];
 			_deletedItems = new List<MarkedItem>();
 			IsReadOnly = readOnly;
 		}
@@ -168,7 +156,7 @@ namespace Lexxys
 		}
 
 		/// <summary>
-		/// Marks all items in the collection as updated (no any inserts or deletion will be executed in the next <see cref="Synchronize"/> call.
+		/// Marks all items in the collection as updated (no any inserts or deletion will be executed in the next <see cref="Synchronize"/> call).
 		/// </summary>
 		public void MarkSynced()
 		{

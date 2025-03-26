@@ -10,6 +10,7 @@ namespace Lexxys.Configuration;
 public interface IConfigSource: IEquatable<IConfigSource>
 {
 	event EventHandler<ConfigurationEventArgs>? Changed;
+
 	int Version { get; }
 
 	object? GetValue(string key, Type objectType);

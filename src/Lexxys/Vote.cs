@@ -80,17 +80,11 @@ public static class Vote
 	}
 }
 
-public readonly struct Vote<T>: IEquatable<Vote<T>>
+public readonly struct Vote<T>(T value, VoteScore score): IEquatable<Vote<T>>
 {
-	public Vote(T value, VoteScore score)
-	{
-		Value = value;
-		Score = score;
-	}
+	public T Value { get; } = value;
 
-	public T Value { get; }
-
-	public VoteScore Score { get; }
+	public VoteScore Score { get; } = score;
 
 	public override bool Equals(object? obj) => obj is Vote<T> vote && Equals(vote);
 

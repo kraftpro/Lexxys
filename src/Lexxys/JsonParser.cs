@@ -33,7 +33,7 @@ public static class JsonParser
 		return converter.ParseItem(ref stream);
 	}
 
-	readonly ref struct ActualParser
+	private readonly ref struct ActualParser
 	{
 		private const int OBJBEG = 1;
 		private const int OBJEND = 2;

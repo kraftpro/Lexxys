@@ -12,13 +12,14 @@ public partial class Arguments
 	/// </summary>
 	/// <typeparam name="T">Option type.</typeparam>
 	/// <param name="args">Command line arguments.</param>
+	/// <param name="settings">Optional settings for the parser.</param>
 	/// <returns></returns>
 	public static ParsedArguments<T> Parse<T>(IEnumerable<string> args, ArgumentsBuilderSettings? settings = null) where T: class, new()
 	{
 		if (args is null) throw new ArgumentNullException(nameof(args));
 
-		var parser = typeof(T).GetMethod("Parse", BindingFlags.Public | BindingFlags.Static, [typeof(IEnumerable<string>), typeof(ArgumentsBuilder)]);
-		if (parser?.ReturnType == typeof(Arguments<T>))
+		var parser = typeof(T).GetMethod("Parse", BindingFlags.Public | BindingFlags.Static, null, [typeof(IEnumerable<string>), typeof(ArgumentsBuilder)], null);
+		if (parser?.ReturnType == typeof(ParsedArguments<T>))
 		{
 			var obj = parser.Invoke(null, [args, null]);
 			if (obj is ParsedArguments<T> result)
@@ -54,7 +55,7 @@ public partial class Arguments
 		{
 			var field = items.FirstOrDefault(o => String.Equals(o.Name, item.Name, comparison));
 			if (field.Type == null) continue;
-			if (Strings.TryGetValue((string?)item.Value, field.Type, out var v))
+			if (Strings.TryGetValue(item.Value, field.Type, out var v))
 				field.Setter(value, v);
 			else
 				errors.Add($"Invalid value for parameter '{item.Name}'");

@@ -9,8 +9,10 @@ using System.Diagnostics;
 
 namespace Lexxys;
 
-public interface ISafeList<T>: IList<T>
+public interface ISafeList<T>: IList<T>, IReadOnlyList<T>
 {
+	new int Count { get; }
+	new T this[int index] { get; set; }
 }
 
 public interface ISafeDictionary<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
@@ -39,12 +41,12 @@ public interface IWrappedCollection<T>: IReadOnlyCollection<T>, ICollection<T>, 
 
 public interface IWrappedList<T>: IReadOnlyList<T>, IList<T>, IWrappedCollection<T>
 {
-	new int Count { get; }
 	new T this[int index] { get; }
 }
 
-public interface IWrappedSafeList<T>: IReadOnlyList<T>, ISafeList<T>, IWrappedCollection<T>
+public interface IWrappedSafeList<T>: ISafeList<T>, IWrappedCollection<T>
 {
+	new int Count { get; }
 	new T this[int index] { get; }
 }
 
@@ -426,7 +428,7 @@ public static class ReadOnly
 	[Serializable]
 	private class ReadOnlySafeListWrap<T>: IWrappedSafeList<T>
 	{
-		private readonly ISafeList<T> _list;
+		private readonly IList<T> _list;
 
 		public ReadOnlySafeListWrap(ISafeList<T> list) => _list = list ?? throw new ArgumentNullException(nameof(list));
 
@@ -1196,9 +1198,9 @@ public class ReadOnlyException: NotSupportedException
 	{
 	}
 
-#if !NET8_0_OR_GREATER
-    protected ReadOnlyException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext): base(serializationInfo, streamingContext)
+#pragma warning disable SYSLIB0051 // Type or member is obsolete
+	protected ReadOnlyException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext): base(serializationInfo, streamingContext)
+#pragma warning restore SYSLIB0051 // Type or member is obsolete
 	{
 	}
-#endif
 }

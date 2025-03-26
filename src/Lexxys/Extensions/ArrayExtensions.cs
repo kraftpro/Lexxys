@@ -4,62 +4,48 @@ namespace Lexxys;
 
 public static class ArrayExtensions
 {
-	public static T[] Append<T>(this T[] array, T value)
+	public static T[] Append<T>(this T[]? array, T value)
 	{
-		if (array is null)
-			throw new ArgumentNullException(nameof(array));
-		var result = new T[array.Length + 1];
-		array.CopyTo(result, 0);
-		result[array.Length] = value;
-		return result;
+		if (array is not { Length: >0 })
+			return [value];
+		return [..array, value];
 	}
 
-    public static T[] Append<T>(this T[] array, T value1, T value2)
+    public static T[] Append<T>(this T[]? array, T value1, T value2)
     {
-        if (array is null)
-            throw new ArgumentNullException(nameof(array));
-        var result = new T[array.Length + 2];
-        array.CopyTo(result, 0);
-        result[array.Length] = value1;
-        result[array.Length + 1] = value2;
-        return result;
+		if (array is not { Length: >0 })
+			return [value1, value2];
+		return [..array, value1, value2];
     }
 
-    public static T[] Append<T>(this T[] array, T value1, T value2, T value3)
+    public static T[] Append<T>(this T[]? array, T value1, T value2, T value3)
     {
-        if (array is null)
-            throw new ArgumentNullException(nameof(array));
-        var result = new T[array.Length + 3];
-        array.CopyTo(result, 0);
-        result[array.Length] = value1;
-        result[array.Length + 1] = value2;
-        result[array.Length + 2] = value3;
-        return result;
+		if (array is not { Length: >0 })
+			return [value1, value2, value3];
+		return [..array, value1, value2, value3];
     }
 
-    public static T[] Append<T>(this T[] array, params T[]? value)
+    public static T[] Append<T>(this T[]? array, params T[]? value)
     {
-        if (array is null)
-            throw new ArgumentNullException(nameof(array));
+		if (array is not { Length: >0 })
+			return value ?? [];
 		if (value is not { Length: >0 })
 			return array;
-        var result = new T[array.Length + value.Length];
-        array.CopyTo(result, 0);
-		value.CopyTo(result, array.Length);
-        return result;
+		return [..array, ..value];
     }
 
-	public static T[] Insert<T>(this T[] array, int position, T value)
+	public static T[] Insert<T>(this T[]? array, int position, T value)
 	{
-		if (array is null) throw new ArgumentNullException(nameof(array));
-		if (position < 0 || position > array.Length) throw new ArgumentOutOfRangeException(nameof(position), position, null);
-
+		if (array is not { Length: > 0 })
+			return position == 0 ? [value]: throw new ArgumentOutOfRangeException(nameof(position), position, null);
+		if (position < 0 || position > array.Length)
+			throw new ArgumentOutOfRangeException(nameof(position), position, null);
 		var result = new T[array.Length + 1];
 		if (position > 0)
-			Array.Copy(array, result, position);
+			array.AsSpan(0, position).CopyTo(result);
 		result[position] = value;
 		if (position < array.Length)
-			Array.Copy(array, position, result, position + 1, array.Length - position);
+			array.AsSpan(position).CopyTo(result.AsSpan(position + 1));
 		return result;
 	}
 
@@ -113,31 +99,31 @@ public static class ArrayExtensions
 		return array;
 	}
 
-	public static T[] RemoveLast<T>(this T[] array)
+	public static T[] RemoveLast<T>(this T[]? array)
 	{
-		if (array is null)
-			throw new ArgumentNullException(nameof(array));
+		if (array is not { Length: >1 })
+			return [];
 		var result = new T[array.Length - 1];
-		Array.Copy(array, 0, result, 0, result.Length);
+		array.AsSpan(0, array.Length - 1).CopyTo(result);
 		return result;
 	}
 
-	public static T[] RemoveFirst<T>(this T[] array)
+	public static T[] RemoveFirst<T>(this T[]? array)
 	{
-		if (array is null)
-			throw new ArgumentNullException(nameof(array));
+		if (array is not { Length: >1 })
+			return [];
 		var result = new T[array.Length - 1];
-		Array.Copy(array, 1, result, 0, result.Length);
+		array.AsSpan(1).CopyTo(result);
 		return result;
 	}
 
-	public static T[] RemoveAt<T>(this T[] array, int index)
+	public static T[] RemoveAt<T>(this T[]? array, int index)
 	{
-		if (array is null)
-			throw new ArgumentNullException(nameof(array));
+		if (array is not { Length: >1 })
+			return index == 0 ? []: throw new ArgumentOutOfRangeException(nameof(index), index, null);
 		var result = new T[array.Length - 1];
-		Array.Copy(array, 0, result, 0, index);
-		Array.Copy(array, index + 1, result, index, array.Length - index - 1);
+		array.AsSpan(0, index).CopyTo(result);
+		array.AsSpan(index+1).CopyTo(result.AsSpan(index));
 		return result;
 	}
 

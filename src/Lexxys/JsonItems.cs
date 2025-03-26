@@ -21,6 +21,7 @@ public abstract class JsonItem
 	protected const string NullValue = "null";
 	protected const string TrueValue = "true";
 	protected const string FalseValue = "false";
+	protected const string NaNValue = "NaN";
 	protected static readonly byte[] NullBytes = [(byte)'n', (byte)'u', (byte)'l', (byte)'l'];
 	protected static readonly byte[] TrueBytes = [(byte)'t', (byte)'r', (byte)'u', (byte)'e'];
 	protected static readonly byte[] FalseBytes = [(byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e'];
@@ -267,16 +268,16 @@ public class JsonScalar: JsonItem
 		_ => []
 	};
 
-	public override StringBuilder ToString(StringBuilder text, string? indent = null, int maxVaueLength = 0, int arrayLimit = 0)
+	public override StringBuilder ToString(StringBuilder text, string? indent = null, int maxValueLength = 0, int arrayLimit = 0)
 	{
 		if (text is null)
 			throw new ArgumentNullException(nameof(text));
 
-		base.ToString(text, indent, maxVaueLength, arrayLimit);
+		base.ToString(text, indent, maxValueLength, arrayLimit);
 		return Value switch
 		{
 			null => text.Append("null"),
-			string s => Escape(text, s, maxVaueLength),
+			string s => Escape(text, s, maxValueLength),
 			bool bl => text.Append(bl ? "true" : "false"),
 			DateTime dt => text.Append('"').Append(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.RoundtripKind)).Append('"'),
 			DateTimeOffset dtx => text.Append('"').Append(XmlConvert.ToString(dtx)).Append('"'),
@@ -291,21 +292,21 @@ public class JsonScalar: JsonItem
 			long l => text.Append(l),
 			ulong ul => text.Append(ul),
 #if NET6_0_OR_GREATER
-			float f => Single.IsFinite(f) ? text.Append(f): text.Append(Null),
-			double d => Double.IsFinite(d) ? text.Append(d): text.Append(Null),
+			float f => Single.IsFinite(f) ? text.Append(f): text.Append(NaNValue),
+			double d => Double.IsFinite(d) ? text.Append(d): text.Append(NaNValue),
 #else
-			float f => Single.IsNaN(f) || Single.IsInfinity(f) ? text.Append(f) : text.Append(Null),
-			double d => Double.IsNaN(d) || Double.IsInfinity(d) ? text.Append(d) : text.Append(Null),
+			float f => Single.IsNaN(f) || Single.IsInfinity(f) ? text.Append(f) : text.Append(NaNValue),
+			double d => Double.IsNaN(d) || Double.IsInfinity(d) ? text.Append(d) : text.Append(NaNValue),
 #endif
 			decimal m => text.Append(m),
-			_ => Escape(text, Value.ToString() ?? String.Empty, maxVaueLength)
+			_ => Escape(text, Value.ToString() ?? String.Empty, maxValueLength)
 		};
 
-		static StringBuilder Escape(StringBuilder text, string s, int maxVaueLength)
+		static StringBuilder Escape(StringBuilder text, string s, int maxValueLength)
 		{
-			if (maxVaueLength > 0 && s.Length > maxVaueLength - 3)
+			if (maxValueLength > 0 && s.Length > maxValueLength - 3)
 			{
-				Strings.EscapeCsString(text, s.AsSpan(0, Math.Min(maxVaueLength, 0)));
+				Strings.EscapeCsString(text, s.AsSpan(0, Math.Min(maxValueLength, 0)));
 				--text.Length;
 				text.Append("...\"");
 			}
@@ -429,7 +430,7 @@ public class JsonScalar: JsonItem
 			var bytes = data.AsSpan();
 			while (left > 0)
 			{
-				Base64.EncodeToUtf8(bytes, buffer, out var count, out var written);
+				Base64.EncodeToUtf8(bytes, buffer, out int count, out int written);
 				left -= count;
 				bytes = bytes.Slice(count);
 				stream.Write(base64, 0, written);
@@ -440,7 +441,7 @@ public class JsonScalar: JsonItem
 		static void WriteTimeSpan(TimeSpan value, Stream stream)
 		{
 			const int TicksPerSecond = 100000;
-			var ticks = value.Ticks >= long.MaxValue / TimeSpan.TicksPerSecond ? long.MaxValue / (TimeSpan.TicksPerSecond * TicksPerSecond): (value.Ticks / (TimeSpan.TicksPerSecond / TicksPerSecond * 10) + 5) / 10;
+			long ticks = value.Ticks >= Int64.MaxValue / TimeSpan.TicksPerSecond ? Int64.MaxValue / (TimeSpan.TicksPerSecond * TicksPerSecond): (value.Ticks / (TimeSpan.TicksPerSecond / TicksPerSecond * 10) + 5) / 10;
 			
 			if (ticks == 0)
 			{
@@ -635,7 +636,7 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 	{
 		if (properties is null)
 			throw new ArgumentNullException(nameof(properties));
-		Properties = ReadOnly.ReWrap(properties)!;
+		Properties = ReadOnly.ReWrap(properties);
 	}
 
 	public JsonMap(IWrappedList<JsonPair> properties)
@@ -647,7 +648,7 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 	{
 		if (properties is null)
 			throw new ArgumentNullException(nameof(properties));
-		Properties = ReadOnly.ReWrap(properties)!;
+		Properties = ReadOnly.ReWrap(properties);
 	}
 
 	public JsonMap(IWrappedList<JsonPair> properties, IReadOnlyList<JsonPair>? attributes): base(attributes)
@@ -722,21 +723,19 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 	{
 		if (items is null)
 			throw new ArgumentNullException(nameof(items));
-		Items = ReadOnly.ReWrap(items)!;
+		Items = ReadOnly.ReWrap(items);
 	}
 
 	public JsonArray(IWrappedList<JsonItem> items)
 	{
-		if (items is null)
-			throw new ArgumentNullException(nameof(items));
-		Items = items;
+		Items = items ?? throw new ArgumentNullException(nameof(items));
 	}
 
 	public JsonArray(IReadOnlyList<JsonItem> items, IReadOnlyList<JsonPair>? attributes): base(attributes)
 	{
 		if (items is null)
 			throw new ArgumentNullException(nameof(items));
-		Items = ReadOnly.ReWrap(items)!;
+		Items = ReadOnly.ReWrap(items);
 	}
 
 	public JsonArray(IWrappedList<JsonItem> items, IReadOnlyList<JsonPair>? attributes): base(attributes)
@@ -754,7 +753,7 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 		string? indent2 = indent == null ? null : indent + "  ";
 		string comma = "";
 		int i = 0;
-		foreach (var item in Items)
+		foreach (JsonItem item in Items)
 		{
 			if (indent == null)
 				text.Append(comma);
@@ -765,7 +764,7 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 				text.Append("...");
 				break;
 			}
-			(item ?? JsonScalar.Null).ToString(text, indent2, stringLimit, arrayLimit);
+			item.ToString(text, indent2, stringLimit, arrayLimit);
 			comma = ",";
 		}
 		if (comma.Length > 0 && indent != null)
@@ -779,16 +778,13 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 		base.Write(stream);
 		stream.Write((byte)'[');
 		bool next = false;
-		foreach (var item in Items)
+		foreach (JsonItem item in Items)
 		{
 			if (next)
 				stream.Write((byte)',');
 			else
 				next = true;
-			if (item is null)
-				stream.Write(NullBytes);
-			else
-				item.Write(stream);
+			item.Write(stream);
 		}
 		stream.Write((byte)']');
 	}
@@ -808,21 +804,21 @@ public static class ZenJson
 
 	// JsonMap
 
-	public static JsonMap J(JsonPair pair) => new JsonMap(new[] { pair });
+	public static JsonMap J(JsonPair pair) => new JsonMap([pair]);
 	public static JsonMap J(params JsonPair[] pair) => new JsonMap(pair);
 	public static JsonMap J(List<JsonPair> pair) => new JsonMap(pair);
-	public static JsonMap J(IList<JsonPair> pair) => new JsonMap(ReadOnly.Wrap(pair)!);
+	public static JsonMap J(IList<JsonPair> pair) => new JsonMap(ReadOnly.Wrap(pair));
 	public static JsonMap J(IReadOnlyList<JsonPair> pair) => new JsonMap(pair);
-	public static JsonMap J(IEnumerable<JsonPair> pair) => new JsonMap(ReadOnly.WrapCopy(pair)!);
+	public static JsonMap J(IEnumerable<JsonPair> pair) => new JsonMap(ReadOnly.WrapCopy(pair));
 
 	// JsonArray
 
-	public static JsonArray J(JsonItem pair) => new JsonArray(new[] { pair });
+	public static JsonArray J(JsonItem pair) => new JsonArray([pair]);
 	public static JsonArray J(params JsonItem[] pair) => new JsonArray(pair);
 	public static JsonArray J(List<JsonItem> pair) => new JsonArray(pair);
-	public static JsonArray J(IList<JsonItem> pair) => new JsonArray(ReadOnly.Wrap(pair)!);
+	public static JsonArray J(IList<JsonItem> pair) => new JsonArray(ReadOnly.Wrap(pair));
 	public static JsonArray J(IReadOnlyList<JsonItem> pair) => new JsonArray(pair);
-	public static JsonArray J(IEnumerable<JsonItem> pair) => new JsonArray(ReadOnly.WrapCopy(pair)!);
+	public static JsonArray J(IEnumerable<JsonItem> pair) => new JsonArray(ReadOnly.WrapCopy(pair));
 
 	// JsonPair
 
@@ -830,14 +826,14 @@ public static class ZenJson
 	public static JsonPair J(string name, object value) => new JsonPair(name, new JsonScalar(value));
 
 	public static JsonPair J(string name, params JsonPair[] value) => new JsonPair(name, new JsonMap(value));
-	public static JsonPair J(string name, List<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)!));
-	public static JsonPair J(string name, IList<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)!));
+	public static JsonPair J(string name, List<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)));
+	public static JsonPair J(string name, IList<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)));
 	public static JsonPair J(string name, IReadOnlyList<JsonPair> value) => new JsonPair(name, new JsonMap(value));
-	public static JsonPair J(string name, IEnumerable<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.WrapCopy(value)!));
+	public static JsonPair J(string name, IEnumerable<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.WrapCopy(value)));
 
 	public static JsonPair J(string name, params JsonItem[] value) => new JsonPair(name, new JsonArray(value));
 	public static JsonPair J(string name, List<JsonItem> value) => new JsonPair(name, new JsonArray(value));
-	public static JsonPair J(string name, IList<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.Wrap(value)!));
+	public static JsonPair J(string name, IList<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.Wrap(value)));
 	public static JsonPair J(string name, IReadOnlyList<JsonItem> value) => new JsonPair(name, new JsonArray(value));
-	public static JsonPair J(string name, IEnumerable<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.WrapCopy(value)!));
+	public static JsonPair J(string name, IEnumerable<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.WrapCopy(value)));
 }

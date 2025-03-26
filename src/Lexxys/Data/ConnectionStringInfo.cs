@@ -28,7 +28,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 	/// <summary>
 	/// Creates new instance of <see cref="ConnectionStringInfo" />.
 	/// </summary>
-	private ConnectionStringInfo()
+	public ConnectionStringInfo()
 	{
 		Workstation = Tools.MachineName;
 		Application = Lxx.ProductName;
@@ -142,14 +142,13 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			string name = item.Key.Trim();
 			string? value = item.Value ?? "";
 			string lookup = Regex.Replace(name, "[ _-]", "");
-			if (_synonyms.TryGetValue(lookup, out string? key))
+			if (Synonyms.TryGetValue(lookup, out string? key))
 				lookup = key;
 			else
 				key = name;
 			switch (lookup.ToUpperInvariant())
 			{
 				case "USERINSTANCE":
-				case "TRUSTSERVERCERTIFICATE":
 				case "REPLICATION":
 				case "POOLING":
 				case "PERSISTSECURITYINFO":
@@ -158,7 +157,12 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 				case "CONTEXTCONNECTION":
 				case "ASYNC":
 				case "ENLIST":
+				case "MULTISUBNETFAILOVER":
 					value = Strings.GetBoolean(value, true) ? "true": "false";
+					break;
+				case "TRUSTSERVERCERTIFICATE":
+					TrustServerCertificate = Strings.GetBoolean(value, true);
+					value = null;
 					break;
 				case "MINPOOLSIZE":
 				case "CONNECTIONLIFETIME":
@@ -308,6 +312,11 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 	public TimeSpan BatchAuditThreshold { get; init; }
 
 	/// <summary>
+	/// Trust server certificate.
+	/// </summary>
+	public bool? TrustServerCertificate { get; init; }
+
+	/// <summary>
 	/// Returns true if the connection is empty.
 	/// </summary>
 	public bool IsEmpty => Server == null && Database == null && _properties == null;
@@ -351,6 +360,8 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			Append("wsid", Workstation);
 		if (ConnectionTimeout.Ticks > 0)
 			Append("timeout", (ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).ToString());
+		if (TrustServerCertificate != null)
+			Append("trustServerCertificate", TrustServerCertificate.Value ? "true" : "false");
 
 		if (Password == null)
 		{
@@ -406,11 +417,10 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			}
 		}
 
-		static bool IsOdbcCorrect(string value) => value[0] != '{' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[value.Length - 1]) && value.IndexOf(';') < 0;
+		static bool IsOdbcCorrect(string value) => value[0] != '{' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[^1]) && value.IndexOf(';') < 0;
 
-		static bool IsOledbCorrect(string value) => value[0] != '"' && value[0] != '\'' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[value.Length - 1]) && value.IndexOf(';') < 0;
+		static bool IsOledbCorrect(string value) => value[0] != '"' && value[0] != '\'' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[^1]) && value.IndexOf(';') < 0;
 	}
-	private static readonly char[] __adoAny = [';', '\'', '"'];
 
 	/// <summary>
 	/// Returns a string representation of the connection.
@@ -475,7 +485,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		if (other._properties == null || _properties.Count != other._properties.Count)
 			return false;
 
-		return other._properties.All(o => _properties.TryGetValue(o.Key, out var value) && o.Value == value);
+		return other._properties.All(o => _properties.TryGetValue(o.Key, out string? value) && o.Value == value);
 	}
 
 	/// <summary>
@@ -492,7 +502,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		if (reference == null)
 			return config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes);
 
-		ConnectionStringInfo that = Config.Current.GetValue<ConnectionStringInfo>(reference).Value;
+		ConnectionStringInfo? that = Config.Current.GetValue<ConnectionStringInfo?>(reference).Value;
 		return that == null ?
 			config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes):
 			config.Attributes.Count <= 0 ? that : new ConnectionStringInfo(that, config.Attributes);
@@ -506,10 +516,9 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		var p = value.AsSpan();
 		while (p.Length > 0)
 		{
-			var i = p.IndexOf('=');
-			var j = p.IndexOf(';');
+			int i = p.IndexOf('=');
+			int j = p.IndexOf(';');
 			string name;
-			string val;
 
 			// name only
 			if (i < 0 || j >= 0 && j < i)
@@ -541,7 +550,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 				continue;
 			}
 
-			(i, val) = ParseValue(p);
+			(i, string val) = ParseValue(p);
 			p = p.Slice(i);
 			j = p.IndexOf(';');
 			if (j < 0)
@@ -623,7 +632,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 	}
 
 	#region Tables
-	private static readonly Dictionary<string, string> _synonyms = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+	private static readonly Dictionary<string, string> Synonyms = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
 			{ "userId",						"uid" },
 			{ "user",						"uid" },

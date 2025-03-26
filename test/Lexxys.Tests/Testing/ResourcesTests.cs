@@ -15,7 +15,7 @@ public class ResourcesTests
 	[TestMethod]
 	public void LoadResourcesTest()
 	{
-		var resources = Resources.LoadResources("Resources.json");
+		var resources = Resources.GetResources("Resources.json");
 		Assert.IsTrue(resources.Count > 0);
 	}
 

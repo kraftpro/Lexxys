@@ -4,6 +4,7 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -90,7 +91,7 @@ public ref struct CharStream
 
 	public readonly int Capacity => _start.Length;
 	
-	public int TabSize { get; }
+	public readonly int TabSize { get; }
 
 	/// <summary>
 	/// It indicates that the end of the stream has been encountered.
@@ -146,14 +147,14 @@ public ref struct CharStream
 		Forward(length);
 		return token;
 	}
-	
-   public LexicalToken Token(LexicalTokenType tokenType, int length, LexicalToken.Getter getter)
+
+	public LexicalToken Token(LexicalTokenType tokenType, int length, LexicalToken.Getter getter)
 	{
 		var token = new LexicalToken(tokenType, Position, length, getter);
 		Forward(length);
 		return token;
 	}
-	
+
 	public LexicalToken Token(LexicalTokenType tokenType, int length, object value)
 	{
 		var token = new LexicalToken(tokenType, Position, length, (_,_) => value);
@@ -249,6 +250,12 @@ public ref struct CharStream
 	/// <exception cref="System.ArgumentNullException"><paramref name="any"/> is null.</exception>
 	public readonly int IndexOfAny(ReadOnlySpan<char> any) => _buffer.IndexOfAny(any);
 
+#if NET8_0_OR_GREATER
+	public readonly int IndexOfAny(SearchValues<char> any) => _buffer.IndexOfAny(any);
+
+	public readonly int IndexOfAnyExcept(SearchValues<char> any) => _buffer.IndexOfAnyExcept(any);
+#endif
+
 	/// <summary>
 	/// Reports the index of the first occurrence in this Stream of any character in a specified array of characters.
 	/// </summary>
@@ -257,15 +264,15 @@ public ref struct CharStream
 	/// <returns>The zero-based index position of value if that character is found, or -1 it is not.</returns>
 	/// <exception cref="System.ArgumentNullException"><paramref name="any"/> is null.</exception>
 	/// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset"/> is less then zero.</exception>
-	public readonly int IndexOfAny(char[]? any, int offset)
+	public readonly int IndexOfAny(char[]? any, int offset) => IndexOfAny(any.AsSpan(), offset);
+
+	public readonly int IndexOfAny(ReadOnlySpan<char> any, int offset)
 	{
 		if (offset < 0)
 			throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
-		if (any == null || any.Length == 0)
-			return -1;
 		if (offset == 0)
-			return _buffer.IndexOfAny(any.AsSpan());
-		var i = _buffer.Slice(offset).IndexOfAny(any.AsSpan());
+			return _buffer.IndexOfAny(any);
+		var i = _buffer.Slice(offset).IndexOfAny(any);
 		return i < 0 ? -1: i + offset;
 	}
 
@@ -477,7 +484,7 @@ public ref struct CharStream
 	/// <param name="message">Exception message.</param>
 	/// <param name="file">File info to include into the result</param>
 	/// <returns>A new <see cref="T:SyntaxException"/> object.</returns>
-	public readonly SyntaxException SyntaxException(string? message, string file)
+	public readonly SyntaxException SyntaxException(string? message, string? file)
 	{
 		var at = GetCharPosition();
 		return new SyntaxException(message, file, at.Line + 1, at.Column + 1);
@@ -576,5 +583,5 @@ public ref struct CharStream
 	/// Displays current position and current 120 characters of the stream.
 	/// </summary>
 	/// <returns></returns>
-	public readonly override string ToString() => $"{Position}: {Strings.Ellipsis(Strings.EscapeCsString(Substring(0, 120)), 120, "...\"")}";
+	public readonly override string ToString() => $"{Position}: {Strings.Ellipsis(Strings.EscapeCsString(Substring(0, 121)), 120, "...\"")}";
 }

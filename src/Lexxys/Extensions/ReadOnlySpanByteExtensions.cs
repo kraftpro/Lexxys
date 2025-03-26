@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Lexxys;
@@ -8,7 +8,7 @@ public static class ReadOnlySpanByteExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static byte ReadByte(this scoped ref ReadOnlySpan<byte> span)
 	{
-		var x = span[0];
+		byte x = span[0];
 		span = span.Slice(1);
 		return x;
 	}
@@ -32,22 +32,20 @@ public static class ReadOnlySpanByteExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe string? ReadString(this scoped ref ReadOnlySpan<byte> span)
 	{
-		var length = (int)span.ReadPackedUInt() - 1;
+		int length = (int)span.ReadPackedUInt() - 1;
 		if (length < 0)
 			return null;
 #if NET5_0_OR_GREATER
 		var value = Encoding.UTF8.GetString(span.Slice(0, length));
-		span = span.Slice(length);
-		return value;
 #else
 		string value;
 		fixed (byte* p = &span.GetPinnableReference())
 		{
 			value = Encoding.UTF8.GetString(p, length);
 		}
+#endif
 		span = span.Slice(length);
 		return value;
-#endif
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,21 +56,21 @@ public static class ReadOnlySpanByteExtensions
 		int h = 0;
 		while (span[i] > 0x7F)
 		{
-			var b = (uint)span[i++] & 0x7F;
+			uint b = (uint)span[i++] & 0x7F;
 			value |= b << h;
 			h += 7;
 		}
 		value |= (uint)span[i++] << h;
 		span = span.Slice(i);
-        return value;
-    }
+		return value;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int ReadPackedInt(this scoped ref ReadOnlySpan<byte> span)
 	{
 		uint value = span.ReadPackedUInt();
-        return (value & 1) == 1 ? -(int)(value >> 1): (int)(value >> 1);
-    }
+		return (value & 1) == 1 ? -(int)(value >> 1): (int)(value >> 1);
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ulong ReadPackedULong(this scoped ref ReadOnlySpan<byte> span)
@@ -82,7 +80,7 @@ public static class ReadOnlySpanByteExtensions
 		int h = 0;
 		while (span[i] > 0x7F)
 		{
-			var b = (ulong)span[i++] & 0x7F;
+			ulong b = (ulong)span[i++] & 0x7F;
 			value |= b << h;
 			h += 7;
 		}

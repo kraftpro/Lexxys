@@ -15,7 +15,7 @@ namespace Lexxys
 
 		public SafeList(T emptyValue)
 		{
-			_list = new List<T>();
+			_list = [];
 			_emptyValue = emptyValue;
 		}
 
@@ -27,7 +27,7 @@ namespace Lexxys
 
 		public SafeList(T emptyValue, IEnumerable<T> data)
 		{
-			_list = new List<T>(data);
+			_list = [..data];
 			_emptyValue = emptyValue;
 		}
 

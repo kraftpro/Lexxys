@@ -41,10 +41,10 @@ public class XmlConfigurationProvider: IConfigSource
 	public virtual IReadOnlyList<T> GetList<T>(string key)
 	{
 		if (string.IsNullOrEmpty(key))
-			return new List<T>();
+			return [];
 		IXmlReadOnlyNode root = GetRootNode();
 		if (root.IsEmpty)
-			return new List<T>();
+			return [];
 		IEnumerable<IXmlReadOnlyNode> nodes = XmlNodeSelector.Select(key, root.Elements);
 		return ReadOnly.WrapCopy(nodes
 			.Select(o => ParseValue(o, typeof(T)))

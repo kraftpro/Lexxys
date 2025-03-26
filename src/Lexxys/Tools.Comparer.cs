@@ -66,7 +66,7 @@ public static class Comparer
 	public static bool Equals(byte[]? left, byte[]? right)
 		=> ((ReadOnlySpan<byte>)left).SequenceEqual(right);
 
-	public static bool Equals(Xml.IXmlReadOnlyNode left, Xml.IXmlReadOnlyNode right)
+	public static bool Equals(Xml.IXmlReadOnlyNode? left, Xml.IXmlReadOnlyNode? right)
 	{
 		return left == null ? right == null:
 			right != null &&
@@ -78,29 +78,21 @@ public static class Comparer
 			left.Elements.SequenceEqual(right.Elements, XmlNodeComparer);
 	}
 
-	public static bool Equals(IEnumerable<Xml.IXmlReadOnlyNode> left, IEnumerable<Xml.IXmlReadOnlyNode> right)
+	public static bool Equals(IEnumerable<Xml.IXmlReadOnlyNode>? left, IEnumerable<Xml.IXmlReadOnlyNode>? right)
 		=> left == null ? right == null : right != null && left.SequenceEqual(right, XmlNodeComparer);
 
 	private static readonly IEqualityComparer<Xml.IXmlReadOnlyNode> XmlNodeComparer = new GenericEqualityComparer<Xml.IXmlReadOnlyNode>(Equals);
 
 	#region Internal classes
 
-	private class GenericComparer<T1, T2>: IComparer
+	private class GenericComparer<T1, T2>(Func<T1, T2, int> compare): IComparer
 	{
-		private readonly Func<T1, T2, int> _compare;
-
-		public GenericComparer(Func<T1, T2, int> compare) => _compare = compare;
-
-		public int Compare(object? x, object? y) => x is T1 t1 && y is T2 t2 ? _compare(t1, t2) : 2;
+		public int Compare(object? x, object? y) => x is T1 t1 && y is T2 t2 ? compare(t1, t2) : 2;
 	}
 
-	private class GenericComparer<T>: IComparer<T>
+	private class GenericComparer<T>(Func<T, T, int> compare): IComparer<T>
 	{
-		private readonly Func<T, T, int> _compare;
-
-		public GenericComparer(Func<T, T, int> compare) => _compare = compare;
-
-		public int Compare(T? x, T? y) => x is null ? (y is null ? 0 : 1) : y is null ? -1 : _compare(x, y);
+		public int Compare(T? x, T? y) => x is null ? (y is null ? 0 : 1) : y is null ? -1 : compare(x, y);
 	}
 
 	private class GenericEqualityComparer<T>: IEqualityComparer<T>

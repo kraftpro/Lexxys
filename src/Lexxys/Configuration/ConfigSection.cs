@@ -1,4 +1,4 @@
-﻿// Lexxys Infrastructural library.
+// Lexxys Infrastructural library.
 // file: Config.cs
 //
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
@@ -50,7 +50,7 @@ public sealed class ConfigSection: IConfigSection
 		else
 			_pathMap[key] = path;
 	}
-	private readonly ConcurrentDictionary<string, string> _pathMap = new();
+	private readonly ConcurrentDictionary<string, string> _pathMap = [];
 
 	void IConfigSection.SetCollection<T>(string? path, IReadOnlyList<T> value)
 		=> Lists<T>.Add(Key(path), value);
@@ -60,7 +60,7 @@ public sealed class ConfigSection: IConfigSection
 
 	IValue<IReadOnlyList<T>> IConfigSection.GetCollection<T>(string? key)
 	{
-		var fullKey = Key(key);
+		string fullKey = Key(key);
 		return new ConfigValue<IReadOnlyList<T>>(GetConfigValue, GetConfigVersion);
 
 		IReadOnlyList<T> GetConfigValue()
@@ -73,20 +73,11 @@ public sealed class ConfigSection: IConfigSection
 
 		Func<T> GetConfigValue(string k, Func<T>? dv)
 		{
-			return dv == null ?
-						() =>
-						{
-							if (_configSource.GetValue(k, typeof(T)) is T value2)
-							{
-								return Values<T>.TryGet(k, out var value) ? value : value2;
-							}
-							else
-							{
-								throw new ConfigurationException(k, typeof(T));
-							}
-						}
-			:
-						() => Values<T>.TryGet(k, out var value) ? value : _configSource.GetValue(k, typeof(T)) is T value2 ? value2 : dv();
+			return () =>
+				Values<T>.TryGet(k, out var value) ? value:
+				_configSource.GetValue(k, typeof(T)) is T value2 ? value2:
+				dv != null ? dv():
+				throw new ConfigurationException(k, typeof(T));
 		}
 	}
 
@@ -100,14 +91,10 @@ public sealed class ConfigSection: IConfigSection
 			return _path;
 		if (key.StartsWith("::", StringComparison.Ordinal))
 			return key.Trim(Dots).Replace(':', '.');
-		var k = key.Trim(Dots).Replace(':', '.');
-		if (k.Length == 0)
-			return _path;
-		if (_pathMap.TryGetValue(k, out var value))
-			return value;
-		return
-			_path.Length == 0 ? k:
-			k.Length == 0 ? _path: _path + "." + k;
+		string k = key.Trim(Dots).Replace(':', '.');
+		return k.Length == 0 ? _path:
+			_pathMap.TryGetValue(k, out string? value) ? value:
+			_path.Length == 0 ? k: _path + "." + k;
 	}
 	private static readonly char[] Dots = ['.', ':', ' ', '\t', '\r', '\n', '\v', '\f', '\x85', '\xA0'];
 
@@ -115,7 +102,7 @@ public sealed class ConfigSection: IConfigSection
 	{
 		private static ConcurrentDictionary<string, T>? _values;
 
-		public static void Add(string key, T value) => (_values ??= new())[key] = value;
+		public static void Add(string key, T value) => (_values ??= [])[key] = value;
 
 		public static bool TryGet(string key, [MaybeNullWhen(false)] out T value)
 		{
@@ -132,7 +119,7 @@ public sealed class ConfigSection: IConfigSection
 	{
 		private static ConcurrentDictionary<string, IReadOnlyList<T>>? _lists;
 
-		public static void Add(string key, IReadOnlyList<T> value) => (_lists ??= new())[key] = value;
+		public static void Add(string key, IReadOnlyList<T> value) => (_lists ??= [])[key] = value;
 
 		public static bool TryGet(string key, [MaybeNullWhen(false)] out IReadOnlyList<T> value)
 		{
@@ -177,17 +164,7 @@ public sealed class ConfigSection: IConfigSection
 
 		object? IValue.Value => Value;
 
-		class VersionValue
-		{
-			public T Value { get; }
-			public int Version { get; }
-
-			public VersionValue(int version, T value)
-			{
-				Value = value;
-				Version = version;
-			}
-		}
+		private record VersionValue(int Version, T Value);
 	}
 }
 

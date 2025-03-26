@@ -7,7 +7,6 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -28,51 +27,52 @@ public static class Factory
 
 	private static readonly object SyncRoot = new object();
 
-	private static readonly ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>> __foundTypesP = new ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>>();
-	private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesC = new ConcurrentDictionary<Type, IEnumerable<Type>>();
-	private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesA = new ConcurrentDictionary<Type, IEnumerable<Type>>();
+	private static readonly ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>> __foundTypesP = [];
+	private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesC = [];
+	private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesA = [];
 
 	private static readonly ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?> __constructors = new ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?>(new ConstructorTypesComparer());
-	private static readonly ConcurrentDictionary<MemberInfo, Func<object?, object?[], object?>?> __compiledMethods = new ConcurrentDictionary<MemberInfo, Func<object?, object?[], object?>?>();
-	private static readonly ConcurrentDictionary<Type, ObjectTypeAccessor> __typeAccessors = new ConcurrentDictionary<Type, ObjectTypeAccessor>();
+	private static readonly ConcurrentDictionary<MemberInfo, Func<object?, object?[], object?>?> __compiledMethods = [];
+	private static readonly ConcurrentDictionary<Type, ObjectTypeAccessor> __typeAccessors = [];
 
 	#region Assemblies
 
-	public static IEnumerable<Assembly> DomainAssemblies
+	public static IEnumerable<Assembly> DomainAssemblies => GetDomainAssemblies();
+
+	public static IEnumerable<Assembly> ReverseDomainAssemblies => new ReverseDomainIterator(GetDomainAssemblies());
+
+	private static Assembly[] GetDomainAssemblies()
 	{
-		get
+		var assemblies = _domainAssemblies;
+		if (assemblies != null)
+			return assemblies;
+		lock (SyncRoot)
 		{
-			var assemblies = _domainAssemblies;
-			if (assemblies != null)
-				return assemblies;
-			lock (SyncRoot)
-			{
-				if (_domainAssemblies != null)
-					return _domainAssemblies;
-				if (!__assembliesInitialized)
-				{
-					AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
-					__assembliesInitialized = true;
-				}
-				_domainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+			if (_domainAssemblies != null)
 				return _domainAssemblies;
+			if (!__assembliesInitialized)
+			{
+				AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
+				__assembliesInitialized = true;
 			}
+			_domainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+			return _domainAssemblies;
 		}
 	}
 	private static bool __assembliesInitialized;
 	private static Assembly[]? _domainAssemblies;
 
-	public static IEnumerable<Assembly> ReverseDomainAssemblies => new ReverseDomainIterator((Assembly[])DomainAssemblies);
-
-	private class ReverseDomainIterator: IEnumerable<Assembly>
+	private class ReverseDomainIterator(Assembly[] assemblies): IEnumerable<Assembly>
 	{
-		private readonly Assembly[] _assemblies;
+		public IEnumerator<Assembly> GetEnumerator()
+		{
+			for (int i = assemblies.Length - 1; i >= 0; --i)
+			{
+				yield return assemblies[i];
+			}
+		}
 
-		public ReverseDomainIterator(Assembly[] assemblies) => _assemblies = assemblies;
-
-		public IEnumerator<Assembly> GetEnumerator() => ((IEnumerable<Assembly>)_assemblies).GetEnumerator();
-
-		IEnumerator IEnumerable.GetEnumerator() => _assemblies.GetEnumerator();
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 
 	private static void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs args)
@@ -93,28 +93,28 @@ public static class Factory
 		string? file = null;
 		try
 		{
-			file = Path.Combine(Lxx.HomeDirectory, assemblyName);
+			file = Path.Combine(Lxx.AppDirectory, assemblyName);
 			return File.Exists(file) ? Assembly.LoadFrom(file): Assembly.Load(assemblyName);
 		}
 		catch (Exception flaw)
 		{
-			SystemLog.WriteErrorMessage("Lexxys.Factory.TryLoadAssembly", flaw, new OrderedBag<string, object?> { { "assemblyName", assemblyName }, { "file", file } });
+			SystemLog.WriteErrorMessage("Lexxys.Factory.TryLoadAssembly", flaw, [("assemblyName", assemblyName), ("file", file)]);
 			throw;
 		}
 	}
 
 	#endregion
 
-	public static IEnumerable<Type> Types(Func<Type, bool> predicate) =>
-		//return __foundTypesP.GetOrAdd(predicate, p => ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(p)))!);
-		__foundTypesP.GetOrAdd(predicate, p => ReadOnly.WrapCopy(AppDomain.CurrentDomain.GetAssemblies().SelectMany(asm => asm.SelectTypes(p)))!);
+	public static IEnumerable<Type> Types(Func<Type, bool> predicate)
+		=> __foundTypesP.GetOrAdd(predicate, p => ReadOnly.WrapCopy(DomainAssemblies.SelectMany(asm => asm.SelectTypes(p))));
 
 	public static IEnumerable<Type> Types(Type type, bool cacheResults = false)
 	{
 		if (type == null) throw new ArgumentNullException(nameof(type));
+		
 		return cacheResults ? __foundTypesA.GetOrAdd(type, t => ReadOnly.WrapCopy(
-			DomainAssemblies.SelectMany(asm => asm.SelectTypes(o => !o.IsInterface && !o.IsAbstract && t.IsAssignableFrom(o))))!):
-			DomainAssemblies.SelectMany(asm => asm.SelectTypes(o => !o.IsInterface && !o.IsAbstract && type.IsAssignableFrom(o)));
+			DomainAssemblies.SelectMany(asm => asm.SelectTypes(o => o is { IsInterface: false, IsAbstract: false } && t.IsAssignableFrom(o))))):
+			DomainAssemblies.SelectMany(asm => asm.SelectTypes(o => o is { IsInterface: false, IsAbstract: false } && type.IsAssignableFrom(o)));
 	}
 
 	private static IEnumerable<Type> SelectTypes(this Assembly assembly, Func<Type, bool>? predicate)
@@ -133,11 +133,10 @@ public static class Factory
 
 	public static IEnumerable<Type> Classes(Type type, bool cacheResults = false)
 	{
-		if (type == null)
-			throw new ArgumentNullException(nameof(type));
+		if (type == null) throw new ArgumentNullException(nameof(type));
 
 		return cacheResults ?
-			__foundTypesC.GetOrAdd(type, key => ReadOnly.WrapCopy(Classes(key, DomainAssemblies))!):
+			__foundTypesC.GetOrAdd(type, key => ReadOnly.WrapCopy(Classes(key, DomainAssemblies))):
 			Classes(type, DomainAssemblies);
 	}
 
@@ -153,37 +152,79 @@ public static class Factory
 			assemblies.SelectMany(asm => asm.SelectTypes(t => t is { IsInterface: false, IsAbstract: false } && type.IsAssignableFrom(t)));
 	}
 
-	public static IEnumerable<MethodInfo> Constructors(Type type, string? methodName, params Type[]? types)
+	public static IEnumerable<MethodInfo> Constructors(Type type, string methodName, Type[]? types = default)
 	{
 		if (type is null) throw new ArgumentNullException(nameof(type));
 		if (methodName is not { Length: > 0 }) throw new ArgumentNullException(nameof(methodName));
 
 		types ??= Type.EmptyTypes;
 		return Factory.Types(type)
-			.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null)!)
-			.Where(m => m != null && type.IsAssignableFrom(m.ReturnType));
+			.Select(t => t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null))
+			.Where(m => m != null && type.IsAssignableFrom(m.ReturnType))!;
 	}
 
-	public static Type? GetType(string? typeName) => typeName == null || (typeName = typeName.Trim()).Length == 0 ? null: GetSynonym(typeName) ?? GetTypeInternal(typeName);
+	public static Type? GetType(string? typeName)
+		=> typeName == null || (typeName = typeName.Trim()).Length == 0 ? null: GetTypeSynonym(typeName) ?? GetTypeInternal(typeName);
 
 	public static Type? ParseTypeName(string typeName) => TypeNameParser.Parse(typeName);
 
-	public static void ResetSynonyms() => __synonymsLoaded = false;
+	public static void ResetSynonyms() => __synonymsCollected = false;
 
-	public static void SetSynonym(string? name, Type? type)
+	public static void SetTypeSynonym(string? name, Type? type)
 	{
-		string? key = name?.Replace(" ", "");
-		if (key is not { Length: >0 })
-			return;
+		if (name is null) return;
+		string key = name.Replace(" ", "");
+		if (key is not { Length: >0 }) return;
+
+		if (type == null)
+		{
+			__typesSynonyms.TryRemove(key, out _);
+			__typesSynonyms.TryRemove(key + "?", out _);
+		}
+		else
+		{
+			__typesSynonyms[key] = type;
+			__typesSynonyms[key + "?"] = IsNullableType(type) || type == typeof(void) ? type: typeof(Nullable<>).MakeGenericType(type);
+		}
+	}
+
+	private static Type? GetTypeSynonym(string? name)
+	{
+		if (name is not { Length: > 0 }) return null;
+
+		if (__synonymsCollected)
+			return __typesSynonyms.GetValueOrDefault(name.Replace(" ", ""));
+
 		lock (SyncRoot)
 		{
-			if (type == null)
+			if (__synonymsCollected)
+				return __typesSynonyms.GetValueOrDefault(name.Replace(" ", ""));
+			__synonymsCollected = true;
+
+			var synonymsConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<KeyValuePair<string?, string?>>(ConfigurationSynonyms);
+			CollectSynonyms(synonymsConfig?.Value);
+			return __typesSynonyms.GetValueOrDefault(name.Replace(" ", ""));
+		}
+
+		static void CollectSynonyms(IReadOnlyList<KeyValuePair<string?, string?>>? synonyms)
+		{
+			if (synonyms == null) return;
+			foreach (var item in synonyms)
 			{
-				__typesSynonyms.Remove(key);
-				__typesSynonyms.Remove(key + "?");
-			}
-			else
-			{
+				if (item.Key == null || item.Value == null)
+					continue;
+				var key = item.Key.Replace(" ", "");
+				if (key.Length == 0)
+					continue;
+				var value = item.Value.Replace(" ", "");
+				if (value.Length == 0)
+					continue;
+				if (!__typesSynonyms.TryGetValue(value, out var type))
+				{
+					type = GetTypeInternal(item.Value);
+					if (type == null)
+						continue;
+				}
 				__typesSynonyms[key] = type;
 				if (!IsNullableType(type) && type != typeof(void))
 					__typesSynonyms[key + "?"] = typeof(Nullable<>).MakeGenericType(type);
@@ -191,51 +232,9 @@ public static class Factory
 		}
 	}
 
-	private static Type? GetSynonym(string name)
-	{
-		if (!__synonymsLoaded)
-		{
-			lock (SyncRoot)
-			{
-				if (!__synonymsLoading)
-				{
-					__synonymsLoading = true;
-					var synonymsConfig = Statics.TryGetService<IConfigSection>()?.GetCollection<KeyValuePair<string?, string?>>(ConfigurationSynonyms);
-					var synonyms = synonymsConfig?.Value;
-					if (synonyms != null)
-					{
-						foreach (var item in synonyms)
-						{
-							if (item.Key == null || item.Value == null)
-								continue;
-							var key = item.Key.Replace(" ", "");
-							if (key.Length == 0)
-								continue;
-							var value = item.Value.Replace(" ", "");
-							if (value.Length == 0)
-								continue;
-							if (!__typesSynonyms.TryGetValue(value, out var type))
-							{
-								type = GetTypeInternal(item.Value);
-								if (type == null)
-									continue;
-							}
-							__typesSynonyms[key] = type;
-							if (!IsNullableType(type) && type != typeof(void))
-								__typesSynonyms[key + "?"] = typeof(Nullable<>).MakeGenericType(type);
-						}
-					}
-					__synonymsLoaded = true;
-				}
-			}
-		}
-		return __typesSynonyms.GetValueOrDefault(name.Replace(" ", ""));
-	}
-
 	#region Types synonyms table
-	private static bool __synonymsLoaded;
-	private static bool __synonymsLoading;
-	private static readonly Dictionary<string, Type> __typesSynonyms = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
+	private static bool __synonymsCollected;
+	private static readonly ConcurrentDictionary<string, Type> __typesSynonyms = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
 		{
 			{ "bool",		typeof(bool) },
 			{ "byte",		typeof(byte) },
@@ -354,13 +353,13 @@ public static class Factory
 			if (value == null)
 				return null;
 			var stream = new CharStream(value);
-			return new TypeNameParser(false).Parse(ref stream, true)?.MakeType();
+			return new TypeNameParser().Parse(ref stream, true)?.MakeType();
 		}
 
 		private readonly TokenScanner _scanner;
 		private readonly OneBackFilter _back;
 
-		private TypeNameParser(bool _)
+		public TypeNameParser()
 		{
 			_back = new OneBackFilter();
 			_scanner = new TokenScanner([_back], __rules);
@@ -405,7 +404,7 @@ public static class Factory
 					if (terminal == BEGIN_GENERICS + 1)
 						generics = count;
 					else
-						(rank = new List<int>()).Add(count);
+						(rank = []).Add(count);
 				}
 				else
 				{
@@ -440,7 +439,7 @@ public static class Factory
 					if (!t.Is(LexicalTokenType.SEQUENCE, COMMA, CLOSE_SQRBRC))
 						return null;
 				} while (t.Is(LexicalTokenType.SEQUENCE, COMMA));
-				(rank ??= new List<int>()).Add(count);
+				(rank ??= []).Add(count);
 				t = _scanner.Next(ref stream);
 			}
 
@@ -557,9 +556,9 @@ public static class Factory
 				Assembly = assembly;
 				PointerCount = pointerCount;
 				IsNullable = isNullable;
-				ArrayRank = arrayRank ?? Array.Empty<int>();
+				ArrayRank = arrayRank ?? [];
 				GenericsCount = genericsCount;
-				Parameters = parameters ?? Array.Empty<TypePartsTree>();
+				Parameters = parameters ?? [];
 				Options = options ?? ReadOnly.Empty<string, string>();
 			}
 
@@ -569,8 +568,7 @@ public static class Factory
 
 			private StringBuilder BaseName(StringBuilder text, bool alter = false)
 			{
-				if (text is null)
-					throw new ArgumentNullException(nameof(text));
+				if (text is null) throw new ArgumentNullException(nameof(text));
 
 				if (IsNullable && !alter)
 					text.Append("System.Nullable`1[[");
@@ -621,7 +619,7 @@ public static class Factory
 				return text;
 			}
 
-			public string BaseName(bool alter = false) => BaseName(new StringBuilder(), alter).ToString();
+			private string BaseName(bool alter = false) => BaseName(new StringBuilder(), alter).ToString();
 
 			public override string ToString() => BaseName(true);
 
@@ -649,7 +647,7 @@ public static class Factory
 			private Type? FindType()
 			{
 				var name = IsGeneric ? Name + "`" + GenericParametersCount.ToString(): Name;
-				var type = GetSynonym(name) ?? (Assembly == null ?
+				var type = GetTypeSynonym(name) ?? (Assembly == null ?
 					Factory.FindType(name, ReverseDomainAssemblies):
 					ReverseDomainAssemblies.FirstOrDefault(o => String.Equals(o.GetName().Name, Assembly, StringComparison.OrdinalIgnoreCase))?.GetType(name, false, true));
 
@@ -674,7 +672,8 @@ public static class Factory
 
 	#endregion
 
-	private static Type? GetTypeInternal(string typeName) => Type.GetType(typeName, false, true) ?? TypeNameParser.Parse(typeName);
+	private static Type? GetTypeInternal(string typeName)
+		=> Type.GetType(typeName, false, true) ?? TypeNameParser.Parse(typeName);
 
 	public static Type? GetType(string? typeName, IEnumerable<Assembly>? assemblies)
 	{
@@ -688,41 +687,40 @@ public static class Factory
 	private static Type? FindType(string typeName, IEnumerable<Assembly> assemblies)
 	{
 		Debug.Assert(assemblies != null);
-		return typeName.IndexOf('.') >= 0 ?
+		return typeName.Contains('.') ?
 			assemblies.Select(o => o.GetType(typeName, false, true)).FirstOrDefault(o => o != null):
 			assemblies.SelectMany(a => a.SelectTypes(o => String.Equals(o.Name, typeName, StringComparison.OrdinalIgnoreCase)))
 			.FirstOrDefault();
 	}
 
-	public static bool IsPublicType(Type? type)
+	public static bool IsPublicType(Type type)
 	{
+		if (type == null) throw new ArgumentNullException(nameof(type));
+
 		while (type is { IsNestedPublic: true })
 		{
-			type = type.DeclaringType;
+			type = type.DeclaringType!;
 		}
 		return type is { IsPublic: true };
 	}
 
 	public static bool IsNullableType(Type type)
 	{
-		if (type == null)
-			throw new ArgumentNullException(nameof(type));
+		if (type == null) throw new ArgumentNullException(nameof(type));
 
 		return type.IsClass || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
 	}
 
 	public static Type NullableTypeBase(Type type)
 	{
-		if (type == null)
-			throw new ArgumentNullException(nameof(type));
+		if (type == null) throw new ArgumentNullException(nameof(type));
 
 		return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) ? type.GetGenericArguments()[0]: type;
 	}
 
 	public static object? DefaultValue(Type type)
 	{
-		if (type == null)
-			throw new ArgumentNullException(nameof(type));
+		if (type == null) throw new ArgumentNullException(nameof(type));
 
 		if (!type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)))
 			return null;
@@ -761,22 +759,20 @@ public static class Factory
 
 	public static object Construct(string typeName)
 	{
-		if (typeName is not { Length: >0 })
-			throw new ArgumentNullException(nameof(typeName));
+		if (typeName is not { Length: >0 }) throw new ArgumentNullException(nameof(typeName));
+
 		Type? type = GetType(typeName);
-		if (type == null)
-			throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
+		if (type == null) throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
 
 		return Construct(type);
 	}
 
 	public static object Construct(string typeName, params object?[] parameters)
 	{
-		if (typeName is not { Length: >0 })
-			throw new ArgumentNullException(nameof(typeName));
+		if (typeName is not { Length: >0 }) throw new ArgumentNullException(nameof(typeName));
+
 		Type? type = GetType(typeName);
-		if (type == null)
-			throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
+		if (type == null) throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
 
 		return Construct(type, parameters);
 	}
@@ -808,18 +804,16 @@ public static class Factory
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static object Construct(Type type)
 	{
-		if (type is null)
-			throw new ArgumentNullException(nameof(type));
+		if (type is null) throw new ArgumentNullException(nameof(type));
+		
 		return Activator.CreateInstance(type, true) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static object Construct(Type type, params object?[] args)
 	{
-		if (type is null)
-			throw new ArgumentNullException(nameof(type));
-		if (args is not { Length: >0 })
-			return Activator.CreateInstance(type, true)!;
+		if (type is null) throw new ArgumentNullException(nameof(type));
+		if (args is not { Length: >0 }) return Activator.CreateInstance(type, true)!;
 
 		return TryConstruct(type, args) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, args.Length));
 	}
@@ -827,19 +821,15 @@ public static class Factory
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Func<object?[], object> GetConstructor(Type type, params Type?[] args)
 	{
-		if (type is null)
-			throw new ArgumentNullException(nameof(type));
+		if (type is null) throw new ArgumentNullException(nameof(type));
 
-		return TryGetConstructor(type, args) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, args?.Length ?? 0));
+		return TryGetConstructor(type, args) ?? throw new ArgumentException(SR.Factory_CannotFindConstructor(type, args.Length));
 	}
 
 	public static object? TryConstruct(Type type, params object?[] args)
 	{
-		if (type is null)
-			throw new ArgumentNullException(nameof(type));
-
-		if (args is not { Length: >0 })
-			return Activator.CreateInstance(type, true);
+		if (type is null) throw new ArgumentNullException(nameof(type));
+		if (args is not { Length: >0 }) return Activator.CreateInstance(type, true);
 
 		Type?[] argType = new Type[args.Length];
 		for (int i = 0; i < args.Length; ++i)
@@ -864,11 +854,10 @@ public static class Factory
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Func<object?, object>? TryGetConstructor(Type type, Type argType)
 	{
-		if (type == null)
-			throw new ArgumentNullException(nameof(type));
+		if (type == null) throw new ArgumentNullException(nameof(type));
 
 		Func<object?[], object>? c = TryGetConstructor(type, [argType]);
-		return c == null ? null: o => c(new[] {o});
+		return c == null ? null: o => c([o]);
 	}
 
 	public static Func<object?[], object>? TryGetConstructor(Type? type, Type?[]? argType)
@@ -1060,12 +1049,9 @@ public static class Factory
 
 	public static MethodInfo? GetGenericMethod(Type classType, string methodName, Type[] arguments)
 	{
-		if (classType is null)
-			throw new ArgumentNullException(nameof(classType));
-		if (methodName is null)
-			throw new ArgumentNullException(nameof(methodName));
-		if (arguments is null)
-			throw new ArgumentNullException(nameof(arguments));
+		if (classType is null) throw new ArgumentNullException(nameof(classType));
+		if (methodName is null) throw new ArgumentNullException(nameof(methodName));
+		if (arguments is null) throw new ArgumentNullException(nameof(arguments));
 
 		foreach (var item in classType.GetMember(methodName, BindingFlags.InvokeMethod | BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public))
 		{
@@ -1121,8 +1107,8 @@ public static class Factory
 
 	public static IObjectAccessor CreateAccessor(object obj)
 	{
-		if (obj == null)
-			throw new ArgumentNullException(nameof(obj));
+		if (obj == null) throw new ArgumentNullException(nameof(obj));
+
 		var type = obj.GetType();
 		var accessor = __typeAccessors.GetOrAdd(type, o => new ObjectTypeAccessor(o));
 		return new ObjectAccessor(accessor, obj);
@@ -1207,36 +1193,27 @@ public static class Factory
 		}
 	}
 
-	class ObjectAccessor: IObjectAccessor
+	class ObjectAccessor(ObjectTypeAccessor accessor, object? obj): IObjectAccessor
 	{
-		private readonly ObjectTypeAccessor _accessor;
-		private readonly object? _obj;
-
-		public ObjectAccessor(ObjectTypeAccessor accessor, object? obj)
-		{
-			_accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));
-			_obj = obj;
-		}
+		private readonly ObjectTypeAccessor _accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));
 
 		public bool TryGetValue(string name, out object? result)
-			=> _accessor.TryGetValue(_obj, name, out result);
+			=> _accessor.TryGetValue(obj, name, out result);
 
 		public bool TryGetValue(string name, object index, out object? result)
-			=> _accessor.TryGetValue(_obj, name, index, out result);
+			=> _accessor.TryGetValue(obj, name, index, out result);
 
 		public bool TrySetValue(string name, object? value)
-			=> _accessor.TrySetValue(_obj, name, value);
+			=> _accessor.TrySetValue(obj, name, value);
 
 		public bool TrySetValue(string name, object index, object? value)
-			=> _accessor.TrySetValue(_obj, name, index, value);
+			=> _accessor.TrySetValue(obj, name, index, value);
 	}
 
 	public static object? Invoke(object? instance, MethodInfo method, params object?[] parameters)
 	{
-		if (method == null)
-			throw new ArgumentNullException(nameof(method));
-		if (instance == null && !method.IsStatic)
-			throw new ArgumentNullException(nameof(instance));
+		if (method == null) throw new ArgumentNullException(nameof(method));
+		if (instance == null && !method.IsStatic) throw new ArgumentNullException(nameof(instance));
 
 		Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
 		return f?.Invoke(instance, parameters);
@@ -1244,10 +1221,8 @@ public static class Factory
 
 	public static object? Invoke(MethodInfo method, params object?[] parameters)
 	{
-		if (method == null)
-			throw new ArgumentNullException(nameof(method));
-		if (!method.IsStatic)
-			throw new ArgumentOutOfRangeException(nameof(method), method, null);
+		if (method == null) throw new ArgumentNullException(nameof(method));
+		if (!method.IsStatic) throw new ArgumentOutOfRangeException(nameof(method), method, null);
 
 		Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
 		return f?.Invoke(null, parameters);
@@ -1255,8 +1230,7 @@ public static class Factory
 
 	public static object? Invoke(ConstructorInfo constructor, params object?[] parameters)
 	{
-		if (constructor == null)
-			throw new ArgumentNullException(nameof(constructor));
+		if (constructor == null) throw new ArgumentNullException(nameof(constructor));
 
 		Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(constructor, o => Compile((ConstructorInfo)o));
 		return f?.Invoke(null, parameters);
@@ -1264,8 +1238,7 @@ public static class Factory
 
 	private static Func<object?, object?[], object?> Compile(MethodInfo method)
 	{
-		if (method == null)
-			throw new ArgumentNullException(nameof(method));
+		if (method == null) throw new ArgumentNullException(nameof(method));
 
 		ParameterExpression arg0 = Expression.Parameter(typeof(object));
 		ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
@@ -1289,8 +1262,7 @@ public static class Factory
 
 	private static Func<object?, object?> Compile0(MethodInfo method)
 	{
-		if (method == null)
-			throw new ArgumentNullException(nameof(method));
+		if (method == null) throw new ArgumentNullException(nameof(method));
 
 		ParameterExpression arg0 = Expression.Parameter(typeof(object));
 		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg0, method.DeclaringType);
@@ -1312,11 +1284,10 @@ public static class Factory
 
 	private static Func<object?, object?, object?> Compile1(MethodInfo method)
 	{
-		if (method == null)
-			throw new ArgumentNullException(nameof(method));
+		if (method == null) throw new ArgumentNullException(nameof(method));
+
 		ParameterInfo[] pp = method.GetParameters();
-		if (pp.Length != 1)
-			throw new ArgumentException($"Invalid number of parameters. Expected 1, actual {pp.Length}.", nameof(method));
+		if (pp.Length != 1) throw new ArgumentException($"Invalid number of parameters. Expected 1, actual {pp.Length}.", nameof(method));
 
 		ParameterExpression arg0 = Expression.Parameter(typeof(object));
 		ParameterExpression arg1 = Expression.Parameter(typeof(object), "arg");
@@ -1339,11 +1310,10 @@ public static class Factory
 
 	private static Func<object?, object?, object?, object?> Compile2(MethodInfo method)
 	{
-		if (method == null)
-			throw new ArgumentNullException(nameof(method));
+		if (method == null) throw new ArgumentNullException(nameof(method));
+
 		ParameterInfo[] pp = method.GetParameters();
-		if (pp.Length != 2)
-			throw new ArgumentException($"Invalid number of parameters. Expected 2, actual {pp.Length}.", nameof(method));
+		if (pp.Length != 2) throw new ArgumentException($"Invalid number of parameters. Expected 2, actual {pp.Length}.", nameof(method));
 
 		ParameterExpression arg0 = Expression.Parameter(typeof(object));
 		ParameterExpression arg1 = Expression.Parameter(typeof(object), "arg1");
@@ -1368,8 +1338,7 @@ public static class Factory
 
 	private static Func<object?, object?[], object?> Compile(ConstructorInfo constructor)
 	{
-		if (constructor == null)
-			throw new ArgumentNullException(nameof(constructor));
+		if (constructor == null) throw new ArgumentNullException(nameof(constructor));
 
 		ParameterExpression instance = Expression.Parameter(typeof(object));
 		ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
@@ -1397,4 +1366,7 @@ public static class Factory
 		}
 		return pp;
 	}
+
+	internal static void Add<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, TValue value) where TKey: notnull
+		=> dictionary.TryAdd(key, value);
 }

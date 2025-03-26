@@ -234,7 +234,7 @@ public ref struct TextToXmlConverter
 
 	public readonly string? SourceName => _sourceName;
 
-	private void Back()
+	private readonly void Back()
 	{
 		_back.Back();
 	}
@@ -242,13 +242,13 @@ public ref struct TextToXmlConverter
 	public void Reset()
 	{
 		_back.Reset();
-		_nodeScanner.Reset();
-		_nodeValueScanner.Reset();
-		_attribValueScanner.Reset();
-		_optionsScanner.Reset();
-		_nodeArgumentsScanner.Reset();
-		_parametersScanner.Reset();
-		_arrayScanner.Reset();
+		_nodeScanner.ResetParser();
+		_nodeValueScanner.ResetParser();
+		_attribValueScanner.ResetParser();
+		_optionsScanner.ResetParser();
+		_nodeArgumentsScanner.ResetParser();
+		_parametersScanner.ResetParser();
+		_arrayScanner.ResetParser();
 		_currentNodePath.Clear();
 
 		_syntaxRules.Clear();
@@ -608,26 +608,23 @@ public ref struct TextToXmlConverter
 	private static readonly char[] CrLf = ['\r', '\n'];
 	#endregion
 
-	private Exception SyntaxException(in LexicalToken token, in CharStream stream, string? message)
-	{
-		return stream.SyntaxException(message, _sourceName, token.Position);
-	}
+	private readonly Exception SyntaxException(in LexicalToken token, in CharStream stream, string? message) => stream.SyntaxException(message, _sourceName, token.Position);
 
-	private void PushNode(Node value)
+	private readonly void PushNode(Node value)
 	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
+		if (value == null) throw new ArgumentNullException(nameof(value));
+
 		_nodesStack.Push(value);
 		_currentNodePath.Append('/').Append(value.Name);
 	}
 
-	private void PopNode()
+	private readonly void PopNode()
 	{
 		Node node = _nodesStack.Pop();
 		_currentNodePath.Length -= node.Name.Length + 1;
 	}
 
-	private string CurrentNodePath => _currentNodePath.ToString();
+	private readonly string CurrentNodePath => _currentNodePath.ToString();
 
 	private LexicalToken CheckOptions(ref CharStream stream)
 	{
@@ -867,7 +864,7 @@ public ref struct TextToXmlConverter
 		}
 	}
 
-	private void ScanArray(Node node, ref CharStream stream)
+	private readonly void ScanArray(Node node, ref CharStream stream)
 	{
 		LexicalToken current = _arrayScanner.Next(ref stream);
 		while (!current.TokenType.Is(TOKEN, ARRAY) && !stream.Eof)
@@ -1378,5 +1375,5 @@ public ref struct TextToXmlConverter
 		}
 	}
 
-	internal object GetSyntaxRuleCollectionForTest() => _syntaxRules;
+	internal readonly object GetSyntaxRuleCollectionForTest() => _syntaxRules;
 }

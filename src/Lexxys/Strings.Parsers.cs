@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -74,8 +74,8 @@ public static partial class Strings
 
 		if (returnType.IsEnum || Nullable.GetUnderlyingType(returnType) is { IsEnum: true })
 		{
-			var (regular, nullable) = NullableTypes(returnType);
-			__stringConditionalConstructor.TryAdd(regular!, (string x, out object? y) => TryGetEnum(x, regular, out y));
+			(Type regular, Type? nullable) = NullableTypes(returnType);
+			__stringConditionalConstructor.TryAdd(regular, (string x, out object? y) => TryGetEnum(x, regular, out y));
 			__stringConditionalConstructor.TryAdd(nullable!, (string x, out object? y) => TryGetEnum(x, regular, out y));
 
 			return TryGetEnum(value, regular, out result);
@@ -107,16 +107,16 @@ public static partial class Strings
 	{
 		var span = value.AsSpan().Trim();
 		if (span.Length == 0) return true;
-        if (span[0] == '$')
+		if (span[0] == '$')
 			span = span.Slice(1);
-        return span.Length == 4
+		return span.Length == 4
 			&& (span[0] | ('a'^'A')) == 'n'
 			&& (span[1] | ('a'^'A')) == 'u'
 			&& (span[2] | ('a'^'A')) == 'l'
 			&& (span[3] | ('a'^'A')) == 'l';
 	}
 
-	private static readonly ConcurrentDictionary<Type, ValueParser?> __typeConvertersCache = new ConcurrentDictionary<Type, ValueParser?>();
+	private static readonly ConcurrentDictionary<Type, ValueParser?> __typeConvertersCache = [];
 
 	private static ValueParser? GetValueConverter(Type targetType)
 	{
@@ -175,8 +175,8 @@ public static partial class Strings
 					}	
 					else if (argument.Value is string qualifiedTypeName)
 					{
-						qualifiedType = Factory.GetType(qualifiedTypeName)!;
-						if (Factory.IsPublicType(qualifiedType)) return qualifiedType;
+						var temp = Factory.GetType(qualifiedTypeName);
+						if (temp != null && Factory.IsPublicType(temp)) return temp;
 					}
 				}
 				type = type.BaseType!;
@@ -262,7 +262,7 @@ public static partial class Strings
 
 				return (Constructor: o, Parameter: pp[0], Parser: ps.Method);
 			})
-			.Where(o => o.Constructor != null).ToList();
+			.ToList();
 
 		if (constructors.Count > 1)
 			constructors = __stringTypedParsers.Select(o => constructors.FirstOrDefault(p => p.Parameter.ParameterType == o.Type)).ToList();
@@ -443,9 +443,7 @@ public static partial class Strings
 	private static readonly ConcurrentDictionary<Type, ValueParser> __stringConditionalConstructor = new ConcurrentDictionary<Type, ValueParser>
 		(
 			__stringTypedParsers.Select(o => new KeyValuePair<Type, ValueParser>(o.Type, Tgv(o.Method, o.Type)))
-			.Union(
-			__stringTypedParsers.Where(o => !o.Type.IsClass).Select(o => new KeyValuePair<Type, ValueParser>(typeof(Nullable<>).MakeGenericType(o.Type), Tgv(o.Method, o.Type, true)))
-			)
+				.Concat(__stringTypedParsers.Where(o => !o.Type.IsClass).Select(o => new KeyValuePair<Type, ValueParser>(typeof(Nullable<>).MakeGenericType(o.Type), Tgv(o.Method, o.Type, true))))
 		);
 	private static readonly ConcurrentDictionary<Type, bool> __missingConverters = new ConcurrentDictionary<Type, bool>();
 

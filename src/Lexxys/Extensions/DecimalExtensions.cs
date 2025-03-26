@@ -19,7 +19,7 @@ public static class DecimalExtensions
 	/// <param name="value"></param>
 	/// <param name="actual"></param>
 	/// <returns></returns>
-	public static int GetScale(this decimal value, bool actual = false)
+	public static int GetPrecision(this decimal value, bool actual = false)
 	{
 		return (new DecOverlay(actual ? value : value / 1.000000000000000000000000000000m).Flags >> 16) & 31;
 	}
@@ -41,18 +41,18 @@ public static class DecimalExtensions
 	/// Splits the <see cref="decimal"/> value into two baskets according to the the specified <paramref name="ratio"/>.
 	/// </summary>
 	/// <param name="value">The value to split</param>
-	/// <param name="scale"></param>
+	/// <param name="precision"></param>
 	/// <param name="ratio">The ratio used to splint the <see cref="decimal"/> value.</param>
 	/// <returns></returns>
-	public static (decimal, decimal) Split(this decimal value, int scale, double ratio)
+	public static (decimal, decimal) Split(this decimal value, int precision, double ratio)
 	{
-		if (scale is < -1 or > 28)
-			throw new ArgumentOutOfRangeException(nameof(scale), scale, null);
+		if (precision is < -1 or > 28)
+			throw new ArgumentOutOfRangeException(nameof(precision), precision, null);
 
-		if (scale == -1)
-			scale = value.GetScale(true);
+		if (precision == -1)
+			precision = value.GetPrecision(true);
 
-		var first = Math.Round((decimal)((double)value * ratio), scale);
+		var first = Math.Round((decimal)((double)value * ratio), precision);
 		return (first, value - first);
 	}
 
@@ -60,21 +60,21 @@ public static class DecimalExtensions
 	/// Splits the <see cref="decimal"/> value into two baskets according to the the specified ratio as <paramref name="numerator"/>/<paramref name="denominator"/>.
 	/// </summary>
 	/// <param name="value"></param>
-	/// <param name="scale"></param>
+	/// <param name="precision"></param>
 	/// <param name="numerator">Numerator value of the ratio.</param>
 	/// <param name="denominator">Denominator value of the ratio.</param>
 	/// <returns></returns>
-	public static (decimal, decimal) Split(this decimal value, int scale, int numerator, int denominator)
+	public static (decimal, decimal) Split(this decimal value, int precision, int numerator, int denominator)
 	{
-		if (scale is < -1 or > 28)
-			throw new ArgumentOutOfRangeException(nameof(scale), scale, null);
+		if (precision is < -1 or > 28)
+			throw new ArgumentOutOfRangeException(nameof(precision), precision, null);
 		if (denominator == 0)
 			throw new ArgumentOutOfRangeException(nameof(denominator), denominator, null);
 
-		if (scale == -1)
-			scale = value.GetScale(true);
+		if (precision == -1)
+			precision = value.GetPrecision(true);
 
-		decimal first = Math.Round(value * numerator / denominator, scale);
+		decimal first = Math.Round(value * numerator / denominator, precision);
 		return (first, value - first);
 	}
 
@@ -82,24 +82,24 @@ public static class DecimalExtensions
 	/// Distributes the specified <paramref name="value"/> by two baskets according to their weights.
 	/// </summary>
 	/// <param name="value">The value to distribute.</param>
-	/// <param name="scale">The scale of the result items (-1 to use the same scale as the <paramref name="value"/>).</param>
+	/// <param name="precision">The precision of the result items (-1 to use the same precision as the <paramref name="value"/>).</param>
 	/// <param name="basket1">Weight of the basket 1</param>
 	/// <param name="basket2">Weight of the basket 2</param>
 	/// <returns></returns>
-	public static decimal[] Allocate(this decimal value, int scale, double basket1, double basket2)
+	public static decimal[] Allocate(this decimal value, int precision, double basket1, double basket2)
 	{
-		if (scale is < -1 or > 28)
-			throw new ArgumentOutOfRangeException(nameof(scale), scale, null);
+		if (precision is < -1 or > 28)
+			throw new ArgumentOutOfRangeException(nameof(precision), precision, null);
 		if (!(basket1 >= 0) || Double.IsPositiveInfinity(basket1))
 			throw new ArgumentOutOfRangeException(nameof(basket1), basket1, null);
 		if (!(basket2 >= 0) || Double.IsPositiveInfinity(basket2))
 			throw new ArgumentOutOfRangeException(nameof(basket2), basket2, null);
 
-		if (scale == -1)
-			scale = value.GetScale(true);
+		if (precision == -1)
+			precision = value.GetPrecision(true);
 
 		double total = basket1 + basket2;
-		decimal first = Math.Round((decimal)((double)value * basket1 / total), scale);
+		decimal first = Math.Round((decimal)((double)value * basket1 / total), precision);
 		return [first, value - first];
 	}
 
@@ -107,15 +107,15 @@ public static class DecimalExtensions
 	/// Distributes the specified <paramref name="value"/> by three baskets according to their weights.
 	/// </summary>
 	/// <param name="value">The value to distribute.</param>
-	/// <param name="scale">The scale of the result items (-1 to use the same scale as the <paramref name="value"/>).</param>
+	/// <param name="precision">The precision of the result items (-1 to use the same precision as the <paramref name="value"/>).</param>
 	/// <param name="basket1">Weight of the basket 1</param>
 	/// <param name="basket2">Weight of the basket 2</param>
 	/// <param name="basket3">Weight of the basket 3</param>
 	/// <returns></returns>
-	public static decimal[] Allocate(this decimal value, int scale, double basket1, double basket2, double basket3)
+	public static decimal[] Allocate(this decimal value, int precision, double basket1, double basket2, double basket3)
 	{
-		if (scale is < -1 or > 28)
-			throw new ArgumentOutOfRangeException(nameof(scale), scale, null);
+		if (precision is < -1 or > 28)
+			throw new ArgumentOutOfRangeException(nameof(precision), precision, null);
 		if (!(basket1 >= 0) || Double.IsPositiveInfinity(basket1))
 			throw new ArgumentOutOfRangeException(nameof(basket1), basket1, null);
 		if (!(basket2 >= 0) || Double.IsPositiveInfinity(basket2))
@@ -123,13 +123,13 @@ public static class DecimalExtensions
 		if (!(basket3 >= 0) || Double.IsPositiveInfinity(basket3))
 			throw new ArgumentOutOfRangeException(nameof(basket3), basket3, null);
 
-		if (scale == -1)
-			scale = value.GetScale(true);
+		if (precision == -1)
+			precision = value.GetPrecision(true);
 
 		double total = basket1 + basket2 + basket3;
 
-		decimal first = Math.Round((decimal)((double)value * basket1 / total), scale);
-		decimal second = Math.Round((decimal)((double)(value - first) * basket2 / (total - basket1)), scale);
+		decimal first = Math.Round((decimal)((double)value * basket1 / total), precision);
+		decimal second = Math.Round((decimal)((double)(value - first) * basket2 / (total - basket1)), precision);
 		return [first, second, value - first - second];
 	}
 
@@ -137,21 +137,21 @@ public static class DecimalExtensions
 	/// Distributes the specified <paramref name="value"/> by baskets according to their weights.
 	/// </summary>
 	/// <param name="value">The value to distribute.</param>
-	/// <param name="scale">The scale of the result items (-1 to use the same scale as the <paramref name="value"/>).</param>
+	/// <param name="precision">The precision of the result items (-1 to use the same precision as the <paramref name="value"/>).</param>
 	/// <param name="baskets">Array of the baskets weights for the <paramref name="value"/> distribution.</param>
 	/// <returns></returns>
-	public static decimal[] Allocate(this decimal value, int scale, params double[] baskets)
+	public static decimal[] Allocate(this decimal value, int precision, params double[] baskets)
 	{
-		if (scale is < -1 or > 28)
-			throw new ArgumentOutOfRangeException(nameof(scale), scale, null);
+		if (precision is < -1 or > 28)
+			throw new ArgumentOutOfRangeException(nameof(precision), precision, null);
 		if (baskets == null)
 			throw new ArgumentNullException(nameof(baskets));
 
 		if (baskets.Length < 2)
 			return baskets.Length == 0 ? [] : [value];
 
-		if (scale == -1)
-			scale = value.GetScale(true);
+		if (precision == -1)
+			precision = value.GetPrecision(true);
 
 		double total = 0;
 		foreach (double basket in baskets)
@@ -167,7 +167,7 @@ public static class DecimalExtensions
 		{
 			double basket = baskets[i];
 			double dv = (double)rest * basket / total;
-			decimal item = Math.Round((decimal)dv, scale);
+			decimal item = Math.Round((decimal)dv, precision);
 			rest -= item;
 			total -= basket;
 			result[i] = item;
@@ -180,27 +180,27 @@ public static class DecimalExtensions
 	/// Distributes the specified <paramref name="value"/> evenly by specified <paramref name="count"/> of baskets.
 	/// </summary>
 	/// <param name="value">The value to distribute.</param>
-	/// <param name="scale">The scale of the result items (-1 to use the same scale as the <paramref name="value"/>).</param>
+	/// <param name="precision">The precision of the result items (-1 to use the same precision as the <paramref name="value"/>).</param>
 	/// <param name="count">Number of baskets.</param>
-	public static decimal[] Distribute(this decimal value, int scale, int count)
+	public static decimal[] Distribute(this decimal value, int precision, int count)
 	{
-		if (scale is < -1 or > 28)
-			throw new ArgumentOutOfRangeException(nameof(scale), scale, null);
+		if (precision is < -1 or > 28)
+			throw new ArgumentOutOfRangeException(nameof(precision), precision, null);
 		if (count < 0)
 			throw new ArgumentOutOfRangeException(nameof(count), count, null);
 
 		if (count <= 1)
 			return count == 0 ? []: [value];
 
-		if (scale == -1)
-			scale = value.GetScale(true);
+		if (precision == -1)
+			precision = value.GetPrecision(true);
 
 		var result = new decimal[count];
 		var rest = value;
 		int n = result.Length - 1;
 		for (int i = 0; i < n; ++i)
 		{
-			var item = Math.Round(rest / count, scale);
+			var item = Math.Round(rest / count, precision);
 			rest -= item;
 			--count;
 			result[i] = item;

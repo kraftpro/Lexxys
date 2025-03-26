@@ -60,6 +60,7 @@ public static class Tools
 		long k0 = 1, k1 = 0;
 		long n = 1;
 		double v = value;
+		// ReSharper disable once CompareOfFloatsByEqualityOperator
 		while (v != Math.Floor(v))
 		{
 			n *= 2;

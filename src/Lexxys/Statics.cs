@@ -38,7 +38,7 @@ public static class Statics
 
 	public static T GetKeyedService<T>(object? serviceKey) where T: class => (T)GetKeyedService(typeof(T), serviceKey);
 
-	public static bool TryAddServices(IEnumerable<ServiceDescriptor> services, bool unique = false) => Instance.IsInitialized ? false: Instance.AddServices(services, unique);
+	public static bool TryAddServices(IEnumerable<ServiceDescriptor> services, bool unique = false) => !Instance.IsInitialized && Instance.AddServices(services, unique);
 
 	public static bool AddServices(IEnumerable<ServiceDescriptor> services, bool unique = false) => Instance.AddServices(services, unique);
 
