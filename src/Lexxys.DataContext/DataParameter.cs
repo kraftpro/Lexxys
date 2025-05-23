@@ -13,8 +13,10 @@ public class DataParameter: IDataParameter
 {
 	public DataParameter(string name, object? value = null, DbType? type = null, int? size = null)
 	{
-		Name = name;
-		Value = value;
+		if (name is not { Length: >0 }) throw new ArgumentNullException(nameof(name));
+
+		Name = name.StartsWith('@') ? name: "@" + name;
+		Value = value ?? DBNull.Value;
 		Type = type;
 		Size = size;
 	}
@@ -32,8 +34,8 @@ public static class DataParameterExtensions
 
 	public static DbCommand WithParameters(this DbCommand command, IEnumerable<DataParameter>? parameters, bool append = false)
 	{
-		if (command is null)
-			throw new ArgumentNullException(nameof(command));
+		if (command is null) throw new ArgumentNullException(nameof(command));
+
 		if (!append)
 			command.Parameters.Clear();
 		if (parameters == null)
@@ -56,14 +58,14 @@ public static class DataParameterExtensions
 		return command;
 	}
 
-	public static void SetOutput(this DbCommand command, IReadOnlyList<DataParameter>? parameters)
+	public static void RetrieveOutputParameters(this DbCommand command, IEnumerable<DataParameter>? parameters)
 	{
-		if (command is null)
-			throw new ArgumentNullException(nameof(command));
-		if (parameters == null || parameters.Count == 0)
+		if (command is null) throw new ArgumentNullException(nameof(command));
+
+		if (parameters == null)
 			return;
 
-		foreach (DataParameter? parameter in parameters)
+		foreach (DataParameter parameter in parameters)
 		{
 			if (parameter.Direction is ParameterDirection.InputOutput or ParameterDirection.Output or ParameterDirection.ReturnValue &&
 				command.Parameters.Contains(parameter.Name))

@@ -7,6 +7,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Collections;
+using System.Globalization;
 using System.Text;
 using System.Xml;
 
@@ -391,7 +392,7 @@ public class JsonScalar: JsonItem
 				if (Single.IsNaN(f) || Single.IsInfinity(f))
 					stream.Write(NullBytes);
 				else
-					stream.Write(Encoding.UTF8.GetBytes(f.ToString()));
+					stream.Write(Encoding.UTF8.GetBytes(f.ToString(CultureInfo.InvariantCulture)));
 #endif
 				break;
 			case double d:
@@ -404,7 +405,7 @@ public class JsonScalar: JsonItem
 				if (Double.IsNaN(d) || Double.IsInfinity(d))
 					stream.Write(NullBytes);
 				else
-					stream.Write(Encoding.UTF8.GetBytes(d.ToString()));
+					stream.Write(Encoding.UTF8.GetBytes(d.ToString(CultureInfo.InvariantCulture)));
 #endif
 				break;
 			case decimal m:
@@ -412,7 +413,7 @@ public class JsonScalar: JsonItem
 				m.TryFormat(digits, out var nm);
 				stream.Write(digits.Slice(0, nm));
 #else
-				stream.Write(Encoding.UTF8.GetBytes(m.ToString()));
+				stream.Write(Encoding.UTF8.GetBytes(m.ToString(CultureInfo.InvariantCulture)));
 #endif
 				break;
 

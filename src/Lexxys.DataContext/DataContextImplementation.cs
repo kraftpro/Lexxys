@@ -8,7 +8,6 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Data;
 
@@ -24,7 +23,6 @@ class DataContextImplementation: IDisposable
 	private DbTransaction? _transaction;
 	private TimeSpan _commandTimeout;
 	private TimeSpan _defaultCommandTimeout;
-	private DateTime _lockedTime;
 	private DateTime _timeSyncStamp;
 	private long _timeSyncOffset;
 
@@ -46,27 +44,53 @@ class DataContextImplementation: IDisposable
 		Audit = audit;
 	}
 
+	private object SyncLock => _connectionFactory;
+
 	public DataAudit Audit { get; }
 
 	public event Action Committed
 	{
 		add
 		{
-			if (TransactionsCount > 0)
-				_committed += value;
-			else
-				value.Invoke();
+			lock (SyncLock)
+			{
+				if (TransactionsCount > 0)
+				{
+					_committed += value;
+					return;
+				}
+			}
+			value?.Invoke();
 		}
-		remove => _committed -= value;
+
+		remove
+		{
+			lock (SyncLock)
+			{
+				_committed -= value;
+			}
+		}
 	}
 	public event Action Cancelled
 	{
 		add
 		{
-			if (TransactionsCount > 0)
-				_cancelled += value;
+			lock (SyncLock)
+			{
+				if (TransactionsCount > 0)
+				{
+					_cancelled += value;
+				}
+			}
 		}
-		remove => _cancelled -= value;
+
+		remove
+		{
+			lock (SyncLock)
+			{
+				_cancelled -= value;
+			}
+		}
 	}
 
 	public ICommitAction SetCommitAction(object key, Func<ICommitAction> factory)
@@ -74,13 +98,16 @@ class DataContextImplementation: IDisposable
 		if (key == null)
 			throw new ArgumentNullException(nameof(key));
 
-		if (_broadcast.TryGetValue(key, out var obj))
+		lock (SyncLock)
+		{
+			if (_broadcast.TryGetValue(key, out var obj))
+				return obj;
+			if (factory == null)
+				throw new ArgumentNullException(nameof(factory));
+			obj = factory();
+			_broadcast.Add(key, obj);
 			return obj;
-		if (factory == null)
-			throw new ArgumentNullException(nameof(factory));
-		obj = factory();
-		_broadcast.Add(key, obj);
-		return obj;
+		}
 	}
 
 	private void SyncTime()
@@ -100,8 +127,9 @@ class DataContextImplementation: IDisposable
 				for (; ; )
 				{
 					now = DateTime.Now;
+					var t = WatchTimer.Start();
 					var dbNow = (DateTime)cmd.ExecuteScalar()!;
-					long duration = (DateTime.Now - now).Ticks;
+					long duration = TimeSpan.FromTicks(WatchTimer.Query(t)).Ticks;
 					offset = (dbNow - now).Ticks - duration / 2;
 					if (duration < delta)
 					{
@@ -124,7 +152,7 @@ class DataContextImplementation: IDisposable
 		(_timeSyncStamp, _timeSyncOffset) = sv;
 	}
 
-	public DateTime Now => _lockedTime == default ? DateTime.Now + TimeSpan.FromTicks(_timeSyncOffset): _lockedTime;
+	public DateTime Now => DateTime.Now + TimeSpan.FromTicks(_timeSyncOffset);
 
 	public DataContextImplementation Clone()
 		=> new DataContextImplementation(_connectionFactory, _commandTimeout, Audit.Clone())
@@ -132,19 +160,6 @@ class DataContextImplementation: IDisposable
 			_timeSyncOffset = _timeSyncOffset,
 			_timeSyncStamp = _timeSyncStamp,
 		};
-
-	public bool LockNow(DateTime now)
-	{
-		if (_lockedTime != default)
-			return false;
-		_lockedTime = now;
-		return true;
-	}
-
-	public void UnlockNow()
-	{
-		_lockedTime = default;
-	}
 
 	public DbConnection Connection => _connection;
 
@@ -157,7 +172,7 @@ class DataContextImplementation: IDisposable
 	public int Connect()
 	{
 		var t = Audit.Start();
-		lock (_connectLock)
+		lock (SyncLock)
 		{
 			if (_connectionsCount > 0)
 			{
@@ -178,17 +193,10 @@ class DataContextImplementation: IDisposable
 		}
 	}
 
-	private readonly object _connectLock = new object();
-
-	//public Task<int> ConnectAsync()
-	//{
-	//	return Task.FromResult(Connect());
-	//}
-
 	public int Disconnect()
 	{
 		var t = Audit.Start();
-		lock (_connectLock)
+		lock (SyncLock)
 		{
 			if (--_connectionsCount > 0)
 			{
@@ -212,167 +220,173 @@ class DataContextImplementation: IDisposable
 	private void SafeDisconnect()
 	{
 		var t = Audit.Start();
-		lock (_connectLock)
+		if (--_connectionsCount > 0)
 		{
-			if (--_connectionsCount > 0)
-			{
-				if (_connection.State == ConnectionState.Closed)
-					_connection.Open();
-			}
-			else
-			{
-				if (_connectionsCount < 0)
-				{
-					_connectionsCount = 0;
-					Dc.Log.Error("Dc.SafeDisconnect", "ConnectionCount == 0", null, null);
-				}
-				if (_connection.State != ConnectionState.Closed)
-					_connection.Close();
-			}
-			Audit.ConnectionEnd(t);
+			if (_connection.State == ConnectionState.Closed)
+				_connection.Open();
 		}
+		else
+		{
+			if (_connectionsCount < 0)
+			{
+				_connectionsCount = 0;
+				Dc.Log.Error("Dc.SafeDisconnect", "ConnectionCount == 0", null, null);
+			}
+			if (_connection.State != ConnectionState.Closed)
+				_connection.Close();
+		}
+		Audit.ConnectionEnd(t);
 	}
 
 	public int Begin(IsolationLevel iso)
 	{
-		if (_transactionsCount > 0)
-			return ++_transactionsCount;
+		lock (SyncLock)
+		{
+			if (_transactionsCount > 0)
+				return ++_transactionsCount;
 
-		Connect();
-		var t = Audit.Start();
-		Audit.GroupBegin();
-		_transaction = _connection.BeginTransaction(iso == default ? Dc.DefaultIsolationLevel: iso);
-		_transactionsCount = 1;
-		Audit.TransactionEnd(t);
-		return 1;
+			Connect();
+			var t = Audit.Start();
+			Audit.GroupBegin();
+			_transaction = _connection.BeginTransaction(iso == default ? Dc.DefaultIsolationLevel : iso);
+			_transactionsCount = 1;
+			Audit.TransactionEnd(t);
+			return 1;
+		}
 	}
 
 	public void Commit()
 	{
-		if (_transaction == null)
+		lock (SyncLock)
 		{
-			_transactionsCount = 0;
-			Dc.Log.Error(SR.NothingToCommit());
-			return;
-		}
-		if (_transactionsCount != 1)
-		{
-			if (_transactionsCount > 1)
+			if (_transaction == null)
 			{
-				--_transactionsCount;
+				_transactionsCount = 0;
+				Dc.Log.Error(SR.NothingToCommit());
 				return;
 			}
-			_transaction = null;
-			_transactionsCount = 0;
-			Dc.Log.Error(SR.NothingToCommit());
-			return;
-		}
+			if (_transactionsCount != 1)
+			{
+				if (_transactionsCount > 1)
+				{
+					--_transactionsCount;
+					return;
+				}
+				_transaction = null;
+				_transactionsCount = 0;
+				Dc.Log.Error(SR.NothingToCommit());
+				return;
+			}
 
-		var t = Audit.Start();
-		var committed = _committed;
-		var broadcast = _broadcast.Values.ToList();
-		_committed = null;
-		_cancelled = null;
-		_broadcast.Clear();
-		try
-		{
-			_transaction.Commit();
-		}
-		catch (Exception flaw)
-		{
-			Dc.Log.Error("Dc.Commit", flaw);
-		}
-		finally
-		{
-			_transactionsCount = 0;
-			_transaction.Dispose();
-		}
-		_transaction = null;
-
-		Audit.TransactionEnd(t);
-		SafeDisconnect();
-		Audit.GroupEnd();
-
-		try
-		{
-			committed?.Invoke();
-		}
-		catch (Exception flaw)
-		{
-			Dc.Log.Error("Dc.Commit.Committed", flaw);
-		}
-		foreach (var item in broadcast)
-		{
+			var t = Audit.Start();
+			_cancelled = null;
+			var committed = _committed;
+			_committed = null;
+			var broadcast = _broadcast.Values.ToList();
+			_broadcast.Clear();
 			try
 			{
-				item.Commit();
+				_transaction.Commit();
 			}
 			catch (Exception flaw)
 			{
-				Dc.Log.Error("Dc.Commit.Broadcast", flaw);
+				Dc.Log.Error("Dc.Commit", flaw);
+			}
+			finally
+			{
+				_transactionsCount = 0;
+				_transaction.Dispose();
+			}
+			_transaction = null;
+
+			Audit.TransactionEnd(t);
+			SafeDisconnect();
+			Audit.GroupEnd();
+
+			try
+			{
+				committed?.Invoke();
+			}
+			catch (Exception flaw)
+			{
+				Dc.Log.Error("Dc.Commit.Committed", flaw);
+			}
+			foreach (var item in broadcast)
+			{
+				try
+				{
+					item.Commit();
+				}
+				catch (Exception flaw)
+				{
+					Dc.Log.Error("Dc.Commit.Broadcast", flaw);
+				}
 			}
 		}
 	}
 
 	public void Rollback()
 	{
-		if (_transaction == null)
+		lock (SyncLock)
 		{
-			_transactionsCount = 0;
-			Dc.Log.Error(SR.NothingToRollback());
-			return;
-		}
-		if (_transactionsCount <= 0)
-		{
-			_transaction = null;
-			_transactionsCount = 0;
-			Dc.Log.Error(SR.NothingToRollback());
-			return;
-		}
+			if (_transaction == null)
+			{
+				_transactionsCount = 0;
+				Dc.Log.Error(SR.NothingToRollback());
+				return;
+			}
+			if (_transactionsCount <= 0)
+			{
+				_transaction = null;
+				_transactionsCount = 0;
+				Dc.Log.Error(SR.NothingToRollback());
+				return;
+			}
 
-		var t = Audit.Start();
-		var cancelled = _cancelled;
-		var broadcast = _broadcast.Values.ToList();
-		_committed = null;
-		_cancelled = null;
-		_broadcast.Clear();
+			var t = Audit.Start();
+			_cancelled = null;
+			var cancelled = _cancelled;
+			_committed = null;
+			var broadcast = _broadcast.Values.ToList();
+			_broadcast.Clear();
 
-		try
-		{
-			_transaction.Rollback();
-		}
-		catch(Exception flaw)
-		{
-			Dc.Log.Error("Dc.Rollback", flaw);
-		}
-		finally
-		{
-			_transactionsCount = 0;
-			_transaction.Dispose();
-			_transaction = null;
-		}
-
-		Audit.TransactionEnd(t);
-		SafeDisconnect();
-		Audit.GroupEnd();
-
-		try
-		{
-			cancelled?.Invoke();
-		}
-		catch (Exception flaw)
-		{
-			Dc.Log.Error("Dc.Rollback.Cancelled", flaw);
-		}
-		foreach (var item in broadcast)
-		{
 			try
 			{
-				item.Rollback();
+				_transaction.Rollback();
 			}
 			catch (Exception flaw)
 			{
-				Dc.Log.Error("Dc.Rollback.Broadcast", flaw);
+				Dc.Log.Error("Dc.Rollback", flaw);
+			}
+			finally
+			{
+				_transactionsCount = 0;
+				_transaction.Dispose();
+				_transaction = null;
+			}
+
+			Audit.TransactionEnd(t);
+			SafeDisconnect();
+			Audit.GroupEnd();
+
+			try
+			{
+				cancelled?.Invoke();
+			}
+			catch (Exception flaw)
+			{
+				Dc.Log.Error("Dc.Rollback.Cancelled", flaw);
+			}
+			foreach (var item in broadcast)
+			{
+				try
+				{
+					item.Rollback();
+				}
+				catch (Exception flaw)
+				{
+					Dc.Log.Error("Dc.Rollback.Broadcast", flaw);
+				}
 			}
 		}
 	}
@@ -438,144 +452,4 @@ class DataContextImplementation: IDisposable
 		}
 	}
 	private bool _disposed;
-}
-
-class DataAudit
-{
-	private long _connectTime;
-	private long _transactTime;
-	private long _queryTime;
-	private int _timingGroupDepth;
-	private long _timingGroupStamp;
-	private int _lockTiming;
-	private readonly List<TimingNode> _timingGroupItems;
-
-	private readonly long _connectionAudit;
-	private readonly long _commandAudit;
-	private readonly long _batchAudit;
-
-	private readonly ILogger _log;
-
-	public DataAudit(TimeSpan connectionAudit, TimeSpan commandAudit, TimeSpan batchAudit, ILogger? log = null): this(
-		Math.Max(0, connectionAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
-		Math.Max(0, commandAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
-		Math.Max(0, batchAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
-		log ?? Dc.Timing)
-	{
-	}
-
-	private DataAudit(long connectionAudit, long commandAudit, long batchAudit, ILogger log)
-	{
-		_connectionAudit = connectionAudit;
-		_commandAudit = commandAudit;
-		_batchAudit = batchAudit;
-		_log = log;
-		_timingGroupItems = [];
-	}
-
-	public TimeSpan TransactTime => WatchTimer.ToTimeSpan(_transactTime);
-
-	public TimeSpan ConnectTime => WatchTimer.ToTimeSpan(_connectTime);
-
-	public TimeSpan QueryTime => WatchTimer.ToTimeSpan(_queryTime);
-
-	public TimeSpan TotalTime => WatchTimer.ToTimeSpan(_connectTime + _transactTime + _queryTime);
-
-	public void LockTiming()
-	{
-		++_lockTiming;
-	}
-
-	public void UnlockTiming()
-	{
-		if (_lockTiming > 0)
-			--_lockTiming;
-	}
-
-	public long Start()
-	{
-		return WatchTimer.Start();
-	}
-
-	public void ConnectionEnd(long time)
-	{
-		var t = WatchTimer.Query(time);
-		if (t > _connectionAudit)
-			_log.Info(SR.ConnectionTiming(t));
-		_connectTime += t;
-	}
-
-	public void TransactionEnd(long time)
-	{
-		var t = WatchTimer.Query(time);
-		_transactTime += t;
-	}
-
-	public void QueryEnd(string query, long time)
-	{
-		var t = WatchTimer.Query(time);
-		_queryTime += t;
-		if (_lockTiming > 0)
-			return;
-		if (_timingGroupDepth > 0)
-		{
-			_timingGroupItems.Add(new TimingNode(WatchTimer.Query(_timingGroupStamp) - t, t, query));
-		}
-		if (_commandAudit > 0 && t > _commandAudit)
-			_log.Info(SR.SqlQueryTiming(t, query));
-	}
-
-	public void GroupBegin()
-	{
-		if (_batchAudit == 0)
-			return;
-		if (++_timingGroupDepth == 1)
-			_timingGroupStamp = WatchTimer.Start();
-	}
-
-	public void GroupEnd()
-	{
-		if (_batchAudit == 0)
-			return;
-		if (--_timingGroupDepth <= 0)
-		{
-			if (_timingGroupDepth < 0)
-				_timingGroupDepth = 0;
-			else if (_lockTiming == 0)
-				LogGroupTiming();
-			_timingGroupItems.Clear();
-		}
-	}
-
-	public void Reset()
-	{
-		_connectTime = _transactTime = _queryTime = 0;
-		_timingGroupDepth = 0;
-		_timingGroupStamp = 0;
-		_timingGroupItems.Clear();
-	}
-
-	public DataAudit Clone()
-	{
-		return new DataAudit(_connectionAudit, _commandAudit, _batchAudit, _log);
-	}
-
-	private void LogGroupTiming()
-	{
-		long t = WatchTimer.Query(_timingGroupStamp);
-		if (t >= _batchAudit)
-		{
-			using (_log.InfoEnter("SQL Timing: " + WatchTimer.ToString(t)))
-			{
-				long t0 = 0;
-				foreach (var item in _timingGroupItems)
-				{
-					_log.Info(SR.SqlGroupQueryTiming(item.Length, item.Stamp - t0, item.Statement));
-					t0 = item.Stamp + item.Length;
-				}
-			}
-		}
-	}
-
-	record struct TimingNode(long Stamp, long Length, string Statement);
 }

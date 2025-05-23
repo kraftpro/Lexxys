@@ -4,6 +4,7 @@
 // Copyright (c) 2001-2014, ANN, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
@@ -209,9 +210,15 @@ public class DirectoryStorageConfig
 	/// <summary>Returns "random" salt value based on system timer.</summary>
 	public static long InitSalt(bool ordinal = default)
 	{
-		return ordinal ?
-			DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond - 63100000000000:
-			(long)((Swap64((ulong)WatchTimer.Start()) >> 24 ^ (ulong)WatchTimer.Start()) & 0x01FF_FFFF_FFFF);
+		if (ordinal)
+			return DateTime.UtcNow.Ticks & 0x0000_01FF_FFFF_FFFF;
+
+#if NET6_0_OR_GREATER
+		uint r = (uint)Random.Shared.Next();
+#else
+		uint r = (uint)__r.Next();
+#endif
+		return (long)(r ^ (Swap64((ulong)Stopwatch.GetTimestamp()) >> 23)) & 0x0000_01FF_FFFF_FFFF;
 
 		static ulong Swap64(ulong value)
 		{
@@ -221,10 +228,17 @@ public class DirectoryStorageConfig
 			return x;
 		}
 	}
+#if !NET6_0_OR_GREATER
+	private static readonly Random __r = new Random();
+#endif
 
 	/// <summary>Increases the <paramref name="salt"/> value</summary>
 	/// <param name="salt">The value to increase</param>
-	public static long NextSalt(long salt) => salt + 1 + (WatchTimer.Query(0) & 15);
+#if NET6_0_OR_GREATER
+	public static long NextSalt(long salt) => salt + 1 + (Random.Shared.Next() & 15);
+#else
+	public static long NextSalt(long salt) => salt + 1 + (__r.Next() & 15);
+#endif
 
 	private static unsafe void AppendDirectory(StringBuilder path, ulong index, uint directoryCount, uint fileCount, Fmt format, char pathSeparator, DirectoryGenerationMode mode)
 	{

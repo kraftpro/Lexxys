@@ -4,6 +4,7 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -14,10 +15,13 @@ public static class WatchTimer
 	public static readonly long TicksPerMillisecond;
 	public static readonly long TicksPerSecond;
 	public static readonly long TicksPerMinute;
+	private static readonly bool _isHighResolution;
 
 	static WatchTimer()
 	{
-		NativeMethods.QueryPerformanceFrequency(out TicksPerSecond);
+		_isHighResolution = NativeMethods.QueryPerformanceFrequency(out TicksPerSecond);
+		if (!_isHighResolution)
+			TicksPerSecond = TimeSpan.TicksPerSecond;
 		TicksPerMinute = TicksPerSecond * 60;
 		TicksPerMillisecond = (TicksPerSecond + 500) / 1000;
 	}
@@ -26,9 +30,13 @@ public static class WatchTimer
 	/// Initializes a new instance and starts measuring elapsed time.
 	/// </summary>
 	/// <returns>Object to be used as a parameter in <see cref="Lexxys.WatchTimer.Stop"/> and <see cref="Lexxys.WatchTimer.Query"/> methods.</returns>
-	public static long Start()
+	public static long Start() => QueryTimer();
+
+	private static long QueryTimer()
 	{
-		NativeMethods.QueryPerformanceCounter(out long now);
+		if (!_isHighResolution)
+			return DateTime.UtcNow.Ticks;
+		NativeMethods.QueryPerformanceCounter(out var now);
 		return now;
 	}
 
@@ -37,33 +45,21 @@ public static class WatchTimer
 	/// </summary>
 	/// <param name="timer">Object returned by <see cref="Lexxys.WatchTimer.Start"/>.</param>
 	/// <returns>Total elapsed time measured by <paramref name="timer"/>, in microsecond.</returns>
-	public static long Stop(long timer)
-	{
-		NativeMethods.QueryPerformanceCounter(out long now);
-		return now - timer;
-	}
+	public static long Stop(long timer) => QueryTimer() - timer;
 
 	/// <summary>
 	/// Gets the total elapsed time measured by <paramref name="timer"/>, in microsecond.
 	/// </summary>
 	/// <param name="timer">Object returned by <see cref="Lexxys.WatchTimer.Start"/>.</param>
 	/// <returns>Total elapsed time measured by <paramref name="timer"/>, in microsecond.</returns>
-	public static long Query(long timer)
-	{
-		NativeMethods.QueryPerformanceCounter(out long now);
-		return now - timer;
-	}
+	public static long Query(long timer) => QueryTimer() - timer;
 
 	/// <summary>
 	/// Gets the total elapsed time measured by <paramref name="timer"/>.
 	/// </summary>
 	/// <param name="timer">Object returned by <see cref="Lexxys.WatchTimer.Start"/>.</param>
 	/// <returns>Total elapsed time measured by <paramref name="timer"/>.</returns>
-	public static TimeSpan Watch(long timer)
-	{
-		NativeMethods.QueryPerformanceCounter(out long now);
-		return TimeSpan.FromTicks(now - timer);
-	}
+	public static TimeSpan Watch(long timer) => TimeSpan.FromTicks(QueryTimer() - timer);
 
 	/// <summary>
 	/// Convert QPC ticks to <see cref="System.TimeSpan"/>.
@@ -71,19 +67,14 @@ public static class WatchTimer
 	/// <param name="time">Number of QPC ticks. (from <see cref="Stop(long)"/> or <see cref="Query(long)"/>)</param>
 	/// <returns><see cref="System.TimeSpan"/> equivalent of <paramref name="time"/> value.</returns>
 	public static TimeSpan ToTimeSpan(long time)
-	{
-		return TicksPerSecond == TimeSpan.TicksPerSecond ? TimeSpan.FromTicks(time): TimeSpan.FromTicks(time * TimeSpan.TicksPerSecond / TicksPerSecond);
-	}
+		=> TicksPerSecond == TimeSpan.TicksPerSecond ? TimeSpan.FromTicks(time): TimeSpan.FromTicks(time * TimeSpan.TicksPerSecond / TicksPerSecond);
 
 	/// <summary>
 	/// Convert QPC ticks to number of seconds.
 	/// </summary>
 	/// <param name="timer">Number of QPC ticks. (from <see cref="Stop(long)"/> or <see cref="Query(long)"/>)</param>
 	/// <returns>Number of seconds.</returns>
-	public static double ToSeconds(long timer)
-	{
-		return (double)timer / TicksPerSecond;
-	}
+	public static double ToSeconds(long timer) => (double)timer / TicksPerSecond;
 
 	/// <summary>
 	/// Format duration time

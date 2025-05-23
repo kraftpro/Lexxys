@@ -2,6 +2,20 @@
 using Lexxys.Configuration;
 using Lexxys.Data;
 
+Statics.AddServices(o => o.AddConfigService());
+
+var r = new RowVersion(0x00000000000007da);
+Console.WriteLine(r.ToString());
+var sc = Dc.StaticDataFactory.CreateContext(new ConnectionStringInfo
+{
+	TrustServerCertificate = true,
+	Server = ".",
+	Database = "DocumentsConverter"
+});
+
+var rv = sc.GetValue<RowVersion>("select top 1 Version from Documents");
+Console.WriteLine(rv.ToString());
+
 string config = """
 	school
 		name I.K. High School
@@ -23,7 +37,6 @@ string config = """
 
 var node = CfgParser.ParseConfig(config);
 
-Statics.AddServices(o => o.AddConfigService());
 var c0 = Config.Current.GetValue<ConfigSection>(Dc.ConfigSection, null);
 Config.Current.SetValue<ConnectionStringInfo>(Dc.ConfigSection, new ConnectionStringInfo { TrustServerCertificate = true, Server = ".", Database= "CharityPlanner" });
 var c1 = Config.Current.GetValue<ConnectionStringInfo>(Dc.ConfigSection, null);

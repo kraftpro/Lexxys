@@ -93,8 +93,7 @@ public readonly struct Money:
 
 	private Money(SerializationInfo info, StreamingContext context)
 	{
-		if (info is null)
-			throw new ArgumentNullException(nameof(info));
+		if (info is null) throw new ArgumentNullException(nameof(info));
 
 		_value = info.GetInt64("value");
 		string? code = info.GetString("cur");
@@ -237,10 +236,8 @@ public readonly struct Money:
 	/// <returns></returns>
 	public Money[] Allocate(params double[] baskets)
 	{
-		if (baskets == null)
-			throw new ArgumentNullException(nameof(baskets));
-		if (baskets.Length < 2)
-			return baskets.Length == 0 ? [] : [this];
+		if (baskets == null) throw new ArgumentNullException(nameof(baskets));
+		if (baskets.Length < 2) return baskets.Length == 0 ? [] : [this];
 
 		double total = 0;
 		for (int i = 0; i < baskets.Length; i++)
@@ -349,8 +346,7 @@ public readonly struct Money:
 	/// <inheritdoc />
 	public DumpWriter DumpContent(DumpWriter writer)
 	{
-		if (writer is null)
-			throw new ArgumentNullException(nameof(writer));
+		if (writer is null) throw new ArgumentNullException(nameof(writer));
 		return writer.Dump(Amount).Text('[').Text(Currency.Code).Text(']');
 	}
 
@@ -454,10 +450,8 @@ public readonly struct Money:
 
 	public static Money Parse(string s, NumberStyles style, IFormatProvider? provider)
 	{
-		if (s is null)
-			throw new ArgumentNullException(nameof(s));
-		if (!TryParse(s, style, provider, out var result))
-			throw new FormatException(SR.CannotParseValue(s));
+		if (s is null) throw new ArgumentNullException(nameof(s));
+		if (!TryParse(s, style, provider, out var result)) throw new FormatException(SR.CannotParseValue(s));
 		return result;
 	}
 
@@ -525,10 +519,10 @@ public readonly struct Money:
 			if (!start)
 			{
 				span[0] = ' ';
-				span = span.Slice(1);
+				span = span[1..];
 			}
 			value.CopyTo(span);
-			span = span.Slice(value.Length);
+			span = span[value.Length..];
 			if (start)
 				span[0] = ' ';
 			return true;
@@ -562,10 +556,8 @@ public readonly struct Money:
 	/// <exception cref="FormatException"></exception>
 	public static Money Parse(string s, IFormatProvider? provider)
 	{
-		if (s == null)
-			throw new ArgumentNullException(nameof(s));
-		if (!TryParse(s, provider, out var value))
-			throw new FormatException(SR.CannotParseValue(s));
+		if (s == null) throw new ArgumentNullException(nameof(s));
+		if (!TryParse(s, provider, out var value)) throw new FormatException(SR.CannotParseValue(s));
 		return value;
 	}
 
@@ -603,11 +595,6 @@ public readonly struct Money:
 	public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out Money result)
 	{
 #if NET6_0_OR_GREATER
-		if (s == null)
-		{
-			result = default;
-			return false;
-		}
 		return TryParse(s.AsSpan(), style, provider, out result);
 #else
 		if ((s = s.TrimToNull()) == null)
@@ -616,9 +603,9 @@ public readonly struct Money:
 			return false;
 		}
 		Currency? currency = null;
-		if (s.Length > 4 && s[s.Length - 4] == ' ')
+		if (s.Length > 4 && s[^4] == ' ')
 		{
-			var symbol = s.Substring(s.Length - 3);
+			var symbol = s[^3..];
 			if (Char.IsLetter(symbol[0]) && Char.IsLetter(symbol[1]) && Char.IsLetter(symbol[2]))
 			{
 				currency = Currency.Find(symbol);
@@ -627,7 +614,7 @@ public readonly struct Money:
 					result = default;
 					return false;
 				}
-				s = s.Substring(0, s.Length - 4).TrimEnd();
+				s = s[..^4].TrimEnd();
 			}
 		}
 		if (decimal.TryParse(s, style, provider, out var d))
@@ -672,16 +659,16 @@ public readonly struct Money:
 		Currency? currency = null;
 		if (s.Length > 4 && s[^4] == ' ')
 		{
-			var symbol = s.Slice(s.Length - 3);
+			var symbol = s[^3..];
 			if (Char.IsLetter(symbol[0]) && Char.IsLetter(symbol[1]) && Char.IsLetter(symbol[2]))
 			{
 				currency = Currency.Find(symbol.ToString());
 				if (currency == null)
 				{
-					result = new Money();
+					result = default;
 					return false;
 				}
-				s = s.Slice(0, s.Length - 5).TrimEnd();
+				s = s[..^4].TrimEnd();
 			}
 		}
 		if (decimal.TryParse(s, style, provider, out var d))

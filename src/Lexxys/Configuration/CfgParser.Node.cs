@@ -52,7 +52,7 @@ public ref partial struct CfgParser
 					text.Append(Name);
 				if (Value != null)
 					if (Value.Length >20)
-						text.Append(" = ").Append(Value.Substring(0, 20)).Append("...");
+						text.Append(" = ").Append(Value.AsSpan(0, 20)).Append("...");
 					else
 						text.Append(" = ").Append(Value);
 
@@ -191,7 +191,7 @@ public ref partial struct CfgParser
 			{
 				json.Val(false);
 			}
-			else if (IsQuoted || value.Length > 29 || !Regex.IsMatch(value, @"^-?(:?[1-9]\d*(\.\d+)?|0\.\d+)([eE][+-]?\d+)?$"))
+			else if (IsQuoted || value.Length > 29 || !__numberRegex.IsMatch(value))
 			{
 				json.Val(value);
 			}
@@ -203,6 +203,8 @@ public ref partial struct CfgParser
 					json.Val(decimal.Parse(value, CultureInfo.InvariantCulture));
 			}
 		}
+
+		private static readonly Regex __numberRegex = new Regex(@"^-?(:?[1-9]\d*(\.\d+)?|0\.\d+)([eE][+-]?\d+)?$");
 	}
 
 	//public class Node

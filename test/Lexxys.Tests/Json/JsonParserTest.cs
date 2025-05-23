@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace Lexxys.Tests.Json
 {
@@ -151,13 +152,10 @@ namespace Lexxys.Tests.Json
 			""")]
 		public void ParseString(string json)
 		{
+			string expected = Regex.Replace(json, @"\s*([\{\}:,])\s*", "$1", RegexOptions.Singleline);
 			var j = JsonParser.Parse(json);
-			string actual = json;
-			actual = Regex.Replace(actual, @"\s*{\s*", "{", RegexOptions.Singleline);
-			actual = Regex.Replace(actual, @"\s*}\s*", "}", RegexOptions.Singleline);
-			actual = Regex.Replace(actual, @"\s*:\s*", ":", RegexOptions.Singleline);
-			actual = Regex.Replace(actual, @"\s*,\s*", ",", RegexOptions.Singleline);
-			Assert.AreEqual(actual, j.ToString());
+			string actual = j.ToString();
+			Assert.AreEqual(expected, actual);
 		}
 	}
 }

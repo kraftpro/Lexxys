@@ -4,16 +4,18 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
+using Lexxys.Xml;
+
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
-
-using Microsoft.Extensions.Logging;
-using Lexxys.Xml;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Lexxys.Data;
 
@@ -54,229 +56,96 @@ public static class Dc
 
 	#region Parameters
 
-	public static DataParameter Parameter(string name, DbType type, ParameterDirection direction)
+	public static DataParameter Parameter(string name, DbType type, ParameterDirection direction) => new DataParameter(name, null, type) { Direction = direction };
+
+	public static DataParameter Parameter(string name, object? value, DbType type, int size) => new DataParameter(name, value, type, size);
+
+	public static DataParameter Parameter(string name, object? value, DbType type) => new DataParameter(name, value, type);
+
+	public static DataParameter Parameter(string name, object? value) => new DataParameter(name, value);
+
+	public static DataParameter Parameter(string name, IEnum? value) => new DataParameter(name, value?.Value, DbType.Int32);
+
+	public static DataParameter Parameter<T>(string name, T? value) where T: struct, Enum
 	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, null, type) { Direction = direction };
+		var (dbValue, dbType) = value == null ? (null, DbType.Int32): UnderlyingValue(value);
+		return new DataParameter(name, dbValue, dbType);
 	}
 
-	public static DataParameter Parameter(string name, object? value, DbType type, int size)
+	public static DataParameter Parameter<T>(string name, T value) where T: struct, Enum
 	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? DBNull.Value, type, size);
+		var (dbValue, dbType) = UnderlyingValue(value);
+		return new DataParameter(name, dbValue, dbType);
 	}
 
-	public static DataParameter Parameter(string name, object? value, DbType type)
+	private static (object, DbType) UnderlyingValue(Enum value) => (value.GetTypeCode()) switch
 	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? DBNull.Value, type);
-	}
+		TypeCode.Byte => (((IConvertible)value).ToByte(CultureInfo.InvariantCulture), DbType.Byte),
+		TypeCode.SByte => (((IConvertible)value).ToSByte(CultureInfo.InvariantCulture), DbType.SByte),
+		TypeCode.Int16 => (((IConvertible)value).ToInt16(CultureInfo.InvariantCulture), DbType.Int16),
+		TypeCode.UInt16 => (((IConvertible)value).ToUInt16(CultureInfo.InvariantCulture), DbType.UInt16),
+		TypeCode.Int32 => (((IConvertible)value).ToInt32(CultureInfo.InvariantCulture), DbType.Int32),
+		TypeCode.UInt32 => (((IConvertible)value).ToUInt32(CultureInfo.InvariantCulture), DbType.UInt32),
+		TypeCode.Int64 => (((IConvertible)value).ToInt64(CultureInfo.InvariantCulture), DbType.Int64),
+		TypeCode.UInt64 => (((IConvertible)value).ToUInt64(CultureInfo.InvariantCulture), DbType.UInt64),
+		_ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
+	};
 
-	public static DataParameter Parameter(string name, object? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? DBNull.Value);
-	}
+	public static DataParameter Parameter(string name, bool value) => new DataParameter(name, value, DbType.Boolean);
 
-	public static DataParameter Parameter(string name, bool value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Boolean);
-	}
+	public static DataParameter Parameter(string name, bool? value) => new DataParameter(name, value, DbType.Boolean);
 
-	public static DataParameter Parameter(string name, bool? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Boolean);
-	}
+	public static DataParameter Parameter(string name, byte value) => new DataParameter(name, value, DbType.Byte);
 
-	public static DataParameter Parameter(string name, byte value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Byte);
-	}
+	public static DataParameter Parameter(string name, byte? value) => new DataParameter(name, value, DbType.Byte);
 
-	public static DataParameter Parameter(string name, byte? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Byte);
-	}
+	public static DataParameter Parameter(string name, short value) => new DataParameter(name, value, DbType.Int16);
 
-	public static DataParameter Parameter(string name, short value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Int16);
-	}
+	public static DataParameter Parameter(string name, short? value) => new DataParameter(name, value, DbType.Int16);
 
-	public static DataParameter Parameter(string name, short? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int16);
-	}
+	public static DataParameter Parameter(string name, int value) => new DataParameter(name, value, DbType.Int32);
 
-	public static DataParameter Parameter(string name, int value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Int32);
-	}
+	public static DataParameter Parameter(string name, int? value) => new DataParameter(name, value, DbType.Int32);
 
-	public static DataParameter Parameter(string name, int? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int32);
-	}
+	public static DataParameter Parameter(string name, long value) => new DataParameter(name, value, DbType.Int64);
 
-	public static DataParameter Parameter(string name, long value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Int64);
-	}
+	public static DataParameter Parameter(string name, long? value) => new DataParameter(name, value, DbType.Int64);
 
-	public static DataParameter Parameter(string name, long? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Int64);
-	}
+	public static DataParameter Parameter(string name, decimal value) => new DataParameter(name, value, DbType.Decimal);
 
-	public static DataParameter Parameter(string name, decimal value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Decimal);
-	}
+	public static DataParameter Parameter(string name, decimal? value) => new DataParameter(name, value, DbType.Decimal);
 
-	public static DataParameter Parameter(string name, decimal? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Decimal);
-	}
+	public static DataParameter Parameter(string name, Money value) => new DataParameter(name, value.Amount, DbType.Currency);
 
-	public static DataParameter Parameter(string name, Money value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value.Amount, DbType.Currency);
-	}
+	public static DataParameter Parameter(string name, Money? value) => new DataParameter(name, value?.Amount, DbType.Currency);
 
-	public static DataParameter Parameter(string name, Money? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value?.Amount ?? (object)DBNull.Value, DbType.Currency);
-	}
+	public static DataParameter Parameter(string name, float value) => new DataParameter(name, value, DbType.Single);
 
-	public static DataParameter Parameter(string name, float value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Single);
-	}
+	public static DataParameter Parameter(string name, float? value) => new DataParameter(name, value, DbType.Single);
 
-	public static DataParameter Parameter(string name, float? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Single);
-	}
+	public static DataParameter Parameter(string name, double value) => new DataParameter(name, value, DbType.Double);
 
-	public static DataParameter Parameter(string name, double value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Double);
-	}
+	public static DataParameter Parameter(string name, double? value) => new DataParameter(name, value, DbType.Double);
 
-	public static DataParameter Parameter(string name, double? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Double);
-	}
+	public static DataParameter Parameter(string name, DateTime value) => new DataParameter(name, value, DbType.DateTime2);
 
-	public static DataParameter Parameter(string name, DateTime value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.DateTime2);
-	}
+	public static DataParameter Parameter(string name, DateTime? value) => new DataParameter(name, value, DbType.DateTime2);
 
-	public static DataParameter Parameter(string name, DateTime? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.DateTime2);
-	}
+	public static DataParameter Parameter(string name, TimeSpan value) => new DataParameter(name, value, DbType.Time);
 
-	public static DataParameter Parameter(string name, TimeSpan value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Time);
-	}
+	public static DataParameter Parameter(string name, TimeSpan? value) => new DataParameter(name, value, DbType.Time);
 
-	public static DataParameter Parameter(string name, TimeSpan? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Time);
-	}
+	public static DataParameter Parameter(string name, Guid value) => new DataParameter(name, value, DbType.Guid);
 
-	public static DataParameter Parameter(string name, Guid value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value, DbType.Guid);
-	}
+	public static DataParameter Parameter(string name, Guid? value) => new DataParameter(name, value, DbType.Guid);
 
-	public static DataParameter Parameter(string name, Guid? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Guid);
-	}
+	public static DataParameter Parameter(string name, RowVersion value) => new DataParameter(name, value.ToByteArray(), DbType.Binary);
 
-	public static DataParameter Parameter(string name, RowVersion value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value.ToByteArray(), DbType.Binary);
-	}
+	public static DataParameter Parameter(string name, RowVersion? value) => new DataParameter(name, value?.ToByteArray(), DbType.Binary);
 
-	public static DataParameter Parameter(string name, RowVersion? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value == null ? DBNull.Value: value.Value.ToByteArray(), DbType.Binary);
-	}
+	public static DataParameter Parameter(string name, string? value) => new DataParameter(name, value, DbType.String);
 
-	public static DataParameter Parameter(string name, string? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.String);
-	}
-
-	public static DataParameter Parameter(string name, byte[]? value)
-	{
-		if (name is null)
-			throw new ArgumentNullException(nameof(name));
-		return new DataParameter(name.StartsWith("@", StringComparison.Ordinal) ? name: "@" + name, value ?? (object)DBNull.Value, DbType.Binary);
-	}
+	public static DataParameter Parameter(string name, byte[]? value) => new DataParameter(name, value, DbType.Binary);
 
 	#endregion
 
@@ -303,7 +172,7 @@ public static class Dc
 	public static string Equal(double? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
 	public static string Equal(decimal value) => "=" + value.ToString(CultureInfo.InvariantCulture);
 	public static string Equal(decimal? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	public static string Equal(byte[]? value) => value == null ? IsNullValue: Strings.ToHexString(value, "=0x".AsSpan());
+	public static string Equal(byte[]? value) => value == null ? IsNullValue: Strings.ToHexString(value, "=0x");
 
 	public static string NotEqual(string? value) => value == null ? IsNotNullValue: "<>" + Value(value);
 	public static string NotEqual(DateTime value) => "<>" + Value(value);
@@ -320,14 +189,19 @@ public static class Dc
 	public static string NotEqual(double? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
 	public static string NotEqual(decimal value) => "<>" + value.ToString(CultureInfo.InvariantCulture);
 	public static string NotEqual(decimal? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	public static string NotEqual(byte[]? value) => value == null ? IsNotNullValue: "<>0x" + new String(Strings.ToHexCharArray(value));
+	public static string NotEqual(byte[]? value) => value == null ? IsNotNullValue: Strings.ToHexString(value, "<>0x");
 
 	public static string IdFilter(IEnumerable<int>? ids)
 	{
-		if (ids == null)
+		if (ids is null)
 			return EmptySqlFilter;
-		string result = string.Join(",", ids.Where(o => o > 0));
+#if NETCOREAPP
+		var text = new StringBuilder().Append('(').AppendJoin(',', ids).Append(')');
+		return text.Length == 2 ? EmptySqlFilter : text.ToString();
+#else
+		string result = string.Join(",", ids);
 		return result.Length == 0 ? EmptySqlFilter: "(" + result + ")";
+#endif
 	}
 
 	public static string Id(int value) => value > 0 ? value.ToString(): "0";
@@ -346,7 +220,7 @@ public static class Dc
 		return String.Join("", m.Groups[1].Captures.Cast<Capture>().Select(o => NamePart(o.Value) + ".")) + NamePart(m.Groups[2].Value);
 
 		static string NamePart(string name)
-			=> name.Length == 0 || (name[0] == '[' && name[name.Length - 1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
+			=> name.Length == 0 || (name[0] == '[' && name[^1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
 
 	}
 	private static readonly Regex __objectPartsRex = new Regex(@"\A(?:(?<a>\[(?:[^\]]|]])*\]|[^\.\[]*)\.){0,3}(?<b>.*)?\z", RegexOptions.IgnoreCase);
@@ -357,8 +231,8 @@ public static class Dc
 	{
 		if (value == null)
 			return String.Empty;
-		if (value.Length > 2000)
-			value = value.Substring(0, 2000);
+		if (value.Length > MaxNStrLen)
+			value = value[..MaxNStrLen];
 		return value.Replace("[", "[[]").Replace("_", "[_]").Replace("%", "[%]");
 	}
 
@@ -367,7 +241,7 @@ public static class Dc
 		if (value == null)
 			return NullValue;
 		if (value.Length > MaxStrLen)
-			value = value.Substring(0, MaxStrLen);
+			value = value[..MaxStrLen];
 		return "'" + value.Replace("'", "''") + "'";
 	}
 	public static string Value(string? value, bool unicode)
@@ -377,11 +251,11 @@ public static class Dc
 		if (unicode)
 		{
 			if (value.Length > MaxNStrLen)
-				value = value.Substring(0, MaxNStrLen);
+				value = value[..MaxNStrLen];
 			return "N'" + value.Replace("'", "''") + "'";
 		}
 		if (value.Length > MaxStrLen)
-			value = value.Substring(0, MaxStrLen);
+			value = value[..MaxStrLen];
 		return "'" + value.Replace("'", "''") + "'";
 	}
 	public static string Value(DateTime? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
@@ -402,25 +276,22 @@ public static class Dc
 	public static string Value(Money? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
 	public static string Value(Money value) => value.Amount.ToString(CultureInfo.InvariantCulture);
 	public static string Value(byte[]? value) => value == null ? NullValue: Strings.ToHexString(value, "0x".AsSpan());
+	public static string Value(RowVersion value) => value.ToString();
+	public static string Value(RowVersion? value) =>  value == null ? NullValue: value.GetValueOrDefault().ToString();
 	public static string Value(IEnum? value) => value == null ? NullValue: Value(value.Value);
-	public static string Value(Enum? value)
+	public static string Value<T>(T? value) where T : struct, Enum => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static string Value<T>(T value) where T : struct, Enum => (value.GetTypeCode()) switch
 	{
-		if (value == null)
-			return NullValue;
-
-		return (value.GetTypeCode()) switch
-		{
-			TypeCode.Byte => Value(((IConvertible)value).ToByte(CultureInfo.InvariantCulture)),
-			TypeCode.SByte => Value(((IConvertible)value).ToSByte(CultureInfo.InvariantCulture)),
-			TypeCode.Int16 => Value(((IConvertible)value).ToInt16(CultureInfo.InvariantCulture)),
-			TypeCode.UInt16 => Value(((IConvertible)value).ToUInt16(CultureInfo.InvariantCulture)),
-			TypeCode.Int32 => Value(((IConvertible)value).ToInt32(CultureInfo.InvariantCulture)),
-			TypeCode.UInt32 => Value(((IConvertible)value).ToUInt32(CultureInfo.InvariantCulture)),
-			TypeCode.Int64 => Value(((IConvertible)value).ToInt64(CultureInfo.InvariantCulture)),
-			TypeCode.UInt64 => Value(((IConvertible)value).ToUInt64(CultureInfo.InvariantCulture)),
-			_ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
-		};
-	}
+		TypeCode.Byte => Value(((IConvertible)value).ToByte(CultureInfo.InvariantCulture)),
+		TypeCode.SByte => Value(((IConvertible)value).ToSByte(CultureInfo.InvariantCulture)),
+		TypeCode.Int16 => Value(((IConvertible)value).ToInt16(CultureInfo.InvariantCulture)),
+		TypeCode.UInt16 => Value(((IConvertible)value).ToUInt16(CultureInfo.InvariantCulture)),
+		TypeCode.Int32 => Value(((IConvertible)value).ToInt32(CultureInfo.InvariantCulture)),
+		TypeCode.UInt32 => Value(((IConvertible)value).ToUInt32(CultureInfo.InvariantCulture)),
+		TypeCode.Int64 => Value(((IConvertible)value).ToInt64(CultureInfo.InvariantCulture)),
+		TypeCode.UInt64 => Value(((IConvertible)value).ToUInt64(CultureInfo.InvariantCulture)),
+		_ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
+	};
 	public static string Value(object? value)
 	{
 		if (value == null)
@@ -458,6 +329,7 @@ public static class Dc
 			}
 		};
 	}
+
 	#endregion
 
 	#region Mappers
@@ -528,8 +400,7 @@ public static class Dc
 
 	internal static bool XmlTextMapper(TextWriter text, DbCommand cmd)
 	{
-		if (text == null)
-			throw new ArgumentNullException(nameof(text));
+		if (text == null) throw new ArgumentNullException(nameof(text));
 		bool here = false;
 		using var reader = cmd.ExecuteReader();
 		do
@@ -556,8 +427,7 @@ public static class Dc
 
 	internal static async Task<bool> XmlTextMapperAsync(TextWriter text, DbCommand cmd)
 	{
-		if (text == null)
-			throw new ArgumentNullException(nameof(text));
+		if (text == null) throw new ArgumentNullException(nameof(text));
 		bool here = false;
 #if NET6_0_OR_GREATER
 		await
@@ -587,7 +457,7 @@ public static class Dc
 
 	internal static List<IXmlReadOnlyNode> XmlMapper(DbCommand cmd)
 	{
-		var builder = XmlFragBuilder.Create<IXmlReadOnlyNode>();
+		var builder = XmlNodeBuilder.Create<IXmlReadOnlyNode>();
 		using (var reader = cmd.ExecuteReader())
 		{
 			do
@@ -611,7 +481,7 @@ public static class Dc
 
 	internal static async Task<List<IXmlReadOnlyNode>> XmlMapperAsync(DbCommand cmd)
 	{
-		var builder = XmlFragBuilder.Create<IXmlReadOnlyNode>();
+		var builder = XmlNodeBuilder.Create<IXmlReadOnlyNode>();
 #if NET6_0_OR_GREATER
 		await
 #endif
@@ -664,10 +534,7 @@ public static class Dc
 			Type type = typeof(T);
 			if (__systemTypes.TryGetValue(type, out var f))
 			{
-				return new SortedList<int, Func<object?[], object?>>
-				{
-					{ 1, f },
-				};
+				return new SortedList<int, Func<object?[], object?>>{ { 1, f } };
 			}
 			Type t = Factory.NullableTypeBase(type);
 			if (t.IsEnum)
@@ -888,30 +755,6 @@ public static class Dc
 			{
 				_disposed = true;
 				_context.Context.Audit.UnlockTiming();
-			}
-		}
-	}
-
-	internal sealed class TimeHolder: IContextHolder
-	{
-		private readonly MsSqlDataContext _context;
-		private bool _disposed;
-
-		public TimeHolder(MsSqlDataContext context)
-		{
-			_context = context ?? throw new ArgumentNullException(nameof(context));
-			if (!_context.Context.LockNow(_context.Context.Now))
-				_disposed = true;
-		}
-
-		public IDataContext Context => _context;
-
-		public void Dispose()
-		{
-			if (!_disposed)
-			{
-				_disposed = true;
-				_context.Context.UnlockNow();
 			}
 		}
 	}

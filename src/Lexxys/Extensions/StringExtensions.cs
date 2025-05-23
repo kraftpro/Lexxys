@@ -197,9 +197,9 @@ public static class StringExtensions
 	}
 
 #if !NET8_0_OR_GREATER
-	public static bool StartsWith(this string? value, char c) => value != null && value.Length > 0 && value[0] == c;
+	public static bool StartsWith(this string? value, char c) => value is { Length: > 0 } && value[0] == c;
 
-	public static bool EndsWith(this string? value, char c) => value != null && value.Length > 0 && value[value.Length - 1] == c;
+	public static bool EndsWith(this string? value, char c) => value is { Length: > 0 } && value[^1] == c;
 #endif
 
 	#region String as Value

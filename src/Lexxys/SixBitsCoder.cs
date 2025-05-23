@@ -6,6 +6,7 @@
 //
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Lexxys
@@ -62,8 +63,44 @@ namespace Lexxys
 			if (bits == null)
 				throw new ArgumentNullException(nameof(bits));
 			int len = EncodedLength(bits.Count, true);
-			char[]? arr = len > Tools.SafeStackAllocChar ? ArrayPool<char>.Shared.Rent(len) : null;
+			char[]? arr = len > Tools.MaxStackAllocSizeChar ? ArrayPool<char>.Shared.Rent(len) : null;
 			var mem = arr != null ? arr.AsSpan(0, len): (stackalloc char[len]);
+			var (length, tail) = Encode(bits, mem);
+			if (tail > 0)
+				mem[length] = BitsToChar(tail);
+			var result = mem.ToString();
+			if (arr != null)
+				ArrayPool<char>.Shared.Return(arr);
+			return result;
+		}
+
+		/// <summary>
+		/// Encode byte array <paramref name="bits"/> using 64 characters map.
+		/// </summary>
+		/// <param name="bits">Bytes to encode</param>
+		/// <returns>Encoded string</returns>
+		/// <remarks>
+		/// 1 byte	-> 2 characters	( last char for 01.00xx )
+		/// 2 bytes	-> 3 characters ( last char for 11.xxxx )
+		/// 3 bytes	-> 4 characters
+		/// </remarks>
+		public static string Encode(byte[] bits) => Encode((ReadOnlySpan<byte>)bits);
+
+		/// <summary>
+		/// Encode byte array <paramref name="bits"/> using 64 characters map.
+		/// </summary>
+		/// <param name="bits">Bytes to encode</param>
+		/// <returns>Encoded string</returns>
+		/// <remarks>
+		/// 1 byte	-> 2 characters	( last char for 01.00xx )
+		/// 2 bytes	-> 3 characters ( last char for 11.xxxx )
+		/// 3 bytes	-> 4 characters
+		/// </remarks>
+		public static string Encode(ReadOnlySpan<byte> bits)
+		{
+			int len = EncodedLength(bits.Length, true);
+			char[]? arr = len > Tools.MaxStackAllocSizeChar ? ArrayPool<char>.Shared.Rent(len) : null;
+			var mem = arr != null ? arr.AsSpan(0, len) : (stackalloc char[len]);
 			var (length, tail) = Encode(bits, mem);
 			if (tail > 0)
 				mem[length] = BitsToChar(tail);
@@ -120,6 +157,52 @@ namespace Lexxys
 		}
 
 		/// <summary>
+		/// Encode byte array <paramref name="bits"/> using 64 characters map.
+		/// </summary>
+		/// <param name="bits">Bytes to encode</param>
+		/// <param name="result">Output stream to append encoded characters</param>
+		/// <returns>Last not encoded bits</returns>
+		private static (int Length, int Tail) Encode(ReadOnlySpan<byte> bits, Span<char> result)
+		{
+			if (bits.Length == 0)
+				return (0, 0);
+			if (EncodedLength(bits.Length, false) > result.Length)
+				throw new ArgumentOutOfRangeException(nameof(result), result.Length, null);
+			int i = 0;
+			for (;;)
+			{
+				if (bits.Length == 0)
+					return (i, 0);
+				int a = bits[0];
+				bits = bits[1..];
+				if (bits.Length == 0)
+				{
+					// yy|xxxxxx
+					result[i++] = BitsToChar(a);
+					return (i, (2 << 8) | (a >> 6));
+				}
+				int b = bits[0];
+				bits = bits[1..];
+				if (bits.Length == 0)
+				{
+					// [yyyy|xxxx] [xx|xxxxxx]
+					a = b << 8 | a;
+					result[i++] = BitsToChar(a);
+					result[i++] = BitsToChar(a >> 6);
+					return (i, (4 << 8) | (a >> 12));
+				}
+				int c = bits[0];
+				bits = bits[1..];
+				// xxxxxx|xx xxxx|xxxx xx|xxxxxx|
+				a = c << 16 | b << 8 | a;
+				result[i++] = BitsToChar(a);
+				result[i++] = BitsToChar(a >> 6);
+				result[i++] = BitsToChar(a >> 12);
+				result[i++] = BitsToChar(a >> 18);
+			}
+		}
+
+		/// <summary>
 		/// Encode byte array <paramref name="bits"/> using 32 characters map.
 		/// </summary>
 		/// <param name="bits">Bytes to encode</param>
@@ -132,7 +215,7 @@ namespace Lexxys
 				return String.Empty;
 
 			int len = (bits.Count * 8 + 4) / 5;
-			char[]? arr = len > Tools.SafeStackAllocChar ? ArrayPool<char>.Shared.Rent(len): null;
+			char[]? arr = len > Tools.MaxStackAllocSizeChar ? ArrayPool<char>.Shared.Rent(len): null;
 			var mem = arr != null ? arr.AsSpan(0, len): (stackalloc char[len]);
 			int n = 0;
 			int k = 0;
@@ -253,15 +336,25 @@ namespace Lexxys
 		/// <returns>Generated string</returns>
 		public static string GenerateSessionId()
 		{
-			byte[] bits = Guid.NewGuid().ToByteArray();
-			Span<char> mem = stackalloc char[24];
-			var (_, tail) = Encode(bits, mem);
+#if NET9_0_OR_GREATER
+			var guid = Guid.CreateVersion7();
+#else
+			var guid = Guid.NewGuid();
+#endif
+			Span<byte> bits = stackalloc byte[16];
+#if NETCOREAPP
+			MemoryMarshal.TryWrite(bits, in guid);
+#else
+			MemoryMarshal.TryWrite(bits, ref guid);
+#endif
+			Span<char> chars = stackalloc char[24];
+			var (_, tail) = Encode(bits, chars);
 
-			int q = ((HashCode(mem[..21]) & 0xFFFF) << 2) | (tail & 3);
-			mem[21] = BitsToChar(q);
-			mem[22] = BitsToChar(q >> 6);
-			mem[23] = BitsToChar(q >> 12);
-			return mem.ToString();
+			int q = ((StringHashCode(chars[..21]) & 0xFFFF) << 2) | (tail & 3);
+			chars[21] = BitsToChar(q);
+			chars[22] = BitsToChar(q >> 6);
+			chars[23] = BitsToChar(q >> 12);
+			return chars.ToString();
 		}
 
 		/// <summary>
@@ -274,7 +367,7 @@ namespace Lexxys
 			if (sessionId is not { Length: 24 })
 				return false;
 			var s = sessionId.AsSpan();
-			int q = HashCode(s[..21]) & 0xFFFF;
+			int q = StringHashCode(s[..21]) & 0xFFFF;
 			int k = (CharToBits(s[21]) | (CharToBits(s[22]) << 6) | (CharToBits(s[23]) << 12));
 			return ((k >> 2) == q);
 		}
@@ -364,15 +457,75 @@ namespace Lexxys
 					result = result * 36 + (ulong)j;
 			}
 			return result;
+		}
 
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			static int Index(char c) => c switch
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static int Index(char c) => c switch
+		{
+			>='0' and <= '9' => c - '0',
+			>='A' and <= 'Z' => c - ('A' - ('9' - '0' + 1)),
+			>='a' and <= 'z' => c - ('a' - ('9' - '0' + 1)),
+			_ => -1
+		};
+
+		public static string Thirty(ReadOnlySpan<ulong> value)
+		{
+			if (value.Length == 0)
+				return "0";
+			int len = value.Length * 15;
+			
+			char[]? array = null;
+			Span<char> buffer = len <= Tools.MaxStackAllocSizeChar ? stackalloc char[len] : (array = ArrayPool<char>.Shared.Rent(len));
+			int i = buffer.Length;
+			for(int j = value.Length - 1; j >= 0; --j)
 			{
-				>='0' and <= '9' => c - '0',
-				>='A' and <= 'Z' => c - ('A' - ('9' - '0' + 1)),
-				>='a' and <= 'z' => c - ('a' - ('9' - '0' + 1)),
-				_ => -1
-			};
+				ulong val = value[j];
+				if (val == 0)
+				{
+					buffer[--i] = '0';
+					continue;
+				}
+				int k = i;
+				while (val > 0)
+				{
+					buffer[--i] = CharLin3L[(int)(val % 36)];
+					val /= 36;
+				}
+				char c = CharLin3L[k - i];
+				buffer[--i] = c;
+			}
+			string result = buffer.Slice(i).ToString();
+			if (array != null)
+				ArrayPool<char>.Shared.Return(array);
+			return result;
+		}
+
+		public static (ulong Value, int Index) ThirtyNext(ReadOnlySpan<char> value)
+		{
+			if (value.Length == 0)
+				return (0, 0);
+			int len = value.Length * 15;
+
+			int i = 0;
+			int n;
+			do
+			{
+				n = Index(value[i++]);
+			}
+			while (n < 0 && i < value.Length);
+			if (n < 0)
+				return (0, 0);
+
+			ulong result = 0;
+			while (i < value.Length && n > 0)
+			{
+				int k = Index(value[i++]);
+				if (k < 0)
+					continue;
+				result = result * 36 + (ulong)k;
+				--n;
+			}
+			return (result, i);
 		}
 
 		/// <summary>
@@ -464,16 +617,16 @@ namespace Lexxys
 		public static int DecodeId(string? value, uint encodeMult, ulong encodeMask)
 			=> DecodeId(value, encodeMult, encodeMask, Sixty);
 
-		private static int HashCode(ReadOnlySpan<char> value)
+		private static int StringHashCode(ReadOnlySpan<char> value)
 		{
 			if (value.Length == 0)
 				return 0;
-			int code = 1234567891;
-			foreach (char t in value)
+			int hash = 0x15051505;
+			foreach (var c in value)
 			{
-				code += (code << 3) + t;
+				hash = ((hash << 5) + hash) ^ c;
 			}
-			return code & Int32.MaxValue;
+			return hash & int.MaxValue;
 		}
 	}
 }

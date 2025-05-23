@@ -231,13 +231,17 @@ dotnet_naming_rule.const_should_be_pascal_case.severity = suggestion
 dotnet_naming_rule.const_should_be_pascal_case.symbols = const
 dotnet_naming_rule.const_should_be_pascal_case.style = pascal_case
 
-dotnet_naming_rule.private_or_internal_field_should_be__filedname.severity = suggestion
-dotnet_naming_rule.private_or_internal_field_should_be__filedname.symbols = private_or_internal_field
-dotnet_naming_rule.private_or_internal_field_should_be__filedname.style = _filedname
-
 dotnet_naming_rule.static_readonly_field_should_be_pascal_case.severity = suggestion
 dotnet_naming_rule.static_readonly_field_should_be_pascal_case.symbols = static_readonly_field
 dotnet_naming_rule.static_readonly_field_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_rule.static_readonly_field_may_be_pascal_case.severity = suggestion
+dotnet_naming_rule.static_readonly_field_may_be_pascal_case.symbols = private_or_internal_field
+dotnet_naming_rule.static_readonly_field_may_be_pascal_case.style = pascal_case
+
+dotnet_naming_rule.private_or_internal_field_should_be__fieldname.severity = suggestion
+dotnet_naming_rule.private_or_internal_field_should_be__fieldname.symbols = private_or_internal_field
+dotnet_naming_rule.private_or_internal_field_should_be__fieldname.style = _fieldname
 
 dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.severity = suggestion
 dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.symbols = private_static_readonly_field
@@ -293,12 +297,15 @@ dotnet_naming_style.begins_with_i.required_suffix =
 dotnet_naming_style.begins_with_i.word_separator = 
 dotnet_naming_style.begins_with_i.capitalization = pascal_case
 
-dotnet_naming_style._filedname.required_prefix = _
-dotnet_naming_style._filedname.required_suffix = 
-dotnet_naming_style._filedname.word_separator = 
-dotnet_naming_style._filedname.capitalization = camel_case
+dotnet_naming_style._fieldname.required_prefix = _
+dotnet_naming_style._fieldname.required_suffix = 
+dotnet_naming_style._fieldname.word_separator = 
+dotnet_naming_style._fieldname.capitalization = camel_case
 
 dotnet_naming_style.__fieldname.required_prefix = __
 dotnet_naming_style.__fieldname.required_suffix = 
 dotnet_naming_style.__fieldname.word_separator = 
 dotnet_naming_style.__fieldname.capitalization = camel_case
+
+# CA1510: Use ArgumentNullException throw helper
+dotnet_diagnostic.CA1510.severity = silent

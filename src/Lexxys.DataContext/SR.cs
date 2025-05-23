@@ -13,10 +13,10 @@ internal static class SR
 {
 	public static readonly CultureInfo Culture = Lexxys.SR.Culture;
 
-	public static string ConnectionInitialized(Data.ConnectionStringInfo connectionInfo)
+	public static string ConnectionInitialized(ConnectionStringInfo connectionInfo)
 		=> String.Format(Culture, "Connection initialized: {0}", connectionInfo);
 
-	public static string ConnectionChanged(Data.ConnectionStringInfo connectionInfo)
+	public static string ConnectionChanged(ConnectionStringInfo connectionInfo)
 		=> String.Format(Culture, "Connection changed: {0}", connectionInfo);
 
 	public static string ConnectionTiming(long timeValue)

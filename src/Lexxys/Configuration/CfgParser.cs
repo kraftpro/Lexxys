@@ -1,12 +1,7 @@
-﻿using System;
-using System.Globalization;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.Text;
 
 using Lexxys.Tokenizer;
 using Lexxys.Xml;
-
-using Microsoft.Extensions.Options;
 
 namespace Lexxys.Configuration;
 
@@ -14,7 +9,7 @@ public ref partial struct CfgParser
 {
 	private readonly TokenScanner _nodeScanner;
 	private readonly TokenScanner _nodeValueScanner;
-	private readonly TokenScanner _attribValueScanner;
+	private readonly TokenScanner _paramValueScanner;
 	private readonly TokenScanner _optionNameScanner;
 	private readonly TokenScanner _optionValueScanner;
 	private readonly TokenScanner _nodeArgumentsScanner;
@@ -45,7 +40,7 @@ public ref partial struct CfgParser
 		_back.Reset();
 		_nodeScanner.ResetParser();
 		_nodeValueScanner.ResetParser();
-		_attribValueScanner.ResetParser();
+		_paramValueScanner.ResetParser();
 		_optionNameScanner.ResetParser();
 		_nodeArgumentsScanner.ResetParser();
 		_objectScanner.ResetParser();
@@ -89,18 +84,18 @@ public ref partial struct CfgParser
 		var text = new StringBuilder(value.Length * 2);
 		do
 		{
-			text.Append(s.Slice(0, i));
-			s = s.Slice(i);
+			text.Append(s[..i]);
+			s = s[i..];
 			int j = s.IndexOf(EndMacro);
 			if (j < 0)
 				break;
-			var macro = s.Slice(3, j - 3).Trim();
+			var macro = s[3..j].Trim();
 			ReadOnlySpan<char> defaultValue = default;
 			int k = macro.IndexOf('|');
 			if (k >= 0)
 			{
-				defaultValue = macro.Slice(k + 1).TrimStart();
-				macro = macro.Slice(0, k).TrimEnd();
+				defaultValue = macro[(k + 1)..].TrimStart();
+				macro = macro[..k].TrimEnd();
 			}
 			string? subst = macro.Length > 0 ? macros.GetValue(macro.ToString()): null;
 			if (subst != null)
@@ -108,8 +103,8 @@ public ref partial struct CfgParser
 			else if (defaultValue.Length > 0)
 				text.Append(defaultValue);
 			else
-				text.Append(s.Slice(0, j + 2));
-			s = s.Slice(j + 2);
+				text.Append(s[..(j + 2)]);
+			s = s[(j + 2)..];
 			i = s.IndexOf(BeginMacro);
 		} while (i >= 0);
 		text.Append(s);
@@ -194,8 +189,7 @@ public ref partial struct CfgParser
 
 	private void PushNode(Node value)
 	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
+		if (value == null) throw new ArgumentNullException(nameof(value));
 		_nodePath.Add(value.Name);
 	}
 
@@ -274,7 +268,6 @@ public ref partial struct CfgParser
 			throw SyntaxException(token, stream, SR.ExpectedNodeName());
 
 		string nodeName = GetStringValue(token, stream);
-		int at = stream.Position;
 		bool attribute = false;
 		int i = SkipSpace(stream);
 		if (stream[i] is '=' or ':')

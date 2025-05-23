@@ -3,7 +3,9 @@ using Lexxys.Xml;
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Lexxys.Configuration;
 
@@ -45,13 +47,14 @@ public ref partial struct CfgParser
 				(PARAMETER, "("),               // begin of parameters list
 				(OBJECT, "{"),                  // begin of parameters list
 				(ARRAY, "[")),                  // begin of array
-			new TextLineTokenRule());
-		_attribValueScanner = new TokenScanner(
+			new PlainValueTokenRule());
+
+		_paramValueScanner = new TokenScanner(
 			new WhiteSpaceTokenRule(false, true),
 			new CommentsTokenRule(LexicalTokenType.IGNORE, Comments),
 			new StringTokenRule('`'),
 			new InlineTextTokenRule(),
-			new TextLineTokenRule());
+			new PlainValueTokenRule());
 
 		_objectScanner = new TokenScanner(
 			new WhiteSpaceTokenRule(),
@@ -66,8 +69,8 @@ public ref partial struct CfgParser
 			new SequenceTokenRule(TOKEN, (END, ")")) { RuleName = "Param" },
 			new SequenceTokenRule(TOKEN, (END, "}")) { RuleName = "Object" },
 			new NodeNameRule(TEXT, Macro) { RuleName = "Name" },
-			new TextTokenRule(TEXT, ";,)") { RuleName = "Param" },
-			new TextTokenRule(TEXT, ";,}") { RuleName = "Object" });
+			new PlainItemTokenRule(TEXT, ";,)") { RuleName = "Param" },
+			new PlainItemTokenRule(TEXT, ";,}") { RuleName = "Object" });
 
 		_arrayScanner = new TokenScanner(
 			new WhiteSpaceTokenRule(),
@@ -79,7 +82,7 @@ public ref partial struct CfgParser
 				(ARRAY, "["),                   // begin of array
 				(END_ARRAY, "]")
 				),
-			new TextTokenRule(TEXT, ";,]"));
+			new PlainItemTokenRule(TEXT, ";,]"));
 
 		// parse option name: ['$' | '#' ] name [ ':' | '=' ]
 		_optionNameScanner = new TokenScanner(
@@ -96,14 +99,14 @@ public ref partial struct CfgParser
 				(ARRAY, "["),
 				(PARAMETER, "("),
 				(OBJECT, "{")),
-			new TextTokenRule(TEXT, ","));                              // use text as a token except using comma as a separator
+			new PlainItemTokenRule(TEXT, ","));                              // use text as a token except using comma as a separator
 
 		_nodeArgumentsScanner = new TokenScanner(
 			new WhiteSpaceTokenRule(false, true),                       // ignore spaces except new line
 			new CommentsTokenRule(LexicalTokenType.IGNORE, Comments),   // ignore comments
 			new SequenceTokenRule(SEPARATOR, ","),                      // use comma as a separator
 			new InlineTextTokenRule(),                                  // allow multiline text
-			new TextTokenRule(TEXT, ","));                              // use text as a token except using comma as a separator
+			new PlainItemTokenRule(TEXT, ","));                              // use text as a token except using comma as a separator
 	}
 
 	private static readonly string[] CommaSemicolon = [",", ";"];
@@ -135,29 +138,11 @@ public ref partial struct CfgParser
 	private const char OBJECT_MARK = '{';
 	private const char PARAM_MARK = '(';
 
-	private static readonly char[] Whitespace = [
-		'\t', '\v', '\f', '\r', '\n', ' ',
-		'\u0085', '\u00A0', '\u1680',
-		'\u180E', // not marked as whitespace unicode
-		'\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200A',
-		'\u200B', '\u200C', '\u200D', // not marked as whitespace unicode
-		'\u2028', '\u2029', '\u202F', '\u205F',
-		'\u2060', // not marked as whitespace unicode
-		'\u3000',
-		'\uFEFF' // not marked as whitespace unicode
-		];
-#if NET8_0_OR_GREATER
-	private static readonly SearchValues<char> WhitespaceValues = SearchValues.Create("\t\v\f\r\n \u0085\u00A0\u1680\u180E\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u200B\u200C\u200D\u2028\u2029\u202F\u205F\u2060\u3000\uFEFF");
-#else
-	private static readonly char[] WhitespaceValues = Whitespace;
-#endif
-
-	private static int SkipSpace(in CharStream stream)
+	private static int SkipSpace(in CharStream stream, int index = 0)
 	{
-		int i = 0;
-		while (IsSpace(stream[i]))
-			++i;
-		return i;
+		while (IsSpace(stream[index]))
+			++index;
+		return index;
 	}
 
 	private static bool IsSpace(char ch) => ch < 127 ?
@@ -276,6 +261,8 @@ public ref partial struct CfgParser
 		}
 	}
 
+	private static bool IsWhiteSpace(char value) => value <= '\xFF' ? value is <= ' ' or >= '\x7f' and <= '\xa0' : Char.IsWhiteSpace(value);
+
 	/// <summary>
 	/// Rule to parse node name.
 	/// Name can be a string or starts with a letter or underscore, '@', '$' and may contain letters, digits, underscores, and special characters except one of "[](){}:=,;".
@@ -309,7 +296,7 @@ public ref partial struct CfgParser
 			for (; i < span.Length; ++i)
 			{
 				char ch = span[i];
-				if (ch < 127 ? ch <= ' ': Char.IsWhiteSpace(ch))
+				if (IsWhiteSpace(ch))
 					break;
 				if (ch is '[' or '{' or '(' or ')' or ']' or '}' or ':' or '=' or ',' or ';')
 					break;
@@ -611,20 +598,18 @@ public ref partial struct CfgParser
 	//}
 
 
-	private class TextTokenRule: LexicalTokenRule
+	private class PlainItemTokenRule: LexicalTokenRule
 	{
 		private readonly LexicalTokenType _tokenType;
 		private readonly string? _separators;
 
-		public TextTokenRule(LexicalTokenType tokenType, string? separators)
+		public PlainItemTokenRule(LexicalTokenType tokenType, string? separators)
 		{
 			_tokenType = tokenType;
 			_separators = separators;
 		}
 
 		public override bool TestBeginning(char ch) => !(_separators != null && _separators.Contains(ch) || IsWhiteSpace(ch));
-
-		private static bool IsWhiteSpace(char ch) => ch < 127 ? ch <= ' ' : Char.IsWhiteSpace(ch);
 
 		//public override LexicalToken TryParse(ref CharStream stream)
 		//{
@@ -717,13 +702,17 @@ public ref partial struct CfgParser
 		{
 			if (stream[0] == '"' || stream[0] == '\'')
 				return ParseString(LexicalTokenType.STRING, ref stream);
-			var separators = _separators == null ? Whitespace: [.._separators, ..Whitespace];
-			int i = stream.IndexOfAny(separators);
+			int i = _separators == null ?
+				stream.IndexOf(c => IsWhiteSpace(c)):
+				stream.IndexOf(c => _separators.Contains(c) || IsWhiteSpace(c));
 			return i <= 0 ? stream.Token(_tokenType, stream.Length) : stream.Token(_tokenType, i);
 		}
 	}
 
-	private class TextLineTokenRule: LexicalTokenRule
+	/// <summary>
+	/// Scans a plain value token.
+	/// </summary>
+	private class PlainValueTokenRule: LexicalTokenRule
 	{
 		private readonly LexicalTokenType _tokenType = TEXT;
 
@@ -742,131 +731,80 @@ public ref partial struct CfgParser
 			if (n == 0)
 				return LexicalToken.Empty;
 
-			if (stream[0] == '`')
-			{
-				stream.Forward(1);
-				return stream.Token(_tokenType, n - 1);
-			}
-
-			LexicalToken token;
 			var s = stream.Slice(0, n);
-			int i = s.IndexOfAny(BeginComments);
+			int i = BeginOfComment(s);
 			if (i < 0)
 			{
-				var t = s.TrimEnd();
-				token = new LexicalToken(_tokenType, stream.Position, t.Length);
+				s = s.TrimEnd();
+				var token = new LexicalToken(_tokenType, stream.Position, s.Length);
+				stream.Forward(n);
+				return token;
+			}
+			if (s[i] == '#')
+			{
+				if (i == 0)
+					return LexicalToken.Empty;
+				s = s[..i].TrimEnd();
+				var token = new LexicalToken(_tokenType, stream.Position, s.Length);
 				stream.Forward(n);
 				return token;
 			}
 
-			string? left = null;
-			ReadOnlySpan<char> beginComments = BeginComments;
-			do
+			string left = s[..i].ToString();
+			var position = stream.Position;
+			while (true)
 			{
-				if (i != 0 && !IsWhiteSpace(s[i - 1]))
+				stream.Forward(i);
+				i = stream.IndexOf("#>", 2);
+				if (i < 0)
+					return new LexicalToken(_tokenType, position, n, (_, _) => left);
+				stream.Forward(i + 2);
+				n = stream.IndexOfAny(CrLf);
+				if (n < 0)
+					n = stream.Length;
+				s = stream.Slice(0, n);
+				i = BeginOfComment(s);
+				if (i < 0)
 				{
-					int k = s.Slice(i + 1).IndexOfAny(beginComments);
-					if (k < 0)
-						break;
-					i += k + 1;
-					continue;
+					left += s.TrimEnd().ToString();
+					left = left.TrimEnd();
+					var token = new LexicalToken(_tokenType, position, stream.Position - position + n, (_, _) => left);
+					stream.Forward(n);
+					return token;
 				}
-
-				var c = s[i];
-				if (c == '#')
+				left += s[..i].ToString();
+				if (s[i] == '#')
 				{
-					s = s.Slice(0, i);
-					break;
+					left = left.TrimEnd();
+					var token = new LexicalToken(_tokenType, position, stream.Position - position + i, (_, _) => left);
+					stream.Forward(n);
+					return token;
 				}
-
-				if (i + 1 >= s.Length)
-					break;
-
-				if (c == '<')
-				{
-					if (s[i + 1] == '#')
-					{
-						int j = s.Slice(i + 2).IndexOf("#>".AsSpan());
-						if (j < 0) // Multiline comments in value
-						{
-							n -= s.Length - i;
-							s = s.Slice(0, i);
-							break;
-						}
-
-						if (left == null)
-							left = s.Slice(0, i).ToString();
-						else
-#if NET5_0_OR_GREATER
-							left = String.Concat(left, s.Slice(0, i));
-#else
-							left += s.Slice(0, i).ToString();
-#endif
-
-						s = s.Slice(i + 2 + j + 2);
-						i = -1;
-					}
-				}
-				else // if (c == '/')
-				{
-					var c2 = s[i + 1];
-					if (c2 == '/')
-					{
-						s = s.Slice(0, i);
-						break;
-					}
-
-					if (c2 == '*')
-					{
-						int j = s.Slice(i + 2).IndexOf("*/".AsSpan());
-						if (j < 0) // Multiline comments in value
-						{
-							n -= s.Length - i;
-							s = s.Slice(0, i);
-							break;
-						}
-
-						if (left == null)
-							left = s.Slice(0, i).ToString();
-						else
-#if NET5_0_OR_GREATER
-							left = String.Concat(left, s.Slice(0, i));
-#else
-							left += s.Slice(0, i).ToString();
-#endif
-						s = s.Slice(i + 2 + j + 2);
-						--i;
-					}
-				}
-
-				{
-					int k = s.Slice(i + 1).IndexOfAny(beginComments);
-					if (k < 0)
-						break;
-					i += k + 1;
-				}
-			} while (i >= 0);
-
-			s = s.TrimEnd();
-			if (left is null)
-			{
-				token = new LexicalToken(_tokenType, stream.Position, s.Length);
 			}
-			else
+
+			static int BeginOfComment(ReadOnlySpan<char> s)
 			{
-#if NET5_0_OR_GREATER
-				string value = String.Concat(left, s);
-#else
-				string value = left + s.ToString();
-#endif
-				token = new LexicalToken(_tokenType, stream.Position, n, (_, _) => value);
+				int k = 0;
+				while (true)
+				{
+					int i = s.IndexOfAny(BeginComments);
+					if (i < 0)
+						return -1;
+					if (i > 0 && IsWhiteSpace(s[i - 1]))
+					{
+						if (s[i] == '#')
+							return k + i;
+						if (s.Length < i + 2)
+							return -1;
+						if (s[i + 1] == '#')
+							return k + i;
+					}
+					s = s.Slice(i + 1);
+					k += i + 1;
+				}
 			}
-			stream.Forward(n);
-			return token;
 		}
-		private static readonly char[] BeginComments = ['/', '#', '<'];
-
-		private static bool IsWhiteSpace(char value) => value <= '\xFF' ? value is <= ' ' or >= '\x7f' and <= '\xa0' : Char.IsWhiteSpace(value);
+		private static readonly char[] BeginComments = ['#', '<'];
 	}
 
 	private class InlineTextTokenRule: LexicalTokenRule
@@ -893,56 +831,71 @@ public ref partial struct CfgParser
 			int width = 0;
 			while (stream[width] == Begin)
 				++width;
-			if (width < 2)
+			if (!IsWhiteSpace(stream[width]))
 				return LexicalToken.Empty;
 
 			int at = stream.Position;
 
-			int i = stream.IndexOfAny(CrLf, 2);
+			int i = stream.IndexOfAny(CrLf);
 			if (i < 0)
 				return LexicalToken.Empty;
-			stream.Forward(i + stream.NewLineSize(i));
-
-			bool nl = true;
-			int count = 0;
-
-			i = stream.IndexOf(ch =>
+			var s = stream.Slice(width, i - width).Trim();
+			if (s.Length > 0 && s[0] != '#')
 			{
-				if (Char.IsWhiteSpace(ch))
-				{
-					if (ch is not ('\n' or '\r'))
-						return false;
-					nl = true;
-					count = 0;
-					return false;
-				}
-				if (ch == End)
-				{
-					if (nl)
-						return ++count == width;
-					count = 0;
-					return false;
-				}
+				if (!s.StartsWith("<#"))
+					return LexicalToken.Empty;
 
-				nl = false;
-				return false;
-			});
-			if (i < 0)
-			{
-				stream.Move(at);
-				return LexicalToken.Empty;
+				int j = stream.IndexOf("<#");
+				for (;;)
+				{
+					Debug.Assert(j > 0);
+					j = stream.IndexOf("#>", j + 2);
+					j = SkipSpace(in stream, j);
+					if (stream[j] is '\n' or '\r')
+					{
+						i = j;
+						break;
+					}
+					if (stream[j] == '#')
+					{
+						i = stream.IndexOfAny(CrLf, j);
+						if (i < 0)
+							return LexicalToken.Empty;
+						break;
+					}
+					if (stream.Slice(j, 2) != "<#")
+						return LexicalToken.Empty;
+				}
 			}
 
-			var slice = stream.Slice(0, i - width + 1);
-			stream.Forward(i + 1);
-			i = slice.LastIndexOfAny(CrLf);
-			if (i <= 0)
-				return new LexicalToken(_tokenType, at, stream.Position - at, (_, _) => String.Empty);
-			if (slice[i - 1] == (slice[i] == '\n' ? '\r' : '\n'))
+			stream.Forward(i + stream.NewLineSize(i));
+			Span<char> end = stackalloc char[width];
+			for (int j = 0; j < width; ++j)
+				end[j] = End;
+
+			i = 0;
+			int k = 0;
+			for (;;)
+			{
+				k = stream.IndexOf(end, i);
+				if (k < 0)
+					return new LexicalToken(LexicalTokenType.ERROR, stream.Position, i, (_, _) => "End of file reached in multiline text");
+				i = k;
+				while (i > 0 && IsSpace(stream[i - 1]))
+					--i;
+				k += width;
+				if (stream[i] is '\n' or '\r' && IsWhiteSpace(stream[k]))
+					break;
+				i = k;
+			}
+			--i;
+			if (stream[i] == '\r' ? stream[i + 1] == '\n': stream[i + 1] == '\r')
 				--i;
-			var text = Strings.CutIndents(slice.Slice(0, i), stream.TabSize);
+			var text = Strings.CutIndents(stream.Slice(0, i), stream.TabSize);
+			stream.Forward(k);
 			return new LexicalToken(_tokenType, at, stream.Position - at, (_, _) => text);
 		}
 	}
+
 	private static readonly char[] CrLf = ['\r', '\n'];
 }

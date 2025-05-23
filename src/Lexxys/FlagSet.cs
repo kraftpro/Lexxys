@@ -13,6 +13,13 @@ using System.Text;
 
 namespace Lexxys;
 
+/// <summary>
+/// Represents a set of flags that can be used in SQL query conditions.
+/// <para>
+/// Example: <c>SELECT * FROM Items WHERE Flags like '%;RED:%'</c><br />
+/// where <c>Flags</c> is a column of type <c>varchar</c> and contains values like <c>';RED:;BLUE:XY:;'</c>.
+/// </para>
+/// </summary>
 [DebuggerDisplay("Count = {Count}")]
 [Serializable]
 public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<FlagSet>
@@ -63,7 +70,7 @@ public sealed class FlagSet: ISet<string>, IReadOnlySet<string>, IEquatable<Flag
 		static bool IsBlankOrDelimiter(char c) => IsBlank(c) || c is NameDelimiter or GroupDelimiter;
 		static bool IsBlank(char c) => c is <= '\u0020' or >= '\u007F' and <= '\u00A0' or >= '\uD800';
 
-		char[]? mem = s.Length > Tools.SafeStackAllocChar ? ArrayPool<char>.Shared.Rent(s.Length): null;
+		char[]? mem = s.Length > Tools.MaxStackAllocSizeChar ? ArrayPool<char>.Shared.Rent(s.Length): null;
 		var buf = mem == null ? stackalloc char[s.Length]: mem.AsSpan();
 		int n = 0;
 		bool colon = false;

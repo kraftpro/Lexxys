@@ -77,12 +77,6 @@ public interface IDataContext: IDisposable
 	IContextHolder NoTiming();
 
 	/// <summary>
-	/// Sets Dc.Now to be returning the same value inside the disposable region.
-	/// </summary>
-	/// <returns></returns>
-	IContextHolder HoldTheMoment();
-
-	/// <summary>
 	/// Connects to the database and keeps the connection open inside the disposable region.
 	/// </summary>
 	/// <returns></returns>

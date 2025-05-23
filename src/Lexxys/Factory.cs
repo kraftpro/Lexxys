@@ -762,9 +762,7 @@ public static class Factory
 		if (typeName is not { Length: >0 }) throw new ArgumentNullException(nameof(typeName));
 
 		Type? type = GetType(typeName);
-		if (type == null) throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
-
-		return Construct(type);
+		return type != null ? Construct(type): throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
 	}
 
 	public static object Construct(string typeName, params object?[] parameters)
@@ -772,9 +770,7 @@ public static class Factory
 		if (typeName is not { Length: >0 }) throw new ArgumentNullException(nameof(typeName));
 
 		Type? type = GetType(typeName);
-		if (type == null) throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
-
-		return Construct(type, parameters);
+		return type != null ? Construct(type, parameters): throw new ArgumentOutOfRangeException(nameof(typeName), typeName, null);
 	}
 
 	public static object? TryConstruct(string typeName)
@@ -954,7 +950,7 @@ public static class Factory
 			ConvertParameter(Expression.ArrayAccess(args, Expression.Constant(0)), parameterType),
 			args)
 #if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo);
+			.Compile(DebugInfo)!;
 #else
 			.Compile();
 #endif
@@ -975,7 +971,7 @@ public static class Factory
 
 		return Expression.Lambda<Func<object?[], object>>(call, args)
 #if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo);
+			.Compile(DebugInfo)!;
 #else
 			.Compile();
 #endif
@@ -1253,7 +1249,7 @@ public static class Factory
 
 		return Expression.Lambda<Func<object?, object?[], object?>>(call, arg0, args)
 #if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo);
+			.Compile(DebugInfo)!;
 #else
 			.Compile();
 #endif
@@ -1275,7 +1271,7 @@ public static class Factory
 
 		return Expression.Lambda<Func<object?, object?>>(call, arg0)
 #if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo);
+			.Compile(DebugInfo)!;
 #else
 			.Compile();
 #endif
@@ -1302,7 +1298,7 @@ public static class Factory
 
 		return Expression.Lambda<Func<object?, object?, object?>>(call, arg0, arg1)
 #if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo);
+			.Compile(DebugInfo)!;
 #else
 			.Compile();
 #endif
@@ -1330,7 +1326,7 @@ public static class Factory
 
 		return Expression.Lambda<Func<object?, object?, object?, object?>>(call, arg0, arg1, arg2)
 #if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo);
+			.Compile(DebugInfo)!;
 #else
 			.Compile();
 #endif
@@ -1349,7 +1345,7 @@ public static class Factory
 
 		return Expression.Lambda<Func<object?, object?[], object?>>(call, instance, args)
 #if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo);
+			.Compile(DebugInfo)!;
 #else
 			.Compile();
 #endif

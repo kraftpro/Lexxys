@@ -4,82 +4,57 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
-using System.Linq;
-
-#pragma warning disable CA2225 // Operator overloads have named alternates
-#pragma warning disable CA1062 // Validate arguments of public methods
-#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 
 namespace Lexxys.Data;
 
-public interface IFieldsCollection: IEnumerable<AField>
+public interface IFieldsCollection: IEnumerable<IDbField>
 {
 	int Count { get; }
-	AField this[string index] { get; }
-	AField this[int index] { get; }
+	IDbField this[string index] { get; }
+	IDbField this[int index] { get; }
 }
 
-public abstract class AField
+public interface IDbField
 {
-	public abstract string Name { get; }
-	public abstract object Value { get; set; }
-	public abstract DbType Type { get; }
+	public string Name { get; }
+	public object? Value { get; set; }
+	public DbType Type { get; }
 
-	public abstract bool? GetBoolean();
-	public abstract short? GetInt16();
-	public abstract int? GetInt32();
-	public abstract long? GetInt64();
-	public abstract double? GetDouble();
-	public abstract DateTime? GetDateTime();
-	public abstract string? GetString();
-	public abstract decimal? GetDecimal();
-	public abstract byte[]? GetBytes();
-	public abstract Guid? GetGuid();
-	public abstract RowVersion? GetRowVersion();
-
-#pragma warning disable CS8629 // Nullable value type may be null.
-	public static explicit operator bool(AField value) => value.GetBoolean().Value;
-	public static explicit operator bool?(AField value) => value.GetBoolean();
-	public static explicit operator short(AField value) => value.GetInt16().Value;
-	public static explicit operator short?(AField value) => value.GetInt16();
-	public static explicit operator int(AField value) => value.GetInt32().Value;
-	public static explicit operator int?(AField value) => value.GetInt32();
-	public static explicit operator long(AField value) => value.GetInt64().Value;
-	public static explicit operator long?(AField value) => value.GetInt64();
-	public static explicit operator decimal(AField value) => value.GetDecimal().Value;
-	public static explicit operator decimal?(AField value) => value.GetDecimal();
-	public static explicit operator double(AField value) => value.GetDouble().Value;
-	public static explicit operator double?(AField value) => value.GetDouble();
-	public static explicit operator DateTime(AField value) => value.GetDateTime().Value;
-	public static explicit operator DateTime?(AField value) => value.GetDateTime();
-	public static explicit operator byte[]?(AField value) => value.GetBytes();
-	public static explicit operator string?(AField value) => value.GetString();
-	public static explicit operator Guid(AField value) => value.GetGuid().Value;
-	public static explicit operator Guid?(AField value) => value.GetGuid();
-	public static explicit operator RowVersion(AField value) => value.GetRowVersion().Value;
-	public static explicit operator RowVersion?(AField value) => value.GetRowVersion();
-#pragma warning restore CS8629 // Nullable value type may be null.
+	public bool? GetBoolean();
+	public short? GetInt16();
+	public int? GetInt32();
+	public long? GetInt64();
+	public double? GetDouble();
+	public DateTime? GetDateTime();
+	public string? GetString();
+	public decimal? GetDecimal();
+	public byte[]? GetBytes();
+	public Guid? GetGuid();
+	public RowVersion? GetRowVersion();
 }
 
 public sealed class RowsCollection
 {
 	private readonly IFieldsCollection _fields;
-	private readonly List<object[]> _data;
+	private readonly List<object?[]> _data;
 	private int _currentIndex;
 
 	public RowsCollection(IDataReader reader)
 	{
-		if (reader == null)
-			throw new ArgumentNullException(nameof(reader));
-		_data = new List<object[]>();
+		if (reader == null) throw new ArgumentNullException(nameof(reader));
+
+		_data = [];
 		while (reader.Read())
 		{
-			object[] values = new object[reader.FieldCount];
-			reader.GetValues(values);
+			object?[] values = new object[reader.FieldCount];
+			reader.GetValues(values!);
+			for (int i = 0; i < values.Length; ++i)
+			{
+				if (values[i] is DBNull)
+					values[i] = null;
+			}
 			_data.Add(values);
 		}
 		var fields = new DataTableField[reader.FieldCount];
@@ -90,7 +65,7 @@ public sealed class RowsCollection
 		_fields = new FieldsCollection(fields);
 	}
 
-	private object[] Row => !Eof ? _data[_currentIndex]: throw new InvalidOperationException();
+	private object?[] Row => !Eof ? _data[_currentIndex]: throw new InvalidOperationException();
 
 	public bool Eof => _currentIndex >= _data.Count;
 
@@ -111,37 +86,31 @@ public sealed class RowsCollection
 		return true;
 	}
 
-	private class FieldsCollection: IFieldsCollection
+	private class FieldsCollection(DataTableField[] fields): IFieldsCollection
 	{
-		private readonly AField[] _fields;
-		private readonly IDictionary<string, DataTableField> _fildsDict;
-
-		public FieldsCollection(DataTableField[] fields)
-		{
-			_fields = fields ?? throw new ArgumentNullException(nameof(fields));
-			_fildsDict = fields.ToDictionary(f => f.Name, StringComparer.OrdinalIgnoreCase);
-		}
+		private readonly DataTableField[] _fields = fields ?? throw new ArgumentNullException(nameof(fields));
+		private readonly Dictionary<string, DataTableField> _fieldsMap = fields.ToDictionary(f => f.Name, StringComparer.OrdinalIgnoreCase);
 
 		#region IFieldsCollection Members
 
 		public int Count => _fields.Length;
 
-		public AField this[string index] => _fildsDict[index];
+		public IDbField this[string index] => _fieldsMap[index];
 
-		public AField this[int index] => _fields[index];
+		public IDbField this[int index] => _fields[index];
 
 		#endregion
 
 		#region IEnumerable Members
 
-		public IEnumerator<AField> GetEnumerator() => ((IEnumerable<AField>)_fields).GetEnumerator();
+		public IEnumerator<IDbField> GetEnumerator() => ((IEnumerable<IDbField>)_fields).GetEnumerator();
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _fields.GetEnumerator();
 
 		#endregion
 	}
 
-	private class DataTableField: AField
+	private class DataTableField: IDbField
 	{
 		private readonly string _name;
 		private readonly RowsCollection _records;
@@ -150,15 +119,14 @@ public sealed class RowsCollection
 
 		public DataTableField(string name, Type type, RowsCollection records, int columnIndex)
 		{
-			if (type == null)
-				throw new ArgumentNullException(nameof(type));
+			if (type == null) throw new ArgumentNullException(nameof(type));
 
 			_name = name ?? throw new ArgumentNullException(nameof(name));
 			_records = records ?? throw new ArgumentNullException(nameof(records));
 
 			int c = (int)System.Type.GetTypeCode(type);
-			if (c > 2 && c < _typeCodeMap.Length)
-				_type = _typeCodeMap[c];
+			if (c > 2 && c < __typeCodeMap.Length)
+				_type = __typeCodeMap[c];
 			else if (type == typeof(byte[]))
 				_type = DbType.Binary;
 			else if (type == typeof(Guid))
@@ -170,17 +138,17 @@ public sealed class RowsCollection
 
 		#region IField Members
 
-		public override string Name => _name;
+		public string Name => _name;
 
-		public override object Value
+		public object? Value
 		{
 			get => _records.Row[_columnIndex];
 			set => _records.Row[_columnIndex] = value;
 		}
 
-		public override DbType Type => _type;
-		private static readonly DbType[] _typeCodeMap =
-		{
+		public DbType Type => _type;
+		private static readonly DbType[] __typeCodeMap =
+		[
 			(DbType)(-1), (DbType)(-1), (DbType)(-1),
 			DbType.Boolean, DbType.String,
 			DbType.SByte, DbType.Byte,
@@ -191,62 +159,63 @@ public sealed class RowsCollection
 			DbType.DateTime,
 			(DbType)(-1),
 			DbType.String
-		};
+		];
 
-		public override bool? GetBoolean()
+		public bool? GetBoolean()
 		{
-			object value = _records.Row[_columnIndex];
-			return value == null ? default: Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+			object? value = _records.Row[_columnIndex];
+			return value == null ? null: Convert.ToBoolean(value, CultureInfo.InvariantCulture);
 		}
 
-		public override short? GetInt16()
+		public short? GetInt16()
 		{
-			object value = _records.Row[_columnIndex];
-			return value == null ? default: Convert.ToInt16(value, CultureInfo.InvariantCulture);
+			object? value = _records.Row[_columnIndex];
+			return value == null ? null: Convert.ToInt16(value, CultureInfo.InvariantCulture);
 		}
 
-		public override int? GetInt32()
+		public int? GetInt32()
 		{
-			object value = _records.Row[_columnIndex];
-			return value == null ? default: Convert.ToInt32(value, CultureInfo.InvariantCulture);
+			object? value = _records.Row[_columnIndex];
+			return value == null ? null: Convert.ToInt32(value, CultureInfo.InvariantCulture);
 		}
 
-		public override long? GetInt64()
+		public long? GetInt64()
 		{
-			object value = _records.Row[_columnIndex];
-			return value == null ? default: Convert.ToInt64(value, CultureInfo.InvariantCulture);
+			object? value = _records.Row[_columnIndex];
+			return value == null ? null: Convert.ToInt64(value, CultureInfo.InvariantCulture);
 		}
 
-		public override double? GetDouble()
+		public double? GetDouble()
 		{
-			object value = _records.Row[_columnIndex];
-			return value == null ? default: Convert.ToDouble(value);
+			object? value = _records.Row[_columnIndex];
+			return value == null ? null: Convert.ToDouble(value);
 		}
 
-		public override DateTime? GetDateTime()
+		public DateTime? GetDateTime()
 		{
-			object value = _records.Row[_columnIndex];
-			return value == null ? default: Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+			object? value = _records.Row[_columnIndex];
+			return value == null ? null: Convert.ToDateTime(value, CultureInfo.InvariantCulture);
 		}
 
-		public override string? GetString()
+		public string? GetString()
 		{
-			return Convert.ToString(_records.Row[_columnIndex]);
+			object? value = _records.Row[_columnIndex];
+			return value == null ? null: Convert.ToString(value, CultureInfo.InvariantCulture);
 		}
 
-		public override decimal? GetDecimal()
+		public decimal? GetDecimal()
 		{
-			object value = _records.Row[_columnIndex];
-			return value == null ? default: Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+			object? value = _records.Row[_columnIndex];
+			return value == null ? null: Convert.ToDecimal(value, CultureInfo.InvariantCulture);
 		}
 
-		public override byte[]? GetBytes()
+		public byte[]? GetBytes()
 		{
-			object value = _records.Row[_columnIndex];
-			return value == null ? null: (byte[])value;
+			object? value = _records.Row[_columnIndex];
+			return (byte[]?)value;
 		}
 
-		public override Guid? GetGuid()
+		public Guid? GetGuid()
 		{
 			return _records.Row[_columnIndex] switch
 			{
@@ -258,7 +227,7 @@ public sealed class RowsCollection
 			};
 		}
 
-		public override RowVersion? GetRowVersion()
+		public RowVersion? GetRowVersion()
 		{
 			return _records.Row[_columnIndex] switch
 			{

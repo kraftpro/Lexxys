@@ -19,13 +19,14 @@ public class LexicalTokenType
 
 	public static readonly LexicalTokenType EMPTY		= LexicalTokenType.Create(0, 0, "empty");
 	public static readonly LexicalTokenType EOF			= LexicalTokenType.Create(0, 1, "eof");
+	public static readonly LexicalTokenType ERROR		= LexicalTokenType.Create(0, 3, "error");
 	public static readonly LexicalTokenType NUMERIC		= LexicalTokenType.Create(1, 0, "number");
 	public static readonly LexicalTokenType IDENTIFIER	= LexicalTokenType.Create(2, 0, "identifier");
 	public static readonly LexicalTokenType STRING		= LexicalTokenType.Create(3, 0, "string");
 	public static readonly LexicalTokenType SEQUENCE	= LexicalTokenType.Create(4, 0, "sequence");
 	public static readonly LexicalTokenType COMMENT		= LexicalTokenType.Create(5, 0, "comment");
 	public static readonly LexicalTokenType INDENT		= LexicalTokenType.Create(6, 0, "indent");
-	public static readonly LexicalTokenType UNDENT		= LexicalTokenType.Create(7, 1, "undent");
+	public static readonly LexicalTokenType UNDENT		= LexicalTokenType.Create(6, 1, "undent");
 	public static readonly LexicalTokenType WHITESPACE	= LexicalTokenType.Create(7, 0, "space");
 	public static readonly LexicalTokenType CHAR		= LexicalTokenType.Create(8, 0, "char");
 	public static readonly LexicalTokenType PAIR		= LexicalTokenType.Create(9, 0, "pair");
@@ -67,7 +68,7 @@ public class LexicalTokenType
 	/// </summary>
 	public string Name { get; }
 
-	public bool IsEmpty => Group == 0 && Item == 0;
+	public bool IsEmpty => Group == 0;
 
 	public static LexicalTokenType Create(short group, short item, string name)
 		=> _lexicalTokenTypes.TryGetValue((group, item), out var type) ? type : _lexicalTokenTypes.GetOrAdd((group, item), new LexicalTokenType(group, item, name));

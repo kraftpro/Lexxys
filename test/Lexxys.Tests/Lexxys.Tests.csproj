@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net9.0;net8.0;net6.0;netcoreapp3.1;net462</TargetFrameworks>
+    <TargetFrameworks>net9.0;net8.0;netcoreapp3.1;net462</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -19,13 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.*" />
-    <PackageReference Include="MSTest" Version="3.7.0" />
+    <PackageReference Include="MSTest" Version="3.9.*" />
     <PackageReference Include="BenchmarkDotNet" Version="0.14.*" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.*" />
     <PackageReference Include="System.Formats.Asn1" Version="9.0.*" />
     <PackageReference Include="System.Private.Uri" Version="4.3.*" />
-    <PackageReference Include="System.Text.Json" Version="9.0.*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Lexxis.Logging\Lexxys.Logging.csproj" />
+    <ProjectReference Include="..\..\src\Lexxys.Blob\Lexxys.Blob.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.DataContext\Lexxys.DataContext.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Testing\Lexxys.Testing.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Validation\Lexxys.Validation.csproj" />

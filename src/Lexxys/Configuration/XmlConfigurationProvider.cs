@@ -79,7 +79,7 @@ public class XmlConfigurationProvider: IConfigSource
 			return (content, file) => TextToXmlConverter.ConvertLite(content, optionHandler, file, ignoreCase);
 		if (String.Equals(sourceType, "JSON", StringComparison.OrdinalIgnoreCase))
 			return (content, file) => JsonToXmlConverter.Convert(content, sourceName: file, ignoreCase: ignoreCase, forceAttributes: forceAttrib);
-		return (content, _) => XmlFragBuilder.Create<IXmlReadOnlyNode>(ignoreCase).Xml(content).Build();
+		return (content, _) => XmlNodeBuilder.Create<IXmlReadOnlyNode>(ignoreCase).Xml(content).Build();
 	}
 
 
@@ -93,9 +93,9 @@ public class XmlConfigurationProvider: IConfigSource
 	{
 		if (_node != null)
 			return _node;
-		_node = XmlFragBuilder.Empty;
+		_node = XmlNodeBuilder.Empty;
 		IReadOnlyList<IXmlReadOnlyNode> temp = _source.Content;
-		_node = temp is not { Count: >0 } ? XmlFragBuilder.Empty:
+		_node = temp is not { Count: >0 } ? XmlNodeBuilder.Empty:
 			temp.Count == 1 && temp[0].Comparer.Equals(temp[0].Name, ConfigurationRoot) ? temp[0]:
 			XmlTools.Wrap(ConfigurationRoot, temp[0].Comparer, null, temp);
 		return _node;

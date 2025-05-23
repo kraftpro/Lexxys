@@ -5,6 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 #define USE_XML_DOC
+#if false
 using System.Buffers;
 using System.Xml;
 using System.Collections;
@@ -20,7 +21,7 @@ namespace Lexxys.Xml;
 [Serializable]
 public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 {
-	private readonly IXmlReadOnlyNode[] _elements;
+	private readonly XmlLiteNode[] _elements;
 	private readonly KeyValuePair<string, string>[] _attributes;
 	private int _hashCode;
 
@@ -99,7 +100,7 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 		Value = value ?? String.Empty;
 		Comparer = comparer ?? StringComparer.Ordinal;
 		_attributes = attributes?.ToArray() ?? [];
-		_elements = descendants?.ToArray() ?? [];
+		_elements = descendants?.ToArray().ConvertAll(FromIXmlReadOnlyNode) ?? [];
 	}
 
 	/// <summary>
@@ -122,6 +123,38 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 		_elements = descendants ?? [];
 	}
 
+	/// <summary>
+	/// Initializes new instance of <see cref="XmlLiteNode"/> from <see cref="IXmlReadOnlyNode"/>.
+	/// </summary>
+	/// <param name="node"></param>
+	/// <exception cref="ArgumentNullException"></exception>
+	public XmlLiteNode(IXmlReadOnlyNode node)
+	{
+		if (node is null) throw new ArgumentNullException(nameof(node));
+
+		Name = node.Name;
+		Value = node.Value;
+		Comparer = node.Comparer;
+		_attributes = node.Attributes.Count == 0 ? []: node.Attributes as KeyValuePair<string, string>[] ?? node.Attributes.ToArray();
+		_elements = node.Elements.Count == 0 ? []: node.Elements as XmlLiteNode[] ?? (XmlLiteNode[])node.Elements.ConvertAll(FromIXmlReadOnlyNode);
+	}
+
+	/// <summary>
+	/// Converts <see cref="IXmlReadOnlyNode"/> to <see cref="XmlLiteNode"/>.
+	/// </summary>
+	/// <param name="node"></param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static XmlLiteNode FromIXmlReadOnlyNode(IXmlReadOnlyNode node)
+	{
+		if (node is null) throw new ArgumentNullException(nameof(node));
+		return node switch
+		{
+			XmlLiteNode xmlLiteNode => xmlLiteNode,
+			_ => new XmlLiteNode(node)
+		};
+	}
+
 	private static string? ConcatValue(string? value, string node)
 	{
 		var nd = node.AsSpan();
@@ -132,18 +165,10 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 			return n >= nd.Length ? node: node.Substring(0, n);
 
 		var vl = value.AsSpan();
-		if (!IsCrLf(nd[0]) || !IsCrLf(vl[^1]))
-#if NET6_0_OR_GREATER
+		if (!IsCrLf(nd[0]) || !IsCrLf(vl[vl.Length - 1]))
 			return String.Concat(vl, n >= nd.Length ? nd: nd.Slice(0, n));
-#else
-			return String.Concat(value, n >= nd.Length ? node: node.Substring(0, n));
-#endif
 		else
-#if NET6_0_OR_GREATER
-			return String.Concat(vl, n > 1 && (nd[0] ^ nd[1]) == ('\r' ^ '\n') ? nd.Slice(2, n - 2): nd.Slice(1, n - 1));
-#else
-			return String.Concat(value, n > 1 && (nd[0] ^ nd[1]) == ('\r' ^ '\n') ? node.Substring(2, n - 2): node.Substring(1, n - 1));
-#endif
+			return String.Concat(vl, n > 1 && (nd[0] ^ nd[1]) == ('\r' ^ '\n') ? nd.Slice(2, n - 2): node.Slice(1, n - 1));
 
 		static bool IsCrLf(char c) => c is '\r' or '\n';
 
@@ -177,14 +202,16 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 	public string Value { get; }
 
 	/// <summary>
-	/// Tests if the node is empty/
+	/// Gets list of the attributes of the node.
 	/// </summary>
-	public bool IsEmpty => Object.ReferenceEquals(this, Empty);
+	public IReadOnlyList<KeyValuePair<string, string>> Attributes => _attributes;
 
 	/// <summary>
-	/// String comparer used when finding a node.
+	/// Contains all sub-nodes of this node.
 	/// </summary>
-	public StringComparer Comparer { get; }
+	public IReadOnlyList<XmlLiteNode> Elements => _elements;
+
+	IReadOnlyList<IXmlReadOnlyNode> IXmlReadOnlyNode.Elements => _elements;
 
 	/// <summary>
 	/// Get attribute value
@@ -205,20 +232,170 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 	}
 
 	/// <summary>
-	/// Gets list of the attributes of the node.
+	/// Tests if the node is empty/
 	/// </summary>
-	public IReadOnlyList<KeyValuePair<string, string>> Attributes => _attributes;
+	public bool IsEmpty => Object.ReferenceEquals(this, Empty);
 
 	/// <summary>
-	/// Contains all sub-nodes of this node.
+	/// Check if the attribute exists
 	/// </summary>
-	IReadOnlyList<IXmlReadOnlyNode> IXmlReadOnlyNode.Elements => _elements;
+	/// <param name="name">Name of the attribute</param>
+	/// <returns></returns>
+	public bool HasAttribute(string name)
+	{
+		foreach (var a in _attributes)
+		{
+			if (Comparer.Equals(a.Key, name))
+				return true;
+		}
+		return false;
+	}
+
+	/// <summary>
+	/// Returns all node elements with the specified <paramref name="name"/>.
+	/// </summary>
+	/// <param name="name">Name of sub-node</param>
+	public IEnumerable<XmlLiteNode> Where(string? name) => _elements.Where(o => Comparer.Equals(o.Name, name));
+
+	/// <summary>
+	/// Returns all node elements with the specified <paramref name="name"/>.
+	/// </summary>
+	/// <param name="name">Name of sub-node</param>
+	/// <param name="comparer">Equality comparer to compare nodes names</param>
+	public IEnumerable<XmlLiteNode> Where(string? name, StringComparer comparer) => _elements.Where(o => comparer.Equals(o.Name, name));
+
+	/// <summary>
+	/// Filters node node elements based on a <paramref name="predicate"/>.
+	/// </summary>
+	/// <param name="predicate">A function to test each element of a node</param>
+	public IEnumerable<XmlLiteNode> Where(Func<XmlLiteNode, bool> predicate) => _elements.Where(predicate);
+
+	/// <summary>
+	/// Returns the first node element with the specified name or <see cref="Empty"/>.
+	/// </summary>
+	/// <param name="name">Name of sub-node</param>
+	/// <returns></returns>
+	public XmlLiteNode Element(string? name) => FirstOrDefault(name, Comparer) ?? Empty;
+
+	/// <summary>
+	/// Returns the first node element with the specified name or <see cref="Empty"/>.
+	/// </summary>
+	/// <param name="name">Name of sub-node</param>
+	/// <param name="comparer">Equality comparer to compare nodes names</param>
+	/// <returns></returns>
+	public XmlLiteNode Element(string? name, StringComparer comparer) => FirstOrDefault(name, comparer) ?? Empty;
+
+	/// <summary>
+	/// Returns the first node element that satisfies a condition or or <see cref="Empty"/>.
+	/// </summary>
+	/// <param name="predicate">Name of sub-node</param>
+	/// <returns></returns>
+	public XmlLiteNode Element(Func<XmlLiteNode, bool> predicate) => FirstOrDefault(predicate) ?? Empty;
+
+	/// <summary>
+	/// Returns the first node element with the specified name or null.
+	/// </summary>
+	/// <param name="name">Name of sub-node</param>
+	/// <returns></returns>
+	public XmlLiteNode? FirstOrDefault(string? name) => FirstOrDefault(name, Comparer);
+
+	/// <summary>
+	/// Returns the first node element with the specified name or null.
+	/// </summary>
+	/// <param name="name">Name of sub-node</param>
+	/// <param name="comparer">Equality comparer to compare nodes names</param>
+	/// <returns></returns>
+	public XmlLiteNode? FirstOrDefault(string? name, StringComparer comparer)
+	{
+		if (comparer == null) throw new ArgumentNullException(nameof(comparer));
+
+		foreach (var item in _elements)
+		{
+			if (comparer.Equals(item.Name, name))
+				return item;
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// Returns the first node element that satisfies a condition or null.
+	/// </summary>
+	/// <param name="predicate">A function to test each element for a condition.</param>
+	/// <returns></returns>
+	public XmlLiteNode? FirstOrDefault(Func<XmlLiteNode, bool> predicate)
+	{
+		if (predicate == null) throw new ArgumentNullException(nameof(predicate));
+
+		foreach (var item in _elements)
+		{
+			if (predicate(item))
+				return item;
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// String comparer used when finding a node.
+	/// </summary>
+	public StringComparer Comparer { get; }
+
+	/// <summary>
+	/// Convert this node to the specified value type.
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <exception cref="FormatException"></exception>
+	/// <returns></returns>
+	public T AsValue<T>() => XmlTools.GetValue<T>(this);
+
+	/// <summary>
+	/// Tries to convert this node to the specified value type.  Returns <paramref name="defaultValue"/> when the conversion fault.
+	/// </summary>
+	/// <param name="defaultValue">Default value</param>
+	/// <typeparam name="T"></typeparam>
+	/// <returns></returns>
+	public T AsValue<T>(T defaultValue) => XmlTools.GetValue(this, defaultValue);
+
+	/// <summary>
+	/// Convert this node to the specified value type.
+	/// </summary>
+	/// <param name="returnType"></param>
+	/// <exception cref="FormatException"></exception>
+	/// <returns></returns>
+	public object? AsObject(Type returnType) => XmlTools.GetValue(this, returnType);
+
+	/// <summary>
+	/// Convert all sub-nodes with the specified <paramref name="converter"/> and returns an array of the converted items.
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <param name="converter"></param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	public T[] ConvertElements<T>(Func<XmlLiteNode, T> converter)
+	{
+		if (converter == null)
+			throw new ArgumentNullException(nameof(converter));
+
+		var result = new T[_elements.Length];
+		for (int i = 0; i < _elements.Length; ++i)
+		{
+			result[i] = converter(_elements[i]);
+		}
+		return result;
+	}
 
 	/// <summary>
 	/// Returns an XML text representation of this node.
 	/// </summary>
 	/// <returns></returns>
 	public override string ToString() => this.WriteXml().ToString();
+
+	/// <summary>
+	/// Returns an XML text representation of this node.
+	/// </summary>
+	/// <param name="format">True to format the output using indentation, otherwise false</param>
+	/// <param name="innerXml">True to return only inner XML of the node, otherwise false</param>
+	/// <returns></returns>
+	public string ToString(bool format, bool innerXml = false) => this.WriteXml(null, innerXml, format).ToString();
 
 	/// <summary>
 	/// Compares two <see cref="XmlLiteNode"/> objects for equality.
@@ -228,12 +405,12 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 	/// <returns></returns>
 	public static bool Equals(XmlLiteNode? left, XmlLiteNode? right)
 	{
-		return left is null ? right is null: !(right is null) &&
+		return left is null ? right is null: right is not null &&
 			left.Name == right.Name &&
 			left.Value == right.Value &&
 #if NET6_0_OR_GREATER
-			left._attributes.AsSpan().SequenceEqual(right._attributes) &&
-			left._elements.AsSpan().SequenceEqual(right._elements);
+			((ReadOnlySpan<KeyValuePair<string, string>>)left._attributes).SequenceEqual((ReadOnlySpan<KeyValuePair<string, string>>)right._attributes) &&
+			((ReadOnlySpan<XmlLiteNode>)left._elements).SequenceEqual((ReadOnlySpan<XmlLiteNode>)right._elements);
 #else
 			((IStructuralEquatable)left._attributes).Equals(right._attributes, StructuralComparisons.StructuralEqualityComparer) &&
 			((IStructuralEquatable)left._elements).Equals(right._elements, StructuralComparisons.StructuralEqualityComparer);
@@ -283,6 +460,14 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 		} while (reader.Read());
 		return result;
 	}
+
+	/// <summary>
+	/// Creates a list of <see cref="IXmlReadOnlyNode"/> from <see cref="XmlReader"/>.
+	/// </summary>
+	/// <param name="reader"></param>
+	/// <param name="ignoreCase"></param>
+	/// <returns></returns>
+	public static List<IXmlReadOnlyNode> FromXmlFragment(XmlReader reader, bool ignoreCase = false) => FromXmlFragment(reader, ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal);
 
 	/// <summary>
 	/// Creates a list of <see cref="IXmlReadOnlyNode"/> from the specified XML fragment string.
@@ -545,7 +730,7 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 		ArrayPool<XmlLiteNode>.Shared.Return(desc);
 		return new XmlLiteNode(node.Name, value, comparer, attributes, elements);
 	}
-    
+	
 	/// <summary>
 	/// Creates a new <see cref="IXmlReadOnlyNode"/> from <see cref="XmlNode"/>.
 	/// </summary>
@@ -605,3 +790,4 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 #endif
 
 }
+#endif

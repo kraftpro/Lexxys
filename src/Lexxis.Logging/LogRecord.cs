@@ -159,12 +159,12 @@ public class LogRecord: IDumpJson
 					.Where(o => o != null)
 					.Select(o => new ExceptionInfo(o)));
 			else if (exception.InnerException != null)
-				InnerExceptions = ReadOnly.Wrap(new [] { new ExceptionInfo(exception.InnerException) });
+				InnerExceptions = ReadOnly.Wrap([new ExceptionInfo(exception.InnerException)]);
 		}
 
         private IReadOnlyCollection<NameValueTuple<string, object?>>? FromDictionary(IDictionary data)
         {
-            if (data == null || data.Count == 0)
+            if (data is not { Count: >0 })
                 return null;
             var args = new List<NameValueTuple<string, object?>>(data.Count);
             var xx = data.GetEnumerator();

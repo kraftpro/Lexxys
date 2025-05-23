@@ -7,79 +7,54 @@
 
 namespace Lexxys;
 
-[Serializable]
 public static class Vote
 {
-	public static Vote<T> New<T>(T value, VoteScore score)
-	{
-		return new Vote<T>(value, score);
-	}
+	public static Vote<T> New<T>(T value, VoteScore score) => new Vote<T>(value, score);
 
-	public static Vote<T> Yes<T>(T value)
-	{
-		return new Vote<T>(value, VoteScore.Yes);
-	}
+	public static Vote<T> Yes<T>(T value) => new Vote<T>(value, VoteScore.Yes);
+
 	public static Vote<T> Yes<T>(T value, int andMoreOrLess)
-	{
-		return andMoreOrLess >= 0 ? new Vote<T>(value, VoteScore.Yes):
-			new Vote<T>(value, VoteScore.Yes.AndLess(-andMoreOrLess));				
-	}
-	public static Vote<T> No<T>(T value)
-	{
-		return new Vote<T>(value, VoteScore.No);
-	}
+		=> andMoreOrLess >= 0 ? new Vote<T>(value, VoteScore.Yes):
+			new Vote<T>(value, VoteScore.Yes.AndLess(-andMoreOrLess));
+
+	public static Vote<T> No<T>(T value) => new Vote<T>(value, VoteScore.No);
+
 	public static Vote<T> No<T>(T value, int andMoreOrLess)
-	{
-		return andMoreOrLess <= 0 ? new Vote<T>(value, VoteScore.No):
+		=> andMoreOrLess <= 0 ? new Vote<T>(value, VoteScore.No):
 			new Vote<T>(value, VoteScore.No.AndMore(andMoreOrLess));
-	}
-	public static Vote<T> AlmostYes<T>(T value)
-	{
-		return new Vote<T>(value, VoteScore.AlmostYes);
-	}
+
+	public static Vote<T> AlmostYes<T>(T value) => new Vote<T>(value, VoteScore.AlmostYes);
+
 	public static Vote<T> AlmostYes<T>(T value, int andMoreOrLess)
-	{
-		return andMoreOrLess >= 0 ? new Vote<T>(value, VoteScore.AlmostYes):
+		=> andMoreOrLess >= 0 ? new Vote<T>(value, VoteScore.AlmostYes):
 			new Vote<T>(value, VoteScore.AlmostYes.AndLess(-andMoreOrLess));
-	}
-	public static Vote<T> AlmostNo<T>(T value)
-	{
-		return new Vote<T>(value, VoteScore.AlmostNo);
-	}
+
+	public static Vote<T> AlmostNo<T>(T value) => new Vote<T>(value, VoteScore.AlmostNo);
+
 	public static Vote<T> AlmostNo<T>(T value, int andMoreOrLess)
-	{
-		return andMoreOrLess <= 0 ? new Vote<T>(value, VoteScore.AlmostNo):
+		=> andMoreOrLess <= 0 ? new Vote<T>(value, VoteScore.AlmostNo):
 			new Vote<T>(value, VoteScore.AlmostNo.AndMore(andMoreOrLess));
-	}
-	public static Vote<T> ProbablyYes<T>(T value)
-	{
-		return new Vote<T>(value, VoteScore.ProbablyYes);
-	}
+
+	public static Vote<T> ProbablyYes<T>(T value) => new Vote<T>(value, VoteScore.ProbablyYes);
+
 	public static Vote<T> ProbablyYes<T>(T value, int andMoreOrLess)
-	{
-		return andMoreOrLess < 0 ? new Vote<T>(value, VoteScore.ProbablyYes.AndLess(-andMoreOrLess)):
+		=> andMoreOrLess < 0 ? new Vote<T>(value, VoteScore.ProbablyYes.AndLess(-andMoreOrLess)):
 			new Vote<T>(value, VoteScore.ProbablyYes.AndMore(andMoreOrLess));
-	}
-	public static Vote<T> ProbablyNot<T>(T value)
-	{
-		return new Vote<T>(value, VoteScore.ProbablyNot);
-	}
+
+	public static Vote<T> ProbablyNot<T>(T value) => new Vote<T>(value, VoteScore.ProbablyNot);
+
 	public static Vote<T> ProbablyNot<T>(T value, int andMoreOrLess)
-	{
-		return andMoreOrLess < 0 ? new Vote<T>(value, VoteScore.ProbablyNot.AndLess(-andMoreOrLess)):
+		=> andMoreOrLess < 0 ? new Vote<T>(value, VoteScore.ProbablyNot.AndLess(-andMoreOrLess)):
 			new Vote<T>(value, VoteScore.ProbablyNot.AndMore(andMoreOrLess));
-	}
-	public static Vote<T> Maybe<T>(T value)
-	{
-		return new Vote<T>(value, VoteScore.Maybe);
-	}
+
+	public static Vote<T> Maybe<T>(T value) => new Vote<T>(value, VoteScore.Perhaps);
+
 	public static Vote<T> Maybe<T>(T value, int andMoreOrLess)
-	{
-		return andMoreOrLess < 0 ? new Vote<T>(value, VoteScore.Maybe.AndLess(-andMoreOrLess)):
-			new Vote<T>(value, VoteScore.Maybe.AndMore(andMoreOrLess));
-	}
+		=> andMoreOrLess < 0 ? new Vote<T>(value, VoteScore.Perhaps.AndLess(-andMoreOrLess)):
+			new Vote<T>(value, VoteScore.Perhaps.AndMore(andMoreOrLess));
 }
 
+[Serializable]
 public readonly struct Vote<T>(T value, VoteScore score): IEquatable<Vote<T>>
 {
 	public T Value { get; } = value;

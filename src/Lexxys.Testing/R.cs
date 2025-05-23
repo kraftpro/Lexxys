@@ -18,10 +18,7 @@ public static class R
 	/// <typeparam name="T"></typeparam>
 	/// <param name="items">Collection of items.</param>
 	/// <returns></returns>
-	public static RandItem<T> Any<T>(params T[] items)
-	{
-		return new RandItem<T>(() => Rand.Item(items));
-	}
+	public static RandItem<T> Any<T>(params T[] items) => new RandItem<T>(() => Rand.Item(items));
 
 	/// <summary>
 	/// Creates a new <see cref="RandItem{T}"/> randomly returning item from provided collection <paramref name="items"/>.
@@ -33,31 +30,14 @@ public static class R
 	{
 		if (items == null)
 			return RandItem<T>.Empty;
-		if (items is ICollection<T> col)
-		{
-			if (col.Count == 0)
-				return RandItem<T>.Empty;
-			if (col.Count == 1)
-			{
-				var v = col.FirstOrDefault()!;
-				return new RandItem<T>(v);
-			}
-			var vv = new T[col.Count];
-			col.CopyTo(vv, 0);
+
+		var vv = items.ToList();
+		if (vv.Count == 0)
+			return RandItem<T>.Empty;
+		if (vv.Count > 1)
 			return new RandItem<T>(() => Rand.Item(vv));
-		}
-		else
-		{
-			var vv = items.ToList();
-			if (vv.Count == 0)
-				return RandItem<T>.Empty;
-			if (vv.Count == 1)
-			{
-				var v = vv[0];
-				return new RandItem<T>(v);
-			}
-			return new RandItem<T>(() => Rand.Item(vv));
-		}
+		var v = vv[0];
+		return new RandItem<T>(v);
 	}
 
 	/// <summary>

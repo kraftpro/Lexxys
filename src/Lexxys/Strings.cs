@@ -243,7 +243,7 @@ public static partial class Strings
 		if (stream == null) throw new ArgumentNullException(nameof(stream));
 		int k = escape < 128 ? 1: Encoding.UTF8.GetByteCount([escape]);
 		int len = (value.Length + 2) * (k + 5);
-		byte[]? array = len > Tools.SafeStackAllocByte ? ArrayPool<byte>.Shared.Rent(len): null;
+		byte[]? array = len > Tools.MaxStackAllocSize ? ArrayPool<byte>.Shared.Rent(len): null;
 		var buffer = array == null ? stackalloc byte[len]: array.AsSpan();
 		int i = 0;
 		if (marker != '\0')
@@ -792,7 +792,7 @@ public static partial class Strings
 		Other,
 	}
 
-	private static unsafe void ToHexCharArrayInternal(byte[] bitsValue, int offset, int length, char[] hexValue, int outOffset)
+	private static unsafe void ToHexCharArrayInternal(ReadOnlySpan<byte> bitsValue, int offset, int length, char[] hexValue, int outOffset)
 	{
 		fixed (byte* bits = bitsValue)
 		fixed (char* hexv = hexValue)
@@ -809,10 +809,8 @@ public static partial class Strings
 		}
 	}
 
-	public static void ToHexCharArray(byte[] bitsValue, int offset, int length, char[] hexValue, int outOffset)
+	public static void ToHexCharArray(ReadOnlySpan<byte> bitsValue, int offset, int length, char[] hexValue, int outOffset)
 	{
-		if (bitsValue == null)
-			throw new ArgumentNullException(nameof(bitsValue));
 		if (hexValue == null)
 			throw new ArgumentNullException(nameof(hexValue));
 		if (offset < 0 || offset + length > bitsValue.Length)
@@ -831,10 +829,8 @@ public static partial class Strings
 		ToHexCharArrayInternal(bitsValue, offset, length, hexValue, outOffset);
 	}
 
-	public static char[] ToHexCharArray(byte[] value, int offset, int length)
+	public static char[] ToHexCharArray(ReadOnlySpan<byte> value, int offset, int length)
 	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
 		if (offset < 0 || offset + length > value.Length)
 			if (offset < 0 || offset > value.Length)
 				throw new ArgumentOutOfRangeException(nameof(offset));
@@ -848,23 +844,19 @@ public static partial class Strings
 		return chars;
 	}
 
-	public static char[] ToHexCharArray(byte[] value)
+	public static char[] ToHexCharArray(ReadOnlySpan<byte> value)
 	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
 		int length = value.Length;
 		char[] chars = new char[length*2];
 		ToHexCharArrayInternal(value, 0, length, chars, 0);
 		return chars;
 	}
 
-	public static string ToHexString(byte[] value, ReadOnlySpan<char> prefix = default)
+	public static string ToHexString(ReadOnlySpan<byte> value, ReadOnlySpan<char> prefix = default)
 	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
 		int offset = prefix.Length;
 		int len = offset + value.Length * 2;
-		char[]? array = len > Tools.SafeStackAllocChar ? ArrayPool<char>.Shared.Rent(len): null;
+		char[]? array = len > Tools.MaxStackAllocSizeChar ? ArrayPool<char>.Shared.Rent(len): null;
 		Span<char> s = array == null ? stackalloc char[len]: array.AsSpan();
 		Span<char> t = s;
 		if (offset > 0)
@@ -872,7 +864,7 @@ public static partial class Strings
 			prefix.CopyTo(t);
 			t = t.Slice(offset);
 		}
-		foreach (var b in value.AsSpan())
+		foreach (var b in value)
 		{
 			t[0] = HexDigits[(b & 0xF0) >> 4];
 			t[1] = HexDigits[b & 0x0F];
@@ -884,10 +876,8 @@ public static partial class Strings
 		return result;
 	}
 
-	public static string ToBitsString(byte[] value)
+	public static string ToBitsString(ReadOnlySpan<byte> value)
 	{
-		if (value == null)
-			throw new ArgumentNullException(nameof(value));
 		if (value.Length == 0)
 			return "";
 		var text = new StringBuilder(value.Length * 9);

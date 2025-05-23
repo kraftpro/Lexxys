@@ -5,72 +5,108 @@
 ### Document
 
 ```bnfc
-document          := node+
-node              := declaration | name [":"] node-value [subnodes]
-subnodes          := NEWLINE INDENT nodes DEDENT
-nodes             := ( node | json-value )+
-node-value        := json | eol-text
-json-value        := json-array | json-obj | attr-list
-json-array        := "[" array-item [ ","? array-item ]* "]"
-json-item         := json-value | name
-json-obj          := "{" obj-pair [ ","? obj-pair ]* "}"
-obj-pair          := name (":" | "=") json-item
+document          ::= (dirrective | node)+
+node              ::= node_item [subnodes]
+subnodes          ::= NEWLINE INDENT ( node )+ DEDENT
+node_item         ::= node_name_value
+                    | flow_collection
+node_name_value   ::= name [EQUAL_SP] value
+flow_collection   ::= array
+                    | object
+                    | parameters
+array             ::= "[" value (COMMA_SP? value)* "]"
+object            ::= "{" name_value (COMMA_SP? name_value)* "}"
+parameters        ::= "(" value_name_value (COMMA_SP? value_name_value)* ")"
+name_value        ::= name EQUAL_SP value
+value_name_value  ::= value
+                    | name EQUAL_SP value
+
+name              ::= NAME | string
+value             ::= flow_collection | PLAIN_VALUE | SRING | TEXT_BLOCK
+
+PLAIN_VALUE       ::= any sequence of chars excluding new line character, doesn't start with "[", "(", or "{" and doesn't contain "\s<?#" sequence.
+                      Characters except the new line can be escaped by grave "`".
+NAME              ::= PLAIN_VALUE excluding white space characters.
+STRING            ::= C style string (PowerShell style string ?)
+TEXT_BLOCK        ::= "<"{N} NEWLINE [.\n]*? NEWLINE \s* ">"{N} NEWLINE
+
+
+# node_name_value   ::= name [EQUAL_SP] node_parameters
+# node_parameters   ::= value
+#                     | name EQUAL_SP [node_parameters]
+#                     | value [COMMA_SP node_parameters]
+# plain_value       ::= any sequence of chars excluding new line character, "[:=,;]\s", "\s[#[({[]", and not starting with "-\s".
+                       Characters except the new line can be escaped by "`".
 ```
 
-### Declaration
+### Directives
 
 ```bnfc
-declaration       := type-declaration
-                   | var-declaration
-                   | include-def
-                   | object-definition
-type-declaration  := "%" type-name name-list      # Type declaration
-var-definition    := "%" var-name ":" value       # Variable declaration
-include-def       := "%" "%" file-name            # Include
-object-definition := "%" pattern ( type-name | name-list )
+dirrective        ::= type_declaration
+                    | var_definition
+                    | object_definition
+                    | type_declaration
+                    | option_definition
+type_declaration  ::= "%" type_name name_list      # Type declaration
+var_definition    ::= "%" var_name ":" value       # Variable declaration
+object_definition ::= "%" pattern ( type_name | name_list )
+name_list         ::= name ( delimiter name )*
+delimiter         ::= SPC | "," | ";"
+option_definition ::= "%" "!" option
+option            ::= "js-comments"
+                    | "js-string"
+                    | "include" file_path
+                    | "separators" value ( ',' value }*
 
-type-name         := ":".name
-var-name          := "$".name
 
-var-reference     := "${{" name [ "|" default-value ] "}}"   # Reference to the variable
+type_name         ::= ":".name
+var_name          ::= "$".name
+
+var_reference     := "${{" name [ "|" default_value ] "}}"   # Reference to the variable
 ```
 
 
 ### Elements
 
 ```bnfc
-comments          := ( SPACE | BOL ) "#" TEXT NEWLINE
-                   | ( SPACE | BOL ) "#<" ML_TEXT ">#"
-name-list         := name ( delimiter name )*
-name              := name_char+
-                   | string
-name-char         := !special-char | escape-shar special-char
-special-char      := escape-char | "=" | ":" | ";" | "," | "[" | "]" | "{" | "}" | "(" | ")" | "/" | "\" | "'" | """ | SPACE
-delimiter         := SPC | "," | ";"
-escape-char       := "`"
-string            := """ ( string-char | "'" | escape-seq )* """
-                   | "'" ( string-char | """ | escape-seq )* '"'
-string-char       := !( "\r" | "\n" | escape-char | "'" | '"' )
-escape-seq        := escape-char ( "r" | "n" | "t" | "f" | "v" | "a" | "b" | "0" | "`" | "h" HEX HEX | "x" HEX HEX (HEX HEX)? | "u" HEX HEX HEX HEX )
+
+comments          ::= ( SPACE | BOL ) "#" TEXT NEWLINE
+                    | ( SPACE | BOL ) "#<" ML_TEXT ">#"
+
+name              ::= name_char+
+                    | string
+name_char         ::= !special_char | escape_shar special_char
+special_char      ::= escape_char | "=" | ":" | ";" | "," | "[" | "]" | "{" | "}" | "(" | ")" | "/" | "\" | "'" | """ | SPACE
+escape_char       ::= "`"
+string            ::= """ ( string_char | "'" | escape_seq )* """
+                    | "'" ( string_char | """ | escape_seq )* '"'
+string_char       ::= !( "\r" | "\n" | escape_char | "'" | '"' )
+escape_seq        ::= escape_char ( "r" | "n" | "t" | "f" | "v" | "a" | "b" | "0" | "`" | "h" HEX HEX | "x" HEX HEX (HEX HEX)? | "u" HEX HEX HEX HEX )
 
 # todo: add unicode
-TEXT              := /[^\r\n]*/
-ML_TEXT           := /[.\r\n]*/
-SPACE             := /[ \t]/
-SP                := /[ \t]*/
-SPC               := /[ \t]+/
-NEWLINE           := /\r?\n/
-BOL               := /^/
+TEXT              ::= /[^\r\n]*/
+ML_TEXT           ::= /[.\r\n]*/
+SPACE             ::= /[ \t]/
+SP                ::= /[ \t]*/
+SPC               ::= /[ \t]+/
+NEWLINE           ::= /\r?\n/
+BOL               ::= /^/
+WSPACE            ::= /[ \t\r\n]/
+EQUAL_SP          ::= /[:=](?=[ \t\r\b\n])/
+COMMA_SP          ::= /[,;](?=[ \t\r\b\n])/
+SP_COMCHAR        ::= /(?<>=[ \t\r\b\n])#/
+SP_COMBLCK        ::= /(?<>=[ \t\r\b\n])<#/
+
 ```
 
 ```bnfc
-pattern           := ( ( wildcard | name-part ) "/" )* name-part
-name-part         := name aray-mark?
-wildcard          := '*'      # matches any letter except path separator
-                   | '**'     # matches any letter including path separator
-array-mark        := json-array-mark | xml-array-mark
-json-array-mark   := "[" "]"
-xml-array-mark    := "[" name "]"   # defines a name of node to be repeated (by default "item")
+pattern           ::= ( ( wildcard | name_part ) "/" )* name_part
+name_part         ::= name aray_mark?
+wildcard          ::= '*'      # matches any letter except path separator
+                    | '**'     # matches any letter including path separator
+array_mark        ::= json_array_mark | xml_array_mark
+json_array_mark   ::= "[" "]"
+xml_array_mark    ::= "[" name "]"   # defines a name of node to be repeated (by default "item")
 ```
 
 ### Sample

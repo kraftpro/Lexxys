@@ -10,7 +10,7 @@ namespace Lexxys;
 /// <summary>
 /// Provides access to the abstract blob storage.
 /// </summary>
-public interface IBlobStorageProvider: IDisposable
+public interface IBlobStorageService: IDisposable
 {
 	/// <summary>
 	/// Collection of supported schemes
@@ -29,7 +29,7 @@ public interface IBlobStorageProvider: IDisposable
 	/// </summary>
 	/// <param name="location">The blob location.</param>
 	/// <returns></returns>
-	IBlobInfo? GetFileInfo(Uri location);
+	IBlobInfo GetFileInfo(Uri location);
 
 	/// <summary>
 	/// Returns a <see cref="IBlobInfo"/> for the specified <paramref name="location"/> or null if the blob does not exist.
@@ -37,24 +37,24 @@ public interface IBlobStorageProvider: IDisposable
 	/// <param name="location">The blob location.</param>
 	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns></returns>
-	Task<IBlobInfo?> GetFileInfoAsync(Uri location, CancellationToken cancellationToken = default);
+	Task<IBlobInfo> GetFileInfoAsync(Uri location, CancellationToken cancellationToken = default);
 
 	/// <summary>
-	/// Saves the specified <paramref name="stream"/> to the specified <paramref name="location"/>.
+	/// Writes the specified <paramref name="stream"/> to the specified <paramref name="location"/>.
 	/// </summary>
 	/// <param name="location">The blob location.</param>
 	/// <param name="stream">The stream to save.</param>
 	/// <param name="overwrite">If true, the existing blob will be overwritten.</param>
-	void SaveFile(Uri location, Stream stream, bool overwrite);
+	void WriteFile(Uri location, Stream stream, bool overwrite);
 
 	/// <summary>
-	/// Saves the specified <paramref name="stream"/> to the specified <paramref name="location"/>.
+	/// Writes the specified <paramref name="stream"/> to the specified <paramref name="location"/>.
 	/// </summary>
 	/// <param name="location">The blob location.</param>
 	/// <param name="stream">The stream to save.</param>
 	/// <param name="overwrite">If true, the existing blob will be overwritten.</param>
 	/// <param name="cancellationToken">Cancelation token.</param>
-	Task SaveFileAsync(Uri location, Stream stream, bool overwrite, CancellationToken cancellationToken = default);
+	Task WriteFileAsync(Uri location, Stream stream, bool overwrite, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Copies the blob from <paramref name="source"/> to <paramref name="destination"/>.

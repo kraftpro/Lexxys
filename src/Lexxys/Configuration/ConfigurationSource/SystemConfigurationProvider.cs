@@ -81,15 +81,6 @@ public sealed class SystemConfigurationProvider: IConfigSource
 					}
 					return ReadOnly.Wrap(result)!;
 				}
-				if (typeof(T) == typeof(Data.ConnectionStringInfo))
-				{
-					var result = new List<T>();
-					for (int i = 0; i < cc.Count; ++i)
-					{
-						result.Add((T)(object)new Data.ConnectionStringInfo(cc[i].ConnectionString));
-					}
-					return ReadOnly.Wrap(result)!;
-				}
 				return Array.Empty<T>();
 			}
 		}

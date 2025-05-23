@@ -7,7 +7,7 @@ using System.Xml.Linq;
 
 namespace Lexxys.Xml;
 
-public static class JsonItemExtenstions
+public static class JsonItemExtensions
 {
 	private const string XmlItemName = "item";
 

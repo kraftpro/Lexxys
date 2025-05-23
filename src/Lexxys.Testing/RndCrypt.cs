@@ -11,8 +11,6 @@ namespace Lexxys.Testing;
 public class RndCrypt: IRand
 {
 	private readonly RandomNumberGenerator _generator = RandomNumberGenerator.Create();
-	private const long SignificantValue = long.MaxValue >> 13;
-	private const double ToDoubleMult = (double)(SignificantValue - 1) / SignificantValue / long.MaxValue;
 
 	/// <inheritdoc/>
 #if NET6_0_OR_GREATER
@@ -28,15 +26,9 @@ public class RndCrypt: IRand
 #endif
 
 	/// <inheritdoc/>
-	public int NextInt32()
-	{
-		return (int)NextUInt32() & ~Int32.MinValue;;
-	}
+	public int NextInt32() => (int)NextUInt32() & ~Int32.MinValue;
 
-	public long NextInt64()
-	{
-		return (long)NextUInt64() & ~Int64.MinValue;;
-	}
+	public long NextInt64() => (long)NextUInt64() & ~Int64.MinValue;
 
 	public uint NextUInt32()
 	{

@@ -39,7 +39,7 @@ public static class XmlNodeExtensions
 			if (comparer.Equals(item.Name, name))
 				return item;
 		}
-		return XmlFragBuilder.Empty;
+		return Xml.XmlNodeBuilder.Empty;
 	}
 	public static IXmlNode Element(this IXmlNode node, string name, IEqualityComparer<string?> comparer)
 	{
@@ -48,7 +48,7 @@ public static class XmlNodeExtensions
 			if (comparer.Equals(item.Name, name))
 				return item;
 		}
-		return XmlFragBuilder.Empty;
+		return Xml.XmlNodeBuilder.Empty;
 	}
 	public static IXmlNode Element(this IXmlNode node, Func<IXmlNode, bool> predicate)
 	{
@@ -57,7 +57,7 @@ public static class XmlNodeExtensions
 			if (predicate(item))
 				return item;
 		}
-		return XmlFragBuilder.Empty;
+		return Xml.XmlNodeBuilder.Empty;
 	}
 
 	public static IXmlNode? FirstOrDefault(this IXmlNode node, string? name)
@@ -118,7 +118,7 @@ public static class XmlNodeExtensions
 			if (comparer.Equals(item.Name, name))
 				return item;
 		}
-		return XmlFragBuilder.Empty;
+		return Xml.XmlNodeBuilder.Empty;
 	}
 
 	public static IXmlReadOnlyNode Element(this IXmlReadOnlyNode node, string name, IEqualityComparer<string?> comparer)
@@ -128,7 +128,7 @@ public static class XmlNodeExtensions
 			if (comparer.Equals(item.Name, name))
 				return item;
 		}
-		return XmlFragBuilder.Empty;
+		return Xml.XmlNodeBuilder.Empty;
 	}
 
 	public static IXmlReadOnlyNode Element(this IXmlReadOnlyNode node, Func<IXmlReadOnlyNode, bool> predicate)
@@ -138,7 +138,7 @@ public static class XmlNodeExtensions
 			if (predicate(item))
 				return item;
 		}
-		return XmlFragBuilder.Empty;
+		return Xml.XmlNodeBuilder.Empty;
 	}
 
 

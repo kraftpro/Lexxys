@@ -127,7 +127,7 @@ public static partial class XmlTools
 
 	public static string Convert(ulong? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
-	public static string Convert(decimal value) => value.ToString();
+	public static string Convert(decimal value) => value.ToString(CultureInfo.InvariantCulture);
 
 	public static string Convert(decimal? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
@@ -235,7 +235,7 @@ public static partial class XmlTools
 
 		if (value.Length == 0) return text;
 		int size = ProjectedSize(value);
-		var local = size > Tools.SafeStackAllocChar ? new LocalStringBuilder(size): new LocalStringBuilder(stackalloc char[size]);
+		var local = size > Tools.MaxStackAllocSizeChar ? new LocalStringBuilder(size): new LocalStringBuilder(stackalloc char[size]);
 		Encode(value, encodeQuote, ref local);
 		text.Append(local.AsSpan());
 		local.Dispose();
@@ -248,7 +248,7 @@ public static partial class XmlTools
 	{
 		if (value.Length == 0) return String.Empty;
 		int size = ProjectedSize(value);
-		var local = size > Tools.SafeStackAllocChar ? new LocalStringBuilder(size): new LocalStringBuilder(stackalloc char[size]);
+		var local = size > Tools.MaxStackAllocSizeChar ? new LocalStringBuilder(size): new LocalStringBuilder(stackalloc char[size]);
 		Encode(value, encodeQuote, ref local);
 		var result = local.AsSpan().ToString();
 		local.Dispose();
@@ -261,7 +261,7 @@ public static partial class XmlTools
 	{
 		if (value.Length == 0) return "\"\"";
 		int size = ProjectedSize(value) + 2;
-		var local = size > Tools.SafeStackAllocChar ? new LocalStringBuilder(size): new LocalStringBuilder(stackalloc char[size]);
+		var local = size > Tools.MaxStackAllocSizeChar ? new LocalStringBuilder(size): new LocalStringBuilder(stackalloc char[size]);
 		local.Append('"');
 		Encode(value, true, ref local);
 		local.Append('"');
@@ -270,7 +270,7 @@ public static partial class XmlTools
 		return result;
 	}
 
-	private static int ProjectedSize(ReadOnlySpan<char> value) => value.Length + 86 < Tools.SafeStackAllocChar ? Tools.SafeStackAllocChar: value.Length + 256;
+	private static int ProjectedSize(ReadOnlySpan<char> value) => value.Length + 86 < Tools.MaxStackAllocSizeChar ? Tools.MaxStackAllocSizeChar: value.Length + 256;
 
 	public static StringBuilder EncodeAttribute(StringBuilder text, ReadOnlySpan<char> value)
 	{
@@ -309,7 +309,7 @@ public static partial class XmlTools
 		if (i < 0)
 			return text.Append(value);
 		int vlen = value.Length;
-		Span<char> buffer = vlen > Tools.SafeStackAllocChar ? new char[vlen] : stackalloc char[vlen];
+		Span<char> buffer = vlen > Tools.MaxStackAllocSizeChar ? new char[vlen] : stackalloc char[vlen];
 		var n = Decode(value, buffer);
 		return text.Append(buffer.Slice(0, n));
 	}
@@ -320,7 +320,7 @@ public static partial class XmlTools
 		if (i < 0)
 			return value.ToString();
 		int vlen = value.Length;
-		Span<char> buffer = vlen > Tools.SafeStackAllocChar ? new char[vlen] : stackalloc char[vlen];
+		Span<char> buffer = vlen > Tools.MaxStackAllocSizeChar ? new char[vlen] : stackalloc char[vlen];
 		var n = Decode(value, buffer);
 		return buffer.Slice(0, n).ToString();
 	}

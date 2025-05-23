@@ -49,7 +49,7 @@ namespace Lexxys.Tests.Configuration
 		[TestMethod]
 		public void GetListCollectsItemsFromAllConfigs()
 		{
-			var service = Statics.TryGetService<IConfigService>();
+			var service = Statics.GetService<IConfigService>();
 			service.AddConfiguration(new Uri("""
 				string:[txt]?
 				GetListCollectsItemsFromAllConfigs

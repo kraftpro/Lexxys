@@ -1,21 +1,18 @@
-// Lexxys Infrastructural library.
-// file: ConnectionStringInfo.cs
-//
-// Copyright (c) 2001-2014, Kraft Pro Utilities.
-// You may use this code under the terms of the MIT license
-//
+using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
 
 using Lexxys;
 using Lexxys.Xml;
 
+using System.Net.Mail;
+
 namespace Lexxys.Data;
 
 /// <summary>
 /// Provides information about connection to the data source.
 /// </summary>
-public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
+public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable<KeyValuePair<string, string>>
 {
 	public static readonly TimeSpan DefaultConnectionTimeout = new TimeSpan(0, 0, 5);
 	public static readonly TimeSpan DefaultConnectionAuditThreshold = new TimeSpan(0, 0, 1);
@@ -35,6 +32,8 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		ConnectionAuditThreshold = DefaultConnectionAuditThreshold;
 		CommandAuditThreshold = DefaultCommandAuditThreshold;
 		BatchAuditThreshold = DefaultBatchAuditThreshold;
+		ConnectionTimeout = DefaultConnectionTimeout;
+		CommandTimeout = DefaultCommandTimeout;
 	}
 
 	/// <summary>
@@ -58,6 +57,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 		CommandTimeout = connectionInfo.CommandTimeout;
 		CommandAuditThreshold = connectionInfo.CommandAuditThreshold;
 		BatchAuditThreshold = connectionInfo.BatchAuditThreshold;
+		TrustServerCertificate = connectionInfo.TrustServerCertificate;
 		if (connectionInfo._properties != null)
 			_properties = new Dictionary<string, string>(connectionInfo._properties);
 	}
@@ -140,7 +140,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			if (String.IsNullOrWhiteSpace(item.Key))
 				continue;
 			string name = item.Key.Trim();
-			string? value = item.Value ?? "";
+			string? value = item.Value ?? String.Empty;
 			string lookup = Regex.Replace(name, "[ _-]", "");
 			if (Synonyms.TryGetValue(lookup, out string? key))
 				lookup = key;
@@ -321,20 +321,20 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 	/// </summary>
 	public bool IsEmpty => Server == null && Database == null && _properties == null;
 
-	/// <summary>
-	/// Returns the value of the specified <paramref name="property"/>.
-	/// </summary>
-	/// <param name="property">Property name</param>
-	/// <returns></returns>
-	public string? this[string property]
+	public ConnectionStringInfo WithParameters(params (string Name, string Value)[] options) => WithParameters((IEnumerable<(string Name, string Value)>)options);
+
+	public ConnectionStringInfo WithParameters(IEnumerable<(string Name, string Value)>? options)
 	{
-		get
-		{
-			if (_properties == null)
-				return null;
-			_properties.TryGetValue(property, out string? value);
-			return value;
-		}
+		if (options == null)
+			return this;
+		return new ConnectionStringInfo(this, options.Select(o => new KeyValuePair<string, string>(o.Name, o.Value)));
+	}
+
+	public ConnectionStringInfo WithParameters(IEnumerable<KeyValuePair<string, string>>? options)
+	{
+		if (options == null)
+			return this;
+		return new ConnectionStringInfo(this, options);
 	}
 
 	/// <summary>
@@ -342,85 +342,77 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 	/// </summary>
 	/// <param name="odbc">Use ODBC escaping rules for the connection string.</param>
 	/// <returns></returns>
-	public string GetConnectionString(bool odbc = false)
-	{
-		return ToString(true, odbc);
-	}
+	public string GetConnectionString(bool odbc = false) => ToString(true, odbc);
 
-	private string ToString(bool includeCredentials, bool odbc = false)
+	public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
 	{
-		StringBuilder connection = new StringBuilder(128);
 		if (Server != null)
-			Append("server", Server);
+			yield return new KeyValuePair<string, string>("server", Server);
 		if (Database != null)
-			Append("database", Database);
+			yield return new KeyValuePair<string, string>("database", Database);
 		if (Application != null)
-			Append("app", Application);
+			yield return new KeyValuePair<string, string>("app", Application);
 		if (Workstation != null)
-			Append("wsid", Workstation);
-		if (ConnectionTimeout.Ticks > 0)
-			Append("timeout", (ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).ToString());
+			yield return new KeyValuePair<string, string>("wsid", Workstation);
+		if (ConnectionTimeout != default && ConnectionTimeout != DefaultConnectionTimeout)
+			yield return new KeyValuePair<string, string>("timeout", (ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).ToString());
 		if (TrustServerCertificate != null)
-			Append("trustServerCertificate", TrustServerCertificate.Value ? "true" : "false");
-
-		if (Password == null)
+			yield return new KeyValuePair<string, string>("trustServerCertificate", TrustServerCertificate.Value ? "true" : "false");
+		if (String.IsNullOrEmpty(Password))
 		{
-			connection.Append("trusted_connection=true;");
+			yield return new KeyValuePair<string, string>("trusted_connection", "true");
 		}
 		else
 		{
-			Append("uid", String.IsNullOrEmpty(UserId) ? "sa": UserId!);
-			if (includeCredentials)
-				Append("pwd", Password);
+			yield return new KeyValuePair<string, string>("uid", String.IsNullOrEmpty(UserId) ? "sa": UserId!);
+			yield return new KeyValuePair<string, string>("pwd", Password!);
 		}
 		if (_properties != null)
 		{
 			foreach (var item in _properties)
 			{
-				Append(item.Key, item.Value);
+				yield return item;
 			}
 		}
-		if (connection.Length > 0)
-			--connection.Length;
-		return connection.ToString();
+	}
 
-		void Append(string name, string value)
+	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+	private string ToString(bool includeCredentials, bool odbc = false)
+	{
+		StringBuilder connection = new StringBuilder(128);
+		foreach (var item in this)
 		{
-			connection.Append(name).Append('=');
-			AppendValue(value);
+			if (!includeCredentials && item.Key == "pwd")
+				continue;
+			connection.Append(odbc ? item.Key : item.Key.Replace("=", "==")).Append('=');
+			string value = item.Value;
+			if (value.Length != 0)
+			{
+				if (odbc)
+					if (IsOdbcCorrect(value))
+						connection.Append(value);
+					else
+						connection.Append('{').Append(value.Replace("}", "}}")).Append('}');
+				else // oledb
+					if (IsOleDbCorrect(value))
+						connection.Append(value);
+					else if (value.IndexOf('"') < 0)
+						connection.Append('"').Append(value).Append('"');
+					else if (value.IndexOf('\'') < 0)
+						connection.Append('\'').Append(value).Append('\'');
+					else
+						connection.Append('"').Append(value.Replace("\"", "\"\"")).Append('"');
+			}
 			connection.Append(';');
 		}
+		return connection.ToString();
 
-		void AppendValue(string value)
-		{
-			if (value.Length == 0)
-				return;
-			if (odbc)
-			{
-				if (IsOdbcCorrect(value))
-					connection.Append(value);
-				else if (value.IndexOf('{') < 0)
-					connection.Append('{').Append(value).Append('}');
-				else
-					connection.Append('{').Append(value.Replace("{", "{{")).Append('}');
-			}
-			else
-			{
-				if (IsOledbCorrect(value))
-					connection.Append(value);
-				else if (value.IndexOf('"') < 0)
-					connection.Append('"').Append(value).Append('"');
-				else if (value.IndexOf('\'') < 0)
-					connection.Append('\'').Append(value).Append('\'');
-				else
-					connection.Append('"').Append(value.Replace("\"", "\"\"")).Append('"');
-			}
-		}
+		static bool IsOdbcCorrect(string value) => (value[0] != '{' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[^1]) && String.Equals(value, "driver", StringComparison.OrdinalIgnoreCase) && value.IndexOf(';') < 0);
 
-		static bool IsOdbcCorrect(string value) => value[0] != '{' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[^1]) && value.IndexOf(';') < 0;
-
-		static bool IsOledbCorrect(string value) => value[0] != '"' && value[0] != '\'' && !Char.IsWhiteSpace(value[0]) && !Char.IsWhiteSpace(value[^1]) && value.IndexOf(';') < 0;
+		static bool IsOleDbCorrect(string value) => __oledbCorrect.IsMatch(value);
 	}
+	private static readonly Regex __oledbCorrect = new Regex(@"^[^""'=;\s\p{Cc}]*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
 	/// <summary>
 	/// Returns a string representation of the connection.
@@ -453,8 +445,21 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			CommandTimeout.GetHashCode(),
 			CommandAuditThreshold.GetHashCode(),
 			BatchAuditThreshold.GetHashCode(),
-			_properties?.GetHashCode() ?? 0
+			TrustServerCertificate?.GetHashCode() ?? 0,
+			GetItemsHashCode(_properties)
 			);
+
+		static int GetItemsHashCode(Dictionary<string, string>? dictionary)
+		{
+			if (dictionary == null) return 0;
+
+			int hash = 0;
+			foreach (var item in dictionary)
+			{
+				hash = HashCode.Join(hash, item.Key.GetHashCode(), item.Value.GetHashCode());
+			}
+			return hash;
+		}
 	}
 
 	/// <summary>
@@ -477,7 +482,8 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			ConnectionAuditThreshold == other.ConnectionAuditThreshold &&
 			CommandTimeout == other.CommandTimeout &&
 			CommandAuditThreshold == other.CommandAuditThreshold &&
-			BatchAuditThreshold == other.BatchAuditThreshold;
+			BatchAuditThreshold == other.BatchAuditThreshold &&
+			TrustServerCertificate == other.TrustServerCertificate;
 		if (!fieldsEqual)
 			return false;
 		if (_properties == null)
@@ -508,131 +514,159 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>
 			config.Attributes.Count <= 0 ? that : new ConnectionStringInfo(that, config.Attributes);
 	}
 
+	#region Parse connection string
+
 	private static IList<KeyValuePair<string, string>> ParseParameters(string value)
 	{
 		if (String.IsNullOrWhiteSpace(value))
-			return Array.Empty<KeyValuePair<string, string>>();
+			return [];
 		var parameters = new List<KeyValuePair<string, string>>();
 		var p = value.AsSpan();
 		while (p.Length > 0)
 		{
-			int i = p.IndexOf('=');
-			int j = p.IndexOf(';');
-			string name;
-
-			// name only
-			if (i < 0 || j >= 0 && j < i)
-			{
-				if (j < 0)
-				{
-					j = p.Length - 1;
-					name = p.Trim().ToString();
-				}
-				else
-				{
-					name = p.Slice(0, j).Trim().ToString();
-				}
-				if (name.Length > 0)
-					parameters.Add(new KeyValuePair<string, string>(name, String.Empty));
-				p = p.Slice(j + 1);
-				continue;
-			}
-
-			name = p.Slice(0, i).Trim().ToString();
-
-			p = SkipSpace(p.Slice(i + 1));
-			if (p.Length == 0 || p[0] == ';')
-			{
-				if (name.Length > 0)
-					parameters.Add(new KeyValuePair<string, string>(name, String.Empty));
-				if (p.Length > 0)
-					p = p.Slice(1);
-				continue;
-			}
+			(int i, string name) = ParseName(p);
+			p = p.Slice(i);
 
 			(i, string val) = ParseValue(p);
 			p = p.Slice(i);
-			j = p.IndexOf(';');
-			if (j < 0)
-			{
-				if (name.Length > 0)
-					parameters.Add(new KeyValuePair<string, string>(name, val));
-				return parameters;
-			}
+
 			if (name.Length > 0)
 				parameters.Add(new KeyValuePair<string, string>(name, val));
-			p = p.Slice(j + 1);
 		}
 		return parameters;
+	}
 
-		static ReadOnlySpan<char> SkipSpace(ReadOnlySpan<char> p)
+	private static int SkipSpace(ReadOnlySpan<char> p)
+	{
+		for (int i = 0; i < p.Length; ++i)
 		{
-			for (int i = 0; i < p.Length; ++i)
-			{
-				if (!Char.IsWhiteSpace(p[i]))
-					return p.Slice(i);
-			}
-			return [];
+			if (!Char.IsWhiteSpace(p[i]))
+				return i;
 		}
+		return p.Length;
+	}
 
-		static (int Length, string Value) ParseValue(ReadOnlySpan<char> p)
-		{
-			if (p.Length == 0)
-				return (0, String.Empty);
-			if (p[0] is '"' or '\'')
-				return ParseAdoValue(p);
-			if (p[0] is '{')
-				return ParseOdbcValue(p);
-			int i = p.IndexOf(';');
-			return i < 0 ?
-				(p.Length, p.TrimEnd().ToString()) :
-				(i, p.Slice(0, i).TrimEnd().ToString());
-		}
+	private const int LocalBufferSize = 512;
+	
+	private static (int Length, string Name) ParseName(ReadOnlySpan<char> p)
+	{
+		int len = SkipSpace(p);
+		var q = p[len..];
 
-		static (int Length, string Value) ParseAdoValue(ReadOnlySpan<char> p)
+		if (p.Length == 0)
+			return (0, String.Empty);
+
+		Span<char> name = stackalloc char[LocalBufferSize];
+		int l = 0;
+
+		for (; ; )
 		{
-			char d = p[0];
-			if (p.Length == 1)
-				return (1, String.Empty);
-			var text = new StringBuilder();
-			for (int i = 1; i < p.Length; ++i)
+			int i = q.IndexOfAny(['=', ';']);
+			if (i < 0)
 			{
-				char c = p[i];
-				if (c == '\\')
-					text.Append(++i < p.Length ? p[i]: c);
-				else if (c == d)
-					if (++i < p.Length && p[i] == d)
-						text.Append(d);
-					else
-						return (i, text.ToString());
-				else
-					text.Append(c);
+				l = Append(name, l, q.TrimEnd());
+				return (len + q.Length, name[0..l].ToString());
 			}
-			return (p.Length, text.ToString());
-		}
 
-		static (int Length, string Value) ParseOdbcValue(ReadOnlySpan<char> p)
-		{
-			if (p.Length == 1)
-				return (1, String.Empty);
-			var text = new StringBuilder();
-			for (int i = 1; i < p.Length; ++i)
+			if (q[i] == ';')
 			{
-				char c = p[i];
-				if (c == '}')
-					if (++i < p.Length && p[i] == '}')
-						text.Append('}');
-					else
-						return (i, text.ToString());
-				else
-					text.Append(c);
+				l = Append(name, l, q[..i].TrimEnd());
+				return (len + i + 1, name[0..l].ToString());
 			}
-			return (p.Length, text.ToString());
+
+			if (q.Length <= i + 1 || q[i + 1] != '=')
+			{
+				l = Append(name, l, q[..i].TrimEnd());
+				return (len + i + 1, name[0..l].ToString());
+			}
+
+			l = Append(name, l, q[..(i + 1)]);
+			len += i + 1;
+			q = q[(i + 2)..];
 		}
 	}
 
+	private static int Append(Span<char> buffer, int position, ReadOnlySpan<char> part)
+	{
+		Span<char> span = buffer[position..];
+		if (span.Length < part.Length)
+			part = part[..span.Length];
+		part.CopyTo(span);
+		return position + part.Length;
+	}
+
+	private static (int Length, string Value) ParseValue(ReadOnlySpan<char> p)
+	{
+		int len = SkipSpace(p);
+		p = p[len..];
+
+		if (p.Length == 0)
+			return (len, String.Empty);
+
+		if (p[0] is '"' or '\'')
+		{
+			var x = ParseOleDbValue(p);
+			return (len + x.Length, x.Value);
+		}
+		if (p[0] is '{')
+		{
+			var x = ParseOdbcValue(p);
+			return (len + x.Length, x.Value);
+		}
+
+		int i = p.IndexOf(';');
+		return i < 0 ?
+			(len + p.Length, p.TrimEnd().ToString()) :
+			(len + i + 1, p.Slice(0, i).TrimEnd().ToString());
+	}
+
+	private static int SkipSemicolon(ReadOnlySpan<char> p)
+	{
+		int l = SkipSpace(p);
+		return l < p.Length && p[l] == ';' ? l + 1 : l;
+	}
+
+	private static (int Length, string Value) ParseOleDbValue(ReadOnlySpan<char> p)
+	{
+		char d = p[0];
+		if (p.Length == 1)
+			return (1, String.Empty);
+		Span<char> value = stackalloc char[LocalBufferSize];
+		int l = 0;
+
+		for (int i = 1; i < p.Length; ++i)
+		{
+			char c = p[i];
+			if (c == d && (++i >= p.Length || p[i] != d))
+				return (i + SkipSemicolon(p.Slice(i)), value[0..l].ToString());
+			if (l < value.Length)
+				value[l++] = c;
+		}
+		return (p.Length, value[0..l].ToString());
+	}
+
+	private static (int Length, string Value) ParseOdbcValue(ReadOnlySpan<char> p)
+	{
+		if (p.Length == 1)
+			return (1, String.Empty);
+		Span<char> value = stackalloc char[LocalBufferSize];
+		int l = 0;
+
+		for (int i = 1; i < p.Length; ++i)
+		{
+			char c = p[i];
+			if (c == '}' && (++i >= p.Length || p[i] != '}'))
+				return (i + SkipSemicolon(p.Slice(i)), value[0..l].ToString());
+			if (l < value.Length)
+				value[l++] = c;
+		}
+		return (p.Length, value[0..l].ToString());
+	}
+
+	#endregion
+
 	#region Tables
-	private static readonly Dictionary<string, string> Synonyms = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+	private static readonly Dictionary<string, string> Synonyms = new(StringComparer.OrdinalIgnoreCase)
 		{
 			{ "userId",						"uid" },
 			{ "user",						"uid" },

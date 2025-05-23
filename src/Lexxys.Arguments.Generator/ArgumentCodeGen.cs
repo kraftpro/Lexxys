@@ -1,22 +1,32 @@
-﻿using System.Collections;
+﻿using System.Collections.Immutable;
 using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
+
 namespace Lexxys.Arguments.Generator;
 
 [Generator]
-public class ArgumentCodeGen: ISourceGenerator
+public class ArgumentCodeGen: IIncrementalGenerator
 {
 	private const string CliOptionInterface = "ICliParameters";
 	private const string CliParameters = "CliParameters";
 	private const string CliCommand = "CliCommand";
 	private const string CliOption = "CliOption";
 
-	public void Initialize(GeneratorInitializationContext context)
+	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
-		context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
+		var syntaxProvider = context.SyntaxProvider
+			.CreateSyntaxProvider(
+				(syntaxNode, _) => syntaxNode is AttributeSyntax attribute && attribute.Name.ToString() is CliParameters or CliParameters + "Attribute",
+				(syntaxContext, _) => (AttributeSyntax)syntaxContext.Node)
+			.Collect();
+
+		context.RegisterSourceOutput(syntaxProvider, (sourceProductionContext, attributes) =>
+		{
+			Execute(sourceProductionContext, attributes);
+		});
 	}
 
 	// private static readonly DiagnosticDescriptor CollectedArgumentWarning = new DiagnosticDescriptor(
@@ -27,17 +37,14 @@ public class ArgumentCodeGen: ISourceGenerator
 	// 	DiagnosticSeverity.Warning,
 	// 	isEnabledByDefault: true);
 
-	public void Execute(GeneratorExecutionContext context)
+	public void Execute(SourceProductionContext context, ImmutableArray<AttributeSyntax> attributes)
 	{
-		var collector = (SyntaxReceiver)context.SyntaxReceiver!;
-		var attributes = collector.Attributes;
-		if (attributes.Count <= 0) return;
+		if (attributes.IsDefaultOrEmpty) return;
 
-		List<ArgumentClassModel> models = attributes
+		List<ArgumentClassModel> models = [.. attributes
 			.Select(HandleCliArguments)
 			.Where(o => o != null)
-			.Select(o => o!)
-			.ToList();
+			.Select(o => o!)];
 		models.Sort(ModelsComparer.Instance);
 
 		var text = new StringBuilder();
@@ -172,17 +179,16 @@ public class ArgumentCodeGen: ISourceGenerator
 		--indent;
 		text.Append('\t', indent).AppendLine("}");
 
-		List<string[]> aliases = model.Properties
-			.Select(o => o.ParamAttribute?.Alias ?? o.CommandAttribute?.Alias ?? Array.Empty<string>())
-			.Where(o => o.Length > 0)
-			.ToList();
+		List<string[]> aliases = [.. model.Properties
+			.Select(o => o.ParamAttribute?.Alias ?? o.CommandAttribute?.Alias ?? [])
+			.Where(o => o.Length > 0)];
 		if (aliases.Count > 0)
 		{
 			for (var i = 0; i < aliases.Count; ++i)
 			{
 				Array.Sort(aliases[i]);
 			}
-			aliases = aliases.Distinct(AliasEqualityComparer.Instance).ToList();
+			aliases = [.. aliases.Distinct(AliasEqualityComparer.Instance)];
 		}
 
 		text.AppendLine();
@@ -391,12 +397,12 @@ public class ArgumentCodeGen: ISourceGenerator
 	private string[] GetAliasParameter(AttributeSyntax attrib)
 	{
 		List<(string? Name, AttributeArgumentSyntax Arg)>? attribPositional = GetPositionalParameters(attrib);
-		if (attribPositional == null) return Array.Empty<string>();
+		if (attribPositional == null) return [];
 
-		List<string> result = new List<string>();
-		foreach (var item in attribPositional)
+		List<string> result = [];
+		foreach (var (_, arg) in attribPositional)
 		{
-			ExpressionSyntax exp = item.Arg.Expression;
+			ExpressionSyntax exp = arg.Expression;
 			if (exp is CollectionExpressionSyntax collection)
 				result.AddRange(collection.Elements.Select(o => o.ToString()));
 			else if (exp is ImplicitArrayCreationExpressionSyntax { Initializer: not null } implicitArray)
@@ -406,7 +412,7 @@ public class ArgumentCodeGen: ISourceGenerator
 			else
 				result.Add(exp.ToString());
 		}
-		return result.ToArray();
+		return [.. result];
 	}
 
 	private List<(string? Name, AttributeArgumentSyntax Arg)>? GetPositionalParameters(AttributeSyntax attrib)
@@ -414,7 +420,7 @@ public class ArgumentCodeGen: ISourceGenerator
 		if (attrib.ArgumentList == null) return null;
 		SeparatedSyntaxList<AttributeArgumentSyntax> args = attrib.ArgumentList.Arguments;
 		if (args.Count == 0) return null;
-		List<(string? Name, AttributeArgumentSyntax Arg)> selected = args.Where(o => o.NameEquals == null).Select(o => (o.NameColon?.Name.Identifier.ValueText, o)).ToList();
+		List<(string? Name, AttributeArgumentSyntax Arg)> selected = [.. args.Where(o => o.NameEquals == null).Select(o => (o.NameColon?.Name.Identifier.ValueText, o))];
 		return selected.Count == 0 ? null : selected;
 	}
 
@@ -426,7 +432,7 @@ public class ArgumentCodeGen: ISourceGenerator
 			o => o.Arg.Expression.ToString()
 			) ?? __localEmpty;
 	}
-	private static readonly Dictionary<string, string> __localEmpty = new Dictionary<string, string>();
+	private static readonly Dictionary<string, string> __localEmpty = [];
 
 	private CliParamModel? GetParamAttribute(MemberDeclarationSyntax? member)
 	{
@@ -452,7 +458,7 @@ public class ArgumentCodeGen: ISourceGenerator
 		if (attrib.ArgumentList == null) return null;
 		SeparatedSyntaxList<AttributeArgumentSyntax> args = attrib.ArgumentList.Arguments;
 		if (args.Count == 0) return null;
-		List<(string Name, AttributeArgumentSyntax Arg)> selected = args.Where(o => o.NameEquals != null).Select(o => (o.NameEquals!.Name.Identifier.ValueText, o)).ToList();
+		List<(string Name, AttributeArgumentSyntax Arg)> selected = [.. args.Where(o => o.NameEquals != null).Select(o => (o.NameEquals!.Name.Identifier.ValueText, o))];
 		return selected.Count == 0 ? null : selected;
 	}
 
@@ -475,7 +481,7 @@ public class ArgumentCodeGen: ISourceGenerator
 
 	class SyntaxReceiver: ISyntaxReceiver
 	{
-		public List<AttributeSyntax> Attributes { get; } = new List<AttributeSyntax>();
+		public List<AttributeSyntax> Attributes { get; } = [];
 
 		public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
 		{

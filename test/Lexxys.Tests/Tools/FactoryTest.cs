@@ -22,11 +22,15 @@ namespace Lexxys.Tests.Tools
 
 		static FactoryTest()
 		{
-			var y = Config.Current.GetCollection<Lexxys.Xml.IXmlReadOnlyNode>(Factory.ConfigurationSynonyms);
-			if (y.Value is null || y.Value.Count == 0)
-				Debugger.Break();
-			Assert.IsNotNull(y.Value);
-			Assert.IsTrue(y.Value.Count > 0);
+			Config.Current.SetCollection(Factory.ConfigurationSynonyms, new List<KeyValuePair<string, string>>
+			{
+				new KeyValuePair<string, string>("Cardinal", "long"),
+				new KeyValuePair<string, string>("ID", "int"),
+				new KeyValuePair<string, string>("X", "void"),
+				new KeyValuePair<string, string>("FT", typeof(FactoryTest).FullName),
+				new KeyValuePair<string, string>("Z", typeof(ZeroElement).FullName),
+				new KeyValuePair<string, string>("Z0", typeof(PrivateZeroElement).FullName)
+			});
 		}
 
 		[TestMethod]

@@ -32,16 +32,8 @@ public abstract class JsonBuilder
 		Value
 	}
 
-	private readonly Stack<char> _elements;
+	private readonly Stack<char> _elements = [];
 	private State _state;
-
-	/// <summary>
-	/// Initializes a new instance of the <see cref="JsonBuilder"/> class.
-	/// </summary>
-	protected JsonBuilder()
-	{
-		_elements = new Stack<char>();
-	}
 
 	/// <summary>
 	/// Naming rules of the JSON items
@@ -200,8 +192,6 @@ public abstract class JsonBuilder
 				case TypeCode.Byte:
 				case TypeCode.SByte:
 				case TypeCode.Decimal:
-				case TypeCode.Single:
-				case TypeCode.Double:
 				case TypeCode.Int16:
 				case TypeCode.UInt16:
 				case TypeCode.Int32:
@@ -212,7 +202,16 @@ public abstract class JsonBuilder
 						return "\"" + Strings.ToNamingRule(cn.ToString(CultureInfo.InvariantCulture), NamingRule) + "\"";
 					else
 						return cn.ToString(CultureInfo.InvariantCulture);
-
+				case TypeCode.Single:
+				{
+					var v = (float)value;
+					return Single.IsNaN(v) || Single.IsInfinity(v) ? NullValue: v.ToString(CultureInfo.InvariantCulture);
+				}
+				case TypeCode.Double:
+				{
+					var v = (double)value;
+					return Double.IsNaN(v) || Double.IsInfinity(v) ? NullValue: v.ToString(CultureInfo.InvariantCulture);
+				}
 				case TypeCode.DateTime:
 					return "\"" + XmlTools.Convert((DateTime)value) + "\"";
 			}

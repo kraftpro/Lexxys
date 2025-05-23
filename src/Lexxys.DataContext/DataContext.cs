@@ -10,7 +10,7 @@ using System.Data.Common;
 namespace Lexxys.Data;
 
 /// <summary>
-/// The default implementation of <see cref="IDataContext" />.
+/// The SQL Server implementation of <see cref="IDataContext"/>.
 /// </summary>
 public sealed class MsSqlDataContext: IDataContext
 {
@@ -70,8 +70,6 @@ public sealed class MsSqlDataContext: IDataContext
 	public bool InTransaction => _context.TransactionsCount > 0;
 
 	public DateTime Now => _context.Now;
-
-	public IContextHolder HoldTheMoment() => new Dc.TimeHolder(this);
 
 	public IContextHolder Connection() => new Dc.Connecting(this);
 

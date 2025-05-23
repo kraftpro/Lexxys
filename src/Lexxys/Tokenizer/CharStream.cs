@@ -322,6 +322,7 @@ public ref struct CharStream
 	{
 		if (offset < 0)
 			throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
+
 		int index = offset == 0 ? _buffer.IndexOfAny(CrLf) : _buffer.Slice(offset).IndexOfAny(CrLf);
 		if (index < 0)
 		{

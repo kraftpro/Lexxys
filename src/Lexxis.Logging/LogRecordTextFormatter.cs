@@ -24,7 +24,7 @@ namespace Lexxys.Logging;
 public class LogRecordTextFormatter: ILogRecordFormatter
 {
 	public const int MaxIndents = 20;
-	private const int MAX_STACK_ALLOC = Lexxys.Tools.MaxStackAllocSize;
+	private const int MAX_STACK_ALLOC = Tools.MaxStackAllocSize;
 
 	private const string NullValue = "<null>";
 	private const string DbNullValue = "<db-null>";
@@ -104,10 +104,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		foreach (var arg in args)
 		{
 			writer.Write(newLine);
-			if (arg.Name == null)
-				writer.Write(NullValue);
-			else
-				writer.Write(arg.Name.AsSpan().Trim());
+			writer.Write(arg.Name.AsSpan().Trim());
 
 			writer.Write(" = ");
 			if (arg.Value is string str)
@@ -271,16 +268,14 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static void Write2(Span<char> buffer, int quot)
 		{
-			int rem;
-			quot = Math.DivRem(quot, 10, out rem);
+			quot = Math.DivRem(quot, 10, out int rem);
 			buffer[0] = (char)(quot + '0');
 			buffer[1] = (char)(rem + '0');
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static void Write4(Span<char> buffer, int quot)
 		{
-			int rem;
-			quot = Math.DivRem(quot, 10, out rem);
+			quot = Math.DivRem(quot, 10, out int rem);
 			buffer[3] = (char)(rem + '0');
 			quot = Math.DivRem(quot, 10, out rem);
 			buffer[2] = (char)(rem + '0');
@@ -291,8 +286,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static void Write5(Span<char> buffer, int quot)
 		{
-			int rem;
-			quot = Math.DivRem(quot, 10, out rem);
+			quot = Math.DivRem(quot, 10, out int rem);
 			buffer[4] = (char)(rem + '0');
 			quot = Math.DivRem(quot, 10, out rem);
 			buffer[3] = (char)(rem + '0');
@@ -407,7 +401,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 				}
 				*p++ = c;
 			}
-			Finish:;
+		Finish:;
 			int len = (int)(p - buffer);
 			return len == value.Length && !ctrl ? value: new string(buffer, 0, (int)(p - buffer));
 		}
@@ -503,7 +497,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			}
 		}
 	}
-	private static readonly Regex __formatRe = new Regex(@"\{\s*([a-zA-Z]+)\s*(,\s*[0-9]*)?\s*(:(.*?))?\s*\}", RegexOptions.Compiled);
+	// private static readonly Regex __formatRe = new Regex(@"\{\s*([a-zA-Z]+)\s*(,\s*[0-9]*)?\s*(:(.*?))?\s*\}", RegexOptions.Compiled);
 	private static readonly ConcurrentDictionary<string, List<LogRecordFormatItem>> __formatItems = new ConcurrentDictionary<string, List<LogRecordFormatItem>>();
 
 	private static readonly Dictionary<string, FormatItemType> NamesMap = new Dictionary<string, FormatItemType>(14, StringComparer.OrdinalIgnoreCase)

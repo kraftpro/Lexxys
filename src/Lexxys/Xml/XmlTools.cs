@@ -27,13 +27,13 @@ public static partial class XmlTools
 		=> FromXml(value, ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal);
 
 	public static IXmlReadOnlyNode FromXml(string value, StringComparer? comparer = null)
-		=> XmlFragBuilder.Create<IXmlReadOnlyNode>(comparer).Xml(value).Build()[0];
+		=> XmlNodeBuilder.Create<IXmlReadOnlyNode>(comparer).Xml(value).Build()[0];
 
 	public static IXmlReadOnlyNode FromXml(XmlReader reader, bool ignoreCase)
 		=> FromXml(reader, ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal);
 
 	public static IXmlReadOnlyNode FromXml(XmlReader reader, StringComparer? comparer = null)
-		=> XmlFragBuilder.Create<IXmlReadOnlyNode>(comparer).Xml(reader).Build()[0];
+		=> XmlNodeBuilder.Create<IXmlReadOnlyNode>(comparer).Xml(reader).Build()[0];
 
 	/// <summary>
 	/// Creates a new <see cref="IXmlReadOnlyNode"/> from the specified JSON string.
@@ -45,5 +45,5 @@ public static partial class XmlTools
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
 	public static IXmlReadOnlyNode FromJson(string value, string root, bool ignoreCase = false, bool forceAttributes = false)
-		=> value.Length == 0 ? XmlFragBuilder.Empty: JsonToXmlConverter.Convert(value, root, ignoreCase, forceAttributes);
+		=> value.Length == 0 ? XmlNodeBuilder.Empty: JsonToXmlConverter.Convert(value, root, ignoreCase, forceAttributes);
 }

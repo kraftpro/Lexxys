@@ -262,6 +262,7 @@ public static partial class Strings
 
 				return (Constructor: o, Parameter: pp[0], Parser: ps.Method);
 			})
+			.Where(o => o.Constructor != null)
 			.ToList();
 
 		if (constructors.Count > 1)

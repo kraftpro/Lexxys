@@ -10,8 +10,9 @@ using System.Reflection;
 using System.Text;
 using System.Xml;
 
+using Lexxys.Xml;
+
 namespace Lexxys;
-using Xml;
 
 /// <summary>
 /// Represents a writer that provides a fast, non-cached, forward-only way to generate

@@ -8,7 +8,7 @@
 		[TestMethod]
 		public void BuildReadOnlyXmlTest()
 		{
-			var xmlt = XmlFragBuilder.Create<IXmlReadOnlyNode>();
+			var xmlt = XmlNodeBuilder.Create<IXmlReadOnlyNode>();
 			xmlt.Begin("data1");
 			xmlt.Begin("data1.1");
 			xmlt.End();
@@ -16,7 +16,7 @@
 			Assert.AreEqual(1, xmlt.GetNodes().Count);
 			Assert.AreEqual("<data1><data1.1/></data1>", String.Join("", xmlt.GetNodes()));
 
-			xmlt = XmlFragBuilder.Create<IXmlReadOnlyNode>();
+			xmlt = XmlNodeBuilder.Create<IXmlReadOnlyNode>();
 			xmlt.Begin("data")
 					.Begin("node").Attrib("one", 1).Attrib("tho", 2).Value("text").End()
 					.Begin("second")
@@ -38,7 +38,7 @@
 		[TestMethod]
 		public void BuildReadWriteXmlTest()
 		{
-			var xmlt = XmlFragBuilder.Create<IXmlNode>();
+			var xmlt = XmlNodeBuilder.Create<IXmlNode>();
 			xmlt.Begin("data1");
 			xmlt.Begin("data1.1");
 			xmlt.End();
@@ -46,7 +46,7 @@
 			Assert.AreEqual(1, xmlt.GetNodes().Count);
 			Assert.AreEqual("<data1><data1.1/></data1>", String.Join("", xmlt.GetNodes()));
 
-			xmlt = XmlFragBuilder.Create<IXmlNode>();
+			xmlt = XmlNodeBuilder.Create<IXmlNode>();
 			xmlt.Begin("data")
 					.Begin("node").Attrib("one", 1).Attrib("tho", 2).Value("text").End()
 					.Begin("second")

@@ -8,25 +8,25 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Lexxys;
 
-public static class BlobStorageExtensions
+public static class BlobStorageFactoryExtensions
 {
 	/// <summary>
-	/// Returns <see cref="IBlobStorageProvider"/> for the specified <paramref name="location"/>.
+	/// Returns <see cref="IBlobStorageService"/> for the specified <paramref name="location"/>.
 	/// </summary>
 	/// <param name="factory">The blob storage factory</param>
 	/// <param name="location">The blob location</param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
 	/// <exception cref="ArgumentOutOfRangeException">Factory does not contain provider for the specified <paramref name="location"/>.</exception>
-	public static IBlobStorageProvider GetProvider(this IBlobStorage factory, Uri location)
+	public static IBlobStorageService GetProvider(this IBlobStorageFactory factory, Uri location)
 	{
 		if (factory is null) throw new ArgumentNullException(nameof(factory));
 
-		return factory.TryGetProvider(location) ?? throw new ArgumentOutOfRangeException(nameof(location), location, $"Cannot find {nameof(IBlobStorageProvider)} for {location}.");
+		return factory.TryGetService(location) ?? throw new ArgumentOutOfRangeException(nameof(location), location, $"Cannot find {nameof(IBlobStorageService)} for {location}.");
 	}
 
 	/// <summary>
-	/// Registers <see cref="IBlobStorage"/> factory as a singleton service.
+	/// Registers <see cref="IBlobStorageFactory"/> factory as a singleton service.
 	/// </summary>
 	/// <param name="services">The service collection</param>
 	/// <exception cref="ArgumentNullException"></exception>
@@ -34,6 +34,6 @@ public static class BlobStorageExtensions
 	{
 		if (services is null) throw new ArgumentNullException(nameof(services));
 
-		services.AddSingleton<IBlobStorage>(new BlobStorage());
+		services.AddSingleton<IBlobStorageFactory>(new BlobStorageFactory());
 	}
 }
