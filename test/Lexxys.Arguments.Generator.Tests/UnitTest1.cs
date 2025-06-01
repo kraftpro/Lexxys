@@ -29,8 +29,8 @@ public class UnitTest1
 
 	static Compilation CreateCompilation(string source)
 	=> CSharpCompilation.Create("compilation",
-		new[] { CSharpSyntaxTree.ParseText(source) },
-		new[] { MetadataReference.CreateFromFile(typeof(Binder).GetTypeInfo().Assembly.Location) },
+		[CSharpSyntaxTree.ParseText(source)],
+		[MetadataReference.CreateFromFile(typeof(Binder).GetTypeInfo().Assembly.Location)],
 		new CSharpCompilationOptions(OutputKind.ConsoleApplication));
 
 	private const string SeparateText = """

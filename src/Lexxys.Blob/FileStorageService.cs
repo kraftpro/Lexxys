@@ -228,21 +228,29 @@ public class FileStorageService: IBlobStorageService
 		return Task.CompletedTask;
 	}
 
-	private class LocalFileInfo(string filename): IBlobInfo
+	private class LocalFileInfo: IBlobInfo
 	{
-		private readonly FileInfo _fileInfo = new(filename);
+		private readonly FileInfo _fileInfo;
+		private readonly bool _exists;
 
-		public bool Exists => _fileInfo.Exists;
+		public LocalFileInfo(string filename)
+		{
+			_fileInfo = new(filename);
+			_exists = _fileInfo.Exists;
+		}
 
-		public long Length => _fileInfo.Length;
+
+		public bool Exists => _exists;
+
+		public long Length => _exists ? _fileInfo.Length: 0;
 
 		public string Path => _fileInfo.FullName;
 
 		public DateTimeOffset? LastModified => _fileInfo.LastWriteTimeUtc;
 
-		public Stream OpenReadStream() => _fileInfo.Exists ? new FileStream(_fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan): Stream.Null;
+		public Stream OpenReadStream() => _exists ? new FileStream(_fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.SequentialScan): Stream.Null;
 
-		public Task<Stream> OpenReadStreamAsync() => Task.FromResult(_fileInfo.Exists ? new FileStream(_fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan): Stream.Null);
+		public Task<Stream> OpenReadStreamAsync() => Task.FromResult(_exists ? new FileStream(_fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.SequentialScan): Stream.Null);
 	}
 
 	#region IDisposable Support

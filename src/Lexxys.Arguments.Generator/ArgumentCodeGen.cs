@@ -23,10 +23,7 @@ public class ArgumentCodeGen: IIncrementalGenerator
 				(syntaxContext, _) => (AttributeSyntax)syntaxContext.Node)
 			.Collect();
 
-		context.RegisterSourceOutput(syntaxProvider, (sourceProductionContext, attributes) =>
-		{
-			Execute(sourceProductionContext, attributes);
-		});
+		context.RegisterSourceOutput(syntaxProvider, Execute);
 	}
 
 	// private static readonly DiagnosticDescriptor CollectedArgumentWarning = new DiagnosticDescriptor(
@@ -79,7 +76,7 @@ public class ArgumentCodeGen: IIncrementalGenerator
 				while (indent > 0)
 				{
 					--indent;
-					text.Append('\t', indent).Append("}").AppendLine();
+					text.Indent(indent).Append("}").AppendLine();
 				}
 				text.AppendLine()
 					.Append("namespace ").Append(lastNamespace).AppendLine()
@@ -92,7 +89,7 @@ public class ArgumentCodeGen: IIncrementalGenerator
 				{
 					--indent;
 					i = lastName.LastIndexOf('+');
-					text.Append('\t', indent).Append("}").AppendLine();
+					text.Indent(indent).Append("}").AppendLine();
 					if (i < 0)
 					{
 						lastName = String.Empty;
@@ -108,7 +105,7 @@ public class ArgumentCodeGen: IIncrementalGenerator
 			i = name.IndexOf('+');
 			while (i > 0)
 			{
-				text.Append('\t', indent).Append("partial class ").Append(name, 0, i).AppendLine();
+				text.Indent(indent).Append("partial class ").Append(name, 0, i).AppendLine();
 				name = name.Substring(i + 1);
 				i = name.IndexOf('+');
 				++indent;
@@ -121,7 +118,7 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		while (indent > 0)
 		{
 			--indent;
-			text.Append('\t', indent).Append("}").AppendLine();
+			text.Indent(indent).Append("}").AppendLine();
 		}
 		var source = text.ToString();
 		context.AddSource("CliGeneratorExtensions_Generated.g.cs", source);
@@ -129,55 +126,55 @@ public class ArgumentCodeGen: IIncrementalGenerator
 
 	private static void GenerateClass(int indent, StringBuilder text, ArgumentClassModel model)
 	{
-		text.Append('\t', indent).AppendLine($"partial class {model.Name}: {CliOptionInterface}<{model.Name}>");
-		text.Append('\t', indent).AppendLine("{");
+		text.Indent(indent).AppendLine($"partial class {model.Name}: {CliOptionInterface}<{model.Name}>");
+		text.Indent(indent).AppendLine("{");
 		++indent;
-		text.Append('\t', indent).AppendLine($"public static ParsedArguments<{model.Name}> Parse(IReadOnlyCollection<string> args, ArgumentsBuilderSettings settings) => Parse(args, new ArgumentsBuilder(settings));");
+		text.Indent(indent).AppendLine($"public static ParsedArguments<{model.Name}> Parse(IReadOnlyCollection<string> args, ArgumentsBuilderSettings settings) => Parse(args, new ArgumentsBuilder(settings));");
 		text.AppendLine();
-		text.Append('\t', indent).AppendLine($"public static ParsedArguments<{model.Name}> Parse(IReadOnlyCollection<string> args, ArgumentsBuilder? builder = null)");
-		text.Append('\t', indent).AppendLine("{");
+		text.Indent(indent).AppendLine($"public static ParsedArguments<{model.Name}> Parse(IReadOnlyCollection<string> args, ArgumentsBuilder? builder = null)");
+		text.Indent(indent).AppendLine("{");
 		++indent;
-		text.Append('\t', indent).AppendLine("Arguments arguments = CreateBuilder(builder).Build(args);");
-		text.Append('\t', indent).AppendLine("var error = new List<string>();");
-		text.Append('\t', indent).AppendLine("var obj = Parse(arguments, error);");
-		text.Append('\t', indent).AppendLine($"return new ParsedArguments<{model.Name}>(arguments, obj, error);");
+		text.Indent(indent).AppendLine("Arguments arguments = CreateBuilder(builder).Build(args);");
+		text.Indent(indent).AppendLine("var error = new List<string>();");
+		text.Indent(indent).AppendLine("var obj = Parse(arguments, error);");
+		text.Indent(indent).AppendLine($"return new ParsedArguments<{model.Name}>(arguments, obj, error);");
 		--indent;
-		text.Append('\t', indent).AppendLine("}");
+		text.Indent(indent).AppendLine("}");
 		text.AppendLine();
-		text.Append('\t', indent).AppendLine($"public static {model.Name} Parse(IArgumentCommand cmd, ICollection<string>? error = null)");
-		text.Append('\t', indent).AppendLine("{");
+		text.Indent(indent).AppendLine($"public static {model.Name} Parse(IArgumentCommand cmd, ICollection<string>? error = null)");
+		text.Indent(indent).AppendLine("{");
 		++indent;
 
-		text.Append('\t', indent).AppendLine("if (cmd is null) throw new ArgumentNullException(nameof(cmd));").AppendLine();
+		text.Indent(indent).AppendLine("if (cmd is null) throw new ArgumentNullException(nameof(cmd));").AppendLine();
 
 		int k = 0;
 		foreach (var item in model.Properties)
 		{
 			if (item.IsCommand) continue;
-			text.Append('\t', indent).Append("cmd.Parameters.TryGetValue<").Append(item.Type)
+			text.Indent(indent).Append("cmd.Parameters.TryGetValue<").Append(item.Type)
 				.Append(">(\"").AppendArgName(item.Name).Append("\", out var p").Append(++k).AppendLine(", error);");
 		}
-		text.Append('\t', indent).Append("return new ").AppendLine(model.Name)
-			.Append('\t', indent).AppendLine("{");
+		text.Indent(indent).Append("return new ").AppendLine(model.Name)
+			.Indent(indent).AppendLine("{");
 
 		++indent;
 		k = 0;
 		foreach (var item in model.Properties)
 		{
 			if (item.IsCommand) continue;
-			text.Append('\t', indent).Append(item.Name).Append(" = p").Append(++k).AppendLine(",");
+			text.Indent(indent).Append(item.Name).Append(" = p").Append(++k).AppendLine(",");
 		}
 		foreach (var item in model.Properties)
 		{
 			if (!item.IsCommand) continue;
-			text.Append('\t', indent).Append(item.Name)
+			text.Indent(indent).Append(item.Name)
 				.Append(" = cmd.Command?.Name == \"").AppendArgName(item.Name).Append("\" ? ")
 				.Append(item.Type?.TrimEnd('?')).AppendLine(".Parse(cmd.Command, error): null,");
 		}
 		--indent;
-		text.Append('\t', indent).AppendLine("};");
+		text.Indent(indent).AppendLine("};");
 		--indent;
-		text.Append('\t', indent).AppendLine("}");
+		text.Indent(indent).AppendLine("}");
 
 		List<string[]> aliases = [.. model.Properties
 			.Select(o => o.ParamAttribute?.Alias ?? o.CommandAttribute?.Alias ?? [])
@@ -192,10 +189,10 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		}
 
 		text.AppendLine();
-		text.Append('\t', indent).AppendLine("public static ArgumentsBuilder CreateBuilder(ArgumentsBuilderSettings settings) => CreateBuilder(new ArgumentsBuilder(settings));");
+		text.Indent(indent).AppendLine("public static ArgumentsBuilder CreateBuilder(ArgumentsBuilderSettings settings) => CreateBuilder(new ArgumentsBuilder(settings));");
 
 		text.AppendLine();
-		text.Append('\t', indent).Append("public static ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null) => (builder ?? new ArgumentsBuilder())");
+		text.Indent(indent).Append("public static ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null) => (builder ?? new ArgumentsBuilder())");
 		foreach (var item in model.Properties)
 		{
 			if (item.IsCommand) continue;
@@ -227,18 +224,9 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		}
 		text.AppendLine(";");
 
-		//if (aliases.Count > 0)
-		//{
-		//	for (int i = 0; i < aliases.Count; ++i)
-		//	{
-		//		if (aliases[i].Length > 0)
-		//			text.Append('\t', indent).Append("private static readonly string[] __alias_").Append(i)
-		//				.Append(" = new[] { ").Append(String.Join(", ", aliases[i])).AppendLine(" };");
-		//	}
-		//}
 		if (aliases.Count > 0)
 		{
-			text.Append('\t', indent).Append("private static readonly string[][] __aliases = [[");
+			text.Indent(indent).Append("private static readonly string[][] __aliases = [[");
 			for (int i = 0; i < aliases.Count; ++i)
 			{
 				if (i > 0)
@@ -327,55 +315,9 @@ public class ArgumentCodeGen: IIncrementalGenerator
 				}
 				return valid;
 			}
-			// var propName = property.Identifier.ValueText;
-			// var propType = prop.Type.ToString();
-			// var propAccessors = prop.AccessorList!;
-			// var propGet = propAccessors.Accessors.FirstOrDefault(o => o.IsKind(SyntaxKind.GetAccessorDeclaration));
-			// var propSet = propAccessors.Accessors.FirstOrDefault(o => o.IsKind(SyntaxKind.SetAccessorDeclaration));
-			// var propInit = propAccessors.Accessors.FirstOrDefault(o => o.IsKind(SyntaxKind.InitAccessorDeclaration));
-			// var propModifiers = prop.Modifiers.Select(p => p.ValueText).ToList();
 		}
 
 		return classRecord;
-
-
-
-
-		// var attribList = attrib.Parent as AttributeListSyntax;
-		// var cls = attrib.Parent!.Parent as ClassDeclarationSyntax;
-		// var attribArgs = attrib.ArgumentList!.Arguments;
-		// foreach (var attribArg in attribArgs)
-		// {
-		// 	var expression = attribArg.Expression;
-		// 	var nameEqual = attribArg.NameEquals;
-		// 	var nameColon = attribArg.NameColon;
-		// 	var nameId = nameColon != null ? nameColon.Name : nameEqual != null ? nameEqual.Name : null;
-		// 	var name = nameId?.Identifier.ValueText;
-		// 	var exp = nameColon != null ? nameColon.Expression : null; // nameEqual != null ? nameEqual.E
-		// 	Debug.Print(name);
-		// }
-		// var cls = attribList!.Parent as ClassDeclarationSyntax;
-		// var clsName = cls!.Identifier.ValueText;
-		// foreach (var member in cls.Members)
-		// {
-		// 	var memStr = member.ToString();
-		// 	var memberAttr = member.AttributeLists;
-		// 	var memberAttrStr = memberAttr.ToString();
-		// 	if (member is PropertyDeclarationSyntax prop)
-		// 	{
-		// 		var propName = prop.Identifier.ValueText;
-		// 		var propType = prop.Type.ToString();
-		// 		var propAccessors = prop.AccessorList!;
-		// 		var propGet = propAccessors.Accessors.FirstOrDefault(o => o.IsKind(SyntaxKind.GetAccessorDeclaration));
-		// 		var propSet = propAccessors.Accessors.FirstOrDefault(o => o.IsKind(SyntaxKind.SetAccessorDeclaration));
-		// 		var propInit = propAccessors.Accessors.FirstOrDefault(o => o.IsKind(SyntaxKind.InitAccessorDeclaration));
-		// 		var propModifiers = prop.Modifiers.Select(p => p.ValueText).ToList();
-		//
-		// 	}
-		// 	else if (member is FieldDeclarationSyntax field)
-		// 	{
-		// 	}
-		// }
 	}
 
 	private CliCommandModel? GetCommandAttribute(MemberDeclarationSyntax? member)
@@ -388,9 +330,9 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		IDictionary<string, string> optional = GetFieldsAssignment(attrib);
 
 		var pm = new CliCommandModel(
-			name: optional.GetValueOrDefault("Name"),
-			alias: alias,
-			description: optional.GetValueOrDefault("Description"));
+			Name: optional.GetValueOrDefault("Name"),
+			Alias: alias,
+			Description: optional.GetValueOrDefault("Description"));
 		return pm;
 	}
 
@@ -444,12 +386,12 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		IDictionary<string, string> optional = GetFieldsAssignment(attrib);
 
 		var pm = new CliParamModel(
-			name: optional.GetValueOrDefault("Name"),
-			alias: alias,
-			valueName: optional.GetValueOrDefault("ValueName"),
-			description: optional.GetValueOrDefault("Description"),
-			positional: optional.GetValueOrDefault("Positional"),
-			required: optional.GetValueOrDefault("Required"));
+			Name: optional.GetValueOrDefault("Name"),
+			Alias: alias,
+			ValueName: optional.GetValueOrDefault("ValueName"),
+			Description: optional.GetValueOrDefault("Description"),
+			Positional: optional.GetValueOrDefault("Positional"),
+			Required: optional.GetValueOrDefault("Required"));
 		return pm;
 	}
 
@@ -493,65 +435,4 @@ public class ArgumentCodeGen: IIncrementalGenerator
 			}
 		}
 	}
-
-	// class ContextReceiver: ISyntaxContextReceiver
-	// {
-	// 	public List<AttributeSyntax> Attributes { get; } = new List<AttributeSyntax>();
-	//
-	// 	public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
-	// 	{
-	// 		if (context.Node is not AttributeSyntax attribute) return;
-	// 		var attributeName = attribute.Name.ToString();
-	// 		if (attributeName is CliParameters or CliParameters + "Attribute" or CliCommand or CliCommand + "Attribute" or CliOption or CliOption + "Attribute")
-	// 		{
-	// 			Attributes.Add(attribute);
-	// 		}
-	// 	}
-	// }
-	//
-	// class EmptyDictionary<TKey, TValue>: IDictionary<TKey, TValue>
-	// {
-	// 	public static readonly IDictionary<TKey, TValue> Instance = new EmptyDictionary<TKey, TValue>();
-	//
-	// 	public TValue this[TKey key] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-	//
-	// 	public ICollection<TKey> Keys => Array.Empty<TKey>();
-	//
-	// 	public ICollection<TValue> Values => Array.Empty<TValue>();
-	//
-	// 	public int Count => 0;
-	//
-	// 	public bool IsReadOnly => true;
-	//
-	// 	public void Add(TKey key, TValue value) => throw new NotImplementedException();
-	//
-	// 	public void Add(KeyValuePair<TKey, TValue> item) => throw new NotImplementedException();
-	//
-	// 	public void Clear() { }
-	//
-	// 	public bool Contains(KeyValuePair<TKey, TValue> item) => false;
-	//
-	// 	public bool ContainsKey(TKey key) => false;
-	//
-	// 	public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
-	//
-	// 	public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => Enumerable.Empty<KeyValuePair<TKey, TValue>>().GetEnumerator();
-	//
-	// 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-	//
-	// 	public bool Remove(TKey key) => false;
-	//
-	// 	public bool Remove(KeyValuePair<TKey, TValue> item) => false;
-	//
-	// 	public bool TryGetValue(TKey key, out TValue value)
-	// 	{
-	// 		value = default!;
-	// 		return false;
-	// 	}
-	// }
-}
-
-internal static class Extensions
-{
-	public static TValue? GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) => dictionary.TryGetValue(key, out var value) ? value: default;
 }

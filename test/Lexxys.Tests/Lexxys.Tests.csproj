@@ -20,9 +20,9 @@
 
   <ItemGroup>
     <PackageReference Include="MSTest" Version="3.9.*" />
-    <PackageReference Include="BenchmarkDotNet" Version="0.14.*" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.*" />
     <PackageReference Include="System.Formats.Asn1" Version="9.0.*" />
-    <PackageReference Include="System.Private.Uri" Version="4.3.*" />
+    <PackageReference Include="System.Private.Uri" Version="4.3.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lexxys.Blob\Lexxys.Blob.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.DataContext\Lexxys.DataContext.csproj" />
+    <ProjectReference Include="..\..\src\Lexxys.Results\Lexxys.Results.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Testing\Lexxys.Testing.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Validation\Lexxys.Validation.csproj" />
     <ProjectReference Include="..\..\src\Lexxys\Lexxys.csproj" />

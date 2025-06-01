@@ -7,24 +7,37 @@ public class AzureBlobStorageService: IBlobStorageService
 {
 	private static readonly IReadOnlyCollection<string> _supportedSchemes = [Uri.UriSchemeHttp, Uri.UriSchemeHttps];
 	private readonly BlobServiceClient _blobServiceClient;
+	private readonly BlobContainerClient _blobContainerClient;
 
-	public AzureBlobStorageService(string connectionString)
+	public AzureBlobStorageService(string connectionString, string container)
 	{
 		_blobServiceClient = new BlobServiceClient(connectionString);
+		_blobContainerClient = _blobServiceClient.GetBlobContainerClient(container);
 	}
 
 	public IReadOnlyCollection<string> SupportedSchemes => _supportedSchemes;
 
-	public bool CanOpen(Uri location)
+	public bool CanOpen(Uri location) => SupportedSchemes.Contains(location.Scheme);
+
+	protected virtual BlobClient GetBlobClient(Uri location)
 	{
-		return SupportedSchemes.Contains(location.Scheme);
+		return _blobContainerClient.GetBlobClient(location.AbsolutePath.TrimStart('/'));
 	}
 
 	public IBlobInfo GetFileInfo(Uri location)
 	{
+		var x = SplitUrl(location);
 		var blobClient = GetBlobClient(location);
 		var properties = blobClient.GetProperties();
 		return new AzureBlobInfo(location, properties);
+	}
+
+	private static (string? Container, string? Blob) SplitUrl(Uri location)
+	{
+		var scheme = location.Scheme;
+		var parts = location.AbsolutePath.Split(['/'], 3, StringSplitOptions.None);
+		return scheme != "azure" || parts.Length < 2 ? default:
+			parts.Length < 3 ? (parts[1], null): (parts[1], parts[2]);
 	}
 
 	public async Task<IBlobInfo> GetFileInfoAsync(Uri location, CancellationToken cancellationToken = default)
@@ -87,12 +100,6 @@ public class AzureBlobStorageService: IBlobStorageService
 	public void Dispose()
 	{
 		// Dispose resources if necessary
-	}
-
-	private BlobClient GetBlobClient(Uri location)
-	{
-		var blobContainerClient = _blobServiceClient.GetBlobContainerClient(location.Host);
-		return blobContainerClient.GetBlobClient(location.AbsolutePath.TrimStart('/'));
 	}
 
 	private class AzureBlobInfo: IBlobInfo

@@ -1,9 +1,6 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 
-using Lexxys;
-
-
 namespace Lexxys;
 
 public class AmazonBlobStorageService: IBlobStorageService

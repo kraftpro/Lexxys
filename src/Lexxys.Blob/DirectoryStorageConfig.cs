@@ -17,6 +17,7 @@ namespace Lexxys;
 public class DirectoryStorageConfig
 {
 	private const string DefaultTemporaryFolder = ".t";
+	private const int DefaultRadix = 10;
 
 	/// <summary>
 	/// Default configuration
@@ -70,28 +71,25 @@ public class DirectoryStorageConfig
 			DirectoryCount = 0;
 			FileCount = 0;
 			if (radix == 0)
-				radix = 10;
+				radix = DefaultRadix;
+		}
+		else if (directoryCount == 0 && fileCount == 0)
+		{
+			if (radix == 0)
+				radix = DefaultRadix;
+			DirectoryCount = radix * radix;
+			FileCount = DirectoryCount * radix;
 		}
 		else
 		{
-			if (directoryCount == 0 && fileCount == 0)
-			{
-				if (radix == 0)
-					radix = 10;
-				DirectoryCount = radix * radix;
-				FileCount = DirectoryCount * radix;
-			}
-			else
-			{
-				if (radix == 0)
-					radix = DefaultRadix(directoryCount > 0 ? directoryCount: fileCount);
+			if (radix == 0)
+				radix = GetRadixFromCount(directoryCount > 0 ? directoryCount: fileCount);
 
-				if (fileCount > 0 && fileCount < radix)
-					throw new ArgumentOutOfRangeException(nameof(fileCount), fileCount, null);
+			if (fileCount > 0 && fileCount < radix)
+				throw new ArgumentOutOfRangeException(nameof(fileCount), fileCount, null);
 
-				DirectoryCount = directoryCount > 0 ? directoryCount: fileCount / radix;
-				FileCount = fileCount > 0 ? fileCount: directoryCount * radix;
-			}
+			DirectoryCount = directoryCount > 0 ? directoryCount: fileCount / radix;
+			FileCount = fileCount > 0 ? fileCount: directoryCount * radix;
 		}
 
 		PathSeparator = pathSeparator == default ? Path.DirectorySeparatorChar: pathSeparator;
@@ -110,7 +108,7 @@ public class DirectoryStorageConfig
 			return temporary.TrimEnd().TrimEnd(separator).TrimToNull() ?? DefaultTemporaryFolder;
 		}
 
-		static int DefaultRadix(int count) => count switch
+		static int GetRadixFromCount(int count) => count switch
 		{
 			8 => 8,
 			8*8 => 8,
@@ -131,7 +129,7 @@ public class DirectoryStorageConfig
 			36*36 => 36,
 			36*36*36 => 36,
 			36*36*36*36 => 36,
-			_ => count % 16 == 0 ? 16: count % 36 == 0 ? 36: 10
+			_ => count % 16 == 0 ? 16: count % 36 == 0 ? 36: DefaultRadix
 		};
 	}
 
@@ -186,12 +184,12 @@ public class DirectoryStorageConfig
 
 		public string FormatName(ulong value) => Format(value, _radix, _nameWidth);
 
-		private static unsafe string Format(ulong value, uint radix, int width)
+		private static string Format(ulong value, uint radix, int width)
 		{
 			if (value == 0)
 				return new string('0', width);
 
-			var array = stackalloc char[64];
+			Span<char> array = stackalloc char[64];
 			int i = 64;
 			while (value > 0)
 			{
@@ -202,7 +200,7 @@ public class DirectoryStorageConfig
 			{
 				array[--i] = '0';
 			}
-			return new string(array, i, 64 - i);
+			return array.Slice(i, 64 - i).ToString();
 		}
 		private static readonly char[] __digits = ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'];
 	}
@@ -240,11 +238,11 @@ public class DirectoryStorageConfig
 	public static long NextSalt(long salt) => salt + 1 + (__r.Next() & 15);
 #endif
 
-	private static unsafe void AppendDirectory(StringBuilder path, ulong index, uint directoryCount, uint fileCount, Fmt format, char pathSeparator, DirectoryGenerationMode mode)
+	private static void AppendDirectory(StringBuilder path, ulong index, uint directoryCount, uint fileCount, Fmt format, char pathSeparator, DirectoryGenerationMode mode)
 	{
 		if (mode == DirectoryGenerationMode.BigEndian)
 		{
-			var stack = stackalloc ulong[32];
+			Span<ulong> stack = stackalloc ulong[32];
 			// 1234567 -> "/12/34"
 			var k = index / fileCount;
 			int i = 0;

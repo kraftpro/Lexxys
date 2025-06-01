@@ -1,88 +1,29 @@
 ﻿namespace Lexxys.Arguments.Generator;
 
-public class CliArgumentsModel
+public record CliArgumentsModel(string? IgnoreCase, string? AllowSlash, string? StrictDoubleDash, string? DoubleDashSeparator, string? IgnoreNameSeparators, string? AllowUnknown, string? SplitPositional, string? CombineOptions, string? ColonSeparator, string? EqualSeparator, string? BlankSeparator)
 {
-	public CliArgumentsModel() { }
-	
-	public CliArgumentsModel(string? ignoreCase, string? allowSlash, string? strictDoubleDash, string? doubleDashSeparator, string? ignoreNameSeparators, string? allowUnknown, string? splitPositional, string? combineOptions, string? colonSeparator, string? equalSeparator, string? blankSeparator)
-	{
-		IgnoreCase = ignoreCase;
-		AllowSlash = allowSlash;
-		StrictDoubleDash = strictDoubleDash;
-		DoubleDashSeparator = doubleDashSeparator;
-		IgnoreNameSeparators = ignoreNameSeparators;
-		AllowUnknown = allowUnknown;
-		SplitPositional = splitPositional;
-		CombineOptions = combineOptions;
-		ColonSeparator = colonSeparator;
-		EqualSeparator = equalSeparator;
-		BlankSeparator = blankSeparator;
-	}
-
-	public string? IgnoreCase { get; init; }
-	public string? AllowSlash { get; init; }
-	public string? StrictDoubleDash { get; init; }
-	public string? DoubleDashSeparator { get; init; }
-	public string? IgnoreNameSeparators { get; init; }
-	public string? AllowUnknown { get; init; }
-	public string? SplitPositional { get; init; }
-	public string? CombineOptions { get; init; }
-	public string? ColonSeparator { get; init; }
-	public string? EqualSeparator { get; init; }
-	public string? BlankSeparator { get; init; }
+	public CliArgumentsModel() : this(null, null, null, null, null, null, null, null, null, null, null) { }
 }
 
-public class CliCommandModel
+public record CliCommandModel(string? Name, string[] Alias, string? Description)
 {
-	public CliCommandModel() { }
-	
-	public CliCommandModel(string? name, string[]? alias, string? description)
+	public CliCommandModel(string? name, string? description): this(name, [], description)
 	{
-		Name = name;
-		Alias = alias ?? [];
-		Description = description;
 	}
-
-	public string? Name { get; init; }
-	public string[] Alias { get; init; } = [];
-	public string? Description { get; init; }
 }
 
-public class CliParamModel
+public record CliParamModel(string? Name, string[] Alias, string? ValueName, string? Description, string? Required, string? Positional)
 {
-	public CliParamModel() { }
-	
-	public CliParamModel(string? name, string[]? alias, string? valueName, string? description, string? required, string? positional)
+	public CliParamModel(string? name, string? valueName, string? description, string? required, string? positional)
+		: this(name, [], valueName, description, required, positional)
 	{
-		Name = name;
-		Alias = alias ?? [];
-		ValueName = valueName;
-		Description = description;
-		Required = required;
-		Positional = positional;
 	}
-
-	public string? Name { get; init; }
-	public string[] Alias { get; init; } = [];
-	public string? ValueName { get; init; }
-	public string? Description { get; init; }
-	public string? Required { get; init; }
-	public string? Positional { get; init; }
 }
 
-public class ArgumentClassModel
+public record ArgumentClassModel(string Name, string NameSpace, CliArgumentsModel? Attribute = null)
 {
-	public ArgumentClassModel(string name, string nameSpace, CliArgumentsModel? attribute = null)
-	{
-		Name = name;
-		NameSpace = nameSpace;
-		Attribute = attribute;
-	}
-
-	public string Name { get; init; }
-	public string NameSpace { get; init; }
 	public List<ArgumentPropertyModel> Properties { get; } = [];
-	public CliArgumentsModel? Attribute { get; init; }
+
 	public string FullName => $"{NameSpace}+{Name}";
 }
 

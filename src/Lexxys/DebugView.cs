@@ -25,5 +25,3 @@ class DictionaryDebugView<TKey, TValue>(IDictionary<TKey, TValue> data)
 	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
 	public KeyValuePair<TKey, TValue>[] Items => [.. data];
 }
-
-

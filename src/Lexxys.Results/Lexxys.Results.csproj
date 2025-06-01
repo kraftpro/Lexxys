@@ -9,13 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.*" />
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
-    <PackageReference Include="System.Text.Encodings.Web" Version="9.0.5" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Lexxys.Blob\Lexxys.Blob.csproj" />
+    <PackageReference Include="System.ValueTuple" Version="4.6.*" />
   </ItemGroup>
 
 </Project>

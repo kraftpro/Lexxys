@@ -9,6 +9,9 @@ using System.Data.Common;
 
 namespace Lexxys.Data;
 
+/// <summary>
+/// Provides a context for database operations.
+/// </summary>
 public interface IDataContext: IDisposable
 {
 	/// <summary>
@@ -32,7 +35,7 @@ public interface IDataContext: IDisposable
 	TimeSpan TotalTime { get; }
 
 	/// <summary>
-	/// Total time spent in opening and committing database transactions.
+	/// Indicates that the database transaction is active.
 	/// </summary>
 	bool InTransaction { get; }
 

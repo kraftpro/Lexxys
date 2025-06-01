@@ -1,0 +1,4 @@
+[TestMethod] [Test]
+public void public async Task
+Assert\.(IsTrue|IsFalse|IsNull|IsNotNull)\((.*)\); await Assert.That($2).$1();
+Assert\.AreEqual\((.*),\s*(.*)\); await Assert.That($2).IsEqualTo($1);
