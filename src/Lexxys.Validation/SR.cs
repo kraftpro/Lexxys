@@ -7,8 +7,8 @@ internal class SR
 	public static string CheckInvariantFailed(ValidationResults results = default, string? source = default)
 	{
 		string message = String.IsNullOrEmpty(source) ?
-			(results.Success ? "Invariant check failed." : "Invariant check failed with message: \"{1}\".") :
-			(results.Success ? "Invariant check failed in {0}." : "Check invariant failed in {0} with message: \"{1}\".");
+			(results.Success ? "Invariant check failed.": "Invariant check failed with message: \"{1}\"."):
+			(results.Success ? "Invariant check failed in {0}.": "Check invariant failed in {0} with message: \"{1}\".");
 		return String.Format(Lexxys.SR.Culture, message, source, results);
 	}
 

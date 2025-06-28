@@ -28,7 +28,7 @@ public class DesCryptoBase: IEncryptorAlgorithm, IDecryptorAlgorithm, IDisposabl
 			using var h = new Sha1Hasher();
 			byte[] bytes = Encoding.Unicode.GetBytes(sk);
 			bytes = h.Hash(bytes, 0, bytes.Length);
-			bk = new byte[tripleDes ? 16 : 8];
+			bk = new byte[tripleDes ? 16: 8];
 			Array.Copy(bytes, bk, bk.Length);
 		}
 		int len = bk.Length;
@@ -112,23 +112,20 @@ public class DesCryptoBase: IEncryptorAlgorithm, IDecryptorAlgorithm, IDisposabl
 
 public class DesCryptor: DesCryptoBase
 {
-	public DesCryptor(object key)
-		: base(key, false)
+	public DesCryptor(object key): base(key, false)
 	{
 	}
 }
 public class TripleDesCryptor: DesCryptoBase
 {
-	public TripleDesCryptor(object key)
-		: base(key, true)
+	public TripleDesCryptor(object key): base(key, true)
 	{
 	}
 }
 
 public class DesBlockEncryptor: DesCryptoBase
 {
-	public DesBlockEncryptor(object key)
-		: base(key, false)
+	public DesBlockEncryptor(object key): base(key, false)
 	{
 	}
 
@@ -139,8 +136,7 @@ public class DesBlockEncryptor: DesCryptoBase
 
 public class DesBlockDecryptor: DesCryptoBase
 {
-	public DesBlockDecryptor(object key)
-		: base(key, false)
+	public DesBlockDecryptor(object key): base(key, false)
 	{
 	}
 

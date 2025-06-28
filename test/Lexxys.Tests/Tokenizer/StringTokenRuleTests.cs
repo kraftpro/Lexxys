@@ -103,7 +103,7 @@ public class StringTokenRuleTests
 	[DataRow("\"another ${macro} example\"", "another MACRO example")]
 	public void TestParseStringWithMacro(string input, string expected)
 	{
-		Func<string, string> macro = s => s == "macro" ? "MACRO" : s;
+		Func<string, string> macro = s => s == "macro" ? "MACRO": s;
 		var stream = new CharStream(input);
 		var token = StringTokenRule.ParseString(LexicalTokenType.STRING, ref stream, '\\', macro, ("${", "}"));
 		Assert.AreEqual(expected, token.GetValue(stream));

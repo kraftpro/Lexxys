@@ -79,7 +79,7 @@ public static class Comparer
 	}
 
 	public static bool Equals(IEnumerable<Xml.IXmlReadOnlyNode>? left, IEnumerable<Xml.IXmlReadOnlyNode>? right)
-		=> left == null ? right == null : right != null && left.SequenceEqual(right, XmlNodeComparer);
+		=> left == null ? right == null: right != null && left.SequenceEqual(right, XmlNodeComparer);
 
 	private static readonly IEqualityComparer<Xml.IXmlReadOnlyNode> XmlNodeComparer = new GenericEqualityComparer<Xml.IXmlReadOnlyNode>(Equals);
 
@@ -87,12 +87,12 @@ public static class Comparer
 
 	private class GenericComparer<T1, T2>(Func<T1, T2, int> compare): IComparer
 	{
-		public int Compare(object? x, object? y) => x is T1 t1 && y is T2 t2 ? compare(t1, t2) : 2;
+		public int Compare(object? x, object? y) => x is T1 t1 && y is T2 t2 ? compare(t1, t2): 2;
 	}
 
 	private class GenericComparer<T>(Func<T, T, int> compare): IComparer<T>
 	{
-		public int Compare(T? x, T? y) => x is null ? (y is null ? 0 : 1) : y is null ? -1 : compare(x, y);
+		public int Compare(T? x, T? y) => x is null ? (y is null ? 0: 1): y is null ? -1: compare(x, y);
 	}
 
 	private class GenericEqualityComparer<T>: IEqualityComparer<T>
@@ -106,7 +106,7 @@ public static class Comparer
 		public GenericEqualityComparer(Func<T, T, bool> equals, Func<T, int> hash)
 			=> (_equals, _hash) = (equals, hash);
 
-		public bool Equals(T? x, T? y) => x is null ? y is null : y is not null && _equals(x, y);
+		public bool Equals(T? x, T? y) => x is null ? y is null: y is not null && _equals(x, y);
 
 		public int GetHashCode(T obj) => _hash(obj);
 	}

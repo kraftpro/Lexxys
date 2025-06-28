@@ -12,35 +12,26 @@ public sealed class StaticServices: IStaticServices
 	{
 	}
 
-	public bool IsInitialized => _provider != null;
+	public bool IsInitialized => _provider != null || _collection.Count > 0;
 
 	public IServiceProvider ServiceProvider => _provider ??= _collection.BuildServiceProvider();
 
-	public bool AddServices(IEnumerable<ServiceDescriptor>? services, bool unique = false)
+	public bool ContainsService(Type serviceType)
+		=> serviceType != null && _collection.Any(s => s.ServiceType == serviceType);
+
+	public bool AddService(ServiceDescriptor? service, bool unique = false)
 	{
 		if (_provider != null)
 			throw new InvalidOperationException("The service provider has been already initialized.");
 
-		if (services == null)
+		if (service == null || service.Lifetime == ServiceLifetime.Scoped)
 			return false;
 
-		bool added = false;
-		foreach (var item in services)
-		{
-			if (item.Lifetime == ServiceLifetime.Scoped)
-				continue;
-			if (unique)
-			{
-				int n = _collection.Count;
-				_collection.TryAdd(item);
-				added |= _collection.Count > n;
-			}
-			else
-			{
-				_collection.Add(item);
-				added = true;
-			}
-		}
-		return added;
+		int n = _collection.Count;
+		if (unique)
+			_collection.TryAdd(service);
+		else
+			_collection.Add(service);
+		return _collection.Count > n;
 	}
 }

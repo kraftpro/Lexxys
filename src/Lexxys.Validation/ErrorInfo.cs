@@ -85,9 +85,9 @@ public class ErrorInfo
 	/// <param name="max">Maximum possible value or null</param>
 	/// <returns></returns>
 	public static ErrorInfo OutOfRange<T>(T value, ErrorDataType dataType, T? min = default, T? max = default) =>
-		new ErrorInfo(ErrorCode.OutOfRange, dataType, min == null && max == null ? [new ErrorAttrib(nameof(value), value)] :
-			min == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(max), max)] :
-			max == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min)] :
+		new ErrorInfo(ErrorCode.OutOfRange, dataType, min == null && max == null ? [new ErrorAttrib(nameof(value), value)]:
+			min == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(max), max)]:
+			max == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min)]:
 			[new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min), new ErrorAttrib(nameof(max), max)]);
 
 	/// <summary>
@@ -111,9 +111,9 @@ public class ErrorInfo
 	/// <param name="max">Maximum possible value size or null</param>
 	/// <returns></returns>
 	public static ErrorInfo SizeOutOfRange<T>(T value, ErrorDataType dataType, int? max = default, int? min = default) =>
-		new ErrorInfo(ErrorCode.OutOfRange, dataType, min == null && max == null ? [new ErrorAttrib(nameof(value), value)] :
-			min == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(max), max)] :
-			max == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min)] :
+		new ErrorInfo(ErrorCode.OutOfRange, dataType, min == null && max == null ? [new ErrorAttrib(nameof(value), value)]:
+			min == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(max), max)]:
+			max == null ? [new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min)]:
 			[new ErrorAttrib(nameof(value), value), new ErrorAttrib(nameof(min), min), new ErrorAttrib(nameof(max), max)]);
 
 	/// <summary>
@@ -154,7 +154,7 @@ public class ErrorInfo
 
 		var pp = parameters?.ToIReadOnlyList() ?? Array.Empty<ErrorAttrib>();
 		string? template = SelectTemplate(templates, pp, field);
-		return template == null ? null : FormatMessage(template, pp, field);
+		return template == null ? null: FormatMessage(template, pp, field);
 	}
 
 	public static string FormatMessage(string template, IReadOnlyList<ErrorAttrib>? parameters, string? field = default)
@@ -179,7 +179,7 @@ public class ErrorInfo
 				return m.Value;
 			var format = m.Groups[2].Value;
 			return !String.IsNullOrEmpty(format) && value is IFormattable f ?
-				f.ToString(format, null) :
+				f.ToString(format, null):
 				value?.ToString() ?? "";
 		});
 	}

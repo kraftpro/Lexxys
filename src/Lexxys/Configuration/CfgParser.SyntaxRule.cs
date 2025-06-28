@@ -114,16 +114,16 @@ public ref partial struct CfgParser
 		//			string s;
 		//			if (m.Value[1] == '(')
 		//			{
-		//				s = m.Value.Length == 6 ? "[^/]*" : ".*";
+		//				s = m.Value.Length == 6 ? "[^/]*": ".*";
 		//				permanent = true;
 		//			}
 		//			else
 		//			{
-		//				s = m.Value.Length == 2 ? "([^/]*)" : "(.*)";
+		//				s = m.Value.Length == 2 ? "([^/]*)": "(.*)";
 		//			}
 		//			return s;
 		//		});
-		//		pattern = new Regex(@"\A" + patternString + @"\z", ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+		//		pattern = new Regex(@"\A" + patternString + @"\z", ignoreCase ? RegexOptions.IgnoreCase: RegexOptions.None);
 		//		start = path.Substring(0, i).TrimEnd(TrimmerChars);
 		//	}
 
@@ -183,11 +183,11 @@ public ref partial struct CfgParser
 		//		return false;
 		//	path = path.Trim(TrimmerChars);
 		//	if (_pattern == null)
-		//		return String.Equals(path, _start, _ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+		//		return String.Equals(path, _start, _ignoreCase ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal);
 
 		//	return _start.Length < path.Length ?
-		//		path.StartsWith(_start, _ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) :
-		//		_start.StartsWith(path, _ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+		//		path.StartsWith(_start, _ignoreCase ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal):
+		//		_start.StartsWith(path, _ignoreCase ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal);
 		//}
 
 		public bool TryMatch(List<string> path, bool dash, StringComparer comparer) => TryMatch(new ReadOnlyListSegment<string>(path), _path, dash, comparer);

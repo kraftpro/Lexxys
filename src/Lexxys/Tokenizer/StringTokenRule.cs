@@ -15,8 +15,8 @@ public class StringTokenRule: LexicalTokenRule
 	private readonly Func<string, string>? _macro;
 	private (string? Start, string? End) _template;
 
-	public StringTokenRule(char escapeChar, Func<string, string>? macro = default, (string? Start, string? End) template = default)
-		: this(LexicalTokenType.STRING, escapeChar, macro, template)
+	public StringTokenRule(char escapeChar, Func<string, string>? macro = default, (string? Start, string? End) template = default):
+		this(LexicalTokenType.STRING, escapeChar, macro, template)
 	{
 	}
 

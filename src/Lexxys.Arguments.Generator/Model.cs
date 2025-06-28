@@ -2,7 +2,7 @@
 
 public record CliArgumentsModel(string? IgnoreCase, string? AllowSlash, string? StrictDoubleDash, string? DoubleDashSeparator, string? IgnoreNameSeparators, string? AllowUnknown, string? SplitPositional, string? CombineOptions, string? ColonSeparator, string? EqualSeparator, string? BlankSeparator)
 {
-	public CliArgumentsModel() : this(null, null, null, null, null, null, null, null, null, null, null) { }
+	public CliArgumentsModel(): this(null, null, null, null, null, null, null, null, null, null, null) { }
 }
 
 public record CliCommandModel(string? Name, string[] Alias, string? Description)
@@ -14,8 +14,8 @@ public record CliCommandModel(string? Name, string[] Alias, string? Description)
 
 public record CliParamModel(string? Name, string[] Alias, string? ValueName, string? Description, string? Required, string? Positional)
 {
-	public CliParamModel(string? name, string? valueName, string? description, string? required, string? positional)
-		: this(name, [], valueName, description, required, positional)
+	public CliParamModel(string? name, string? valueName, string? description, string? required, string? positional):
+		this(name, [], valueName, description, required, positional)
 	{
 	}
 }

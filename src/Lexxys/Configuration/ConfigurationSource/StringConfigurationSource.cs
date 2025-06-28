@@ -10,7 +10,7 @@ namespace Lexxys.Configuration;
 
 using Xml;
 
-internal class StringConfigurationSource : IXmlConfigurationSource
+internal class StringConfigurationSource: IXmlConfigurationSource
 {
 	private const string LogSource = "Lexxys.Configuration.StringConfigurationSource";
 	private List<string>? _includes;
@@ -20,7 +20,7 @@ internal class StringConfigurationSource : IXmlConfigurationSource
 	private readonly string _text;
 	private int _version;
 
-	private StringConfigurationSource(Uri location, IReadOnlyCollection<string> parameters)
+	private StringConfigurationSource(Uri location, IReadOnlyCollection<string>? parameters)
 	{
 		_type = location.LocalPath.Trim('/', '[', ']');
 		Name = location.Host;
@@ -110,7 +110,7 @@ internal class StringConfigurationSource : IXmlConfigurationSource
 	}
 
 	// string://name/txt?configuration_text
-	public static StringConfigurationSource? TryCreate(Uri? location, IReadOnlyCollection<string> parameters)
+	public static StringConfigurationSource? TryCreate(Uri? location, IReadOnlyCollection<string>? parameters = null)
 	{
 		if (location == null || !location.IsAbsoluteUri || location.Scheme != "string")
 			return null;

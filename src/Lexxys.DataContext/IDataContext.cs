@@ -109,7 +109,7 @@ public interface IDataContext: IDisposable
 	/// <param name="statement">The SQL statement.</param>
 	/// <param name="parameters">Optional <see cref="DbCommand"/> parameters.</param>
 	/// <returns></returns>
-	DbCommand Command(string statement, params DataParameter[] parameters);
+	DbCommand Command(SqlPart statement, params DataParameter[] parameters);
 
 	/// <summary>
 	/// Gets or sets operation associated with the <paramref name="key"/> to be executed after the committed database transaction.

@@ -33,7 +33,7 @@ public static class DumpXmlExtensions
 
 	public static string ToXml(this IDumpXml? obj)
 	{
-		return obj == null ? "" : obj.ToXml(new XmlStringBuilder()).ToString()!;
+		return obj == null ? String.Empty: obj.ToXml(new XmlStringBuilder()).ToString()!;
 	}
 }
 

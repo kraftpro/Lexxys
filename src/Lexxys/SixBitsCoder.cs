@@ -63,7 +63,7 @@ namespace Lexxys
 			if (bits == null)
 				throw new ArgumentNullException(nameof(bits));
 			int len = EncodedLength(bits.Count, true);
-			char[]? arr = len > Tools.MaxStackAllocSizeChar ? ArrayPool<char>.Shared.Rent(len) : null;
+			char[]? arr = len > Tools.MaxStackAllocSizeChar ? ArrayPool<char>.Shared.Rent(len): null;
 			var mem = arr != null ? arr.AsSpan(0, len): (stackalloc char[len]);
 			var (length, tail) = Encode(bits, mem);
 			if (tail > 0)
@@ -99,8 +99,8 @@ namespace Lexxys
 		public static string Encode(ReadOnlySpan<byte> bits)
 		{
 			int len = EncodedLength(bits.Length, true);
-			char[]? arr = len > Tools.MaxStackAllocSizeChar ? ArrayPool<char>.Shared.Rent(len) : null;
-			var mem = arr != null ? arr.AsSpan(0, len) : (stackalloc char[len]);
+			char[]? arr = len > Tools.MaxStackAllocSizeChar ? ArrayPool<char>.Shared.Rent(len): null;
+			var mem = arr != null ? arr.AsSpan(0, len): (stackalloc char[len]);
 			var (length, tail) = Encode(bits, mem);
 			if (tail > 0)
 				mem[length] = BitsToChar(tail);
@@ -475,7 +475,7 @@ namespace Lexxys
 			int len = value.Length * 15;
 			
 			char[]? array = null;
-			Span<char> buffer = len <= Tools.MaxStackAllocSizeChar ? stackalloc char[len] : (array = ArrayPool<char>.Shared.Rent(len));
+			Span<char> buffer = len <= Tools.MaxStackAllocSizeChar ? stackalloc char[len]: (array = ArrayPool<char>.Shared.Rent(len));
 			int i = buffer.Length;
 			for(int j = value.Length - 1; j >= 0; --j)
 			{

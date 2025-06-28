@@ -50,7 +50,7 @@ public static class SystemLog
 
 	internal static EventLogEntryType LogEntryType(LogType logType)
 	{
-		return !UseSystemEventLog ? 0 : logType switch
+		return !UseSystemEventLog ? 0: logType switch
 		{
 			LogType.Output or
 			LogType.Error or

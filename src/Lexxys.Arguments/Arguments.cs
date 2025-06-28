@@ -722,7 +722,7 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 				continue;
 			}
 
-			var (name, value) = SplitNameValue(arg[0] == '-' && arg.Length > 1 && arg[1] == '-' ? arg.AsSpan(2) : arg.AsSpan(1));
+			var (name, value) = SplitNameValue(arg[0] == '-' && arg.Length > 1 && arg[1] == '-' ? arg.AsSpan(2): arg.AsSpan(1));
 			if (name.Length == 0)
 			{
 				messages.Add($"Invalid parameter: {arg}");
@@ -833,7 +833,7 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 			}
 		}
 		if (count > 0)
-			messages.Add($"Missing required parameter{(count > 1 ? "s" : "")}: {missing}");
+			messages.Add($"Missing required parameter{(count > 1 ? "s": "")}: {missing}");
 	}
 
 	private void ParsePositional(List<string> args, ref int i, List<ArgumentCommand> commands, List<string> messages)
@@ -936,7 +936,7 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 				doubleDash = true;
 			else
 				dash = true;
-		var (name, value) = SplitNameValue(doubleDash ? arg.AsSpan(2) : arg.AsSpan(1));
+		var (name, value) = SplitNameValue(doubleDash ? arg.AsSpan(2): arg.AsSpan(1));
 		if (name.Length == 0)
 		{
 			messages.Add($"Invalid parameter: {arg}");
@@ -1053,7 +1053,7 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 	{
 		int j = _equalSeparator ?
 			_colonSeparator ? arg.IndexOfAny(Separators): arg.IndexOf('='):
-			_colonSeparator ? arg.IndexOf(':') : -1;
+			_colonSeparator ? arg.IndexOf(':'): -1;
 		return j < 0 ? (arg.ToString(), null): (arg[..j].ToString(), arg[(j + 1) ..].ToString());
 	}
 	private static readonly char[] Separators = ['=', ':'];
@@ -1090,9 +1090,9 @@ public partial class Arguments: IArgumentCommand, IDumpJson, IDumpXml
 			var f = c.ToString();
 			var r = TryAdd(commands, f, "true", anonymous: _allowUnknown);
 			if (r == ParameterDefinitionFindResult.NotFound)
-				messages.Add(name.Length == 1 ? $"Unknown parameter {arg}" : $"Unknown flag {f} in parameter: {arg}");
+				messages.Add(name.Length == 1 ? $"Unknown parameter {arg}": $"Unknown flag {f} in parameter: {arg}");
 			else if (r == ParameterDefinitionFindResult.Ambiguous)
-				messages.Add(name.Length == 1 ? $"Duplicate parameter {arg}" : $"Duplicate flag {f} in parameter: {arg}");
+				messages.Add(name.Length == 1 ? $"Duplicate parameter {arg}": $"Duplicate flag {f} in parameter: {arg}");
 		}
 	}
 

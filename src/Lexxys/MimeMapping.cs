@@ -701,7 +701,7 @@ public static class MimeMapping
 			var type = item["type"]?.AsString();
 			if (ext is { Length: > 0 } && type is { Length: > 0 })
 				if (ext.IndexOf('/') > 0)
-					mappings[ext] = type[0] == '.' ? type : "." + type;
+					mappings[ext] = type[0] == '.' ? type: "." + type;
 				else if (type.IndexOf('/') > 0)
 					mappings[ext[0] == '.' ? ext: "." + ext] = type;
 		}

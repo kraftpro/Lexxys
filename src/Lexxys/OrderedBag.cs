@@ -24,8 +24,7 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 	/// </summary>
 	/// <param name="comparer">Keys equality comparer.</param>
 	/// <exception cref="ArgumentOutOfRangeException"></exception>
-	public OrderedBag(IEqualityComparer<TKey>? comparer)
-		: this(0, comparer)
+	public OrderedBag(IEqualityComparer<TKey>? comparer): this(0, comparer)
 	{
 	}
 

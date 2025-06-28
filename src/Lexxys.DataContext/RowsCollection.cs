@@ -9,11 +9,9 @@ using System.Globalization;
 
 namespace Lexxys.Data;
 
-public interface IFieldsCollection: IEnumerable<IDbField>
+public interface IFieldsCollection: IReadOnlyList<IDbField>
 {
-	int Count { get; }
 	IDbField this[string index] { get; }
-	IDbField this[int index] { get; }
 }
 
 public interface IDbField

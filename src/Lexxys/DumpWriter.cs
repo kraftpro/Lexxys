@@ -48,8 +48,8 @@ public abstract class DumpWriter
 	/// <param name="arrayLimit">Maximum number of array elements to dump</param>
 	protected DumpWriter(int maxCapacity, int maxDepth, int stringLimit, int blobLimit, int arrayLimit)
 	{
-		MaxCapacity = maxCapacity <= 0 ? DefaultMaxCapacity : maxCapacity;
-		MaxDepth = maxDepth <= 0 ? DefaultMaxDepth : Math.Min(maxDepth, MaxMaxDepth);
+		MaxCapacity = maxCapacity <= 0 ? DefaultMaxCapacity: maxCapacity;
+		MaxDepth = maxDepth <= 0 ? DefaultMaxDepth: Math.Min(maxDepth, MaxMaxDepth);
 		Left = MaxCapacity;
 		Observed = [];
 		StringLimit = stringLimit <= 0 ? DefaultStringLimit: stringLimit;
@@ -420,7 +420,7 @@ public abstract class DumpWriter
 		int rest = Math.Min(value.Length, Left - 1);
 		for (int i = 0; i < rest; ++i)
 		{
-			Text(value[i] ? '1' : '0');
+			Text(value[i] ? '1': '0');
 		}
 		return Text(']');
 	}
@@ -511,7 +511,7 @@ public abstract class DumpWriter
 				Dump(value.Current, ignoreToString);
 				pad = ',';
 			}
-			return Text(pad == '[' ? "[]" : "]");
+			return Text(pad == '[' ? "[]": "]");
 		}
 		finally
 		{
@@ -1167,9 +1167,9 @@ public abstract class DumpWriter
 			'\r' => "\\r",
 			'\t' => "\\t",
 			'\v' => "\\v",
-			_ => value < '\x100'
-				? "\\x" + ((int)value).ToString("X2", CultureInfo.InvariantCulture)
-				: "\\u" + ((int)value).ToString("X4", CultureInfo.InvariantCulture),
+			_ => value < '\x100' ?
+				"\\x" + ((int)value).ToString("X2", CultureInfo.InvariantCulture):
+				"\\u" + ((int)value).ToString("X4", CultureInfo.InvariantCulture),
 		};
 	}
 }
@@ -1190,8 +1190,8 @@ public class DumpStreamWriter: DumpWriter
 	/// <param name="stringLimit">Maximum length of string portion to dump</param>
 	/// <param name="blobLimit">Maximum length of byte array portion to dump</param>
 	/// <param name="arrayLimit">Maximum number of array elements dump</param>
-	public DumpStreamWriter(TextWriter writer, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0)
-		: base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
+	public DumpStreamWriter(TextWriter writer, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0):
+		base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
 	{
 		_w = writer ?? throw new ArgumentNullException(nameof(writer));
 	}
@@ -1242,8 +1242,8 @@ public class DumpStringWriter: DumpWriter
 	/// <param name="stringLimit">Maximum length of string portion to dump</param>
 	/// <param name="blobLimit">Maximum length of byte array portion to dump</param>
 	/// <param name="arrayLimit">Maximum number of array elements dump</param>
-	public DumpStringWriter(int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0)
-		: base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
+	public DumpStringWriter(int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0):
+		base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
 	{
 		_w = new StringBuilder();
 	}
@@ -1257,8 +1257,8 @@ public class DumpStringWriter: DumpWriter
 	/// <param name="stringLimit">Maximum length of string portion to dump</param>
 	/// <param name="blobLimit">Maximum length of byte array portion to dump</param>
 	/// <param name="arrayLimit">Maximum number of array elements dump</param>
-	public DumpStringWriter(StringBuilder writer, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0)
-		: base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
+	public DumpStringWriter(StringBuilder writer, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0):
+		base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
 	{
 		_w = writer ?? throw new ArgumentNullException(nameof(writer));
 	}

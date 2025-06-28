@@ -13,7 +13,7 @@ public static partial class XmlTools
 		if (node is null)
 			throw new ArgumentNullException(nameof(node));
 
-		return TryGetValue<T>(node, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString()?.Left(1024), typeof(T)));
+		return TryGetValue<T>(node, out var result) ? result: throw new FormatException(SR.FormatException(node.ToString()?.Left(1024), typeof(T)));
 	}
 
 	public static T GetValue<T>(IXmlReadOnlyNode node, T defaultValue)
@@ -21,7 +21,7 @@ public static partial class XmlTools
 		if (node is null)
 			throw new ArgumentNullException(nameof(node));
 
-		return TryGetValue<T>(node, out var result) ? result : defaultValue;
+		return TryGetValue<T>(node, out var result) ? result: defaultValue;
 	}
 
 	public static bool TryGetValue<T>(IXmlReadOnlyNode? node, [MaybeNullWhen(false)] out T result)
@@ -40,7 +40,7 @@ public static partial class XmlTools
 		if (node is null)
 			throw new ArgumentNullException(nameof(node));
 
-		return TryGetValue(node, returnType, out var result) ? result : throw new FormatException(SR.FormatException(node.ToString()?.Left(1024), returnType));
+		return TryGetValue(node, returnType, out var result) ? result: throw new FormatException(SR.FormatException(node.ToString()?.Left(1024), returnType));
 	}
 
 	public static bool TryGetValue(IXmlReadOnlyNode? node, Type returnType, out object? result)

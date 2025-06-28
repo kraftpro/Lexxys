@@ -148,7 +148,7 @@ namespace Lexxys
 
 			public void Clear()
 			{
-				int count = (_end < 0 ? _list.Count : _end) - _start;
+				int count = (_end < 0 ? _list.Count: _end) - _start;
 				while (count > 0)
 				{
 					_list.RemoveAt(_start);

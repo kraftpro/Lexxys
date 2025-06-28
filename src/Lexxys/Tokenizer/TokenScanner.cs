@@ -117,7 +117,7 @@ public ref struct TokenScanner
 
 		var c = stream[0];
 
-		ReadOnlySpan<int> items = c <= HighAscii ? _asciiRules.AsSpan().Slice(c * _extraRules.Length, _extraRules.Length) : _extraRules.AsSpan();
+		ReadOnlySpan<int> items = c <= HighAscii ? _asciiRules.AsSpan().Slice(c * _extraRules.Length, _extraRules.Length): _extraRules.AsSpan();
 		foreach (var item in items)
 		{
 			if (item < 0)

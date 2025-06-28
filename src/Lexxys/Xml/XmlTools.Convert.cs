@@ -6,7 +6,7 @@ namespace Lexxys.Xml;
 
 public static partial class XmlTools
 {
-	public static string Convert(bool value) => value ? "true" : "false";
+	public static string Convert(bool value) => value ? "true": "false";
 
 	public static string Convert(Guid value) => value.ToString();
 
@@ -22,11 +22,11 @@ public static partial class XmlTools
 	{
 		string format;
 		if (value.Ticks % TimeSpan.TicksPerSecond != 0)
-			format = omitTimeZone || value.Kind == DateTimeKind.Unspecified ? @"yyyy-MM-ddThh:mm:ss.fffff": value.Kind == DateTimeKind.Utc ? @"yyyy-MM-ddThh:mm:ss.fffff\Z" : @"yyyy-MM-ddThh:mm:ss.fffffzzz";
+			format = omitTimeZone || value.Kind == DateTimeKind.Unspecified ? @"yyyy-MM-ddThh:mm:ss.fffff": value.Kind == DateTimeKind.Utc ? @"yyyy-MM-ddThh:mm:ss.fffff\Z": @"yyyy-MM-ddThh:mm:ss.fffffzzz";
 		else if (value.Ticks % TimeSpan.TicksPerDay != 0)
-			format = omitTimeZone || value.Kind == DateTimeKind.Unspecified ? @"yyyy-MM-ddThh:mm:ss": value.Kind == DateTimeKind.Utc ? @"yyyy-MM-ddThh:mm:ss\Z" : @"yyyy-MM-ddThh:mm:sszzz";
+			format = omitTimeZone || value.Kind == DateTimeKind.Unspecified ? @"yyyy-MM-ddThh:mm:ss": value.Kind == DateTimeKind.Utc ? @"yyyy-MM-ddThh:mm:ss\Z": @"yyyy-MM-ddThh:mm:sszzz";
 		else
-			format = omitTimeZone || value.Kind == DateTimeKind.Unspecified ? @"yyyy-MM-dd": value.Kind == DateTimeKind.Utc ? @"yyyy-MM-dd\Z" : @"yyyy-MM-ddzzz";
+			format = omitTimeZone || value.Kind == DateTimeKind.Unspecified ? @"yyyy-MM-dd": value.Kind == DateTimeKind.Utc ? @"yyyy-MM-dd\Z": @"yyyy-MM-ddzzz";
 		return value.ToString(format, CultureInfo.InvariantCulture);
 	}
 
@@ -89,7 +89,7 @@ public static partial class XmlTools
 
 	public static string Convert(TimeOnly value) => value.Ticks % TimeSpan.TicksPerSecond == 0 ? value.ToString("o").Substring(0, 8): value.ToString("o").TrimEnd('0');
 
-	public static string Convert(TimeOnly? value) => value.HasValue ? Convert(value.GetValueOrDefault()) : "";
+	public static string Convert(TimeOnly? value) => value.HasValue ? Convert(value.GetValueOrDefault()): "";
 
 #endif
 
@@ -309,7 +309,7 @@ public static partial class XmlTools
 		if (i < 0)
 			return text.Append(value);
 		int vlen = value.Length;
-		Span<char> buffer = vlen > Tools.MaxStackAllocSizeChar ? new char[vlen] : stackalloc char[vlen];
+		Span<char> buffer = vlen > Tools.MaxStackAllocSizeChar ? new char[vlen]: stackalloc char[vlen];
 		var n = Decode(value, buffer);
 		return text.Append(buffer.Slice(0, n));
 	}
@@ -320,7 +320,7 @@ public static partial class XmlTools
 		if (i < 0)
 			return value.ToString();
 		int vlen = value.Length;
-		Span<char> buffer = vlen > Tools.MaxStackAllocSizeChar ? new char[vlen] : stackalloc char[vlen];
+		Span<char> buffer = vlen > Tools.MaxStackAllocSizeChar ? new char[vlen]: stackalloc char[vlen];
 		var n = Decode(value, buffer);
 		return buffer.Slice(0, n).ToString();
 	}

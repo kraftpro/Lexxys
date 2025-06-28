@@ -12,13 +12,13 @@ public static class ConfigServiceExtensions
 		if (services is null) throw new ArgumentNullException(nameof(services));
 		if (services.Any(o => o.ServiceType == typeof(IConfigService))) return services;
 
-		var provider = new ConfigProvidersCollection();
-		services.AddSingleton<IConfigService>(provider);
-		services.AddSingleton<IConfigSource>(provider);
-		services.AddSingleton<IConfigLogger>(provider);
+		var service = new ConfigService();
+		services.AddSingleton<IConfigService>(service);
+		services.AddSingleton<IConfigSource>(service);
+		services.AddSingleton<IConfigLogger>(service);
 		services.AddSingleton(typeof(IConfigSection), typeof(ConfigSection));
 
-		config?.Invoke(provider);
+		config?.Invoke(service);
 
 		return services;
 	}
@@ -28,7 +28,16 @@ public static class ConfigServiceExtensions
 		if (service is null) throw new ArgumentNullException(nameof(service));
 		if (path is null or { Length: 0 }) throw new ArgumentNullException(nameof(path));
 
-		service.AddConfiguration(new Uri(path, UriKind.RelativeOrAbsolute), parameters, tail);
+		Uri location = new Uri(path, UriKind.RelativeOrAbsolute);
+		if (!location.IsAbsoluteUri)
+		{
+			var fullPath = Path.GetFullPath(path);
+			location = new Uri("file:///" + fullPath, UriKind.RelativeOrAbsolute);
+			if (!location.IsAbsoluteUri)
+				return service;
+		}
+
+		service.AddConfiguration(location, parameters, tail);
 		return service;
 	}
 
@@ -38,7 +47,20 @@ public static class ConfigServiceExtensions
 		if (service is null) throw new ArgumentNullException(nameof(service));
 		if (path is null) throw new ArgumentNullException(nameof(path));
 
-		// service.AddConfiguration(new Uri(path, UriKind.RelativeOrAbsolute), parameters, tail);
-		return false;
+		return path.Scheme switch
+		{
+			"file" => AddConfig(service, LocalFileConfigurationSource.TryCreate(path, parameters)),
+			"string" => AddConfig(service, StringConfigurationSource.TryCreate(path, parameters)),
+			"http" or "https" => AddConfig(service, HttpConfigurationSource.TryCreate(path, parameters)),
+			_ => false
+		};
+
+		static bool AddConfig(IConfigService service, IXmlConfigurationSource? source)
+		{
+			if (source == null)
+				return false;
+			service.AddConfiguration(new XmlConfigurationProvider(source));
+			return true;
+		}
 	}
 }

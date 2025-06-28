@@ -44,7 +44,7 @@ public class CommandDefinition
 		Description = other.Description;
 		_comparison = comparison;
 		_parameters = new ParameterDefinitionCollection(other._parameters, comparison);
-		_commands = other._commands is null ? null : new CommandDefinitionCollection(other._commands, comparison);
+		_commands = other._commands is null ? null: new CommandDefinitionCollection(other._commands, comparison);
 	}
 
 	/// <summary>

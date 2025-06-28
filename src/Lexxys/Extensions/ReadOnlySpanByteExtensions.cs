@@ -17,7 +17,7 @@ public static class ReadOnlySpanByteExtensions
 	public static byte? ReadNullableByte(this scoped ref ReadOnlySpan<byte> span) => span.ReadByte() == 0 ? null: span.ReadByte();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static T Read<T>(this scoped ref ReadOnlySpan<byte> span) where T : unmanaged
+	public static T Read<T>(this scoped ref ReadOnlySpan<byte> span) where T: unmanaged
 	{
 		if (span.Length < Unsafe.SizeOf<T>())
 			throw new ArgumentOutOfRangeException(nameof(span), span.Length, $"Expected at least {Unsafe.SizeOf<T>()} bytes.");
@@ -27,7 +27,7 @@ public static class ReadOnlySpanByteExtensions
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static T? ReadNullable<T>(this scoped ref ReadOnlySpan<byte> span) where T : unmanaged => span.ReadByte() == 0 ? null: span.Read<T>();
+	public static T? ReadNullable<T>(this scoped ref ReadOnlySpan<byte> span) where T: unmanaged => span.ReadByte() == 0 ? null: span.Read<T>();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe string? ReadString(this scoped ref ReadOnlySpan<byte> span)
@@ -93,11 +93,11 @@ public static class ReadOnlySpanByteExtensions
 	public static long ReadPackedLong(this scoped ref ReadOnlySpan<byte> span)
 	{
 		ulong value = span.ReadPackedULong();
-		return (value & 1) == 1 ? -(long)(value >> 1) : (long)(value >> 1);
+		return (value & 1) == 1 ? -(long)(value >> 1): (long)(value >> 1);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<byte> Read<T>(this scoped ref ReadOnlySpan<byte> span, out T value) where T : unmanaged
+	public static ReadOnlySpan<byte> Read<T>(this scoped ref ReadOnlySpan<byte> span, out T value) where T: unmanaged
 	{
 		if (span.Length < Unsafe.SizeOf<T>())
 			throw new ArgumentOutOfRangeException(nameof(span), span.Length, $"Expected at least {Unsafe.SizeOf<T>()} bytes.");
@@ -107,7 +107,7 @@ public static class ReadOnlySpanByteExtensions
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<byte> Read<T>(this scoped ref ReadOnlySpan<byte> span, out T? value) where T : unmanaged
+	public static ReadOnlySpan<byte> Read<T>(this scoped ref ReadOnlySpan<byte> span, out T? value) where T: unmanaged
 	{
 		if (span.ReadByte() == 0)
 		{

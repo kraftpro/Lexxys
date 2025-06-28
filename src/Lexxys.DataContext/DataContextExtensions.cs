@@ -9,7 +9,7 @@ using System.Data.Common;
 
 namespace Lexxys.Data;
 
-public static class DataContextExtensions
+public static partial class DataContextExtensions
 {
 	/// <summary>
 	/// Sets operation to be executed after the committed database transaction.
@@ -30,32 +30,28 @@ public static class DataContextExtensions
 	}
 
 	/// <summary>
-	/// Executes the specified SQL <paramref name="query"/> and returns first column of the first row as a value of type <typeparamref name="T"/> or <paramref name="default"/>.
+	/// Executes the specified SQL <paramref name="query"/> and returns first column of the first row as a value of type <typeparamref name="T"/> or <paramref name="defaultValue"/>.
 	/// </summary>
 	/// <typeparam name="T">Type of the returning value</typeparam>
 	/// <param name="context"><see cref="IDataContext"/></param>
-	/// <param name="default">Default value.</param>
+	/// <param name="defaultValue">Default value.</param>
 	/// <param name="query">The SQL query to execute.</param>
 	/// <param name="parameters">Parameters to be used in the query.</param>
 	/// <returns></returns>
-	public static T GetValueOrDefault<T>(this IDataContext context, T @default, string query, params DataParameter[] parameters) where T: class
-	{
-		return context.GetValue<T>(query, parameters) ?? @default;
-	}
+	public static T GetValueOrDefault<T>(this IDataContext context, T defaultValue, SqlPart query, params DataParameter[] parameters) where T: class
+		=> Map(context ?? throw new ArgumentNullException(nameof(context)), o => Dc.ValueMapper<T>(o, defaultValue), query, parameters);
 
 	/// <summary>
-	/// Executes the specified SQL <paramref name="query"/> and returns first column of the first row as a value of type <typeparamref name="T"/> or <paramref name="default"/>.
+	/// Executes the specified SQL <paramref name="query"/> and returns first column of the first row as a value of type <typeparamref name="T"/> or <paramref name="defaultValue"/>.
 	/// </summary>
 	/// <typeparam name="T">Type of the returning value</typeparam>
 	/// <param name="context"><see cref="IDataContext"/></param>
-	/// <param name="default">Default value.</param>
+	/// <param name="defaultValue">Default value.</param>
 	/// <param name="query">The SQL query to execute.</param>
 	/// <param name="parameters">Parameters to be used in the query.</param>
 	/// <returns></returns>
-	public static async Task<T> GetValueOrDefaultAsync<T>(this IDataContext context, T @default, string query, params DataParameter[] parameters) where T: class
-	{
-		return await context.GetValueAsync<T>(query, parameters).ConfigureAwait(false) ?? @default;
-	}
+	public static Task<T> GetValueOrDefaultAsync<T>(this IDataContext context, T defaultValue, SqlPart query, params DataParameter[] parameters) where T: class
+		=> MapAsync(context ?? throw new ArgumentNullException(nameof(context)), o => Dc.ValueMapperAsync<T>(o, defaultValue), query, parameters);
 
 	/// <summary>
 	/// Executes the specified SQL <paramref name="query"/> and evaluates the specified <paramref name="mapper"/> for each row.
@@ -67,9 +63,9 @@ public static class DataContextExtensions
 	/// <param name="parameters">Parameters to be used in the query.</param>
 	/// <returns>Number of processed rows</returns>
 	/// <exception cref="ArgumentNullException">Query, context, or mapper is null.</exception>
-	public static int Map(this IDataContext context, int limit, Action<IDataRecord> mapper, string query, params DataParameter[] parameters)
+	public static int Map(this IDataContext context, int limit, Action<IDataRecord> mapper, SqlPart query, params DataParameter[] parameters)
 	{
-		if (query is not { Length: >0 })
+		if (query.IsEmpty)
 			throw new ArgumentNullException(nameof(query));
 		if (context == null)
 			throw new ArgumentNullException(nameof(context));
@@ -99,20 +95,20 @@ public static class DataContextExtensions
 	/// <param name="parameters">Parameters to be used in the query.</param>
 	/// <returns>Number of processed rows</returns>
 	/// <exception cref="ArgumentNullException">Query, context, or mapper is null.</exception>
-	public static int Map(this IDataContext context, Action<IDataRecord> mapper, string query, params DataParameter[] parameters) => Map(context, -1, mapper, query, parameters);
+	public static int Map(this IDataContext context, Action<IDataRecord> mapper, SqlPart query, params DataParameter[] parameters) => Map(context, -1, mapper, query, parameters);
 
-	public static T Map<T>(this IDataContext context, Func<DbCommand, T> mapper, string query, params DataParameter[] parameters)
+	public static T Map<T>(this IDataContext context, Func<DbCommand, T> mapper, SqlPart query, params DataParameter[] parameters)
 	{
 		if (context == null)
 			throw new ArgumentNullException(nameof(context));
 		if (mapper == null)
 			throw new ArgumentNullException(nameof(mapper));
-		if (query is not { Length: >0 })
+		if (query.IsEmpty)
 			throw new ArgumentNullException(nameof(query));
 		return context.Map(mapper, context.Command(query, parameters));
 	}
 
-	public static Task<int> MapAsync(this IDataContext context, int limit, Action<IDataRecord> mapper, string query, params DataParameter[] parameters)
+	public static Task<int> MapAsync(this IDataContext context, int limit, Action<IDataRecord> mapper, SqlPart query, params DataParameter[] parameters)
 	{
 		if (context == null)
 			throw new ArgumentNullException(nameof(context));
@@ -133,15 +129,15 @@ public static class DataContextExtensions
 		}
 	}
 
-	public static Task<int> MapAsync(this IDataContext context, Action<IDataRecord> mapper, string query, params DataParameter[] parameters) => MapAsync(context, -1, mapper, query, parameters);
+	public static Task<int> MapAsync(this IDataContext context, Action<IDataRecord> mapper, SqlPart query, params DataParameter[] parameters) => MapAsync(context, -1, mapper, query, parameters);
 
-	public static Task<T> MapAsync<T>(this IDataContext context, Func<DbCommand, Task<T>> mapper, string query, params DataParameter[] parameters)
+	public static Task<T> MapAsync<T>(this IDataContext context, Func<DbCommand, Task<T>> mapper, SqlPart query, params DataParameter[] parameters)
 	{
 		if (context == null)
 			throw new ArgumentNullException(nameof(context));
 		if (mapper == null)
 			throw new ArgumentNullException(nameof(mapper));
-		if (query is not { Length: > 0 })
+		if (query.IsEmpty)
 			throw new ArgumentNullException(nameof(query));
 		return context.MapAsync(mapper, context.Command(query, parameters));
 	}
@@ -153,7 +149,7 @@ public static class DataContextExtensions
 	/// <param name="statement">SQL statement to be executed.</param>
 	/// <param name="parameters">Database parameters</param>
 	/// <returns>Number of records affected</returns>
-	public static int Execute(this IDataContext context, string statement, params DataParameter[] parameters)
+	public static int Execute(this IDataContext context, SqlPart statement, params DataParameter[] parameters)
 	{
 		if (context == null)
 			throw new ArgumentNullException(nameof(context));
@@ -167,34 +163,34 @@ public static class DataContextExtensions
 	/// <param name="statement">SQL statement to be executed.</param>
 	/// <param name="parameters">Database parameters</param>
 	/// <returns>Number of records affected</returns>
-	public static Task<int> ExecuteAsync(this IDataContext context, string statement, params DataParameter[] parameters)
+	public static Task<int> ExecuteAsync(this IDataContext context, SqlPart statement, params DataParameter[] parameters)
 	{
 		if (context == null)
 			throw new ArgumentNullException(nameof(context));
 		return context.ExecuteAsync(context.Command(statement, parameters));
 	}
 
-	public static T? GetValue<T>(this IDataContext context, string query, params DataParameter[] parameters)
+	public static T? GetValue<T>(this IDataContext context, SqlPart query, params DataParameter[] parameters)
 		=> Map(context ?? throw new ArgumentNullException(nameof(context)), Dc.ValueMapper<T>, query, parameters);
 
-	public static Task<T?> GetValueAsync<T>(this IDataContext context, string query, params DataParameter[] parameters)
+	public static Task<T?> GetValueAsync<T>(this IDataContext context, SqlPart query, params DataParameter[] parameters)
 		=> MapAsync(context ?? throw new ArgumentNullException(nameof(context)), Dc.ValueMapperAsync<T>, query, parameters);
 
-	public static List<T> GetList<T>(this IDataContext context, string query, params DataParameter[] parameters)
+	public static List<T> GetList<T>(this IDataContext context, SqlPart query, params DataParameter[] parameters)
 		=> Map(context ?? throw new ArgumentNullException(nameof(context)), Dc.ListMapper<T>, query, parameters);
 
-	public static Task<List<T>> GetListAsync<T>(this IDataContext context, string query, params DataParameter[] parameters)
+	public static Task<List<T>> GetListAsync<T>(this IDataContext context, SqlPart query, params DataParameter[] parameters)
 		=> MapAsync(context ?? throw new ArgumentNullException(nameof(context)), Dc.ListMapperAsync<T>, query, parameters);
 
-	public static bool ReadXmlText(this IDataContext context, TextWriter text, string query, params DataParameter[] parameters)
+	public static bool ReadXmlText(this IDataContext context, TextWriter text, SqlPart query, params DataParameter[] parameters)
 		=> Map(context ?? throw new ArgumentNullException(nameof(context)), o => Dc.XmlTextMapper(text, o), query, parameters);
 
-	public static Task<bool> ReadXmlTextAsync(this IDataContext context, TextWriter text, string query, params DataParameter[] parameters)
+	public static Task<bool> ReadXmlTextAsync(this IDataContext context, TextWriter text, SqlPart query, params DataParameter[] parameters)
 		=> MapAsync(context ?? throw new ArgumentNullException(nameof(context)), o => Dc.XmlTextMapperAsync(text, o), query, parameters);
 
-	public static List<Xml.IXmlReadOnlyNode> ReadXml(this IDataContext context, string query, params DataParameter[] parameters)
+	public static List<Xml.IXmlReadOnlyNode> ReadXml(this IDataContext context, SqlPart query, params DataParameter[] parameters)
 		=> Map(context ?? throw new ArgumentNullException(nameof(context)), Dc.XmlMapper, query, parameters);
 
-	public static Task<List<Xml.IXmlReadOnlyNode>> ReadXmlAsync(this IDataContext context, string query, params DataParameter[] parameters)
+	public static Task<List<Xml.IXmlReadOnlyNode>> ReadXmlAsync(this IDataContext context, SqlPart query, params DataParameter[] parameters)
 		=> MapAsync(context ?? throw new ArgumentNullException(nameof(context)), Dc.XmlMapperAsync, query, parameters);
 }

@@ -20,18 +20,18 @@ namespace Lexxys.Tests.Usage
 				var s2 = Dc.ValueMapperAsync<string>(command).Result;
 			}
 			{
-				int i1 = context.Map<int>(c => default, "");
-				int i2 = context.MapAsync<int>(c => Task.FromResult<int>(default), "").Result;
-				string s1 = context.Map<string>(c => "", "");
-				string s2 = context.MapAsync<string>(c => Task.FromResult<string>(""), "").Result;
-				string? t1 = context.Map<string?>(c => default, "");
-				string? t2 = context.MapAsync<string?>(c => Task.FromResult<string?>(default), "").Result;
+				int i1 = context.Map<int>(c => default, SqlPart.Empty);
+				int i2 = context.MapAsync<int>(c => Task.FromResult<int>(default), SqlPart.Empty).Result;
+				string s1 = context.Map<string>(c => "", SqlPart.Empty);
+				string s2 = context.MapAsync<string>(c => Task.FromResult<string>(""), SqlPart.Empty).Result;
+				string? t1 = context.Map<string?>(c => default, SqlPart.Empty);
+				string? t2 = context.MapAsync<string?>(c => Task.FromResult<string?>(default), SqlPart.Empty).Result;
 			}
 			{
-				int i1 = context.GetValue<int>("");
-				int i2 = context.GetValueAsync<int>("").Result;
-				string? s1 = context.GetValue<string>("");
-				string? s2 = context.GetValueAsync<string>("").Result;
+				int i1 = context.GetValue<int>(SqlPart.Empty);
+				int i2 = context.GetValueAsync<int>(SqlPart.Empty).Result;
+				string? s1 = context.GetValue<string>(SqlPart.Empty);
+				string? s2 = context.GetValueAsync<string>(SqlPart.Empty).Result;
 			}
 		}
 

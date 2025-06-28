@@ -328,11 +328,11 @@ public static class R
 	/// <summary>
 	/// A <see cref="RandItem{T}"/> that returns a random char in range 'a' to 'z' or 'A' to 'Z'.
 	/// </summary>
-	public static RandItem<char> LetterChar { get; } = new RandItem<char>(() => { int i = Rand.Int(0, NC * 2); return (char)(i < NC ? i + 'a' : i + ('A' - NC)); });
+	public static RandItem<char> LetterChar { get; } = new RandItem<char>(() => { int i = Rand.Int(0, NC * 2); return (char)(i < NC ? i + 'a': i + ('A' - NC)); });
 	/// <summary>
 	/// A <see cref="RandItem{T}"/> that returns a random char in range 'a' to 'z' or 'A' to 'Z' or '0' to '9'.
 	/// </summary>
-	public static RandItem<char> LetterOrDigitChar { get; } = new RandItem<char>(() => { int i = R.Int(0, NC2 + 10); return (char)(i < NC ? i + 'a' : i < NC2 ? i + ('A' - NC) : i + ('0' - NC2)); });
+	public static RandItem<char> LetterOrDigitChar { get; } = new RandItem<char>(() => { int i = R.Int(0, NC2 + 10); return (char)(i < NC ? i + 'a': i < NC2 ? i + ('A' - NC): i + ('0' - NC2)); });
 	/// <summary>
 	/// A <see cref="RandItem{T}"/> that returns a random char in range ' ' to '~'.
 	/// </summary>
@@ -653,9 +653,9 @@ public static class R
 
 	private static string GetResourceItem(double probability, string name, string? format)
 	{
-		return Rand.Dbl() >= probability ? "" :
-			!Resources.Resource.TryGetValue(name, out var val) ? "" :
-			format == null ? val.ToString() :
+		return Rand.Dbl() >= probability ? "":
+			!Resources.Resource.TryGetValue(name, out var val) ? "":
+			format == null ? val.ToString():
 			val.ToString(format, null);
 	}
 
@@ -664,7 +664,7 @@ public static class R
 		if (value == null)
 			return "";
 		value = value.Trim();
-		return value.Length == 0 ? value : pad + value;
+		return value.Length == 0 ? value: pad + value;
 	}
 
 	private const int MinLoremLength = 12;
@@ -698,7 +698,7 @@ public static class R
 		int len = Rand.Int(Math.Max(minLength, MinLoremLength), maxLength);
 		var text = new StringBuilder();
 		int point = Rand.Int(3, 15);
-		int coma = point < 5 ? 0 : Rand.Case(0.4, 0, Rand.Int(3, point));
+		int coma = point < 5 ? 0: Rand.Case(0.4, 0, Rand.Int(3, point));
 		bool upper = true;
 		while (text.Length < len)
 		{
@@ -709,13 +709,13 @@ public static class R
 				{
 					text.Append('.');
 					point = Rand.Int(3, 15);
-					coma = point < 5 ? 0 : Rand.Case(0.4, 0, Rand.Int(3, point));
+					coma = point < 5 ? 0: Rand.Case(0.4, 0, Rand.Int(3, point));
 					upper = true;
 				}
 				else if (--coma == 0)
 				{
 					text.Append(',');
-					coma = point < 5 ? 0 : Rand.Case(0.4, 0, Rand.Int(3, point));
+					coma = point < 5 ? 0: Rand.Case(0.4, 0, Rand.Int(3, point));
 				}
 				text.Append(' ');
 			}

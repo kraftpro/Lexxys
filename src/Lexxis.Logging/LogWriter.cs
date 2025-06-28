@@ -65,7 +65,7 @@ public abstract class LogWriter: ILogWriter
 		try
 		{
 			Type? type = Factory.GetType(className) ??
-				(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className) : null);
+				(className.IndexOf('.') < 0 ? Factory.GetType("Lexxys.Logging." + className): null);
 			if (type != null && typeof(LogWriter).IsAssignableFrom(type))
 				writer = Factory.TryGetConstructor(type, [typeof(string), typeof(IXmlReadOnlyNode)])?
 					.Invoke([name, node]) as LogWriter;

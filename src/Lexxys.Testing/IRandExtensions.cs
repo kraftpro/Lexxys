@@ -23,7 +23,7 @@ public static class RandExtensions
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
 		if (maxValue < 0) throw new ArgumentOutOfRangeException(nameof(maxValue), maxValue, null);
-		return maxValue == 0 ? 0 : rnd.NextInt32() % maxValue;
+		return maxValue == 0 ? 0: rnd.NextInt32() % maxValue;
 	}
 
 	/// <summary>
@@ -40,7 +40,7 @@ public static class RandExtensions
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
 		if (minValue < 0) throw new ArgumentOutOfRangeException(nameof(minValue), minValue, null);
 		if (maxValue < minValue) throw new ArgumentOutOfRangeException(nameof(maxValue), maxValue, null);
-		return minValue == maxValue ? minValue : minValue + rnd.NextInt32() % (maxValue - minValue);
+		return minValue == maxValue ? minValue: minValue + rnd.NextInt32() % (maxValue - minValue);
 	}
 
 	/// <summary>

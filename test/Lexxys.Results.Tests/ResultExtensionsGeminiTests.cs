@@ -351,7 +351,7 @@ public class ResultExtensionsClaudeTests
 		var result = new SuccessResult<int>(10);
 
 		// Act
-		var asserted = result.Assert(x => x > 0 ? null : new ErrorResult("Value should be positive", [], null, 0));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("Value should be positive", [], null, 0));
 
 		// Assert
 		await Assert.That(asserted.IsSuccess).IsTrue();
@@ -365,7 +365,7 @@ public class ResultExtensionsClaudeTests
 		var result = new SuccessResult<int>(-5);
 
 		// Act
-		var asserted = result.Assert(x => x > 0 ? null : new ErrorResult("Value should be positive", [], null, 0));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("Value should be positive", [], null, 0));
 
 		// Assert
 		await Assert.That(asserted.IsFailure).IsTrue();
@@ -380,7 +380,7 @@ public class ResultExtensionsClaudeTests
 		var result = new FailureResult<int>(error);
 
 		// Act
-		var asserted = result.Assert(x => x > 0 ? null : new ErrorResult("Value should be positive", [], null, 0));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("Value should be positive", [], null, 0));
 
 		// Assert
 		await Assert.That(asserted.IsFailure).IsTrue();
@@ -510,7 +510,7 @@ public class ResultExtensionsClaudeTests
 		// Act
 		var finalResult = await result
 			.Then(x => new SuccessResult<int>(x * 2))
-			.Assert(x => x > 15 ? null : new ErrorResult("Value too small", [], null, 0))
+			.Assert(x => x > 15 ? null: new ErrorResult("Value too small", [], null, 0))
 			.Then(async x => {
 				await Task.Delay(1);
 				return Result.Success(x + 1);

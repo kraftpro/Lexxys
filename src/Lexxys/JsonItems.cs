@@ -40,7 +40,7 @@ public abstract class JsonItem
 	{
 		null => NullValue,
 		string s => s,
-		bool b => b ? TrueValue : FalseValue,
+		bool b => b ? TrueValue: FalseValue,
 		DateTime d => XmlConvert.ToString(d, XmlDateTimeSerializationMode.RoundtripKind),
 		DateTimeOffset x => XmlConvert.ToString(x),
 		TimeSpan t => XmlConvert.ToString(t),
@@ -60,7 +60,7 @@ public abstract class JsonItem
 		if (Attributes.Count == 0)
 			return text;
 
-		string separator = indent == null ? "," : ", ";
+		string separator = indent == null ? ",": ", ";
 		string comma = "(";
 		foreach (var attrib in Attributes)
 		{
@@ -93,7 +93,7 @@ public abstract class JsonItem
 	}
 
 	public string ToString(bool format, int stringLimit = 0, int arrayLimit = 0)
-		=> ToString(new StringBuilder(), format ? "" : null, stringLimit, arrayLimit).ToString();
+		=> ToString(new StringBuilder(), format ? "": null, stringLimit, arrayLimit).ToString();
 
 	public override string ToString() => ToString(new StringBuilder()).ToString();
 }
@@ -131,7 +131,7 @@ public readonly struct JsonPair: IEquatable<JsonPair>
 		if (IsEmpty)
 			return text;
 		Strings.EscapeCsString(text, Name);
-		text.Append(indent == null ? ":" : ": ");
+		text.Append(indent == null ? ":": ": ");
 		if (Item is null)
 			text.Append("null");
 		else
@@ -160,9 +160,9 @@ public readonly struct JsonPair: IEquatable<JsonPair>
 		if (IsEmpty)
 			return "";
 		if (format)
-			return pair ? ToString(new StringBuilder(), "").ToString() : ToString(new StringBuilder().Append("{\n  "), "  ").Append("\n}").ToString();
+			return pair ? ToString(new StringBuilder(), "").ToString(): ToString(new StringBuilder().Append("{\n  "), "  ").Append("\n}").ToString();
 		else
-			return pair ? ToString(new StringBuilder()).ToString() : ToString(new StringBuilder().Append('{')).Append('}').ToString();
+			return pair ? ToString(new StringBuilder()).ToString(): ToString(new StringBuilder().Append('{')).Append('}').ToString();
 	}
 
 	public override string ToString()
@@ -279,7 +279,7 @@ public class JsonScalar: JsonItem
 		{
 			null => text.Append("null"),
 			string s => Escape(text, s, maxValueLength),
-			bool bl => text.Append(bl ? "true" : "false"),
+			bool bl => text.Append(bl ? "true": "false"),
 			DateTime dt => text.Append('"').Append(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.RoundtripKind)).Append('"'),
 			DateTimeOffset dtx => text.Append('"').Append(XmlConvert.ToString(dtx)).Append('"'),
 			TimeSpan tm => text.Append('"').Append(XmlConvert.ToString(tm)).Append('"'),
@@ -296,8 +296,8 @@ public class JsonScalar: JsonItem
 			float f => Single.IsFinite(f) ? text.Append(f): text.Append(NaNValue),
 			double d => Double.IsFinite(d) ? text.Append(d): text.Append(NaNValue),
 #else
-			float f => Single.IsNaN(f) || Single.IsInfinity(f) ? text.Append(f) : text.Append(NaNValue),
-			double d => Double.IsNaN(d) || Double.IsInfinity(d) ? text.Append(d) : text.Append(NaNValue),
+			float f => Single.IsNaN(f) || Single.IsInfinity(f) ? text.Append(f): text.Append(NaNValue),
+			double d => Double.IsNaN(d) || Double.IsInfinity(d) ? text.Append(d): text.Append(NaNValue),
 #endif
 			decimal m => text.Append(m),
 			_ => Escape(text, Value.ToString() ?? String.Empty, maxValueLength)
@@ -588,7 +588,7 @@ public class JsonScalar: JsonItem
 					mem[--index] = Colon;
 				}
 				index = Digits2(mem, index, offset / 60);
-				mem[--index] = offset < 0 ? (byte)'-' : (byte)'+';
+				mem[--index] = offset < 0 ? (byte)'-': (byte)'+';
 			}
 			else
 			{
@@ -666,7 +666,7 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 		text.Append('{');
 		if (Properties.Count > 0)
 		{
-			string? indent2 = indent == null ? null : indent + "  ";
+			string? indent2 = indent == null ? null: indent + "  ";
 			string comma = "";
 			foreach (var item in Properties)
 			{
@@ -751,7 +751,7 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 
 		base.ToString(text, indent, stringLimit, arrayLimit);
 		text.Append('[');
-		string? indent2 = indent == null ? null : indent + "  ";
+		string? indent2 = indent == null ? null: indent + "  ";
 		string comma = "";
 		int i = 0;
 		foreach (JsonItem item in Items)

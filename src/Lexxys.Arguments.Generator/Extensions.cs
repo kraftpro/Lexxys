@@ -6,7 +6,7 @@ namespace Lexxys.Arguments.Generator;
 
 internal static class Extensions
 {
-	public static TValue? GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) => dictionary.TryGetValue(key, out var value) ? value : default;
+	public static TValue? GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) => dictionary.TryGetValue(key, out var value) ? value: default;
 
 	public static StringBuilder Indent(this StringBuilder text, int indent)
 	{

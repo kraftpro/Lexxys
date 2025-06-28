@@ -176,7 +176,7 @@ public class ArgumentParameterCollection: IReadOnlyCollection<ArgumentParameter>
 	}
 
 	public T GetValueOrDefault<T>(string name, T defaultValue, ICollection<string>? errors = null)
-		=> TryGetValue<T>(name, out var result, errors) ? result : defaultValue;
+		=> TryGetValue<T>(name, out var result, errors) ? result: defaultValue;
 
 	/// <summary>
 	/// Returns the collection of values of the parameter with the specified <paramref name="name"/> converted to the specified type <typeparamref name="T"/>.

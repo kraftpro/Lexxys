@@ -47,7 +47,7 @@ public ref struct CharStream
 		if (text == null)
 			throw new ArgumentNullException(nameof(text));
 		_buffer = _start = text.AsSpan();
-		TabSize = tabSize > 0 ? tabSize : DefaultTabSize;
+		TabSize = tabSize > 0 ? tabSize: DefaultTabSize;
 	}
 
 	/// <summary>
@@ -68,7 +68,7 @@ public ref struct CharStream
 			buffer.Append(line).Append('\n');
 		}
 		_buffer = _start = buffer.ToString().AsSpan();
-		TabSize = tabSize > 0 ? tabSize : DefaultTabSize;
+		TabSize = tabSize > 0 ? tabSize: DefaultTabSize;
 	}
 
 	/// <summary>
@@ -230,7 +230,7 @@ public ref struct CharStream
 		if (offset >= _buffer.Length)
 			return -1;
 		int k = _buffer.Slice(offset).IndexOf(value);
-		return k < 0 ? k : k + offset;
+		return k < 0 ? k: k + offset;
 	}
 
 	/// <summary>
@@ -323,14 +323,14 @@ public ref struct CharStream
 		if (offset < 0)
 			throw new ArgumentOutOfRangeException(nameof(offset), offset, null);
 
-		int index = offset == 0 ? _buffer.IndexOfAny(CrLf) : _buffer.Slice(offset).IndexOfAny(CrLf);
+		int index = offset == 0 ? _buffer.IndexOfAny(CrLf): _buffer.Slice(offset).IndexOfAny(CrLf);
 		if (index < 0)
 		{
 			newLineWidth = 0;
 			return -1;
 		}
 		index += offset;
-		newLineWidth = _buffer[index] == CR && index + 1 < _buffer.Length && _buffer[index + 1] == LF ? 2 : 1;
+		newLineWidth = _buffer[index] == CR && index + 1 < _buffer.Length && _buffer[index + 1] == LF ? 2: 1;
 		return index;
 	}
 
@@ -345,7 +345,7 @@ public ref struct CharStream
 		return _buffer[offset] switch
 		{
 			LF => 1,
-			CR => offset + 1 < _buffer.Length && _buffer[offset + 1] == LF ? 2 : 1,
+			CR => offset + 1 < _buffer.Length && _buffer[offset + 1] == LF ? 2: 1,
 			_ => 0
 		};
 	}
@@ -519,7 +519,7 @@ public ref struct CharStream
 	public readonly CharPosition GetCharPosition() => GetCharPosition(Position);
 
 	public readonly CharPosition GetCharPosition(int position, CharPosition prev)
-		=> position < prev.Position ? GetCharPosition(position) : GetCharPosition(prev, position - prev.Position);
+		=> position < prev.Position ? GetCharPosition(position): GetCharPosition(prev, position - prev.Position);
 
 	public readonly CharPosition GetCharPosition(int position)
 	{
@@ -573,7 +573,7 @@ public ref struct CharStream
 		return (line, column + part.Length);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static int NewLineLen(ReadOnlySpan<char> part, int index) => part[index] == CR && index + 1 < part.Length && part[index + 1] == LF ? 2 : 1;
+		static int NewLineLen(ReadOnlySpan<char> part, int index) => part[index] == CR && index + 1 < part.Length && part[index + 1] == LF ? 2: 1;
 	}
 	private const char CR = '\r';
 	private const char LF = '\n';

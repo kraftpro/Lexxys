@@ -1010,7 +1010,7 @@ public static class Lingua
 				n = -n;
 			if (n > 19)
 				n %= 10;
-			return n == 1 ? "st" : (n == 2 ? "nd" : (n == 3 ? "rd" : "th"));
+			return n == 1 ? "st": (n == 2 ? "nd": (n == 3 ? "rd": "th"));
 		}
 
 		private static string Separator(string? value, string defaultValue)

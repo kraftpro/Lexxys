@@ -12,192 +12,192 @@ public static partial class Strings
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return Byte.TryParse(value, out byte result) ? result : throw new FormatException(SR.FormatException(value));
+		return Byte.TryParse(value, out byte result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static byte GetByte(string? value, byte defaultValue)
 	{
-		return Byte.TryParse(value, out byte result) ? result : defaultValue;
+		return Byte.TryParse(value, out byte result) ? result: defaultValue;
 	}
 
 	public static byte? GetByte(string? value, byte? defaultValue)
 	{
-		return Byte.TryParse(value, out byte result) ? result : defaultValue;
+		return Byte.TryParse(value, out byte result) ? result: defaultValue;
 	}
 
 	public static sbyte GetSByte(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return SByte.TryParse(value, out sbyte result) ? result : throw new FormatException(SR.FormatException(value));
+		return SByte.TryParse(value, out sbyte result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static sbyte GetSByte(string? value, sbyte defaultValue)
 	{
-		return SByte.TryParse(value, out sbyte result) ? result : defaultValue;
+		return SByte.TryParse(value, out sbyte result) ? result: defaultValue;
 	}
 
 	public static sbyte? GetSByte(string? value, sbyte? defaultValue)
 	{
-		return SByte.TryParse(value, out sbyte result) ? result : defaultValue;
+		return SByte.TryParse(value, out sbyte result) ? result: defaultValue;
 	}
 
 	public static short GetInt16(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return Int16.TryParse(value, out short result) ? result : throw new FormatException(SR.FormatException(value));
+		return Int16.TryParse(value, out short result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static short GetInt16(string? value, short defaultValue)
 	{
-		return Int16.TryParse(value, out short result) ? result : defaultValue;
+		return Int16.TryParse(value, out short result) ? result: defaultValue;
 	}
 
 	public static short? GetInt16(string? value, short? defaultValue)
 	{
-		return Int16.TryParse(value, out short result) ? result : defaultValue;
+		return Int16.TryParse(value, out short result) ? result: defaultValue;
 	}
 
 	public static ushort GetUInt16(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return UInt16.TryParse(value, out ushort result) ? result : throw new FormatException(SR.FormatException(value));
+		return UInt16.TryParse(value, out ushort result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static ushort GetUInt16(string? value, ushort defaultValue)
 	{
-		return UInt16.TryParse(value, out ushort result) ? result : defaultValue;
+		return UInt16.TryParse(value, out ushort result) ? result: defaultValue;
 	}
 
 	public static ushort? GetUInt16(string? value, ushort? defaultValue)
 	{
-		return UInt16.TryParse(value, out ushort result) ? result : defaultValue;
+		return UInt16.TryParse(value, out ushort result) ? result: defaultValue;
 	}
 
 	public static int GetInt32(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return Int32.TryParse(value, out int result) ? result : throw new FormatException(SR.FormatException(value));
+		return Int32.TryParse(value, out int result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static int GetInt32(string? value, int defaultValue)
 	{
-		return Int32.TryParse(value, out int result) ? result : defaultValue;
+		return Int32.TryParse(value, out int result) ? result: defaultValue;
 	}
 
 	public static int? GetInt32(string? value, int? defaultValue)
 	{
-		return Int32.TryParse(value, out int result) ? result : defaultValue;
+		return Int32.TryParse(value, out int result) ? result: defaultValue;
 	}
 
 	public static int GetInt32(string? value, int defaultValue, int minValue, int maxValue)
 	{
-		return !Int32.TryParse(value, out int result) ? defaultValue : result < minValue ? minValue : result > maxValue ? maxValue : result;
+		return !Int32.TryParse(value, out int result) ? defaultValue: result < minValue ? minValue: result > maxValue ? maxValue: result;
 	}
 
 	public static uint GetUInt32(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return UInt32.TryParse(value, out uint result) ? result : throw new FormatException(SR.FormatException(value));
+		return UInt32.TryParse(value, out uint result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static uint GetUInt32(string? value, uint defaultValue)
 	{
-		return UInt32.TryParse(value, out uint result) ? result : defaultValue;
+		return UInt32.TryParse(value, out uint result) ? result: defaultValue;
 	}
 
 	public static uint? GetUInt32(string? value, uint? defaultValue)
 	{
-		return UInt32.TryParse(value, out uint result) ? result : defaultValue;
+		return UInt32.TryParse(value, out uint result) ? result: defaultValue;
 	}
 
 	public static long GetInt64(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return Int64.TryParse(value, out long result) ? result : throw new FormatException(SR.FormatException(value));
+		return Int64.TryParse(value, out long result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static long GetInt64(string? value, long defaultValue)
 	{
-		return Int64.TryParse(value, out long result) ? result : defaultValue;
+		return Int64.TryParse(value, out long result) ? result: defaultValue;
 	}
 
 	public static long? GetInt64(string? value, long? defaultValue)
 	{
-		return Int64.TryParse(value, out long result) ? result : defaultValue;
+		return Int64.TryParse(value, out long result) ? result: defaultValue;
 	}
 
 	public static ulong GetUInt64(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return UInt64.TryParse(value, out ulong result) ? result : throw new FormatException(SR.FormatException(value));
+		return UInt64.TryParse(value, out ulong result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static ulong GetUInt64(string? value, ulong defaultValue)
 	{
-		return UInt64.TryParse(value, out ulong result) ? result : defaultValue;
+		return UInt64.TryParse(value, out ulong result) ? result: defaultValue;
 	}
 
 	public static ulong? GetUInt64(string? value, ulong? defaultValue)
 	{
-		return UInt64.TryParse(value, out ulong result) ? result : defaultValue;
+		return UInt64.TryParse(value, out ulong result) ? result: defaultValue;
 	}
 
 	public static float GetSingle(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return Single.TryParse(value, out float result) ? result : throw new FormatException(SR.FormatException(value));
+		return Single.TryParse(value, out float result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static float GetSingle(string? value, float defaultValue)
 	{
-		return Single.TryParse(value, out float result) ? result : defaultValue;
+		return Single.TryParse(value, out float result) ? result: defaultValue;
 	}
 
 	public static float? GetSingle(string? value, float? defaultValue)
 	{
-		return Single.TryParse(value, out float result) ? result : defaultValue;
+		return Single.TryParse(value, out float result) ? result: defaultValue;
 	}
 
 	public static double GetDouble(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return Double.TryParse(value, out double result) ? result : throw new FormatException(SR.FormatException(value));
+		return Double.TryParse(value, out double result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static double GetDouble(string? value, double defaultValue)
 	{
-		return Double.TryParse(value, out double result) ? result : defaultValue;
+		return Double.TryParse(value, out double result) ? result: defaultValue;
 	}
 
 	public static double? GetDouble(string? value, double? defaultValue)
 	{
-		return Double.TryParse(value, out double result) ? result : defaultValue;
+		return Double.TryParse(value, out double result) ? result: defaultValue;
 	}
 
 	public static decimal GetDecimal(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return Decimal.TryParse(value, out decimal result) ? result : throw new FormatException(SR.FormatException(value));
+		return Decimal.TryParse(value, out decimal result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static decimal GetDecimal(string? value, decimal defaultValue)
 	{
-		return Decimal.TryParse(value, out decimal result) ? result : defaultValue;
+		return Decimal.TryParse(value, out decimal result) ? result: defaultValue;
 	}
 
 	public static decimal? GetDecimal(string? value, decimal? defaultValue)
 	{
-		return Decimal.TryParse(value, out decimal result) ? result : defaultValue;
+		return Decimal.TryParse(value, out decimal result) ? result: defaultValue;
 	}
 
 	public static char GetChar(string value)
@@ -241,22 +241,22 @@ public static partial class Strings
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return TryGetTimeSpan(value, out TimeSpan result) ? result : throw new FormatException(SR.FormatException(value));
+		return TryGetTimeSpan(value, out TimeSpan result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static TimeSpan GetTimeSpan(string? value, TimeSpan defaultValue)
 	{
-		return TryGetTimeSpan(value, out TimeSpan result) ? result : defaultValue;
+		return TryGetTimeSpan(value, out TimeSpan result) ? result: defaultValue;
 	}
 
 	public static TimeSpan? GetTimeSpan(string? value, TimeSpan? defaultValue)
 	{
-		return TryGetTimeSpan(value, out TimeSpan result) ? result : defaultValue;
+		return TryGetTimeSpan(value, out TimeSpan result) ? result: defaultValue;
 	}
 
 	public static TimeSpan GetTimeSpan(string? value, TimeSpan defaultValue, TimeSpan minValue, TimeSpan maxValue)
 	{
-		return !TryGetTimeSpan(value, out TimeSpan result) ? defaultValue : result < minValue ? minValue : result > maxValue ? maxValue : result;
+		return !TryGetTimeSpan(value, out TimeSpan result) ? defaultValue: result < minValue ? minValue: result > maxValue ? maxValue: result;
 	}
 
 	/// <summary>
@@ -589,7 +589,7 @@ public static partial class Strings
 		public TimeSpan Time(long ticksPerItem)
 		{
 			return ticksPerItem < OverflowTable[_scale] ?
-				new TimeSpan(_left * ticksPerItem + _right * ticksPerItem / ScaleTable[_scale]) :
+				new TimeSpan(_left * ticksPerItem + _right * ticksPerItem / ScaleTable[_scale]):
 				new TimeSpan(_left * ticksPerItem + (long)((decimal)_right * ticksPerItem / ScaleTable[_scale] + 0.5m));
 		}
 	}
@@ -598,17 +598,17 @@ public static partial class Strings
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return TryGetDateTime(value, out DateTime result) ? result : throw new FormatException(SR.FormatException(value));
+		return TryGetDateTime(value, out DateTime result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static DateTime GetDateTime(string? value, DateTime defaultValue)
 	{
-		return TryGetDateTime(value, out DateTime result) ? result : defaultValue;
+		return TryGetDateTime(value, out DateTime result) ? result: defaultValue;
 	}
 
 	public static DateTime GetDateTime(string? value, DateTime defaultValue, DateTime minValue, DateTime maxValue)
 	{
-		return !TryGetDateTime(value, out DateTime result) ? defaultValue : result < minValue ? minValue : result > maxValue ? maxValue : result;
+		return !TryGetDateTime(value, out DateTime result) ? defaultValue: result < minValue ? minValue: result > maxValue ? maxValue: result;
 	}
 
 	public static bool TryGetDateTime(string? value, out DateTime result)
@@ -618,7 +618,7 @@ public static partial class Strings
 			result = new DateTime();
 			return false;
 		}
-		result = !zone ? dto.DateTime : dto.Offset == TimeSpan.Zero ? dto.UtcDateTime : dto.LocalDateTime;
+		result = !zone ? dto.DateTime: dto.Offset == TimeSpan.Zero ? dto.UtcDateTime: dto.LocalDateTime;
 		return true;
 	}
 
@@ -626,17 +626,17 @@ public static partial class Strings
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? result : throw new FormatException(SR.FormatException(value));
+		return TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static DateTimeOffset GetDateTimeOffset(string? value, DateTimeOffset defaultValue)
 	{
-		return TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? result : defaultValue;
+		return TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? result: defaultValue;
 	}
 
 	public static DateTimeOffset GetDateTimeOffset(string? value, DateTimeOffset defaultValue, DateTimeOffset minValue, DateTimeOffset maxValue)
 	{
-		return !TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? defaultValue : result < minValue ? minValue : result > maxValue ? maxValue : result;
+		return !TryGetDateTimeOffset(value, out DateTimeOffset result, out _) ? defaultValue: result < minValue ? minValue: result > maxValue ? maxValue: result;
 	}
 
 	public static bool TryGetDateTimeOffset(string? value, out DateTimeOffset result)
@@ -796,7 +796,7 @@ public static partial class Strings
 					return false;
 			}
 			text.Forward(Space);
-			offset = minus ? new TimeSpan(-h, -m, 0) : new TimeSpan(h, m, 0);
+			offset = minus ? new TimeSpan(-h, -m, 0): new TimeSpan(h, m, 0);
 			timeZone = true;
 		}
 		else
@@ -830,17 +830,17 @@ public static partial class Strings
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return Guid.TryParse(value, out Guid result) ? result : throw new FormatException(SR.FormatException(value));
+		return Guid.TryParse(value, out Guid result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static Guid GetGuid(string? value, Guid defaultValue)
 	{
-		return Guid.TryParse(value, out Guid result) ? result : defaultValue;
+		return Guid.TryParse(value, out Guid result) ? result: defaultValue;
 	}
 
 	public static Guid? GetGuid(string? value, Guid? defaultValue)
 	{
-		return Guid.TryParse(value, out Guid result) ? result : defaultValue;
+		return Guid.TryParse(value, out Guid result) ? result: defaultValue;
 	}
 
 	public static bool TryGetGuid(string? value, out Guid result)
@@ -852,7 +852,7 @@ public static partial class Strings
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return TryGetType(value, out Type? result) ? result : throw new FormatException(SR.FormatException(value));
+		return TryGetType(value, out Type? result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static Type GetType(string? value, Type defaultValue)
@@ -873,14 +873,14 @@ public static partial class Strings
 
 	public static bool GetBoolean(string? value, bool defaultValue)
 	{
-		return TryGetBoolean(value, out bool result) ? result : defaultValue;
+		return TryGetBoolean(value, out bool result) ? result: defaultValue;
 	}
 
 	public static bool GetBoolean(string value)
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return TryGetBoolean(value, out bool result) ? result : throw new FormatException(SR.FormatException(value));
+		return TryGetBoolean(value, out bool result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	public static bool TryGetBoolean(string? value, out bool result)
@@ -915,7 +915,7 @@ public static partial class Strings
 		return -1;
 	}
 
-	public static T GetEnum<T>(string value) where T : struct
+	public static T GetEnum<T>(string value) where T: struct
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
@@ -924,17 +924,17 @@ public static partial class Strings
 		throw new FormatException(SR.FormatException(value));
 	}
 
-	public static T GetEnum<T>(string? value, T defaultValue) where T : struct
+	public static T GetEnum<T>(string? value, T defaultValue) where T: struct
 	{
-		return TryGetEnum(value, out T result) ? result : defaultValue;
+		return TryGetEnum(value, out T result) ? result: defaultValue;
 	}
 
-	public static T? GetEnum<T>(string? value, T? defaultValue) where T : struct
+	public static T? GetEnum<T>(string? value, T? defaultValue) where T: struct
 	{
-		return TryGetEnum(value, out T result) ? result : defaultValue;
+		return TryGetEnum(value, out T result) ? result: defaultValue;
 	}
 
-	public static bool TryGetEnum<T>(string? value, out T result) where T : struct
+	public static bool TryGetEnum<T>(string? value, out T result) where T: struct
 	{
 		return Enum.TryParse(value, true, out result);
 	}
@@ -943,13 +943,13 @@ public static partial class Strings
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return TryGetEnum(value, enumType, out object? result) ? result : throw new FormatException(SR.FormatException(value));
+		return TryGetEnum(value, enumType, out object? result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	[return: NotNullIfNotNull(nameof(defaultValue))]
 	public static object? GetEnum(string? value, Type enumType, object? defaultValue)
 	{
-		return TryGetEnum(value, enumType, out object? result) ? result : defaultValue;
+		return TryGetEnum(value, enumType, out object? result) ? result: defaultValue;
 	}
 
 	public static bool TryGetEnum([NotNullWhen(true)] string? value, Type enumType, out object result)
@@ -1032,7 +1032,7 @@ public static partial class Strings
 		if (value == null)
 			return defaultValue;
 		value = value.Trim();
-		return value.Length == 0 ? defaultValue : value;
+		return value.Length == 0 ? defaultValue: value;
 	}
 
 	public static (Type Regular, Type? Nullable) NullableTypes(Type type)

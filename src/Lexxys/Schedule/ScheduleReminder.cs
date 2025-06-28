@@ -58,7 +58,7 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 		{
 			while (!businessDay(nextDate))
 			{
-				nextDate += ShiftToBusinessDay == BusinessDayShiftType.Forward ? Tomorrow : Yesterday;
+				nextDate += ShiftToBusinessDay == BusinessDayShiftType.Forward ? Tomorrow: Yesterday;
 			}
 		}
 
@@ -93,7 +93,7 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 		if (ShiftToBusinessDay != BusinessDayShiftType.None)
 		{
 			text.Append(" or the nearest business day ")
-				.Append(ShiftToBusinessDay == BusinessDayShiftType.Backward ? "prior" : "after")
+				.Append(ShiftToBusinessDay == BusinessDayShiftType.Backward ? "prior": "after")
 				.Append(" the scheduled date");
 		}
 		if (Value <= TimeSpan.Zero) return text;
@@ -110,7 +110,7 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 		if (Value.Minutes > 0)
 			text.Append(Value is { Days: 0, Hours: 0 } ? "": " and ")
 				.Append(Value.Minutes)
-				.Append(" minute").Append(Value.Minutes > 1 ? "s" : "");
+				.Append(" minute").Append(Value.Minutes > 1 ? "s": "");
 		text.Append(" before the ").Append(ShiftToBusinessDay == BusinessDayShiftType.None ? "scheduled ": "").Append(Value is { Hours: 0, Minutes: 0 } ? "date": "time");
 		return text;
 	}

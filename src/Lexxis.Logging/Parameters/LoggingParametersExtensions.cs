@@ -90,7 +90,7 @@ public static partial class LoggingParametersExtensions
 		else
 		{
 			var items = new List<string>(value.Where(o => o != null));
-			parameters.Exclude = items.Count == 0 ? null : items;
+			parameters.Exclude = items.Count == 0 ? null: items;
 		}
 		return parameters;
 	}

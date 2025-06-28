@@ -54,8 +54,7 @@ public class NumericTokenRule: LexicalTokenRule
 		TokenType = numeric;
 	}
 
-	public NumericTokenRule(NumericTokenStyles style)
-		: this(LexicalTokenType.NUMERIC, style)
+	public NumericTokenRule(NumericTokenStyles style): this(LexicalTokenType.NUMERIC, style)
 	{
 	}
 

@@ -13,9 +13,9 @@ internal static class Strings
 		var ss = new List<(int Index, int Length)>();
 		var c = identifier[0];
 		CharType ot =
-			Char.IsUpper(c) ? CharType.Upper :
-			Char.IsLower(c) ? CharType.Lower :
-			Char.IsDigit(c) ? CharType.Digit : CharType.Other;
+			Char.IsUpper(c) ? CharType.Upper:
+			Char.IsLower(c) ? CharType.Lower:
+			Char.IsDigit(c) ? CharType.Digit: CharType.Other;
 
 		int i0 = 0;
 
@@ -23,9 +23,9 @@ internal static class Strings
 		{
 			c = identifier[i];
 			CharType ct =
-				Char.IsUpper(c) ? CharType.Upper :
-				Char.IsLower(c) ? CharType.Lower :
-				Char.IsDigit(c) ? CharType.Digit : CharType.Other;
+				Char.IsUpper(c) ? CharType.Upper:
+				Char.IsLower(c) ? CharType.Lower:
+				Char.IsDigit(c) ? CharType.Digit: CharType.Other;
 
 			if (ct == ot)
 				continue;

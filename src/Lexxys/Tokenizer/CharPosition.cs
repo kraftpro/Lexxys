@@ -90,7 +90,7 @@ public readonly struct CharPosition: IEquatable<CharPosition>
 		if (end > text.Length)
 			end = text.Length;
 		var lc = OffsetBox(text.Slice(start, end - start), tab);
-		return new CharPosition(end, lc.Line + Line, lc.Line == 0 ? lc.Column + Column : lc.Column);
+		return new CharPosition(end, lc.Line + Line, lc.Line == 0 ? lc.Column + Column: lc.Column);
 	}
 
 	public static CharPosition Create(ReadOnlySpan<char> text, int position, int tab)

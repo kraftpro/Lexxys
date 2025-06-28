@@ -225,7 +225,7 @@ internal class LoggingRule
 				return null;
 			var chunks = pattern.Split(',').Distinct().ToList();
 			if (chunks.Any(o => o == ".*" || o.Equals("all", StringComparison.OrdinalIgnoreCase)))
-				return excludeAll ? null : __allSources;
+				return excludeAll ? null: __allSources;
 
 			try
 			{

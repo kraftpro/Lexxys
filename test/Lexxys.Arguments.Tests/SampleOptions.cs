@@ -65,9 +65,9 @@ partial class SampleOption: ICliOption<SampleOption>
 		Alpha = c.Parameters.Value<int>("alpha", default),
 		Beta = c.Parameters.Value<float>("beta", default),
 		Gamma = c.Parameters.Value<float>("gamma", default),
-		//Input = c.Parameters.Value("input") is string v1 ? new FileInfo(v1) : null,
+		//Input = c.Parameters.Value("input") is string v1 ? new FileInfo(v1): null,
 		Input = c.Parameters.Value<FileInfo?>("input", default),
-		Output = c.Parameters.Value("output") is string v2 ? new FileInfo(v2) : null,
+		Output = c.Parameters.Value("output") is string v2 ? new FileInfo(v2): null,
 		Create = c.Command?.Name == "Create" ? CommandCreate.Parse(c.Command): null,
 		Delete = c.Command?.Name == "Delete" ? CommandDelete.Parse(c.Command): null,
 	};

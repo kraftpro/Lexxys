@@ -9,7 +9,7 @@ using System.Data.Common;
 
 namespace Lexxys.Data;
 
-public class DataParameter: IDataParameter
+public class DataParameter
 {
 	public DataParameter(string name, object? value = null, DbType? type = null, int? size = null)
 	{

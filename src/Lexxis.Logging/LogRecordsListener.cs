@@ -179,7 +179,7 @@ class LogRecordService: ILoggingService
 					if (listeners[i].Writer.Accepts(source, (LogType)type))
 						indices.Add(i);
 				}
-				result[type] = indices.Count == 0 ? null : indices.ToArray();
+				result[type] = indices.Count == 0 ? null: indices.ToArray();
 			}
 			return (version, result);
 		}

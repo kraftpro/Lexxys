@@ -31,7 +31,7 @@ public class XmlLiteBuilder
 	/// <param name="ignoreCase">If <c>true</c> the <see cref="StringComparer.OrdinalIgnoreCase"/> is used to compare names of elements and attributes.</param>
 	public XmlLiteBuilder(bool ignoreCase = false)
 	{
-		_comparer = ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+		_comparer = ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal;
 	}
 
 	/// <summary>
@@ -431,7 +431,7 @@ public class XmlLiteBuilder
 			{
 				if (_nodeDescendants == null && _xmlDescendants == null)
 					return new XmlLiteNode(_name, _value, _comparer, _attrib, null);
-				var descendants = _nodeDescendants == null ? new List<IXmlReadOnlyNode>() : _nodeDescendants.ConvertAll(o => o.Convert());
+				var descendants = _nodeDescendants == null ? new List<IXmlReadOnlyNode>(): _nodeDescendants.ConvertAll(o => o.Convert());
 				if (_xmlDescendants != null)
 					descendants.AddRange(_xmlDescendants);
 				return new XmlLiteNode(_name, _value, _comparer, _attrib, descendants);
@@ -439,7 +439,7 @@ public class XmlLiteBuilder
 		}
 	}
 
-	private class EmptyNode : IXmlNode
+	private class EmptyNode: IXmlNode
 	{
 		public static readonly IXmlNode Instance = new EmptyNode();
 

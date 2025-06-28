@@ -79,9 +79,9 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 		var format = provider?.GetFormat(typeof(DateTimeFormatInfo)) as DateTimeFormatInfo ?? CultureInfo.CurrentCulture.DateTimeFormat;
 		text.Append("every ")
 			.Append(
-				DayList.Count == 7 ? "day" :
-				DayList.Count == 5 && DayList[0] == DayOfWeek.Monday && DayList[4] == DayOfWeek.Friday ? "weekday" :
-				Strings.JoinAnd(DayList.Select(abbreviateMonthName ? (Func<DayOfWeek, string>)(o => format.GetAbbreviatedDayName(o)) : o => format.GetDayName(o)))
+				DayList.Count == 7 ? "day":
+				DayList.Count == 5 && DayList[0] == DayOfWeek.Monday && DayList[4] == DayOfWeek.Friday ? "weekday":
+				Strings.JoinAnd(DayList.Select(abbreviateMonthName ? (Func<DayOfWeek, string>)(o => format.GetAbbreviatedDayName(o)): o => format.GetDayName(o)))
 				);
 		if (WeekPeriod > 1)
 			text.Append(" of every ").Append(Lingua.Ord(Lingua.NumWord(WeekPeriod))).Append(" week");
@@ -144,7 +144,7 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 		if (xml["type"] != Type) throw new ArgumentOutOfRangeException(nameof(xml), xml, null);
 
 		IEnumerable<DayOfWeek>? days = xml["days"] != null ?
-			xml["days"]?.Split(',').Select(o => o.AsEnum(DayOfWeek.Friday)) :
+			xml["days"]?.Split(',').Select(o => o.AsEnum(DayOfWeek.Friday)):
 			xml.Element("days").Elements.Select(o => o.Value.AsEnum<DayOfWeek>());
 		return new WeeklySchedule(xml["week"].AsInt32(1), days, ScheduleReminder.FromXml(xml.Element("reminder")));
 	}

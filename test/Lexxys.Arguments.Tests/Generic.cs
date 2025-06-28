@@ -23,8 +23,8 @@
 //			Gamma = c.Parameters.Value<float>("Gamma)", default),
 //			Input = c.Parameters.Value<FileInfo?>("Input)", default),
 //			Output = c.Parameters.Value<FileInfo?>("Output)", default),
-//			Create = c.Command?.Name == "Create" ? CommandCreate.Parse(c.Command) : null,
-//			Delete = c.Command?.Name == "Delete" ? CommandDelete.Parse(c.Command) : null,
+//			Create = c.Command?.Name == "Create" ? CommandCreate.Parse(c.Command): null,
+//			Delete = c.Command?.Name == "Delete" ? CommandDelete.Parse(c.Command): null,
 //		};
 
 //		public static ArgumentsBuilder Build(ArgumentsBuilder? builder = null) => (builder ?? new ArgumentsBuilder())

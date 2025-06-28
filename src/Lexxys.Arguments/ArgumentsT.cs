@@ -4,7 +4,7 @@
 /// Command line arguments parser with the parsed option value of type <typeparamref name="T"/>.
 /// </summary>
 /// <typeparam name="T">Parsed option type.</typeparam>
-public class Arguments<T>: Arguments where T : class, new()
+public class Arguments<T>: Arguments where T: class, new()
 {
 	public Arguments(Arguments arguments, T value, IReadOnlyCollection<string>? error = null): base(arguments, error) => ArgumentValue = value;
 

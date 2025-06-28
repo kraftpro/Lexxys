@@ -34,7 +34,7 @@ public static class FieldValidator
 
 		return
 			value == null ?
-				nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
+				nullable ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.NullValue()):
 			_ignoreReferenceKey || Check.ReferenceKey(dc, value, reference) ?
 				ValidationResults.Empty:
 				ValidationResults.Create(field, ErrorInfo.BadReference(value, reference));
@@ -65,7 +65,7 @@ public static class FieldValidator
 
 		return
 			value == null ?
-				nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
+				nullable ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.NullValue()):
 			_ignoreReferenceKey || Check.ReferenceKey(dc, value, table, key) ?
 				ValidationResults.Empty:
 				ValidationResults.Create(field, ErrorInfo.BadReference(value, table + "." + key));
@@ -93,7 +93,7 @@ public static class FieldValidator
 
 		return
 			value == null ?
-				nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
+				nullable ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.NullValue()):
 			Check.IsId(value) ?
 				ValidationResults.Empty:
 				ValidationResults.Create(field, ErrorInfo.BadReference(value));
@@ -130,7 +130,7 @@ public static class FieldValidator
 
 		return
 			value == null ?
-				nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
+				nullable ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.NullValue()):
 			Check.Range(value, ranges, nullable) ?
 				ValidationResults.Empty:
 			ranges?.Length == 1 ?
@@ -139,7 +139,7 @@ public static class FieldValidator
 	}
 
 	public static ValidationResults Range<T>(T value, T[]? values, string field)
-		where T : struct, IEquatable<T>
+		where T: struct, IEquatable<T>
 	{
 		if (field is not { Length: >0 })
 			throw new ArgumentNullException(nameof(field));
@@ -148,7 +148,7 @@ public static class FieldValidator
 	}
 
 	public static ValidationResults Range<T>(T? value, T[]? values, string field)
-		where T : struct, IEquatable<T>
+		where T: struct, IEquatable<T>
 	{
 		if (field is not { Length: >0 })
 			throw new ArgumentNullException(nameof(field));
@@ -157,14 +157,14 @@ public static class FieldValidator
 	}
 
 	public static ValidationResults Range<T>(T? value, T[]? values, string field, bool nullable)
-		where T : struct, IEquatable<T>
+		where T: struct, IEquatable<T>
 	{
 		if (field is not { Length: >0 })
 			throw new ArgumentNullException(nameof(field));
 
 		return
 			value == null ?
-				nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
+				nullable ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.NullValue()):
 			Check.Range(value, values, nullable) ?
 				ValidationResults.Empty:
 				ValidationResults.Create(field, ErrorInfo.OutOfRange(value));
@@ -178,7 +178,7 @@ public static class FieldValidator
 
 		return
 			value is null ?
-				nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
+				nullable ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.NullValue()):
 			min is not null && value.CompareTo(min) < 0 ?
 				ValidationResults.Create(field, ErrorInfo.OutOfRange(value, min, max)):
 			max is not null && value.CompareTo(max) > 0 ?
@@ -187,7 +187,7 @@ public static class FieldValidator
 	}
 
 	public static ValidationResults FieldValue<T>(T? value, T? min, T? max, string field)
-		where T : class, IComparable<T>
+		where T: class, IComparable<T>
 	{
 		return FieldValue(value, min, max, field, true);
 	}
@@ -233,7 +233,7 @@ public static class FieldValidator
 
 		return
 			value == null ?
-				nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
+				nullable ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.NullValue()):
 			length > 0 && value.Length > length ?
 				ValidationResults.Create(field, ErrorInfo.SizeOutOfRange(value, ErrorDataType.String, length)):
 				ValidationResults.Empty;
@@ -246,7 +246,7 @@ public static class FieldValidator
 
 		return
 			value == null ?
-				nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue()):
+				nullable ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.NullValue()):
 			length > 0 && value.Length > length ?
 				ValidationResults.Create(field, ErrorInfo.SizeOutOfRange(value, ErrorDataType.Binary, length)):
 				ValidationResults.Empty;
@@ -261,7 +261,7 @@ public static class FieldValidator
 
 		return
 			value == null ?
-				nullable ? ValidationResults.Empty : ValidationResults.Create(field, ErrorInfo.NullValue(dataType)):
+				nullable ? ValidationResults.Empty: ValidationResults.Create(field, ErrorInfo.NullValue(dataType)):
 			length > 0 && value.Length > length ?
 				ValidationResults.Create(field, ErrorInfo.SizeOutOfRange(value, dataType)):
 			test(value) ?
@@ -377,7 +377,7 @@ public static class FieldValidator
 		if (field is not { Length: >0 })
 			throw new ArgumentNullException(nameof(field));
 
-		return !value.HasValue ? ValidationResults.Create(field, ErrorInfo.NullValue()) : ValidationResults.Empty;
+		return !value.HasValue ? ValidationResults.Create(field, ErrorInfo.NullValue()): ValidationResults.Empty;
 	}
 
 	public static ValidationResults ReferenceKeyDebug(int? value, string reference, string field) => ReferenceKey(value, field);

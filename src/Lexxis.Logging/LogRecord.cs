@@ -27,31 +27,31 @@ public class LogRecord: IDumpJson
 	private static readonly AsyncLocal<int> _currentIndent = new();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public LogRecord(LogType logType, string? source, string? message, IEnumerable<NameValueTuple<string, object?>>? args = null)
-		: this(logType, 0, source, message, null, args)
+	public LogRecord(LogType logType, string? source, string? message, IEnumerable<NameValueTuple<string, object?>>? args = null):
+		this(logType, 0, source, message, null, args)
 	{
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public LogRecord(LogType logType, string? source, Exception exception, IEnumerable<NameValueTuple<string, object?>>? args = null)
-		: this(logType, 0, source, null, exception, args)
+	public LogRecord(LogType logType, string? source, Exception exception, IEnumerable<NameValueTuple<string, object?>>? args = null):
+		this(logType, 0, source, null, exception, args)
 	{
 	}
 
-	public LogRecord(LogType logType, string? source, string? message, Exception? exception, IEnumerable<NameValueTuple<string, object?>>? args = null)
-		: this(logType, 0, source, message, exception, args)
-	{
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public LogRecord(LogType logType, int eventId, string? source, string? message, IEnumerable<NameValueTuple<string, object?>>? args = null)
-		: this(logType, eventId, source, message, null, args)
+	public LogRecord(LogType logType, string? source, string? message, Exception? exception, IEnumerable<NameValueTuple<string, object?>>? args = null):
+		this(logType, 0, source, message, exception, args)
 	{
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public LogRecord(LogType logType, int eventId, string? source, Exception exception, IEnumerable<NameValueTuple<string, object?>>? args = null)
-		: this(logType, eventId, source, null, exception, args)
+	public LogRecord(LogType logType, int eventId, string? source, string? message, IEnumerable<NameValueTuple<string, object?>>? args = null):
+		this(logType, eventId, source, message, null, args)
+	{
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public LogRecord(LogType logType, int eventId, string? source, Exception exception, IEnumerable<NameValueTuple<string, object?>>? args = null):
+		this(logType, eventId, source, null, exception, args)
 	{
 	}
 

@@ -18,7 +18,7 @@ public class TextFileConfigurationProvider(FileConfigurationSource source): File
 /// </summary>
 public class TextStreamConfigurationProvider: StreamConfigurationProvider
 {
-	public TextStreamConfigurationProvider(StreamConfigurationSource source) : base(source)
+	public TextStreamConfigurationProvider(StreamConfigurationSource source): base(source)
 	{
 	}
 
@@ -69,7 +69,27 @@ static class TextConfigurationParser
 		if (node != null)
 		{
 			if (!String.IsNullOrEmpty(xml.Value))
-				map.Add(node, xml.Value);
+			{
+				if (map.ContainsKey(node + ":0"))
+				{
+					node += ConfigurationPath.KeyDelimiter;
+					int i = 0;
+					string index;
+					do
+					{
+						index = $"{node}{++i}";
+					} while (map.ContainsKey(index));
+					node = index;
+					map[node] = xml.Value;
+				}
+				else if (!map.TryAdd(node, xml.Value))
+				{
+					map[$"{node}{ConfigurationPath.KeyDelimiter}0"] = map[node];
+					map.Remove(node);
+					node += ConfigurationPath.KeyDelimiter + "1";
+					map[node] = xml.Value;
+				}
+			}
 			node += ConfigurationPath.KeyDelimiter;
 		}
 

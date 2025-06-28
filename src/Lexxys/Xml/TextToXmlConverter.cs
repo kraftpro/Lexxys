@@ -324,7 +324,7 @@ public ref struct TextToXmlConverter
 				attrib[i] = new KeyValuePair<string, string>(attrib[i].Key, SubstituteMacro(attrib[i].Value));
 			}
 		}
-		return new XmlLiteNode(node.Name, SubstituteMacro(node.Value), ignoreCase || node.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal, attrib, child);
+		return new XmlLiteNode(node.Name, SubstituteMacro(node.Value), ignoreCase || node.IgnoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal, attrib, child);
 	}
 
 	private static void ConvertToXml(XmlWriter writer, Node node)
@@ -383,7 +383,7 @@ public ref struct TextToXmlConverter
 				return StringTokenRule.ParseString(_tokenType, ref stream, '`');
 
 			int i = stream.IndexOfAny(_asep);
-			return i <= 0 ? stream.Token(_tokenType, stream.Length) : stream.Token(_tokenType, i);
+			return i <= 0 ? stream.Token(_tokenType, stream.Length): stream.Token(_tokenType, i);
 		}
 	}
 
@@ -527,7 +527,7 @@ public ref struct TextToXmlConverter
 		}
 		private static readonly char[] BeginComments = ['/', '#', '<'];
 
-		private static bool IsWhiteSpace(char value) => value <= '\xFF' ? value is <= ' ' or >= '\x7f' and <= '\xa0' : Char.IsWhiteSpace(value);
+		private static bool IsWhiteSpace(char value) => value <= '\xFF' ? value is <= ' ' or >= '\x7f' and <= '\xa0': Char.IsWhiteSpace(value);
 	}
 
 	private class InlineTextTokenRule: LexicalTokenRule

@@ -71,7 +71,7 @@ public class LexicalTokenType
 	public bool IsEmpty => Group == 0;
 
 	public static LexicalTokenType Create(short group, short item, string name)
-		=> _lexicalTokenTypes.TryGetValue((group, item), out var type) ? type : _lexicalTokenTypes.GetOrAdd((group, item), new LexicalTokenType(group, item, name));
+		=> _lexicalTokenTypes.TryGetValue((group, item), out var type) ? type: _lexicalTokenTypes.GetOrAdd((group, item), new LexicalTokenType(group, item, name));
 
 	/// <summary>
 	/// Tests if this type has the same group ID as the <paramref name="other"/> one.

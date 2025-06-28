@@ -30,23 +30,23 @@ public class LocalCache<TKey, TValue> where TKey: notnull
 	private readonly long _slidingExpiration;
 	private readonly Func<TKey, TValue>? _factory;
 
-	public LocalCache(TimeSpan timeToLive = default, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null)
-		: this(null, 0, 0, timeToLive, default, factory, comparer)
+	public LocalCache(TimeSpan timeToLive = default, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null):
+		this(null, 0, 0, timeToLive, default, factory, comparer)
 	{
 	}
 
-	public LocalCache(TimeSpan timeToLive, TimeSpan slidingExpiration, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null)
-		: this(null, 0, 0, timeToLive, slidingExpiration, factory, comparer)
+	public LocalCache(TimeSpan timeToLive, TimeSpan slidingExpiration, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null):
+		this(null, 0, 0, timeToLive, slidingExpiration, factory, comparer)
 	{
 	}
 
-	public LocalCache(int capacity, int concurrencyLevel, TimeSpan timeToLive, Func<TKey, TValue>? factory, IEqualityComparer<TKey>? comparer = null)
-		: this(null, capacity, concurrencyLevel, timeToLive, default, factory, comparer)
+	public LocalCache(int capacity, int concurrencyLevel, TimeSpan timeToLive, Func<TKey, TValue>? factory, IEqualityComparer<TKey>? comparer = null):
+		this(null, capacity, concurrencyLevel, timeToLive, default, factory, comparer)
 	{
 	}
 
-	public LocalCache(int capacity, int concurrencyLevel = 0, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null)
-		: this(null, capacity, concurrencyLevel, timeToLive, slidingExpiration, factory, comparer)
+	public LocalCache(int capacity, int concurrencyLevel = 0, TimeSpan timeToLive = default, TimeSpan slidingExpiration = default, Func<TKey, TValue>? factory = null, IEqualityComparer<TKey>? comparer = null):
+		this(null, capacity, concurrencyLevel, timeToLive, slidingExpiration, factory, comparer)
 	{
 	}
 

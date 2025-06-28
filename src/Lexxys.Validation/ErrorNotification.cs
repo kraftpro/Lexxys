@@ -36,7 +36,7 @@ public sealed class ErrorNotification: ICollection<FieldError>, ICollection
 	public int Count => _errors.Count;
 
 	public ErrorNotification AsReadOnly()
-		=> IsReadOnly ? this : new ErrorNotification(_errors, true);
+		=> IsReadOnly ? this: new ErrorNotification(_errors, true);
 
 	public void Add(FieldError? item)
 	{

@@ -232,7 +232,7 @@ namespace Lexxys.Tests.Extensions
 			// assert
 			var span = buffer.WrittenSpan;
 			Assert.AreEqual(1, span.Length);
-			Assert.AreEqual((byte)(value ? 1 : 0), span[0]);
+			Assert.AreEqual((byte)(value ? 1: 0), span[0]);
 			var actual = span.Read<bool>();
 			Assert.AreEqual(value, actual);
 		}

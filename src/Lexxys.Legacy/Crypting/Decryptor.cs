@@ -38,7 +38,7 @@ public class Decryptor
 			_da.DecryptStream(text, bits);
 			return;
 		}
-		int bsize = _da.BlockSize == 0 ? 8 * 1024 : _da.BlockSize;
+		int bsize = _da.BlockSize == 0 ? 8 * 1024: _da.BlockSize;
 		byte[] buffer = new byte[bsize];
 		byte[] ciph = new byte[bsize];	// Filled by zero by default
 		byte[] txt;

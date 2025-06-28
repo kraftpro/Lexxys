@@ -121,7 +121,7 @@ public struct AttributeValue
 		}
 		else if (_value is null)
 		{
-			_value = Clean(value.Length == v.Length ? value : v.ToString());
+			_value = Clean(value.Length == v.Length ? value: v.ToString());
 		}
 		else // if (_value is StringBuilder)
 		{
@@ -233,7 +233,7 @@ public struct AttributeValue
 	};
 
 	[return: NotNullIfNotNull(nameof(value))]
-	private static string? Clean(string? value) => value is null ? null : value.Length > 2 && value[0] == value[^1] && value[0] is '"' or '\'' ? value[1..^1] : HttpUtility.HtmlAttributeEncode(value);
+	private static string? Clean(string? value) => value is null ? null: value.Length > 2 && value[0] == value[^1] && value[0] is '"' or '\'' ? value[1..^1]: HttpUtility.HtmlAttributeEncode(value);
 }
 
 static class StrBuExtensions

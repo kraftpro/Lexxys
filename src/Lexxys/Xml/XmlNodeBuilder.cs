@@ -40,7 +40,7 @@ public static partial class XmlNodeBuilder
 	{
 		return
 			typeof(T) == typeof(IXmlReadOnlyNode) ? (IXmlNodeBuilder<T>)new XmNodeBuilder<IXmlReadOnlyNode>(CreateNodeRo, comparer):
-			typeof(T) == typeof(IXmlNode) ? (IXmlNodeBuilder<T>)new XmNodeBuilder<IXmlNode>(CreateNodeRw, comparer) :
+			typeof(T) == typeof(IXmlNode) ? (IXmlNodeBuilder<T>)new XmNodeBuilder<IXmlNode>(CreateNodeRw, comparer):
 			throw new ArgumentException($"Invalid type {typeof(T).FullName}", nameof(T));
 		
 		static IXmlReadOnlyNode CreateNodeRo(string name, string? value, StringComparer? comparer, IEnumerable<KeyValuePair<string, string>>? attributes, IEnumerable<IXmlReadOnlyNode>? descendants)

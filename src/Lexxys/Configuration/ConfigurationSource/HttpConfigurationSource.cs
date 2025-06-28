@@ -10,7 +10,7 @@ public class HttpConfigurationSource: IXmlConfigurationSource
 	private IReadOnlyList<IXmlReadOnlyNode>? _content;
 	private int _version;
 
-	public HttpConfigurationSource(Uri location, IReadOnlyCollection<string> parameters)
+	public HttpConfigurationSource(Uri location, IReadOnlyCollection<string>? parameters)
 	{
 		if (location == null)
 			throw new ArgumentNullException(nameof(location));
@@ -178,7 +178,7 @@ public class HttpConfigurationSource: IXmlConfigurationSource
 		return dir;
 	}
 
-	public static HttpConfigurationSource? TryCreate(Uri? location, IReadOnlyCollection<string> parameters)
+	public static HttpConfigurationSource? TryCreate(Uri? location, IReadOnlyCollection<string>? parameters)
 	{
 		if (location == null || !location.IsAbsoluteUri)
 			return null;

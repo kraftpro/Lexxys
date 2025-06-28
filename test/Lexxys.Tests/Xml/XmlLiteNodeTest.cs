@@ -115,7 +115,7 @@ namespace Lexxys.Tests.Xml
 						expected = XmlTools.FromXml(rdr, ignoreCase);
 
 					using (var rdr = XmlReader.Create(new StringReader(Xml[i])))
-						actual = XmlLiteNode.FromXml(new XPathDocument(rdr).CreateNavigator(), ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+						actual = XmlLiteNode.FromXml(new XPathDocument(rdr).CreateNavigator(), ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal);
 
 					Assert.AreEqual(expected.ToString(), actual.ToString());
 				}

@@ -261,7 +261,7 @@ public ref partial struct CfgParser
 		}
 	}
 
-	private static bool IsWhiteSpace(char value) => value <= '\xFF' ? value is <= ' ' or >= '\x7f' and <= '\xa0' : Char.IsWhiteSpace(value);
+	private static bool IsWhiteSpace(char value) => value <= '\xFF' ? value is <= ' ' or >= '\x7f' and <= '\xa0': Char.IsWhiteSpace(value);
 
 	/// <summary>
 	/// Rule to parse node name.
@@ -705,7 +705,7 @@ public ref partial struct CfgParser
 			int i = _separators == null ?
 				stream.IndexOf(c => IsWhiteSpace(c)):
 				stream.IndexOf(c => _separators.Contains(c) || IsWhiteSpace(c));
-			return i <= 0 ? stream.Token(_tokenType, stream.Length) : stream.Token(_tokenType, i);
+			return i <= 0 ? stream.Token(_tokenType, stream.Length): stream.Token(_tokenType, i);
 		}
 	}
 
@@ -811,7 +811,7 @@ public ref partial struct CfgParser
 	{
 		private readonly LexicalTokenType _tokenType;
 
-		public InlineTextTokenRule() : this(TEXT)
+		public InlineTextTokenRule(): this(TEXT)
 		{
 		}
 

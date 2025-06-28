@@ -172,7 +172,7 @@ public class ResultExtensionsTests_4_1
 	public void Assert_Success_Valid()
 	{
 		var result = new SuccessResult<int>(5);
-		var asserted = result.Assert(x => x > 0 ? null : new ErrorResult("negative"));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("negative"));
 		Assert.IsTrue(asserted.IsSuccess);
 		Assert.AreEqual(5, asserted.Value);
 	}
@@ -181,7 +181,7 @@ public class ResultExtensionsTests_4_1
 	public void Assert_Success_Invalid()
 	{
 		var result = new SuccessResult<int>(-1);
-		var asserted = result.Assert(x => x > 0 ? null : new ErrorResult("negative"));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("negative"));
 		Assert.IsTrue(asserted.IsFailure);
 		Assert.AreEqual("negative", asserted.Error.Message);
 	}

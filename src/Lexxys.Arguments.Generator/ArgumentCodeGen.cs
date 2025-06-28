@@ -363,7 +363,7 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		SeparatedSyntaxList<AttributeArgumentSyntax> args = attrib.ArgumentList.Arguments;
 		if (args.Count == 0) return null;
 		List<(string? Name, AttributeArgumentSyntax Arg)> selected = [.. args.Where(o => o.NameEquals == null).Select(o => (o.NameColon?.Name.Identifier.ValueText, o))];
-		return selected.Count == 0 ? null : selected;
+		return selected.Count == 0 ? null: selected;
 	}
 
 	private Dictionary<string, string> GetFieldsAssignment(AttributeSyntax attrib)
@@ -401,7 +401,7 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		SeparatedSyntaxList<AttributeArgumentSyntax> args = attrib.ArgumentList.Arguments;
 		if (args.Count == 0) return null;
 		List<(string Name, AttributeArgumentSyntax Arg)> selected = [.. args.Where(o => o.NameEquals != null).Select(o => (o.NameEquals!.Name.Identifier.ValueText, o))];
-		return selected.Count == 0 ? null : selected;
+		return selected.Count == 0 ? null: selected;
 	}
 
 	private string GetNameSpace(ClassDeclarationSyntax classDeclaration)

@@ -29,13 +29,13 @@ public class IdentifierTokenRule: LexicalTokenRule
 		}
 	}
 
-	public IdentifierTokenRule(bool ignoreCase, params string[] keywords)
-		: this(LexicalTokenType.IDENTIFIER, LexicalTokenType.KEYWORD, ignoreCase, keywords)
+	public IdentifierTokenRule(bool ignoreCase, params string[] keywords):
+		this(LexicalTokenType.IDENTIFIER, LexicalTokenType.KEYWORD, ignoreCase, keywords)
 	{
 	}
 
-	public IdentifierTokenRule(params string[] keywords)
-		: this(LexicalTokenType.IDENTIFIER, LexicalTokenType.KEYWORD, false, keywords)
+	public IdentifierTokenRule(params string[] keywords):
+		this(LexicalTokenType.IDENTIFIER, LexicalTokenType.KEYWORD, false, keywords)
 	{
 	}
 

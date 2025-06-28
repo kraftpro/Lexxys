@@ -5,9 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Configuration;
 
-internal class ConfigProvidersCollection: IConfigService, IConfigLogger
+internal class ConfigService: IConfigService, IConfigLogger
 {
-	public static readonly IConfigService Instance = new ConfigProvidersCollection();
+	public static readonly IConfigService Instance = new ConfigService();
 
 	private const string LogSource = "Lexxys.Configuration";
 #if NETFRAMEWORK
@@ -24,7 +24,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 	private volatile List<IConfigSource> _providers = [];
 	private readonly object _syncObj = new Object();
 
-	public ConfigProvidersCollection()
+	public ConfigService()
 	{
 		_version = 1;
 		//AppDomain.CurrentDomain.AssemblyLoad += FactoryAssemblyLoad;
@@ -40,7 +40,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		//}
 	}
 
-	public ConfigProvidersCollection(IEnumerable<IConfigSource> providers) : this()
+	public ConfigService(IEnumerable<IConfigSource> providers): this()
 	{
 		if (providers == null)
 			throw new ArgumentNullException(nameof(providers));
@@ -118,7 +118,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		if (!_initialized)
 			Initialize();
 
-		var added = AddConfiguration(location, parameters, tail ? int.MaxValue : _top);
+		var added = AddConfiguration(location, parameters, tail ? int.MaxValue: _top);
 		if ((added & Found.Added) != 0)
 			OnChanged();
 		return added != 0;
@@ -132,7 +132,7 @@ internal class ConfigProvidersCollection: IConfigService, IConfigLogger
 		if (!_initialized)
 			Initialize();
 
-		return AddConfiguration(provider, tail ? int.MaxValue : _top) >= 0;
+		return AddConfiguration(provider, tail ? int.MaxValue: _top) >= 0;
 	}
 
 	#endregion

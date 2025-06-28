@@ -3,20 +3,20 @@ using System.Collections.Concurrent;
 
 namespace Lexxys.Configuration;
 
-internal class ConfigService: IConfigService
+internal class ConfigService000: IConfigService
 {
 	private volatile int _version;
 	private volatile IConfigSource[] _providers;
 	private readonly ConcurrentDictionary<string, object?> _cachedValues = [];
 	private readonly ConcurrentDictionary<string, object?> _cachedLists = [];
 
-	public ConfigService()
+	public ConfigService000()
 	{
 		_version = 1;
 		_providers = [];
 	}
 
-	public ConfigService(IEnumerable<IConfigSource> sources) : this()
+	public ConfigService000(IEnumerable<IConfigSource> sources): this()
 	{
 		if (sources == null) throw new ArgumentNullException(nameof(sources));
 
@@ -70,7 +70,7 @@ internal class ConfigService: IConfigService
 				else
 					(list ??= new List<T>(temp)).AddRange(x);
 			}
-			return temp == null ? null : list == null ? temp : ReadOnly.Wrap(list)!;
+			return temp == null ? null: list == null ? temp: ReadOnly.Wrap(list)!;
 		}
 	}
 

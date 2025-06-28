@@ -39,6 +39,6 @@ public class ValidationResultsItem
 
 	public override string ToString()
 	{
-		return Message != null ? Field + ValidationResults.FieldSeparator + Message : Field;
+		return Message != null ? Field + ValidationResults.FieldSeparator + Message: Field;
 	}
 }

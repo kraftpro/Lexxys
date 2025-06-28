@@ -15,8 +15,8 @@ public class CommentsTokenRule: LexicalTokenRule
 	private readonly int _startLength;
 	private static readonly (string, string)[] _cppComments = [("//", "\n")];
 
-	public CommentsTokenRule(params (string, string)[]? startEnd)
-		: this(LexicalTokenType.COMMENT, startEnd)
+	public CommentsTokenRule(params (string, string)[]? startEnd):
+		this(LexicalTokenType.COMMENT, startEnd)
 	{
 	}
 
@@ -74,7 +74,7 @@ public class CommentsTokenRule: LexicalTokenRule
 						continue;
 					position = stream.Length;
 				}
-				return stream.Token(TokenType, position + (item.End == "\n" ? 0 : item.End.Length));
+				return stream.Token(TokenType, position + (item.End == "\n" ? 0: item.End.Length));
 			}
 		}
 		if (found)

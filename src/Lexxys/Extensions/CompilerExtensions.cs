@@ -1,51 +1,10 @@
-﻿#if !NET5_0_OR_GREATER
+﻿#if !NET
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-
-//namespace Lexxys
-//{
-//	[AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-//	internal sealed class NotNullWhenAttribute: Attribute
-//	{
-//		public bool ReturnValue { get; }
-
-//		public NotNullWhenAttribute(bool returnValue)
-//		{
-//			ReturnValue = returnValue;
-//		}
-//	}
-
-//	[AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-//	internal sealed class MaybeNullWhenAttribute: Attribute
-//	{
-//		public bool ReturnValue { get; }
-
-//		public MaybeNullWhenAttribute(bool returnValue)
-//		{
-//			ReturnValue = returnValue;
-//		}
-//	}
-
-//	[AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple = true, Inherited = false)]
-//	internal sealed class NotNullIfNotNullAttribute: Attribute
-//	{
-//		public string ParameterName { get; }
-
-//		public NotNullIfNotNullAttribute(string parameterName)
-//		{
-//			ParameterName = parameterName;
-//		}
-//	}
-
-//	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue, Inherited = false)]
-//	internal sealed class MaybeNullAttribute: Attribute
-//	{
-//	}
-//}
 
 namespace System.Runtime.CompilerServices
 {
@@ -134,12 +93,7 @@ namespace System
 	/// int lastElement = someArray[^1]; // lastElement = 5
 	/// </code>
 	/// </remarks>
-#if SYSTEM_PRIVATE_CORELIB
-    public
-#else
-	internal
-#endif
-	readonly struct Index: IEquatable<Index>
+    public readonly struct Index: IEquatable<Index>
 	{
 		private readonly int _value;
 
@@ -264,24 +218,12 @@ namespace System
 
 		private static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
 		{
-#if SYSTEM_PRIVATE_CORELIB
-            throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
-#else
 			throw new ArgumentOutOfRangeException("value", "value must be non-negative");
-#endif
 		}
 
 		private string ToStringFromEnd()
 		{
-#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-            Span<char> span = stackalloc char[11]; // 1 for ^ and 10 for longest possible uint value
-            bool formatted = ((uint)Value).TryFormat(span.Slice(1), out int charsWritten);
-            Debug.Assert(formatted);
-            span[0] = '^';
-            return new string(span.Slice(0, charsWritten + 1));
-#else
 			return '^' + Value.ToString();
-#endif
 		}
 	}
 
@@ -294,12 +236,7 @@ namespace System
 	/// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
 	/// </code>
 	/// </remarks>
-#if SYSTEM_PRIVATE_CORELIB
-    public
-#else
-	internal
-#endif
-	readonly struct Range: IEquatable<Range>
+    public readonly struct Range: IEquatable<Range>
 	{
 		/// <summary>Represent the inclusive start index of the Range.</summary>
 		public Index Start { get; }
@@ -330,44 +267,13 @@ namespace System
 		/// <summary>Returns the hash code for this instance.</summary>
 		public override int GetHashCode()
 		{
-#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-            return HashCode.Combine(Start.GetHashCode(), End.GetHashCode());
-#else
 			return Lexxys.HashCode.Join(Start.GetHashCode(), End.GetHashCode());
-#endif
 		}
 
 		/// <summary>Converts the value of the current Range object to its equivalent string representation.</summary>
 		public override string ToString()
 		{
-#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-            Span<char> span = stackalloc char[2 + (2 * 11)]; // 2 for "..", then for each index 1 for '^' and 10 for longest possible uint
-            int pos = 0;
-
-            if (Start.IsFromEnd)
-            {
-                span[0] = '^';
-                pos = 1;
-            }
-            bool formatted = ((uint)Start.Value).TryFormat(span.Slice(pos), out int charsWritten);
-            Debug.Assert(formatted);
-            pos += charsWritten;
-
-            span[pos++] = '.';
-            span[pos++] = '.';
-
-            if (End.IsFromEnd)
-            {
-                span[pos++] = '^';
-            }
-            formatted = ((uint)End.Value).TryFormat(span.Slice(pos), out charsWritten);
-            Debug.Assert(formatted);
-            pos += charsWritten;
-
-            return new string(span.Slice(0, pos));
-#else
 			return Start.ToString() + ".." + End.ToString();
-#endif
 		}
 
 		/// <summary>Create a Range object starting from start index to the end of the collection.</summary>
@@ -406,6 +312,5 @@ namespace System
 		}
 	}
 }
-
 
 #endif

@@ -40,8 +40,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable
 	/// Copy constructor for the <see cref="ConnectionStringInfo" />.
 	/// </summary>
 	/// <param name="connectionInfo">The source object to copy from.</param>
-	public ConnectionStringInfo(ConnectionStringInfo? connectionInfo)
-		: this()
+	public ConnectionStringInfo(ConnectionStringInfo? connectionInfo): this()
 	{
 		if (connectionInfo == null)
 			return;
@@ -66,8 +65,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable
 	/// Creates new instance of <see cref="ConnectionStringInfo" /> and initializes it with the specified <paramref name="options"/>.
 	/// </summary>
 	/// <param name="options">Collection of key-value pairs of connection parameters.</param>
-	public ConnectionStringInfo(IEnumerable<KeyValuePair<string, string>>? options)
-		: this(null, options)
+	public ConnectionStringInfo(IEnumerable<KeyValuePair<string, string>>? options): this(null, options)
 	{
 	}
 
@@ -75,8 +73,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable
 	/// Creates new instance of <see cref="ConnectionStringInfo" /> by parsing the specified <paramref name="connectionString"/>
 	/// </summary>
 	/// <param name="connectionString">Regular connection string.</param>
-	public ConnectionStringInfo(string connectionString)
-		: this(null, ParseParameters(connectionString))
+	public ConnectionStringInfo(string connectionString): this(null, ParseParameters(connectionString))
 	{
 	}
 
@@ -86,8 +83,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable
 	/// <param name="location">Uri location of the database in the form of <c>data[base]://[user-info]server[/database][?parameters]</c>.</param>
 	/// <exception cref="ArgumentNullException"><paramref name="location"/> is <c>null</c>.</exception>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="location"/> is not a valid database location.</exception>
-	public ConnectionStringInfo(Uri location)
-		: this(null, (location ?? throw new ArgumentNullException(nameof(location))).SplitQuery())
+	public ConnectionStringInfo(Uri location): this(null, (location ?? throw new ArgumentNullException(nameof(location))).SplitQuery())
 	{
 		if (!location.IsAbsoluteUri)
 			throw new ArgumentOutOfRangeException(nameof(location), location, null);
@@ -128,8 +124,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable
 	/// </summary>
 	/// <param name="connectionString">Regular connection string.</param>
 	/// <param name="options">Collection of key-value pairs of connection parameters.</param>
-	public ConnectionStringInfo(ConnectionStringInfo? connectionString, IEnumerable<KeyValuePair<string, string>>? options)
-		: this(connectionString)
+	public ConnectionStringInfo(ConnectionStringInfo? connectionString, IEnumerable<KeyValuePair<string, string>>? options): this(connectionString)
 	{
 		if (options == null)
 			return;
@@ -357,7 +352,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable
 		if (ConnectionTimeout != default && ConnectionTimeout != DefaultConnectionTimeout)
 			yield return new KeyValuePair<string, string>("timeout", (ConnectionTimeout.Ticks / TimeSpan.TicksPerSecond).ToString());
 		if (TrustServerCertificate != null)
-			yield return new KeyValuePair<string, string>("trustServerCertificate", TrustServerCertificate.Value ? "true" : "false");
+			yield return new KeyValuePair<string, string>("trustServerCertificate", TrustServerCertificate.Value ? "true": "false");
 		if (String.IsNullOrEmpty(Password))
 		{
 			yield return new KeyValuePair<string, string>("trusted_connection", "true");
@@ -385,7 +380,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable
 		{
 			if (!includeCredentials && item.Key == "pwd")
 				continue;
-			connection.Append(odbc ? item.Key : item.Key.Replace("=", "==")).Append('=');
+			connection.Append(odbc ? item.Key: item.Key.Replace("=", "==")).Append('=');
 			string value = item.Value;
 			if (value.Length != 0)
 			{
@@ -511,7 +506,7 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable
 		ConnectionStringInfo? that = Config.Current.GetValue<ConnectionStringInfo?>(reference).Value;
 		return that == null ?
 			config.Attributes.Count == 0 ? null: new ConnectionStringInfo(config.Attributes):
-			config.Attributes.Count <= 0 ? that : new ConnectionStringInfo(that, config.Attributes);
+			config.Attributes.Count <= 0 ? that: new ConnectionStringInfo(that, config.Attributes);
 	}
 
 	#region Parse connection string
@@ -616,14 +611,14 @@ public class ConnectionStringInfo: IEquatable<ConnectionStringInfo>, IEnumerable
 
 		int i = p.IndexOf(';');
 		return i < 0 ?
-			(len + p.Length, p.TrimEnd().ToString()) :
+			(len + p.Length, p.TrimEnd().ToString()):
 			(len + i + 1, p.Slice(0, i).TrimEnd().ToString());
 	}
 
 	private static int SkipSemicolon(ReadOnlySpan<char> p)
 	{
 		int l = SkipSpace(p);
-		return l < p.Length && p[l] == ';' ? l + 1 : l;
+		return l < p.Length && p[l] == ';' ? l + 1: l;
 	}
 
 	private static (int Length, string Value) ParseOleDbValue(ReadOnlySpan<char> p)

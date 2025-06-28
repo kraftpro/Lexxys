@@ -59,7 +59,7 @@ public static class BufferWriterExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void WritePacked(this IBufferWriter<byte> writer, long value)
 	{
-		WritePacked(writer, value < 0 ? ((ulong)-value << 1) + 1 : (ulong)value << 1);
+		WritePacked(writer, value < 0 ? ((ulong)-value << 1) + 1: (ulong)value << 1);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -83,7 +83,7 @@ public static class BufferWriterExtensions
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Write<T>(this IBufferWriter<byte> writer, scoped in T value) where T : unmanaged
+	public static void Write<T>(this IBufferWriter<byte> writer, scoped in T value) where T: unmanaged
 	{
 		int size = Unsafe.SizeOf<T>();
 		var span = writer.GetSpan(size);

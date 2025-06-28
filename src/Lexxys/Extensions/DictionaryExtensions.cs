@@ -37,7 +37,7 @@ public static class DictionaryExtensions
 #if NET6_0_OR_GREATER
 
 	public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> that, TKey key, TValue value)
-		where TKey : notnull
+		where TKey: notnull
 	{
 		if (that is null) throw new ArgumentNullException(nameof(that));
 
@@ -48,7 +48,7 @@ public static class DictionaryExtensions
 	}
 
 	public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> that, TKey key, Func<TKey, TValue> factory)
-		where TKey : notnull
+		where TKey: notnull
 	{
 		if (that is null) throw new ArgumentNullException(nameof(that));
 		if (factory is null) throw new ArgumentNullException(nameof(factory));
@@ -64,7 +64,7 @@ public static class DictionaryExtensions
 	}
 
 	public static bool TryUpdate<TKey, TValue>(this Dictionary<TKey, TValue> that, TKey key, TValue value)
-		where TKey : notnull
+		where TKey: notnull
 	{
 		if (that is null) throw new ArgumentNullException(nameof(that));
 

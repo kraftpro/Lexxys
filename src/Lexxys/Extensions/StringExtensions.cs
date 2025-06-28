@@ -115,7 +115,7 @@ public static class StringExtensions
 		return value.Length <= width ? value: value.Substring(value.Length - width, width);
 	}
 
-	public static string? TrimToNull(this string? value) => value == null || (value = value.Trim()).Length == 0 ? null : value;
+	public static string? TrimToNull(this string? value) => value == null || (value = value.Trim()).Length == 0 ? null: value;
 
 	[return: NotNullIfNotNull(nameof(emptyValue))]
 	public static unsafe string? TrimSpace(this string? value, string? emptyValue = null, string? space = null)
@@ -291,13 +291,13 @@ public static class StringExtensions
 
 	public static DateTime AsDateTime(this string? value, DateTime defaultValue) => Strings.GetDateTime(value, defaultValue);
 
-	public static DateTime? AsDateTime(this string? value, DateTime? defaultValue) => Strings.TryGetDateTime(value, out var result) ? result : defaultValue;
+	public static DateTime? AsDateTime(this string? value, DateTime? defaultValue) => Strings.TryGetDateTime(value, out var result) ? result: defaultValue;
 
 	public static DateTimeOffset AsDateTimeOffset(this string value) => Strings.GetDateTime(value);
 
 	public static DateTimeOffset AsDateTimeOffset(this string? value, DateTimeOffset defaultValue) => Strings.GetDateTimeOffset(value, defaultValue);
 
-	public static DateTimeOffset? AsDateTimeOffset(this string? value, DateTimeOffset? defaultValue) => Strings.TryGetDateTimeOffset(value, out var result) ? result : defaultValue;
+	public static DateTimeOffset? AsDateTimeOffset(this string? value, DateTimeOffset? defaultValue) => Strings.TryGetDateTimeOffset(value, out var result) ? result: defaultValue;
 
 	public static Guid AsGuid(this string value) => Strings.GetGuid(value);
 
@@ -306,19 +306,19 @@ public static class StringExtensions
 	public static Guid? AsGuid(this string? value, Guid? defaultValue) => Strings.GetGuid(value, defaultValue);
 
 	public static T AsEnum<T>(this string value)
-		where T : struct => Strings.GetEnum<T>(value);
+		where T: struct => Strings.GetEnum<T>(value);
 
 	public static T AsEnum<T>(this string? value, T defaultValue)
-		where T : struct => Strings.GetEnum(value, defaultValue);
+		where T: struct => Strings.GetEnum(value, defaultValue);
 
 	public static T? AsEnum<T>(this string? value, T? defaultValue)
-		where T : struct => Strings.GetEnum(value, defaultValue);
+		where T: struct => Strings.GetEnum(value, defaultValue);
 
 	public static Boolean AsBoolean(this string value) => Strings.GetBoolean(value);
 
 	public static Boolean AsBoolean(this string? value, Boolean defaultValue) => Strings.GetBoolean(value, defaultValue);
 
-	public static Boolean? AsBoolean(this string? value, Boolean? defaultValue) => Strings.TryGetBoolean(value, out bool result) ? result : defaultValue;
+	public static Boolean? AsBoolean(this string? value, Boolean? defaultValue) => Strings.TryGetBoolean(value, out bool result) ? result: defaultValue;
 
 	public static T AsValue<T>(this string value) => Strings.GetValue<T>(value);
 
@@ -330,9 +330,9 @@ public static class StringExtensions
 
 #if NET7_0_OR_GREATER
 
-	public static T Parse<T>(this string? value, T defaultValue) where T : IParsable<T> => T.TryParse(value, null, out var result) ? result : defaultValue;
+	public static T Parse<T>(this string? value, T defaultValue) where T: IParsable<T> => T.TryParse(value, null, out var result) ? result: defaultValue;
 
-	public static T Parse<T>(this string value) where T : IParsable<T> => T.Parse(value, null);
+	public static T Parse<T>(this string value) where T: IParsable<T> => T.Parse(value, null);
 
 #endif
 

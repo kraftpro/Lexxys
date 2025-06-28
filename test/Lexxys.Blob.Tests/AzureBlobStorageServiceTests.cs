@@ -5,34 +5,34 @@ using Moq;
 
 namespace Lexxys.Blob.Tests
 {
-    public class AzureBlobStorageServiceTests: IDisposable
-    {
-        private Mock<BlobServiceClient> _blobServiceClientMock;
-        private Mock<BlobContainerClient> _blobContainerClientMock;
-        private Mock<BlobClient> _blobClientMock;
-        private AzureBlobStorageService _service;
-        private Uri _validUri;
-        private Uri _invalidUri;
+	public class AzureBlobStorageServiceTests: IDisposable
+	{
+		private Mock<BlobServiceClient> _blobServiceClientMock;
+		private Mock<BlobContainerClient> _blobContainerClientMock;
+		private Mock<BlobClient> _blobClientMock;
+		private AzureBlobStorageService _service;
+		private Uri _validUri;
+		private Uri _invalidUri;
 
-        public AzureBlobStorageServiceTests()
-        {
-            _blobServiceClientMock = new Mock<BlobServiceClient>();
-            _blobContainerClientMock = new Mock<BlobContainerClient>();
-            _blobClientMock = new Mock<BlobClient>();
+		public AzureBlobStorageServiceTests()
+		{
+			_blobServiceClientMock = new Mock<BlobServiceClient>();
+			_blobContainerClientMock = new Mock<BlobContainerClient>();
+			_blobClientMock = new Mock<BlobClient>();
 
-            _blobServiceClientMock
-                .Setup(x => x.GetBlobContainerClient(It.IsAny<string>()))
-                .Returns(_blobContainerClientMock.Object);
+			_blobServiceClientMock
+				.Setup(x => x.GetBlobContainerClient(It.IsAny<string>()))
+				.Returns(_blobContainerClientMock.Object);
 
-            _blobContainerClientMock
-                .Setup(x => x.GetBlobClient(It.IsAny<string>()))
-                .Returns(_blobClientMock.Object);
+			_blobContainerClientMock
+				.Setup(x => x.GetBlobClient(It.IsAny<string>()))
+				.Returns(_blobClientMock.Object);
 
-            _service = new AzureBlobStorageService("UseDevelopmentStorage=true");
+			_service = new AzureBlobStorageService("UseDevelopmentStorage=true", "testcontainer");
 
-            _validUri = new Uri("https://container/blob.txt");
-            _invalidUri = new Uri("ftp://container/blob.txt");
-        }
+			_validUri = new Uri("https://container/blob.txt");
+			_invalidUri = new Uri("ftp://container/blob.txt");
+		}
 
 		public void Dispose()
 		{
@@ -40,18 +40,18 @@ namespace Lexxys.Blob.Tests
 		}
 
 		[Test]
-        public async Task CanOpen_ValidScheme_ReturnsTrue()
-        {
-            await Assert.That(_service.CanOpen(_validUri)).IsTrue();
-        }
+		public async Task CanOpen_ValidScheme_ReturnsTrue()
+		{
+			await Assert.That(_service.CanOpen(_validUri)).IsTrue();
+		}
 
-        [Test]
-        public async Task CanOpen_InvalidScheme_ReturnsFalse()
-        {
-            await Assert.That(_service.CanOpen(_invalidUri)).IsFalse();
-        }
+		[Test]
+		public async Task CanOpen_InvalidScheme_ReturnsFalse()
+		{
+			await Assert.That(_service.CanOpen(_invalidUri)).IsFalse();
+		}
 
-        [Test]
+		[Test]
 		public async Task GetFileInfo_ReturnsBlobInfo()
 		{
 			var props = BlobsModelFactory.BlobProperties(contentLength: 123, lastModified: DateTimeOffset.UtcNow);
@@ -66,7 +66,7 @@ namespace Lexxys.Blob.Tests
 			await Assert.That(info.Length).IsEqualTo(123);
 		}
 
-        [Test]
+		[Test]
 		public async Task GetFileInfoAsync_ReturnsBlobInfo()
 		{
 			var props = BlobsModelFactory.BlobProperties(contentLength: 456, lastModified: DateTimeOffset.UtcNow);
@@ -80,101 +80,102 @@ namespace Lexxys.Blob.Tests
 			await Assert.That(info).IsNotNull();
 			await Assert.That(info.Exists).IsTrue();
 			await Assert.That(info.Length).IsEqualTo(456);
-		}
-        [Test]
-        public void WriteFile_CallsUpload()
-        {
-            using var ms = new MemoryStream();
-            _service.WriteFile(_validUri, ms, true);
-            _blobClientMock.Verify(x => x.Upload(ms, true, default), Times.Once);
-        }
+		}
 
-        [Test]
-        public async Task WriteFileAsync_CallsUploadAsync()
-        {
-            using var ms = new MemoryStream();
-            _blobClientMock.Setup(x => x.UploadAsync(ms, true, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Mock.Of<Azure.Response<BlobContentInfo>>());
+		[Test]
+		public void WriteFile_CallsUpload()
+		{
+			using var ms = new MemoryStream();
+			_service.WriteFile(_validUri, ms, true);
+			_blobClientMock.Verify(x => x.Upload(ms, true, default), Times.Once);
+		}
 
-            await _service.WriteFileAsync(_validUri, ms, true);
+		[Test]
+		public async Task WriteFileAsync_CallsUploadAsync()
+		{
+			using var ms = new MemoryStream();
+			_blobClientMock.Setup(x => x.UploadAsync(ms, true, It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<Azure.Response<BlobContentInfo>>());
 
-            _blobClientMock.Verify(x => x.UploadAsync(ms, true, It.IsAny<CancellationToken>()), Times.Once);
-        }
+			await _service.WriteFileAsync(_validUri, ms, true);
 
-        [Test]
-        public void CopyFile_CallsSyncCopyFromUri()
-        {
-            _blobClientMock.Setup(x => x.Uri).Returns(_validUri);
-            _service.CopyFile(_validUri, _validUri);
-            _blobClientMock.Verify(x => x.SyncCopyFromUri(_validUri, default, default), Times.Once);
-        }
+			_blobClientMock.Verify(x => x.UploadAsync(ms, true, It.IsAny<CancellationToken>()), Times.Once);
+		}
 
-        [Test]
-        public async Task CopyFileAsync_CallsSyncCopyFromUriAsync()
-        {
-            _blobClientMock.Setup(x => x.Uri).Returns(_validUri);
-            _blobClientMock.Setup(x => x.SyncCopyFromUriAsync(_validUri, default, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Mock.Of<Azure.Response<BlobCopyInfo>>());
+		[Test]
+		public void CopyFile_CallsSyncCopyFromUri()
+		{
+			_blobClientMock.Setup(x => x.Uri).Returns(_validUri);
+			_service.CopyFile(_validUri, _validUri);
+			_blobClientMock.Verify(x => x.SyncCopyFromUri(_validUri, default, default), Times.Once);
+		}
 
-            await _service.CopyFileAsync(_validUri, _validUri);
+		[Test]
+		public async Task CopyFileAsync_CallsSyncCopyFromUriAsync()
+		{
+			_blobClientMock.Setup(x => x.Uri).Returns(_validUri);
+			_blobClientMock.Setup(x => x.SyncCopyFromUriAsync(_validUri, default, It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<Azure.Response<BlobCopyInfo>>());
 
-            _blobClientMock.Verify(x => x.SyncCopyFromUriAsync(_validUri, default, It.IsAny<CancellationToken>()), Times.Once);
-        }
+			await _service.CopyFileAsync(_validUri, _validUri);
 
-        [Test]
-        public void MoveFile_CallsCopyAndDelete()
-        {
-            _blobClientMock.Setup(x => x.Uri).Returns(_validUri);
-            _service.MoveFile(_validUri, _validUri);
-            _blobClientMock.Verify(x => x.SyncCopyFromUri(_validUri, default, default), Times.Once);
-            _blobClientMock.Verify(x => x.DeleteIfExists(default, default, default), Times.Once);
-        }
+			_blobClientMock.Verify(x => x.SyncCopyFromUriAsync(_validUri, default, It.IsAny<CancellationToken>()), Times.Once);
+		}
 
-        [Test]
-        public async Task MoveFileAsync_CallsCopyAndDeleteAsync()
-        {
-            _blobClientMock.Setup(x => x.Uri).Returns(_validUri);
-            _blobClientMock.Setup(x => x.SyncCopyFromUriAsync(_validUri, default, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Mock.Of<Azure.Response<BlobCopyInfo>>());
-            _blobClientMock.Setup(x => x.DeleteIfExistsAsync(default, default, default))
-                .ReturnsAsync(Mock.Of<Azure.Response<bool>>());
+		[Test]
+		public void MoveFile_CallsCopyAndDelete()
+		{
+			_blobClientMock.Setup(x => x.Uri).Returns(_validUri);
+			_service.MoveFile(_validUri, _validUri);
+			_blobClientMock.Verify(x => x.SyncCopyFromUri(_validUri, default, default), Times.Once);
+			_blobClientMock.Verify(x => x.DeleteIfExists(default, default, default), Times.Once);
+		}
 
-            await _service.MoveFileAsync(_validUri, _validUri);
+		[Test]
+		public async Task MoveFileAsync_CallsCopyAndDeleteAsync()
+		{
+			_blobClientMock.Setup(x => x.Uri).Returns(_validUri);
+			_blobClientMock.Setup(x => x.SyncCopyFromUriAsync(_validUri, default, It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<Azure.Response<BlobCopyInfo>>());
+			_blobClientMock.Setup(x => x.DeleteIfExistsAsync(default, default, default))
+				.ReturnsAsync(Mock.Of<Azure.Response<bool>>());
 
-            _blobClientMock.Verify(x => x.SyncCopyFromUriAsync(_validUri, default, default), Times.Once);
-            _blobClientMock.Verify(x => x.DeleteIfExistsAsync(default, default, default), Times.Once);
-        }
+			await _service.MoveFileAsync(_validUri, _validUri);
 
-        [Test]
-        public void DeleteFile_CallsDeleteIfExists()
-        {
-            _service.DeleteFile(_validUri);
-            _blobClientMock.Verify(x => x.DeleteIfExists(default, default, default), Times.Once);
-        }
+			_blobClientMock.Verify(x => x.SyncCopyFromUriAsync(_validUri, default, default), Times.Once);
+			_blobClientMock.Verify(x => x.DeleteIfExistsAsync(default, default, default), Times.Once);
+		}
 
-        [Test]
-        public async Task DeleteFileAsync_CallsDeleteIfExistsAsync()
-        {
-            _blobClientMock.Setup(x => x.DeleteIfExistsAsync(default, default, default))
-                .ReturnsAsync(Mock.Of<Azure.Response<bool>>());
+		[Test]
+		public void DeleteFile_CallsDeleteIfExists()
+		{
+			_service.DeleteFile(_validUri);
+			_blobClientMock.Verify(x => x.DeleteIfExists(default, default, default), Times.Once);
+		}
 
-            await _service.DeleteFileAsync(_validUri);
+		[Test]
+		public async Task DeleteFileAsync_CallsDeleteIfExistsAsync()
+		{
+			_blobClientMock.Setup(x => x.DeleteIfExistsAsync(default, default, default))
+				.ReturnsAsync(Mock.Of<Azure.Response<bool>>());
 
-            _blobClientMock.Verify(x => x.DeleteIfExistsAsync(default, default, default), Times.Once);
-        }
+			await _service.DeleteFileAsync(_validUri);
 
-        // Helper subclass to inject mock BlobServiceClient
+			_blobClientMock.Verify(x => x.DeleteIfExistsAsync(default, default, default), Times.Once);
+		}
 
-        private class TestAzureBlobStorageService : AzureBlobStorageService
-        {
-            public TestAzureBlobStorageService(BlobServiceClient client)
-                : base("UseDevelopmentStorage=true")
-            {
+		// Helper subclass to inject mock BlobServiceClient
+
+		private class TestAzureBlobStorageService: AzureBlobStorageService
+		{
+			public TestAzureBlobStorageService(BlobServiceClient client):
+				base("UseDevelopmentStorage=true", "testcontainer")
+			{
 				var fieldInfo = typeof(AzureBlobStorageService)
 					.GetField("_blobServiceClient", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
 					?? throw new InvalidOperationException("Field '_blobServiceClient' not found in AzureBlobStorageService.");
 				fieldInfo.SetValue(this, client);
 			}
-        }
-    }
+		}
+	}
 }

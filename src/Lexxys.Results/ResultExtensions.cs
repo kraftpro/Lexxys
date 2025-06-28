@@ -13,7 +13,7 @@ public static class ResultExtensions
 	/// <param name="func"></param>
 	/// <returns></returns>
 	public static Result<TOut> Then<TIn, TOut>(this Result<TIn> result, Func<TIn, Result<TOut>> func)
-		=> result ? func(result.Value) : result.Error;
+		=> result ? func(result.Value): result.Error;
 
 	/// <summary>
 	/// Executes the given function if the result is successful, passing the value of the result to the function and returning a new result. 
@@ -24,7 +24,7 @@ public static class ResultExtensions
 	/// <param name="func"></param>
 	/// <returns></returns>
 	public static async Task<Result<TOut>> Then<TIn, TOut>(this Result<TIn> result, Func<TIn, Task<Result<TOut>>> func)
-		=> result ? await func(result.Value) : result.Error;
+		=> result ? await func(result.Value): result.Error;
 
 	/// <summary>
 	/// Executes the given function if the result is successful, passing the value of the result to the function and returning a new result. 
@@ -37,7 +37,7 @@ public static class ResultExtensions
 	public static async Task<Result<TOut>> Then<TIn, TOut>(this Task<Result<TIn>> result, Func<TIn, Task<Result<TOut>>> func)
 	{
 		var r = await result;
-		return r ? await func(r.Value) : r.Error;
+		return r ? await func(r.Value): r.Error;
 	}
 
 	/// <summary>
@@ -51,7 +51,7 @@ public static class ResultExtensions
 	public static async Task<Result<TOut>> Then<TIn, TOut>(this Task<Result<TIn>> result, Func<TIn, Result<TOut>> func)
 	{
 		var r = await result;
-		return r ? func(r.Value) : r.Error;
+		return r ? func(r.Value): r.Error;
 	}
 
 	#endregion

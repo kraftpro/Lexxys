@@ -62,12 +62,12 @@ public static partial class Resources
 	private static RandItem<(string City, string State)> GetUsCityState()
 	{
 		var r = Resource["AddressUsCityState"];
-		return r.IsEmpty ? RandItem<(string City, string State)>.Empty :
+		return r.IsEmpty ? RandItem<(string City, string State)>.Empty:
 			new RandItem<(string City, string State)>(() =>
 			{
 				var s = r.NextValue();
 				var p = s.LastIndexOf(',');
-				return p < 0 ? (s, String.Empty) : (s.AsSpan().Slice(0, p).TrimEnd().ToString(), s.AsSpan(p + 1).TrimStart().ToString());
+				return p < 0 ? (s, String.Empty): (s.AsSpan().Slice(0, p).TrimEnd().ToString(), s.AsSpan(p + 1).TrimStart().ToString());
 			});
 	}
 

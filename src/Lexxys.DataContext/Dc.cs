@@ -21,6 +21,21 @@ namespace Lexxys.Data;
 
 public static class Dc
 {
+	public static readonly SqlPart NullValue = (SqlPart)"null";
+
+	public static readonly SqlPart IsNullValue = (SqlPart)" is null";
+
+	public static readonly SqlPart IsNotNullValue = (SqlPart)" is not null";
+
+	public static readonly SqlPart EmptySqlFilter = (SqlPart)"(null)";
+
+	public static readonly SqlPart EqualSign = (SqlPart)"=";
+	public static readonly SqlPart NotEqualSign = (SqlPart)"<>";
+
+	public static readonly SqlPart TrueValue = (SqlPart)"1";
+	public static readonly SqlPart FalseValue = (SqlPart)"0";
+	public static readonly SqlPart ZeroValue = (SqlPart)"0";
+
 	public const IsolationLevel DefaultIsolationLevel = IsolationLevel.ReadCommitted;
 	public const string ConfigSection = "database.connection";
 
@@ -30,29 +45,26 @@ public static class Dc
 	public static ILogger Timing => __logTrace ??= Statics.TryGetLogger("Dc-Timing") ?? NullLogger.Instance;
 	private static ILogger? __logTrace;
 
-	private static readonly IValue<ConnectionStringInfo> __connectionInfo = Config.Current.GetValue<ConnectionStringInfo>(ConfigSection);
-	private static IDataContextFactory __staticDataFactory = new SimpleDataFactory();
+	static Lazy<IDataContextFactory> _dataFactory = new(() => StaticDataFactory);
+
+	private static IDataContextFactory? __staticDataFactory;
 	[ThreadStatic]
 	private static IDataContext? __instance;
 
 	public static IDataContextFactory StaticDataFactory
 	{
-		get => __staticDataFactory;
+		get => __staticDataFactory ??= new SimpleDataFactory();
 		set => __staticDataFactory = value ?? throw new ArgumentNullException(nameof(value));
 	}
 
 	private class SimpleDataFactory: IDataContextFactory
 	{
-		public IDataContext CreateContext(ConnectionStringInfo connectionInfo) => new MsSqlDataContext(connectionInfo);
+		public IDataContext CreateContext(ConnectionStringInfo connectionInfo) => new SqlServerDataContext(connectionInfo);
 	}
 
-	public static IDataContext Instance => __instance ??= StaticDataFactory.CreateContext(__connectionInfo.Value);
-
+	public static IDataContext Instance => __instance ??= StaticDataFactory.CreateContext(Config.Current.GetValue<ConnectionStringInfo>(ConfigSection).Value);
 
 	#region Tools
-
-	const int MaxNStrLen = 4000;
-	const int MaxStrLen = 8000;
 
 	#region Parameters
 
@@ -149,138 +161,99 @@ public static class Dc
 
 	#endregion
 
-	public static string NullValue => "null";
+	#region Equal
 
-	public static string IsNullValue => " is null";
+	public static SqlPart Equal(string? value) => value == null ? IsNullValue: EqualSign + Value(value);
+	public static SqlPart Equal(DateTime value) => EqualSign + Value(value);
+	public static SqlPart Equal(DateTime? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static SqlPart Equal(Guid value) => EqualSign + Value(value);
+	public static SqlPart Equal(Guid? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static SqlPart Equal(bool value) => EqualSign + Value(value);
+	public static SqlPart Equal(bool? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static SqlPart Equal(int value) => EqualSign + (SqlPart)value.ToString();
+	public static SqlPart Equal(int? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static SqlPart Equal(long value) => EqualSign + (SqlPart)value.ToString();
+	public static SqlPart Equal(long? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static SqlPart Equal(double value) => EqualSign + (SqlPart)value.ToString(CultureInfo.InvariantCulture);
+	public static SqlPart Equal(double? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static SqlPart Equal(decimal value) => EqualSign + (SqlPart)value.ToString(CultureInfo.InvariantCulture);
+	public static SqlPart Equal(decimal? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
+	public static SqlPart Equal(byte[]? value) => value == null ? IsNullValue: (SqlPart)Strings.ToHexString(value, "=0x");
 
-	public static string IsNotNullValue => " is not null";
+	#endregion
 
-	public static string EmptySqlFilter => "(-1.18E-38)";
+	#region NotEqual
 
-	public static string Equal(string? value) => value == null ? IsNullValue: "=" + Value(value);
-	public static string Equal(DateTime value) => "=" + Value(value);
-	public static string Equal(DateTime? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	public static string Equal(Guid value) => "=" + Value(value);
-	public static string Equal(Guid? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	public static string Equal(bool value) => "=" + Value(value);
-	public static string Equal(bool? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	public static string Equal(int value) => "=" + value.ToString();
-	public static string Equal(int? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	public static string Equal(long value) => "=" + value.ToString();
-	public static string Equal(long? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	public static string Equal(double value) => "=" + value.ToString(CultureInfo.InvariantCulture);
-	public static string Equal(double? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	public static string Equal(decimal value) => "=" + value.ToString(CultureInfo.InvariantCulture);
-	public static string Equal(decimal? value) => value == null ? IsNullValue: Equal(value.GetValueOrDefault());
-	public static string Equal(byte[]? value) => value == null ? IsNullValue: Strings.ToHexString(value, "=0x");
+	public static SqlPart NotEqual(string? value) => value == null ? IsNotNullValue: NotEqualSign + Value(value);
+	public static SqlPart NotEqual(DateTime value) => NotEqualSign + Value(value);
+	public static SqlPart NotEqual(DateTime? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static SqlPart NotEqual(Guid value) => NotEqualSign + Value(value);
+	public static SqlPart NotEqual(Guid? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static SqlPart NotEqual(bool value) => NotEqualSign + Value(value);
+	public static SqlPart NotEqual(bool? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static SqlPart NotEqual(int value) => NotEqualSign + (SqlPart)value.ToString();
+	public static SqlPart NotEqual(int? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static SqlPart NotEqual(long value) => NotEqualSign + (SqlPart)value.ToString();
+	public static SqlPart NotEqual(long? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static SqlPart NotEqual(double value) => NotEqualSign + (SqlPart)value.ToString(CultureInfo.InvariantCulture);
+	public static SqlPart NotEqual(double? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static SqlPart NotEqual(decimal value) => NotEqualSign + (SqlPart)value.ToString(CultureInfo.InvariantCulture);
+	public static SqlPart NotEqual(decimal? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
+	public static SqlPart NotEqual(byte[]? value) => value == null ? IsNotNullValue: (SqlPart)Strings.ToHexString(value, "<>0x");
 
-	public static string NotEqual(string? value) => value == null ? IsNotNullValue: "<>" + Value(value);
-	public static string NotEqual(DateTime value) => "<>" + Value(value);
-	public static string NotEqual(DateTime? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	public static string NotEqual(Guid value) => "<>" + Value(value);
-	public static string NotEqual(Guid? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	public static string NotEqual(bool value) => "<>" + Value(value);
-	public static string NotEqual(bool? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	public static string NotEqual(int value) => "<>" + value.ToString();
-	public static string NotEqual(int? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	public static string NotEqual(long value) => "<>" + value.ToString();
-	public static string NotEqual(long? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	public static string NotEqual(double value) => "<>" + value.ToString(CultureInfo.InvariantCulture);
-	public static string NotEqual(double? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	public static string NotEqual(decimal value) => "<>" + value.ToString(CultureInfo.InvariantCulture);
-	public static string NotEqual(decimal? value) => value == null ? IsNotNullValue: NotEqual(value.GetValueOrDefault());
-	public static string NotEqual(byte[]? value) => value == null ? IsNotNullValue: Strings.ToHexString(value, "<>0x");
+	#endregion
 
-	public static string IdFilter(IEnumerable<int>? ids)
+	#region Value
+
+	public static SqlPart Value(string? value)
 	{
-		if (ids is null)
-			return EmptySqlFilter;
-#if NETCOREAPP
-		var text = new StringBuilder().Append('(').AppendJoin(',', ids).Append(')');
-		return text.Length == 2 ? EmptySqlFilter : text.ToString();
+		if (value == null)
+			return NullValue;
+		var ss = value.AsSpan();
+		bool apos = false;
+		for (int i = 0; i < ss.Length; ++i)
+		{
+			if (ss[i] > 127)
+				return (SqlPart)("N'" + value.Replace("'", "''") + "'");
+			if (ss[i] == '\'')
+				apos = true;
+		}
+
+		if (apos)
+			return (SqlPart)("'" + value.Replace("'", "''") + "'");
+#if NET
+		return (SqlPart)String.Concat("'", ss, ";");
 #else
-		string result = string.Join(",", ids);
-		return result.Length == 0 ? EmptySqlFilter: "(" + result + ")";
+		return (SqlPart)("'" + ss.ToString() + "'");
 #endif
 	}
-
-	public static string Id(int value) => value > 0 ? value.ToString(): "0";
-	public static string Id(int? value) => value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(): "0";
-	public static string Id(string? value) => Int32.TryParse(value, out int id) && id > 0 ? id.ToString(): "0";
-	public static string IdOrNull(int? value) => value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(): NullValue;
-	public static string IdOrNull(string? value) => Int32.TryParse(value, out int id) && id > 0 ? id.ToString(): NullValue;
-	public static string DateValue(DateTime? value) => value == null ? NullValue: DateValue(value.GetValueOrDefault());
-	public static string DateValue(DateTime value) => value.ToString(@"\'yyyyMMdd\'", CultureInfo.InvariantCulture);
-	public static string TimeValue(DateTime value) => value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
-	public static string Name(string? value)
-	{
-		if (value == null)
-			return String.Empty;
-		Match m = __objectPartsRex.Match(value.Trim());
-		return String.Join("", m.Groups[1].Captures.Cast<Capture>().Select(o => NamePart(o.Value) + ".")) + NamePart(m.Groups[2].Value);
-
-		static string NamePart(string name)
-			=> name.Length == 0 || (name[0] == '[' && name[^1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
-
-	}
-	private static readonly Regex __objectPartsRex = new Regex(@"\A(?:(?<a>\[(?:[^\]]|]])*\]|[^\.\[]*)\.){0,3}(?<b>.*)?\z", RegexOptions.IgnoreCase);
-
-	public static string TextValue(string? value, bool unicode = false) => value == null ? NullValue: (unicode ? "'": "N'") + value.Replace("'", "''") + "'";
-
-	public static string EscapeLike(string? value)
-	{
-		if (value == null)
-			return String.Empty;
-		if (value.Length > MaxNStrLen)
-			value = value[..MaxNStrLen];
-		return value.Replace("[", "[[]").Replace("_", "[_]").Replace("%", "[%]");
-	}
-
-	public static string Value(string? value)
-	{
-		if (value == null)
-			return NullValue;
-		if (value.Length > MaxStrLen)
-			value = value[..MaxStrLen];
-		return "'" + value.Replace("'", "''") + "'";
-	}
-	public static string Value(string? value, bool unicode)
-	{
-		if (value == null)
-			return NullValue;
-		if (unicode)
-		{
-			if (value.Length > MaxNStrLen)
-				value = value[..MaxNStrLen];
-			return "N'" + value.Replace("'", "''") + "'";
-		}
-		if (value.Length > MaxStrLen)
-			value = value[..MaxStrLen];
-		return "'" + value.Replace("'", "''") + "'";
-	}
-	public static string Value(DateTime? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static string Value(DateTime value) => value.ToString(value.TimeOfDay == default ? @"\'yyyyMMdd\'": @"\'yyyyMMdd HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
-	public static string Value(TimeSpan? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static string Value(TimeSpan value) => value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
-	public static string Value(Guid value) => "cast ('" + value.ToString("D") + "' as uniqueidentifier)";
-	public static string Value(bool value) => value ? "1": "0";
-	public static string Value(int? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static string Value(int value) => value.ToString();
-	public static string Value(long? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static string Value(long value) => value.ToString();
-	public static string Value(ulong value) => value.ToString();
-	public static string Value(double? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static string Value(double value) => value.ToString(CultureInfo.InvariantCulture);
-	public static string Value(decimal? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static string Value(decimal value) => value.ToString(CultureInfo.InvariantCulture);
-	public static string Value(Money? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static string Value(Money value) => value.Amount.ToString(CultureInfo.InvariantCulture);
-	public static string Value(byte[]? value) => value == null ? NullValue: Strings.ToHexString(value, "0x".AsSpan());
-	public static string Value(RowVersion value) => value.ToString();
-	public static string Value(RowVersion? value) =>  value == null ? NullValue: value.GetValueOrDefault().ToString();
-	public static string Value(IEnum? value) => value == null ? NullValue: Value(value.Value);
-	public static string Value<T>(T? value) where T : struct, Enum => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static string Value<T>(T value) where T : struct, Enum => (value.GetTypeCode()) switch
+	public static SqlPart Value(string? value, bool unicode) => value == null ? NullValue: (SqlPart)((unicode ? "N'": "'") + value.Replace("'", "''") + "'");
+	public static SqlPart Value(DateTime? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(DateTime value) => (SqlPart)value.ToString(value.TimeOfDay == default ? @"\'yyyyMMdd\'": @"\'yyyyMMdd HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
+	public static SqlPart Value(DateTimeOffset? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(DateTimeOffset value) => (SqlPart)value.ToString(value.TimeOfDay == default ? @"\'yyyyMMdd\'": @"\'yyyyMMdd HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
+	public static SqlPart Value(TimeSpan? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(TimeSpan value) => (SqlPart)value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
+	public static SqlPart Value(Guid value) => (SqlPart)("cast ('" + value.ToString("D") + "' as uniqueidentifier)");
+	public static SqlPart Value(bool value) => value ? TrueValue: FalseValue;
+	public static SqlPart Value(int? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(int value) => (SqlPart)value.ToString();
+	public static SqlPart Value(long? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(long value) => (SqlPart)value.ToString();
+	public static SqlPart Value(ulong? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(ulong value) => (SqlPart)value.ToString();
+	public static SqlPart Value(double? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(double value) => (SqlPart)value.ToString(CultureInfo.InvariantCulture);
+	public static SqlPart Value(decimal? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(decimal value) => (SqlPart)value.ToString(CultureInfo.InvariantCulture);
+	public static SqlPart Value(Money? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(Money value) => (SqlPart)value.Amount.ToString(CultureInfo.InvariantCulture);
+	public static SqlPart Value(byte[]? value) => value == null ? NullValue: (SqlPart)Strings.ToHexString(value, "0x".AsSpan());
+	public static SqlPart Value(RowVersion value) => (SqlPart)value.ToString();
+	public static SqlPart Value(RowVersion? value) => value == null ? NullValue: (SqlPart)value.GetValueOrDefault().ToString();
+	public static SqlPart Value(IEnum? value) => value == null ? NullValue: Value(value.Value);
+	public static SqlPart Value<T>(T? value) where T: struct, Enum => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value<T>(T value) where T: struct, Enum => (value.GetTypeCode()) switch
 	{
 		TypeCode.Byte => Value(((IConvertible)value).ToByte(CultureInfo.InvariantCulture)),
 		TypeCode.SByte => Value(((IConvertible)value).ToSByte(CultureInfo.InvariantCulture)),
@@ -292,7 +265,7 @@ public static class Dc
 		TypeCode.UInt64 => Value(((IConvertible)value).ToUInt64(CultureInfo.InvariantCulture)),
 		_ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
 	};
-	public static string Value(object? value)
+	public static SqlPart Value(object? value)
 	{
 		if (value == null)
 			return NullValue;
@@ -332,31 +305,126 @@ public static class Dc
 
 	#endregion
 
+	public static SqlPart Name(string? value)
+	{
+		if (value == null)
+			return SqlPart.Empty;
+		Match m = __objectPartsRex.Match(value.Trim());
+		return (SqlPart)(String.Join("", m.Groups[1].Captures.Cast<Capture>().Select(o => NamePart(o.Value) + ".")) + NamePart(m.Groups[2].Value));
+
+		static string NamePart(string name)
+			=> name.Length == 0 || (name[0] == '[' && name[^1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
+
+	}
+	private static readonly Regex __objectPartsRex = new Regex(@"\A(?:(?<a>\[(?:[^\]]|]])*\]|[^\.\[]*)\.){0,3}(?<b>.*)?\z", RegexOptions.IgnoreCase);
+
+	public static SqlPart IdFilter(IEnumerable<int>? ids)
+	{
+		if (ids is null)
+			return EmptySqlFilter;
+#if NET
+		var text = new StringBuilder().Append('(').AppendJoin(',', ids).Append(')');
+		return text.Length == 2 ? EmptySqlFilter: (SqlPart)text.ToString();
+#else
+		string result = string.Join(",", ids);
+		return result.Length == 0 ? EmptySqlFilter: (SqlPart)("(" + result + ")");
+#endif
+	}
+
+	public static SqlPart IdFilter(IEnumerable<long>? ids)
+	{
+		if (ids is null)
+			return EmptySqlFilter;
+#if NET
+		var text = new StringBuilder().Append('(').AppendJoin(',', ids).Append(')');
+		return text.Length == 2 ? EmptySqlFilter: (SqlPart)text.ToString();
+#else
+		string result = string.Join(",", ids);
+		return result.Length == 0 ? EmptySqlFilter: (SqlPart)("(" + result + ")");
+#endif
+	}
+
+	public static SqlPart IdFilter(IEnumerable<Guid>? ids)
+	{
+		if (ids is null)
+			return EmptySqlFilter;
+
+		var text = new StringBuilder();
+		var comma = '(';
+		foreach (var id in ids)
+		{
+			text.Append(comma);
+			text.Append("{guid'").Append(id.ToString("D")).Append("'}");
+			comma = ',';
+		}
+		return text.Length == 0 ? EmptySqlFilter: (SqlPart)text.Append(')').ToString();
+	}
+
+	public static SqlPart IdFilter(IEnumerable<string>? ids)
+	{
+		if (ids is null)
+			return EmptySqlFilter;
+
+		var text = new StringBuilder();
+		var comma = '(';
+		foreach (var id in ids)
+		{
+			if (id == null) continue;
+			text.Append(comma);
+			text.Append("N'").Append(id.Replace("'", "''")).Append('\'');
+			comma = ',';
+		}
+		return text.Length == 0 ? EmptySqlFilter: (SqlPart)text.Append(')').ToString();
+	}
+
+	public static SqlPart Id(int value) => value > 0 ? (SqlPart)value.ToString(): ZeroValue;
+	public static SqlPart Id(int? value) => value.GetValueOrDefault() > 0 ? (SqlPart)value.GetValueOrDefault().ToString(): ZeroValue;
+	public static SqlPart Id(string? value) => Int32.TryParse(value, out int id) && id > 0 ? (SqlPart)id.ToString(): ZeroValue;
+	public static SqlPart IdOrNull(int? value) => value.GetValueOrDefault() > 0 ? (SqlPart)value.GetValueOrDefault().ToString(): NullValue;
+	public static SqlPart IdOrNull(string? value) => Int32.TryParse(value, out int id) && id > 0 ? (SqlPart)id.ToString(): NullValue;
+	public static SqlPart DateValue(DateTime? value) => value == null ? NullValue: DateValue(value.GetValueOrDefault());
+	public static SqlPart DateValue(DateTime value) => (SqlPart)value.ToString(@"\'yyyyMMdd\'", CultureInfo.InvariantCulture);
+	public static SqlPart TimeValue(DateTime value) => (SqlPart)value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
+
+	public static string EscapeLike(string? value) => value == null ? String.Empty: value.Replace("[", "[[]").Replace("_", "[_]").Replace("%", "[%]");
+
+	public static SqlPart Sql(string? value) => new SqlPart(value);
+
+#if NET
+	public static SqlPart Sql(ref SqlInterpolatedHandler value) => new SqlPart(value.ToStringAndClear());
+#endif
+
+	#endregion
+
 	#region Mappers
 
-	internal static T? ValueMapper<T>(DbCommand cmd)
+	internal static T? ValueMapper<T>(DbCommand cmd) => ValueMapper<T?>(cmd, default);
+
+	internal static Task<T?> ValueMapperAsync<T>(DbCommand cmd) => ValueMapperAsync<T?>(cmd, default);
+
+	internal static T ValueMapper<T>(DbCommand cmd, T defaultValue)
 	{
-		if (AnonymousType<T>.IsBuiltinType)
+		if (AnonymousType<T>.IsBuiltInType)
 		{
 			var value = cmd.ExecuteScalar();
 			if (value == null || Convert.IsDBNull(value))
-				return default;
+				return defaultValue;
 			return AnonymousType<T>.Construct([value]);
 		}
 		else
 		{
 			using DbDataReader reader = cmd.ExecuteReader();
-			return reader.Read() ? AnonymousType<T>.Construct(reader): default;
+			return reader.Read() ? AnonymousType<T>.Construct(reader): defaultValue;
 		}
 	}
 
-	internal static async Task<T?> ValueMapperAsync<T>(DbCommand cmd)
+	internal static async Task<T> ValueMapperAsync<T>(DbCommand cmd, T defaultValue)
 	{
-		if (AnonymousType<T>.IsBuiltinType)
+		if (AnonymousType<T>.IsBuiltInType)
 		{
 			object? value = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
 			if (value == null || Convert.IsDBNull(value))
-				return default;
+				return defaultValue;
 			return AnonymousType<T>.Construct([value]);
 		}
 		else
@@ -365,7 +433,7 @@ public static class Dc
 			await 
 			#endif
 			using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
-			return await reader.ReadAsync().ConfigureAwait(false) ? AnonymousType<T>.Construct(reader): default;
+			return await reader.ReadAsync().ConfigureAwait(false) ? AnonymousType<T>.Construct(reader): defaultValue;
 		}
 	}
 
@@ -508,7 +576,7 @@ public static class Dc
 	{
 		private static readonly SortedList<int, Func<object?[], object?>> Constructors = CollectConstructors();
 		
-		public static bool IsBuiltinType { get; } = __systemTypes.ContainsKey(typeof(T));
+		public static bool IsBuiltInType { get; } = __systemTypes.ContainsKey(typeof(T));
 
 		public static T Construct(object?[] values)
 		{
@@ -629,11 +697,11 @@ public static class Dc
 
 	internal class Connecting: IContextHolder
 	{
-		private readonly MsSqlDataContext _context;
+		private readonly SqlServerDataContext _context;
 		private readonly int _count;
 		private bool _disposed;
 
-		public Connecting(MsSqlDataContext context)
+		public Connecting(SqlServerDataContext context)
 		{
 			_context = context;
 			_count = context.Context.Connect();
@@ -654,11 +722,11 @@ public static class Dc
 
 	internal sealed class Transacting: ITransactable
 	{
-		private readonly MsSqlDataContext _context;
+		private readonly SqlServerDataContext _context;
 		private readonly bool _autoCommit;
 		private bool _disposed;
 
-		public Transacting(MsSqlDataContext context, bool autoCommit, IsolationLevel isolationLevel)
+		public Transacting(SqlServerDataContext context, bool autoCommit, IsolationLevel isolationLevel)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 			_context.Context.Begin(isolationLevel);
@@ -713,11 +781,11 @@ public static class Dc
 
 	internal sealed class TimeoutLocker: IContextHolder
 	{
-		private readonly MsSqlDataContext _context;
+		private readonly SqlServerDataContext _context;
 		private readonly TimeSpan _timeout;
 		private bool _disposed;
 
-		public TimeoutLocker(MsSqlDataContext context, TimeSpan timeout)
+		public TimeoutLocker(SqlServerDataContext context, TimeSpan timeout)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 			_timeout = _context.Context.DefaultCommandTimeout;
@@ -738,10 +806,10 @@ public static class Dc
 
 	internal sealed class TimingLocker: IContextHolder
 	{
-		private readonly MsSqlDataContext _context;
+		private readonly SqlServerDataContext _context;
 		private bool _disposed;
 
-		public TimingLocker(MsSqlDataContext context)
+		public TimingLocker(SqlServerDataContext context)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 			_context.Context.Audit.LockTiming();

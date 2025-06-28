@@ -1002,9 +1002,9 @@ public static class Factory
 		else
 		{
 			method = parameterType.GetMethod("FromObject", [typeof(object)]);
-			cvt = method == null
-				? Expression.Convert(parameter, parameterType)
-				: Expression.Convert(Expression.Call(method, parameter), parameterType);
+			cvt = method == null ?
+				Expression.Convert(parameter, parameterType):
+				Expression.Convert(Expression.Call(method, parameter), parameterType);
 		}
 
 		if (parameterType != type)

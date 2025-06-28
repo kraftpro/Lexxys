@@ -31,48 +31,48 @@ public class SequenceTokenRule: LexicalTokenRule
 		}
 	}
 
-	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase, params (int Id, string Value)[] sequence)
-		: this(tokenType, ignoreCase, (IEnumerable<(int Id, string Value)>)sequence)
+	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase, params (int Id, string Value)[] sequence):
+		this(tokenType, ignoreCase, (IEnumerable<(int Id, string Value)>)sequence)
 	{
 	}
 
-	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase, params string[] sequence)
-		: this(tokenType, ignoreCase, sequence.Select((o, i) => (i + 1, o)))
+	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase, params string[] sequence):
+		this(tokenType, ignoreCase, sequence.Select((o, i) => (i + 1, o)))
 	{
 	}
 
-	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase)
-		: this(tokenType, ignoreCase, Array.Empty<(int, string)>())
+	public SequenceTokenRule(LexicalTokenType tokenType, bool ignoreCase):
+		this(tokenType, ignoreCase, Array.Empty<(int, string)>())
 	{
 	}
 
-	public SequenceTokenRule(LexicalTokenType tokenType, params (int Id, string Value)[] sequence)
-		: this(tokenType, false, (IEnumerable<(int Id, string Value)>)sequence)
+	public SequenceTokenRule(LexicalTokenType tokenType, params (int Id, string Value)[] sequence):
+		this(tokenType, false, (IEnumerable<(int Id, string Value)>)sequence)
 	{
 	}
 
-	public SequenceTokenRule(LexicalTokenType tokenType, params string[] sequence)
-		: this(tokenType, false, sequence.Select((o, i) => (i + 1, o)))
+	public SequenceTokenRule(LexicalTokenType tokenType, params string[] sequence):
+		this(tokenType, false, sequence.Select((o, i) => (i + 1, o)))
 	{
 	}
 
-	public SequenceTokenRule(LexicalTokenType tokenType)
-		: this(tokenType, false, Array.Empty<(int, string)>())
+	public SequenceTokenRule(LexicalTokenType tokenType):
+		this(tokenType, false, Array.Empty<(int, string)>())
 	{
 	}
 
-	public SequenceTokenRule(params (int Id, string Value)[] sequence)
-		: this(LexicalTokenType.SEQUENCE, false, sequence)
+	public SequenceTokenRule(params (int Id, string Value)[] sequence):
+		this(LexicalTokenType.SEQUENCE, false, sequence)
 	{
 	}
 
-	public SequenceTokenRule(params string[] sequence)
-		: this(LexicalTokenType.SEQUENCE, false, sequence)
+	public SequenceTokenRule(params string[] sequence):
+		this(LexicalTokenType.SEQUENCE, false, sequence)
 	{
 	}
 
-	public SequenceTokenRule()
-		: this(LexicalTokenType.SEQUENCE, false, Array.Empty<(int, string)>())
+	public SequenceTokenRule():
+		this(LexicalTokenType.SEQUENCE, false, Array.Empty<(int, string)>())
 	{
 	}
 

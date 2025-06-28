@@ -12,7 +12,7 @@ namespace Lexxys.Data;
 /// <summary>
 /// The SQL Server implementation of <see cref="IDataContext"/>.
 /// </summary>
-public sealed class MsSqlDataContext: IDataContext
+public sealed class SqlServerDataContext: IDataContext
 {
 	private static readonly IValue<ConnectionStringInfo> __globalConnectionString = Config.Current.GetValue<ConnectionStringInfo>(Dc.ConfigSection, null);
 	private static Func<string, DbConnection> __defaultConnectionFactory = o => new Microsoft.Data.SqlClient.SqlConnection(o);
@@ -25,16 +25,16 @@ public sealed class MsSqlDataContext: IDataContext
 		set => __defaultConnectionFactory = value ?? throw new ArgumentNullException(nameof(value));
 	}
 
-	private MsSqlDataContext(DataContextImplementation context)
+	private SqlServerDataContext(DataContextImplementation context)
 	{
 		_context = context;
 	}
 
-	public MsSqlDataContext(Func<string, DbConnection>? factory = null) : this(__globalConnectionString.Value, factory)
+	public SqlServerDataContext(Func<string, DbConnection>? factory = null): this(__globalConnectionString.Value, factory)
 	{
 	}
 
-	public MsSqlDataContext(ConnectionStringInfo connectionInfo, Func<string, DbConnection>? connectionFactory = null)
+	public SqlServerDataContext(ConnectionStringInfo connectionInfo, Func<string, DbConnection>? connectionFactory = null)
 	{
 		if (connectionInfo == null) throw new ArgumentNullException(nameof(connectionInfo));
 
@@ -77,13 +77,13 @@ public sealed class MsSqlDataContext: IDataContext
 
 	public IContextHolder NoTiming() => new Dc.TimingLocker(this);
 
-	public IDataContext Clone() => new MsSqlDataContext(_context.Clone());
+	public IDataContext Clone() => new SqlServerDataContext(_context.Clone());
 
 	public void Commit() => _context.Commit();
 
 	public void Rollback() => _context.Rollback();
 
-	public DbCommand Command(string statement, params DataParameter[] parameters) => _context.Command(statement, parameters);
+	public DbCommand Command(SqlPart statement, params DataParameter[] parameters) => _context.Command(statement, parameters);
 
 	public void SetQueryTimeout(TimeSpan timeout) => _context.CommandTimeout = timeout;
 

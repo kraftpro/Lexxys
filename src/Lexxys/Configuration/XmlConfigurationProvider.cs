@@ -15,7 +15,7 @@ public class XmlConfigurationProvider: IConfigSource
 	readonly IXmlConfigurationSource _source;
 	private IXmlReadOnlyNode? _node;
 
-	private XmlConfigurationProvider(IXmlConfigurationSource source)
+	public XmlConfigurationProvider(IXmlConfigurationSource source)
 	{
 		_source = source ?? throw new ArgumentNullException(nameof(source));
 		_source.Changed += OnChanged;

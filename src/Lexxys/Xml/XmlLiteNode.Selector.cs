@@ -10,13 +10,13 @@ internal static class XmlNodeSelector
 	{
 		if (nodes == null)
 			return Array.Empty<IXmlReadOnlyNode>();
-		return String.IsNullOrWhiteSpace(selector) ? nodes : (Node.Parse(selector) ?? __empty).Select(nodes);
+		return String.IsNullOrWhiteSpace(selector) ? nodes: (Node.Parse(selector) ?? __empty).Select(nodes);
 	}
 	private static readonly Node __empty = new Node("");
 
 	public static Func<IEnumerable<IXmlReadOnlyNode>, IEnumerable<IXmlReadOnlyNode>> Compile(string selector)
 	{
-		return String.IsNullOrWhiteSpace(selector) ? EmptySelector :
+		return String.IsNullOrWhiteSpace(selector) ? EmptySelector:
 			__compiledSelectors.GetOrAdd(selector.Trim(), CompileNew);
 	}
 	private static readonly ConcurrentDictionary<string, Func<IEnumerable<IXmlReadOnlyNode>, IEnumerable<IXmlReadOnlyNode>>> __compiledSelectors =
@@ -76,23 +76,23 @@ internal static class XmlNodeSelector
 
 			if (_text.Length > 0 && _text != "*" && _text != "**")
 				nodes = _attrib ?
-					nodes.Where(o => o[_text] != null).Select(o => new XmlLiteNode(_text, o[_text], o.Comparer, null, null)) :
+					nodes.Where(o => o[_text] != null).Select(o => new XmlLiteNode(_text, o[_text], o.Comparer, null, null)):
 					nodes.Where(o => o.Comparer.Equals(o.Name, _text));
 			if (_guard != null)
 				nodes = nodes.Where(_guard.Where);
 
 			if (_text == "**")
-				return _next == null ? AllDescendants(nodes) : _next.Select(AllDescendants(nodes));
+				return _next == null ? AllDescendants(nodes): _next.Select(AllDescendants(nodes));
 
-			return _next == null ? nodes :
-				_next._attrib ? _next.Select(nodes) :
+			return _next == null ? nodes:
+				_next._attrib ? _next.Select(nodes):
 				_next.Select(nodes.SelectMany(o => o.Elements));
 		}
 
 		private static IEnumerable<IXmlReadOnlyNode> AllDescendants(IEnumerable<IXmlReadOnlyNode> nodes)
 		{
-			return nodes is ICollection<IXmlReadOnlyNode> cl ? AllDescendants(cl) :
-				nodes is IReadOnlyCollection<IXmlReadOnlyNode> ro ? AllDescendants(ro) :
+			return nodes is ICollection<IXmlReadOnlyNode> cl ? AllDescendants(cl):
+				nodes is IReadOnlyCollection<IXmlReadOnlyNode> ro ? AllDescendants(ro):
 				AllDescendants((ICollection<IXmlReadOnlyNode>)nodes.ToList());
 		}
 
@@ -112,10 +112,10 @@ internal static class XmlNodeSelector
 			text.Append("{ ");
 			if (_attrib)
 				text.Append(':');
-			text.Append(_text.Length == 0 ? "." : _text);
+			text.Append(_text.Length == 0 ? ".": _text);
 			if (_condition != Op.None)
 			{
-				text.Append(_condition == Op.Eq ? "==" : "!=");
+				text.Append(_condition == Op.Eq ? "==": "!=");
 				if (_value == null)
 					text.Append("(null)");
 				else
@@ -141,7 +141,7 @@ internal static class XmlNodeSelector
 				if (_text.Length == 0)
 					return (_guard == null || _guard.Where(node)) && (_next == null || _next.Where(node));
 
-				IEnumerable<IXmlReadOnlyNode> nodes = _text == "*" ? node.Elements : node.Where(_text);
+				IEnumerable<IXmlReadOnlyNode> nodes = _text == "*" ? node.Elements: node.Where(_text);
 				if (_guard != null)
 					nodes = nodes.Where(o => _guard.Where(o));
 				if (_next != null)
@@ -155,14 +155,14 @@ internal static class XmlNodeSelector
 			bool result;
 			if (_text.Length == 0)
 			{
-				result = String.IsNullOrEmpty(_value) ? String.IsNullOrEmpty(node.Value) : node.Comparer.Equals(node.Value, _value);
+				result = String.IsNullOrEmpty(_value) ? String.IsNullOrEmpty(node.Value): node.Comparer.Equals(node.Value, _value);
 			}
 			else
 			{
 				Debug.Assert(_attrib);
-				result = String.IsNullOrEmpty(_value) ? String.IsNullOrEmpty(node[_text]) : node.Comparer.Equals(_value, node[_text]);
+				result = String.IsNullOrEmpty(_value) ? String.IsNullOrEmpty(node[_text]): node.Comparer.Equals(_value, node[_text]);
 			}
-			return _condition == Op.Eq ? result : !result;
+			return _condition == Op.Eq ? result: !result;
 		}
 
 		public Func<IEnumerable<IXmlReadOnlyNode>, IEnumerable<IXmlReadOnlyNode>> CompileSelect()
@@ -179,7 +179,7 @@ internal static class XmlNodeSelector
 			{
 				Func<IXmlReadOnlyNode, bool> guard = _guard.CompileWhere();
 				guarded = selector == null ? (Func<IEnumerable<IXmlReadOnlyNode>, IEnumerable<IXmlReadOnlyNode>>)
-					(p => p.Where(guard)) :
+					(p => p.Where(guard)):
 					(p => selector(p).Where(guard));
 			}
 			else
@@ -192,10 +192,10 @@ internal static class XmlNodeSelector
 
 			Func<IEnumerable<IXmlReadOnlyNode>, IEnumerable<IXmlReadOnlyNode>> next = _next.CompileSelect();
 			if (_next._attrib)
-				return guarded == null ? next : o => next(guarded(o));
+				return guarded == null ? next: o => next(guarded(o));
 
 			return guarded == null ?
-				(o => next(o.SelectMany(p => p.Elements))) :
+				(o => next(o.SelectMany(p => p.Elements))):
 				(o => next(guarded(o).SelectMany(p => p.Elements)));
 		}
 
@@ -208,20 +208,20 @@ internal static class XmlNodeSelector
 				var next = _next?.CompileWhere();
 				if (_text.Length == 0)
 				{
-					return next == null ? guard ?? (_ => true) :
-						guard == null ? next : o => guard(o) && next(o);
+					return next == null ? guard ?? (_ => true):
+						guard == null ? next: o => guard(o) && next(o);
 				}
 
 				Func<IXmlReadOnlyNode, IEnumerable<IXmlReadOnlyNode>> nodes = _text == "*" ?
-					(o => o.Elements) :
+					(o => o.Elements):
 					(o => o.Where(_text));
 
 				return next == null ?
 					guard == null ? (Func<IXmlReadOnlyNode, bool>)
-						(o => nodes(o).Any()) :
-						(o => nodes(o).Any(guard)) :
+						(o => nodes(o).Any()):
+						(o => nodes(o).Any(guard)):
 					guard == null ? (Func<IXmlReadOnlyNode, bool>)
-						(o => nodes(o).Any(next)) :
+						(o => nodes(o).Any(next)):
 						(o => nodes(o).Any(p => guard(p) && next(p)));
 			}
 
@@ -232,11 +232,11 @@ internal static class XmlNodeSelector
 			{
 				if (String.IsNullOrEmpty(_value))
 					return _condition == Op.Eq ?
-						(o => String.IsNullOrEmpty(o.Value)) :
+						(o => String.IsNullOrEmpty(o.Value)):
 						(o => !String.IsNullOrEmpty(o.Value));
 				else
 					return _condition == Op.Eq ?
-						(o => o.Comparer.Equals(o.Value, _value)) :
+						(o => o.Comparer.Equals(o.Value, _value)):
 					(o => !o.Comparer.Equals(o.Value, _value));
 			}
 			else
@@ -244,11 +244,11 @@ internal static class XmlNodeSelector
 				Debug.Assert(_attrib);
 				if (String.IsNullOrEmpty(_value))
 					return _condition == Op.Eq ?
-						(o => String.IsNullOrEmpty(o[_text])) :
+						(o => String.IsNullOrEmpty(o[_text])):
 						(o => !String.IsNullOrEmpty(o[_text]));
 				else
 					return _condition == Op.Eq ?
-						(o => o.Comparer.Equals(o[_text], _value)) :
+						(o => o.Comparer.Equals(o[_text], _value)):
 						(o => !o.Comparer.Equals(o[_text], _value));
 			}
 		}
@@ -325,7 +325,7 @@ internal static class XmlNodeSelector
 					{
 						string s = text.ToString().Trim();
 						if (c == ']')
-							return s.Length == 0 ? null : new Node(s, attrib);
+							return s.Length == 0 ? null: new Node(s, attrib);
 
 						if (c == '!')
 						{
@@ -353,13 +353,13 @@ internal static class XmlNodeSelector
 							text.Append(c);
 						}
 						return !attrib && s.Length > 0 ?
-							new Node(s, false, Op.None, null, null, new Node("", false, c == '!' ? Op.Neq : Op.Eq, text.ToString())) :
-							new Node(s, attrib, c == '!' ? Op.Neq : Op.Eq, text.ToString());
+							new Node(s, false, Op.None, null, null, new Node("", false, c == '!' ? Op.Neq: Op.Eq, text.ToString())):
+							new Node(s, attrib, c == '!' ? Op.Neq: Op.Eq, text.ToString());
 					}
 					text.Append(c);
 				}
 
-				return text.Length == 0 ? null : new Node(text.ToString(), attrib);
+				return text.Length == 0 ? null: new Node(text.ToString(), attrib);
 			}
 		}
 	}

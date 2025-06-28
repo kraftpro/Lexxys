@@ -208,7 +208,7 @@ public static class ValueValidator
 
 	//public static bool IsString(StringField value, int minLength, int maxLength, bool allowNull)
 	//{
-	//	return value.IsNull ? allowNull : IsString(value.GetValue(), minLength, maxLength);
+	//	return value.IsNull ? allowNull: IsString(value.GetValue(), minLength, maxLength);
 	//}
 
 	//public static bool IsString(StringField value, int maxLength)

@@ -56,7 +56,7 @@ public static class Check
 
 	private static bool IsReferenceKey(IDataContext dc, int value, string table, string? key = null)
 	{
-		return 1 == dc.GetValue<int>($"select top 1 1 from {Dc.Name(table)} where {Dc.Name(key ?? "ID")}=@I", Dc.Parameter("@I", value));
+		return 1 == dc.GetValue<int>((SqlPart)$"select top 1 1 from {Dc.Name(table)} where {Dc.Name(key ?? "ID")}=@I", Dc.Parameter("@I", value));
 	}
 
 	public static bool Range<T>(T? value, ValueTuple<T, T>[]? ranges)
@@ -86,19 +86,19 @@ public static class Check
 	}
 
 	public static bool Range<T>(T? value, T[]? values)
-		where T : struct, IEquatable<T>
+		where T: struct, IEquatable<T>
 	{
 		return value == null || Range(value.GetValueOrDefault(), values);
 	}
 
 	public static bool Range<T>(T? value, T[]? values, bool nullable)
-		where T : struct, IEquatable<T>
+		where T: struct, IEquatable<T>
 	{
-		return value == null ? nullable : Range(value.GetValueOrDefault(), values);
+		return value == null ? nullable: Range(value.GetValueOrDefault(), values);
 	}
 
 	public static bool Range<T>(T value, T[]? values)
-		where T : struct, IEquatable<T>
+		where T: struct, IEquatable<T>
 	{
 		if (values == null) return false;
 		for (int i = 0; i < values.Length; ++i)
@@ -204,13 +204,13 @@ public static class Check
 
 	public static bool UsStateCode(string? value, bool nullable)
 	{
-		return value == null ? nullable : (value = value.Trim()).Length == 2 && UsStateCodes.Value.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+		return value == null ? nullable: (value = value.Trim()).Length == 2 && UsStateCodes.Value.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
 	}
 	private static readonly IValue<string> UsStateCodes = Config.Current.GetValue("Lexxys.Check.UsStateCodes", "AA AK AL AP AR AS AZ CA CO CT DC DE FL FM GA GU HI IA ID IL IN KS KY LA MA MD ME MI MN MO MP MS MT NC ND NE NH NJ NM NV NY OH OK OR PA PR PW RI SC SD TN TX UT VA VI VT WA WI WV WY");
 
 	public static bool CountryCode(string? value, bool nullable)
 	{
-		return value == null ? nullable : (value = value.Trim()).Length == 2 && CountryCodes.Value.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+		return value == null ? nullable: (value = value.Trim()).Length == 2 && CountryCodes.Value.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
 	}
 	private static readonly IValue<string> CountryCodes = Config.Current.GetValue("Lexxys.Check.CountryCodesCodes", "AD AE AF AG AI AL AM AN AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR ST SV SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW");
 
@@ -236,9 +236,9 @@ public static class Check
 		if (field is not { Length: > 0 })
 			throw new ArgumentNullException(nameof(field));
 
-		string query = $"select top 1 1 from {Dc.Name(table)} where {Dc.Name(field)}{Dc.Equal(value)}";
+		var query = new SqlPart($"select top 1 1 from {Dc.Name(table)} where {Dc.Name(field)}{Dc.Equal(value)}");
 		if (keyField != null)
-			query += " and " + Dc.Name(keyField) + Dc.NotEqual(keyValue);
+			query += (SqlPart)" and " + Dc.Name(keyField) + Dc.NotEqual(keyValue);
 
 		return 0 == dc.GetValue<int>(query);
 	}
@@ -250,9 +250,9 @@ public static class Check
 		if (field is not { Length: > 0 })
 			throw new ArgumentNullException(nameof(field));
 
-		string query = $"select top 1 1 from {Dc.Name(table)} where {Dc.Name(field)}{Dc.Equal(value)}";
+		var query = new SqlPart($"select top 1 1 from {Dc.Name(table)} where {Dc.Name(field)}{Dc.Equal(value)}");
 		if (keyField != null)
-			query += " and " + Dc.Name(keyField) + Dc.NotEqual(keyValue);
+			query += (SqlPart)" and " + Dc.Name(keyField) + Dc.NotEqual(keyValue);
 
 		return 0 == dc.GetValue<int>(query);
 	}

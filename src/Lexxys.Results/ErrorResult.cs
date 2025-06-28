@@ -54,7 +54,7 @@ public class ErrorResult
 	{
 		Title = title;
 		Message = message;
-		StatusCode = statusCode == 0 ? 400 : statusCode;
+		StatusCode = statusCode == 0 ? 400: statusCode;
 		Data = ToDictionary(data);
 	}
 

@@ -250,7 +250,7 @@ public static class ReadOnly
 
 		public bool Contains(object key) => key is TKey k && ContainsKey(k);
 
-		IDictionaryEnumerator IDictionary.GetEnumerator() => _dictionary is IDictionary d ? d.GetEnumerator() : throw new NotImplementedException();
+		IDictionaryEnumerator IDictionary.GetEnumerator() => _dictionary is IDictionary d ? d.GetEnumerator(): throw new NotImplementedException();
 
 		public bool IsFixedSize => true;
 
@@ -1190,11 +1190,11 @@ public class ReadOnlyException: NotSupportedException
 	{
 	}
 
-	public ReadOnlyException(string message) : base(message)
+	public ReadOnlyException(string message): base(message)
 	{
 	}
 
-	public ReadOnlyException(string message, Exception innerException) : base(message, innerException)
+	public ReadOnlyException(string message, Exception innerException): base(message, innerException)
 	{
 	}
 

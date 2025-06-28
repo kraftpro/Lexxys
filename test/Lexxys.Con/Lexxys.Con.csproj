@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Lexxys.Blob\Lexxys.Blob.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.DataContext\Lexxys.DataContext.csproj" />
     <ProjectReference Include="..\..\src\Lexxys\Lexxys.csproj" />
   </ItemGroup>

@@ -47,8 +47,8 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 	/// <param name="ignoreCase">Ignore case when comparing node names</param>
 	/// <param name="attributes">Collection of attributes</param>
 	/// <param name="descendants">Collection of sub-nodes</param>
-	public XmlLiteNode(string name, string? value, bool ignoreCase, IEnumerable<KeyValuePair<string, string>>? attributes, IEnumerable<XmlLiteNode>? descendants)
-		: this(name, value, ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal, attributes, descendants)
+	public XmlLiteNode(string name, string? value, bool ignoreCase, IEnumerable<KeyValuePair<string, string>>? attributes, IEnumerable<XmlLiteNode>? descendants):
+		this(name, value, ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal, attributes, descendants)
 	{
 	}
 
@@ -79,8 +79,8 @@ public class XmlLiteNode: IXmlReadOnlyNode, IEquatable<XmlLiteNode>
 	/// <param name="ignoreCase">Ignore case when comparing node names</param>
 	/// <param name="attributes">Collection of attributes</param>
 	/// <param name="descendants">Collection of sub-nodes</param>
-	public XmlLiteNode(string name, string? value, bool ignoreCase, IEnumerable<KeyValuePair<string, string>>? attributes, IEnumerable<IXmlReadOnlyNode>? descendants)
-		: this(name, value, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal, attributes, descendants)
+	public XmlLiteNode(string name, string? value, bool ignoreCase, IEnumerable<KeyValuePair<string, string>>? attributes, IEnumerable<IXmlReadOnlyNode>? descendants):
+		this(name, value, ignoreCase ? StringComparer.OrdinalIgnoreCase: StringComparer.Ordinal, attributes, descendants)
 	{
 	}
 

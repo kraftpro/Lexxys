@@ -72,7 +72,7 @@ public readonly struct RandItem<T>: IFormattable
 	{
 		if (weight is <= 0) throw new ArgumentOutOfRangeException(nameof(weight), weight, null);
 		_value = value;
-		_weight = _value is null ? 0 : weight;
+		_weight = _value is null ? 0: weight;
 	}
 
 	/// <summary>
@@ -92,7 +92,7 @@ public readonly struct RandItem<T>: IFormattable
 	/// </summary>
 	/// <param name="weight">Weight of the item</param>
 	/// <param name="items">Collection of <see cref="RandItem{T}"/> to be used to generate item value</param>
-	public RandItem(double weight, IEnumerable<RandItem<T>> items) : this(weight, items.ToArray(), false) { }
+	public RandItem(double weight, IEnumerable<RandItem<T>> items): this(weight, items.ToArray(), false) { }
 
 	/// <summary>
 	/// Creates a new <see cref="RandItem{T}"/> based om the collection of <see cref="RandItem{T}"/> pairs.
@@ -105,7 +105,7 @@ public readonly struct RandItem<T>: IFormattable
 	/// Creates a new <see cref="RandItem{T}"/> of weight 1 with the only <paramref name="value"/>.
 	/// </summary>
 	/// <param name="value">The item value</param>
-	public RandItem(T value) : this(1, value) { }
+	public RandItem(T value): this(1, value) { }
 	
 	/// <summary>
 	/// Creates a new <see cref="RandItem{T}"/> of weight 1 that uses <paramref name="generator"/> to create an item value.

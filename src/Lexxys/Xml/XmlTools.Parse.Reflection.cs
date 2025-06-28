@@ -249,7 +249,7 @@ public static partial class XmlTools
 		public ConstructorKey(Type type, Dictionary<string, object>? arguments)
 		{
 			_type = type ?? throw new ArgumentNullException(nameof(type));
-			_key = arguments == null || arguments.Count == 0 ? String.Empty : String.Join(":", arguments.Keys.Select(o => o.ToUpperInvariant()));
+			_key = arguments == null || arguments.Count == 0 ? String.Empty: String.Join(":", arguments.Keys.Select(o => o.ToUpperInvariant()));
 			_hashCode = HashCode.Join(_type.GetHashCode(), _key.GetHashCode());
 		}
 
@@ -583,14 +583,14 @@ public static partial class XmlTools
 
 		static object? CreateCollectionInstance(Type instanceType, IReadOnlyCollection<KeyValuePair<string, string>>? args, Type collectionType)
 		{
-			var instance = args == null || args.Count == 0 ? Factory.Construct(instanceType) : TryConstruct(instanceType, Fold(args)).Value;
+			var instance = args == null || args.Count == 0 ? Factory.Construct(instanceType): TryConstruct(instanceType, Fold(args)).Value;
 
-			return instance == null || IsReadOnlyCollection(instance, GetReadOnlyGetter(collectionType)) ? null : instance;
+			return instance == null || IsReadOnlyCollection(instance, GetReadOnlyGetter(collectionType)) ? null: instance;
 
 			static MethodInfo? GetReadOnlyGetter(Type collectionType)
 			{
 				var ro = collectionType.GetProperty("IsReadOnly");
-				return ro != null && ro.CanRead ? ro.GetGetMethod() : null;
+				return ro != null && ro.CanRead ? ro.GetGetMethod(): null;
 			}
 
 			static bool IsReadOnlyCollection(object value, MethodInfo? getter)
@@ -665,7 +665,7 @@ public static partial class XmlTools
 	//		if (node.Elements.Count == 0)
 	//		{
 	//			return TryGetValue(node, collectionType.Item, out var single) ?
-	//				CreateCollection(collectionType, null, new[] { single }, ref result) :
+	//				CreateCollection(collectionType, null, new[] { single }, ref result):
 	//				CreateCollection(collectionType, node.Attributes, Array.Empty<object?>(), ref result);
 	//		}
 	//		items = node.Elements;

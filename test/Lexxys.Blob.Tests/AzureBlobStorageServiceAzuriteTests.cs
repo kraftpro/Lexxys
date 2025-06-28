@@ -17,7 +17,7 @@ public class AzureBlobStorageServiceAzuriteTests: IDisposable
 	public AzureBlobStorageServiceAzuriteTests()
 	{
 		// Create service with Azurite connection string
-		_service = new AzureBlobStorageService(ConnectionString);
+		_service = new AzureBlobStorageService(ConnectionString, TestContainerName);
 		_blobServiceClient = new BlobServiceClient(ConnectionString);
 		try
 		{

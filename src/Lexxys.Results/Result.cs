@@ -113,13 +113,13 @@ public class SuccessResult<T>(T value): Result<T>, ISuccessResult<T>
 /// <param name="error">Error result.</param>
 public class FailureResult<T>(ErrorResult error): Result<T>, IFailedResult
 {
-	public FailureResult(string message, string? title = null, int statusCode = 0, IDictionary<string, string?>? data = null)
-		: this(new ErrorResult(message, title, statusCode, data))
+	public FailureResult(string message, string? title = null, int statusCode = 0, IDictionary<string, string?>? data = null):
+		this(new ErrorResult(message, title, statusCode, data))
 	{
 	}
 
-	public FailureResult(string message, IEnumerable<(string Key, string? Value)> data, string? title = null, int statusCode = 0)
-		: this(new ErrorResult(message, data, title, statusCode))
+	public FailureResult(string message, IEnumerable<(string Key, string? Value)> data, string? title = null, int statusCode = 0):
+		this(new ErrorResult(message, data, title, statusCode))
 	{
 	}
 

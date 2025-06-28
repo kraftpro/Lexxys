@@ -145,7 +145,7 @@ public static class ParametersExtensions
 		return builder.EndCommand();
 	}
 
-	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string? description = null) where T : ICliParameters<T>
+	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string? description = null) where T: ICliParameters<T>
 	{
 		builder.BeginCommand(name, description);
 		T.CreateBuilder(builder);
@@ -172,14 +172,14 @@ public interface ICliOption<T>
 
 public static class CliOptionExtensions
 {
-	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string[]? abbreviation, string? description = null) where T : ICliOption<T>
+	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string[]? abbreviation, string? description = null) where T: ICliOption<T>
 	{
 		builder.BeginCommand(name, abbreviation, description);
 		T.CreateBuilder(builder);
 		return builder.EndCommand();
 	}
 
-	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string? description = null) where T : ICliOption<T>
+	public static ArgumentsBuilder Command<T>(this ArgumentsBuilder builder, string name, string? description = null) where T: ICliOption<T>
 	{
 		builder.BeginCommand(name, description);
 		T.CreateBuilder(builder);

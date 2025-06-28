@@ -10,7 +10,9 @@ namespace Lexxys.Blob.Tests;
 
 public class AzureBlobStorageServiceMockTests: IDisposable
 {
-	private readonly string _connectionString = "UseDevelopmentStorage=true";
+	private const string ConnectionString = "UseDevelopmentStorage=true";
+	private const string TestContainerName = "testcontainer";
+	private readonly string _connectionString = ConnectionString;
 	private Mock<BlobServiceClient> _mockBlobServiceClient;
 	private Mock<BlobContainerClient> _mockBlobContainerClient;
 	private Mock<BlobClient> _mockBlobClient;
@@ -24,7 +26,7 @@ public class AzureBlobStorageServiceMockTests: IDisposable
 		_mockBlobServiceClient = new Mock<BlobServiceClient>();
 
 		// Create service with mock setup
-		_service = new AzureBlobStorageServiceWrapper(_connectionString,
+		_service = new AzureBlobStorageServiceWrapper(_connectionString, TestContainerName,
 			_mockBlobServiceClient.Object,
 			_mockBlobContainerClient.Object,
 			_mockBlobClient.Object);
@@ -504,11 +506,11 @@ internal class AzureBlobStorageServiceWrapper: AzureBlobStorageService
 	private readonly BlobClient _blobClient;
 
 	public AzureBlobStorageServiceWrapper(
-		string connectionString,
+		string connectionString, string container,
 		BlobServiceClient blobServiceClient,
 		BlobContainerClient blobContainerClient,
-		BlobClient blobClient)
-		: base(connectionString)
+		BlobClient blobClient):
+		base(connectionString, container)
 	{
 		_blobServiceClient = blobServiceClient;
 		_blobContainerClient = blobContainerClient;

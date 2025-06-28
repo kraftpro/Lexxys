@@ -54,7 +54,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 		_table = parameters.Table is null ? DefaultTable: Clean(parameters.Table, "");
 		_rule = LoggingRule.Create(parameters.Rules, parameters.Include, parameters.Exclude, parameters.LogLevel);
 
-		static string Clean(string? val, string def) => (val = __cleanRex.Replace(val ?? "", "")).Length > 0 ? val : def;
+		static string Clean(string? val, string def) => (val = __cleanRex.Replace(val ?? "", "")).Length > 0 ? val: def;
 	}
 	private static readonly Regex __cleanRex = new Regex("""[\x00- '"\]\[\x7F\*/]""");
 
@@ -87,14 +87,14 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 				AppendInsertEntryStatement(instanceId, record);
 				if (++row >= MaxInsertRowsCount)
 				{
-					_dataContext.Execute(text.ToString());
+					_dataContext.Execute((SqlPart)text.ToString());
 					text.Clear();
 					entry = true;
 					row = 0;
 				}
 			}
 			if (text.Length > 0)
-				_dataContext.Execute(text.ToString());
+				_dataContext.Execute((SqlPart)text.ToString());
 			_errorsCount = 0;
 		}
 		catch (Exception exception)
@@ -128,7 +128,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 				.Append(Dc.Value((int)record.LogType)).Append(',')
 				.Append(Dc.Value((int)record.RecordType)).Append(',')
 				.Append(Dc.Value(record.Indent)).Append(',')
-				.Append(Dc.TextValue(record.Message)).Append(')');
+				.Append(Dc.Value(record.Message)).Append(')');
 			if (record is { Data.Count: > 0 })
 			{
 				text.Append(';').Append(_insertArgTemplate);
@@ -139,7 +139,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 						break;
 					text.Append("\n (@id,")
 						.Append(Dc.Value(item.Name)).Append(',')
-						.Append(Dc.TextValue(item.Value?.ToString())).Append(')');
+						.Append(Dc.Value(item.Value?.ToString())).Append(')');
 				}
 				text.Append(';');
 				entry = true;
@@ -156,10 +156,10 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 			.Append(Dc.Value(instance.Domain)).Append(',')
 			.Append(Dc.Value(instance.Process)).Append(')')
 			.Append(";\nselect cast(scope_identity() as int);");
-		return _dataContext!.GetValue<int>(text.ToString());
+		return _dataContext!.GetValue<int>((SqlPart)text.ToString());
 	}
 
-	private static readonly ConcurrentDictionary<(string Machine, string Domain, int Process), int> __instancesMap = new ConcurrentDictionary<(string, string, int), int>();
+	private static readonly ConcurrentDictionary<(string Machine, string Domain, int Process), int> __instancesMap = [];
 
 	public void Open()
 	{
@@ -214,7 +214,7 @@ public sealed class DatabaseLogWriter: ILogWriter, IDisposable
 		Debug.Assert(_dataContext != null);
 		foreach (string table in CreateTableTemplates)
 		{
-			_dataContext!.Execute(table.Replace("{S}", _schema).Replace("{T}", _table));
+			_dataContext!.Execute((SqlPart)table.Replace("{S}", _schema).Replace("{T}", _table));
 		}
 	}
 

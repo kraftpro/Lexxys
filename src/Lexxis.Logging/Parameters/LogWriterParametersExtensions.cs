@@ -121,7 +121,7 @@ public static partial class LogWriterParameterExtensions
 		else
 		{
 			var rules = new List<LogWriterFilter>(value.Where(o => o != null));
-			parameters.Rules = rules.Count == 0 ? null : rules;
+			parameters.Rules = rules.Count == 0 ? null: rules;
 		}
 		return parameters;
 	}

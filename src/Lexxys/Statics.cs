@@ -14,7 +14,7 @@ public static class Statics
 	{
 		if (serviceType is null)
 			throw new ArgumentNullException(nameof(serviceType));
-		return Instance.ServiceProvider.GetService(serviceType);
+		return Instance.IsInitialized ? Instance.ServiceProvider.GetService(serviceType): null;
 	}
 
 	public static object GetService(Type serviceType)
@@ -42,15 +42,25 @@ public static class Statics
 
 	public static bool AddServices(IEnumerable<ServiceDescriptor> services, bool unique = false) => Instance.AddServices(services, unique);
 
-	public static IServiceCollection AddServices(Func<IServiceCollection, IServiceCollection>? settings = null)
+	public static IServiceCollection AddServices(Action<IServiceCollection>? settings = null)
 	{
 		IServiceCollection sc = new ServiceCollection();
-		sc = settings?.Invoke(sc) ?? sc;
+		settings?.Invoke(sc);
 		Instance.AddServices(sc, true);
 		return sc;
 	}
 
 	#region Configuration
+
+	public static void AddConfigServices(Action<IConfigService>? config = default)
+	{
+		if (Instance.ContainsService<IConfigService>())
+			return;
+		IServiceCollection sc = new ServiceCollection();
+		sc.AddConfigService(config);
+		Instance.AddServices(sc, true);
+	}
+
 
 	public static IConfigSection Config => _config ??= Statics.GetService<IConfigSection>();
 	private static IConfigSection? _config;
@@ -76,7 +86,7 @@ public static class Statics
 	#endregion
 }
 
-public static class StaticServicesExtensions
+public static partial class StaticServicesExtensions
 {
 	public static IServiceCollection UseStatics(this IServiceCollection services)
 	{

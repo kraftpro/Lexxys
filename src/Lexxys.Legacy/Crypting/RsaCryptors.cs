@@ -132,15 +132,13 @@ public class RsaCryptoBase: IEncryptorAlgorithm, IDecryptorAlgorithm, IDisposabl
 
 public class RsaEncryptor: RsaCryptoBase
 {
-	public RsaEncryptor(object key)
-		: base(key, true)
+	public RsaEncryptor(object key): base(key, true)
 	{
 	}
 }
 public class RsaDecryptor: RsaCryptoBase
 {
-	public RsaDecryptor(object key)
-		: base(key, false)
+	public RsaDecryptor(object key): base(key, false)
 	{
 	}
 }

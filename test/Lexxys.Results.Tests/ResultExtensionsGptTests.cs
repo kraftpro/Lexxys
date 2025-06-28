@@ -169,7 +169,7 @@ public class ResultExtensionsGptTests
 	public async Task Assert_Success_Valid()
 	{
 		var result = new SuccessResult<int>(5);
-		var asserted = result.Assert(x => x > 0 ? null : new ErrorResult("negative"));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("negative"));
 		await Assert.That(asserted.IsSuccess).IsTrue();
 		await Assert.That(asserted.Value).IsEqualTo(5);
 	}
@@ -178,7 +178,7 @@ public class ResultExtensionsGptTests
 	public async Task Assert_Success_Invalid()
 	{
 		var result = new SuccessResult<int>(-1);
-		var asserted = result.Assert(x => x > 0 ? null : new ErrorResult("negative"));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("negative"));
 		await Assert.That(asserted.IsFailure).IsTrue();
 		await Assert.That(asserted.Error.Message).IsEqualTo("negative");
 	}

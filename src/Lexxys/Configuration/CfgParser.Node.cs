@@ -281,14 +281,14 @@ public ref partial struct CfgParser
 
 	//	public ObjectNode(string name, string? value = default): base(name, value) => Items = [];
 
-	//	public ObjectNode(string name, List<Node>? items, string? value = default) : base(name, value) => Items = items ?? [];
+	//	public ObjectNode(string name, List<Node>? items, string? value = default): base(name, value) => Items = items ?? [];
 	//}
 
 	//public class ArrayNode: Node
 	//{
 	//	public string? ItemName { get; set; }
 	//	public List<Node> Items { get; }
-	//	public ArrayNode(string name, string? value = default) : base(name, value) => Items = [];
-	//	public ArrayNode(string name, List<Node>? items, string? value = default) : base(name, value) => Items = items ?? [];
+	//	public ArrayNode(string name, string? value = default): base(name, value) => Items = [];
+	//	public ArrayNode(string name, List<Node>? items, string? value = default): base(name, value) => Items = items ?? [];
 	//}
 }

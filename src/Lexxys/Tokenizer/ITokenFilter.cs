@@ -59,8 +59,8 @@ public class PushFilter: ITokenFilter
 	public void Push(LexicalToken value) => _stack.Push(value);
 
 	public LexicalToken GetNextToken(ITokenParser parser, in TokenScanner scanner, ref CharStream stream)
-		=> _stack.Count > 0 ? _stack.Pop() :
-			parser is null ? throw new ArgumentNullException(nameof(parser)) :
+		=> _stack.Count > 0 ? _stack.Pop():
+			parser is null ? throw new ArgumentNullException(nameof(parser)):
 			parser.GetNextToken(in scanner, ref stream);
 
 	public void Reset() => _stack.Clear();
@@ -238,7 +238,7 @@ public class NthBackFilter: ITokenFilter
 	{
 		if (_count == 0)
 			return LexicalToken.Empty;
-		return _trace[_top == 0 ? _trace.Length - 1 : _top];
+		return _trace[_top == 0 ? _trace.Length - 1: _top];
 	}
 
 	private LexicalToken Pop()

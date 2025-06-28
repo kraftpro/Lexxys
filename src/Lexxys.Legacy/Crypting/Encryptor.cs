@@ -33,7 +33,7 @@ public class Encryptor
 			_algorithm.EncryptStream(bits, text);
 			return;
 		}
-		int bsize = _algorithm.BlockSize == 0 ? 4 * 1024 : _algorithm.BlockSize;
+		int bsize = _algorithm.BlockSize == 0 ? 4 * 1024: _algorithm.BlockSize;
 		byte[] buffer = new byte[bsize];
 		byte[] ciph = new byte[bsize];	// Filled by zero by default
 		int n;

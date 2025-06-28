@@ -198,22 +198,22 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 							"4" => __severity4[(int)record.LogType],
 							"5" => __severity5[(int)record.LogType],
 							"X" => item.Format[0] == 'x' ?
-										__severity1[(int)record.LogType].ToLowerInvariant() :
+										__severity1[(int)record.LogType].ToLowerInvariant():
 										__severity1[(int)record.LogType],
 							"XXX" => item.Format[0] == 'x' ?
-										__severity3[(int)record.LogType].ToLowerInvariant() :
+										__severity3[(int)record.LogType].ToLowerInvariant():
 									item.Format[1] == 'X' ?
-										__severity3[(int)record.LogType].ToUpperInvariant() :
+										__severity3[(int)record.LogType].ToUpperInvariant():
 										__severity3[(int)record.LogType],
 							"XXXX" => item.Format[0] == 'x' ?
-										__severity4[(int)record.LogType].ToLowerInvariant() :
+										__severity4[(int)record.LogType].ToLowerInvariant():
 									item.Format[1] == 'X' ?
-										__severity5[(int)record.LogType].ToUpperInvariant() :
+										__severity5[(int)record.LogType].ToUpperInvariant():
 										__severity4[(int)record.LogType],
 							"XXXXX" => item.Format[0] == 'x' ?
-										__severity5[(int)record.LogType].ToLowerInvariant() :
+										__severity5[(int)record.LogType].ToLowerInvariant():
 									item.Format[1] == 'X' ?
-										__severity5[(int)record.LogType].ToUpperInvariant() :
+										__severity5[(int)record.LogType].ToUpperInvariant():
 										__severity5[(int)record.LogType],
 							"D" => ((int)record.LogType).ToString(),
 							_ => __severity5[(int)record.LogType],
@@ -525,8 +525,8 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 		private readonly string _nl;
 		private bool _lf;
 
-		public DumpTextWriter(TextWriter writer, string newLine, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0)
-			: base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
+		public DumpTextWriter(TextWriter writer, string newLine, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0):
+			base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
 		{
 			_w = writer ?? throw new ArgumentNullException(nameof(writer));
 			_nl = newLine ?? throw new ArgumentNullException(nameof(newLine));
@@ -539,7 +539,7 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 				return this;
 			text ??= NullValue;
 			int length = text.Length;
-			var value = Left < length ? text.AsSpan(0, Left) : text.AsSpan();
+			var value = Left < length ? text.AsSpan(0, Left): text.AsSpan();
 			if (value.Length == 0)
 				return this;
 

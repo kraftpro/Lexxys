@@ -44,7 +44,7 @@
 //				new SequenceTokenRule("{", "}", "[", "]")
 //					.Add(COMMA, ",")
 //					.Add(EQUAL, "=")
-//					.Add(COLON, ":", ':', (o, _) => o[0] != ':' ? 0 : o[1] switch { ' ' or '\t' => 2, '\n' or '\r' => 1, _ => 0 })
+//					.Add(COLON, ":", ':', (o, _) => o[0] != ':' ? 0: o[1] switch { ' ' or '\t' => 2, '\n' or '\r' => 1, _ => 0 })
 //					.Add(DASH, "-", '-', (o, _) => o[0] != '-' ? 0: o[1] switch { ' ' or '\t' => 2, '\n' or '\r' => 1, _ => 0 })
 //					.Add(THREEDASHES, "---")
 //					.Add(THREEDOTS, "...")

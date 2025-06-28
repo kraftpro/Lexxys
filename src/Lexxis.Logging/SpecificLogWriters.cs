@@ -381,7 +381,7 @@ public class EventLogLogWriter: LogWriter
 
 	private readonly string? _eventSource;
 
-	public EventLogLogWriter(LoggingEventParameters parameters) : base(parameters)
+	public EventLogLogWriter(LoggingEventParameters parameters): base(parameters)
 	{
 		_eventSource = GetEventSource(parameters.EventSource, parameters.LogName);
 	}

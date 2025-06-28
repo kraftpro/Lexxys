@@ -27,7 +27,7 @@ public readonly struct FilePosition: IEquatable<FilePosition>, IComparable<FileP
 		Column = position.Column + 1;
 	}
 
-	public override string ToString() => FileName == null ? $"{Line}:{Column}" : $"{FileName}({Line}:{Column})";
+	public override string ToString() => FileName == null ? $"{Line}:{Column}": $"{FileName}({Line}:{Column})";
 
 	public override int GetHashCode() => HashCode.Join(Line, Column);
 

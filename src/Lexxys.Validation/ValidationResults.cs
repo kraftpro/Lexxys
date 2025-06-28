@@ -20,7 +20,7 @@ public readonly struct ValidationResults: IEnumerable<ValidationResultsItem>
 
 	private readonly ValidationResultsItem[]? _items;
 
-	private ValidationResults(ValidationResultsItem[] items) => _items = items.Length > 0 ? items : null;
+	private ValidationResults(ValidationResultsItem[] items) => _items = items.Length > 0 ? items: null;
 
 	public static ValidationResults Create(string? field)
 	{
@@ -104,19 +104,19 @@ public readonly struct ValidationResults: IEnumerable<ValidationResultsItem>
 		return items == null ? Empty: new ValidationResults(items.ToArray());
 	}
 
-	public static ValidationResults Assert(bool success, ValidationResults value) => success ? Empty : value;
+	public static ValidationResults Assert(bool success, ValidationResults value) => success ? Empty: value;
 
-	public static ValidationResults Assert(bool success, string field) => success ? Empty : Create(field);
+	public static ValidationResults Assert(bool success, string field) => success ? Empty: Create(field);
 
-	public static ValidationResults Assert(bool success, string field, string message) => success ? Empty : Create(field, message);
+	public static ValidationResults Assert(bool success, string field, string message) => success ? Empty: Create(field, message);
 
-	public static ValidationResults Assert(bool success, string field, ErrorInfo errorInfo) => success ? Empty : Create(field, errorInfo);
+	public static ValidationResults Assert(bool success, string field, ErrorInfo errorInfo) => success ? Empty: Create(field, errorInfo);
 
-	public static ValidationResults Assert(bool success, string field, ErrorInfo errorInfo, string message) => success ? Empty : Create(field, errorInfo, message);
+	public static ValidationResults Assert(bool success, string field, ErrorInfo errorInfo, string message) => success ? Empty: Create(field, errorInfo, message);
 
-	public static ValidationResults AssertNotNull<T>(T? value, string field) => value is not null ? Empty : Create(field, ErrorInfo.NullValue());
+	public static ValidationResults AssertNotNull<T>(T? value, string field) => value is not null ? Empty: Create(field, ErrorInfo.NullValue());
 
-	public static ValidationResults AssertNull<T>(T? value, string field) => value is null ? Empty : Create(field, ErrorInfo.OutOfRange(value));
+	public static ValidationResults AssertNull<T>(T? value, string field) => value is null ? Empty: Create(field, ErrorInfo.OutOfRange(value));
 
 	public static ValidationResults Parse(string? value)
 	{
@@ -461,10 +461,10 @@ public readonly struct ValidationResults: IEnumerable<ValidationResultsItem>
 
 	public static bool operator false(ValidationResults value) => !value.Success;
 
-	private static string? CleanName(string? value) => value == null || (value = value.Trim(__nameWhiteSpace)).Length == 0 ? null : value.ToUpperInvariant();
+	private static string? CleanName(string? value) => value == null || (value = value.Trim(__nameWhiteSpace)).Length == 0 ? null: value.ToUpperInvariant();
 	private static readonly char[] __nameWhiteSpace = [ErrorSeparator, ' ', '\t', '\n', '\r', '\f'];
 
-	private static string? CleanMessage(string? value) => value == null || (value = value.Trim(__messageWhiteSpace)).Length == 0 ? null : value;
+	private static string? CleanMessage(string? value) => value == null || (value = value.Trim(__messageWhiteSpace)).Length == 0 ? null: value;
 	private static readonly char[] __messageWhiteSpace = [FieldSeparator, ErrorSeparator, ' ', '\t', '\n', '\r', '\f'];
 
 	private static string[]? SplitName(string? value, out int length)

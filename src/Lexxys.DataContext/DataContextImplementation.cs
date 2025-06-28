@@ -248,7 +248,7 @@ class DataContextImplementation: IDisposable
 			Connect();
 			var t = Audit.Start();
 			Audit.GroupBegin();
-			_transaction = _connection.BeginTransaction(iso == default ? Dc.DefaultIsolationLevel : iso);
+			_transaction = _connection.BeginTransaction(iso == default ? Dc.DefaultIsolationLevel: iso);
 			_transactionsCount = 1;
 			Audit.TransactionEnd(t);
 			return 1;
@@ -413,18 +413,18 @@ class DataContextImplementation: IDisposable
 		}
 	}
 
-	public DbCommand Command(string query, params DataParameter[] parameters)
+	public DbCommand Command(SqlPart query, params DataParameter[] parameters)
 	{
-		if (query is not { Length: >0 })
+		if (query.IsEmpty)
 			throw new ArgumentNullException(nameof(query));
 
-		return SetTimeout(NewCommand(query).WithParameters(parameters));
+		return SetTimeout(NewCommand(query.Value).WithParameters(parameters));
 	}
 
 	private DbCommand SetTimeout(DbCommand command)
 	{
 		if (_commandTimeout.Ticks > 0)
-			command.CommandTimeout = _commandTimeout.Ticks > TimeSpan.TicksPerDay ? 0 : (int)(_commandTimeout.Ticks / TimeSpan.TicksPerSecond);
+			command.CommandTimeout = _commandTimeout.Ticks > TimeSpan.TicksPerDay ? 0: (int)(_commandTimeout.Ticks / TimeSpan.TicksPerSecond);
 		_commandTimeout = _defaultCommandTimeout;
 		return command;
 	}

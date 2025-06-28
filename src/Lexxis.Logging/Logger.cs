@@ -197,10 +197,10 @@ public class Logger: ILogging
 		{
 			if (threshold == 0)
 			{
-				var rec = new LogRecord(LogGroupingType.BeginGroup, logType, log.Source, (sectionName == null ? SR.LOG_BeginSection() : SR.LOG_BeginSection(sectionName)), arg);
+				var rec = new LogRecord(LogGroupingType.BeginGroup, logType, log.Source, (sectionName == null ? SR.LOG_BeginSection(): SR.LOG_BeginSection(sectionName)), arg);
 				log.Log(rec);
 			}
-			return new Entry(log, (sectionName == null ? SR.LOG_EndSection() : SR.LOG_EndSection(sectionName)), logType, threshold, threshold == 0 ? null : arg);
+			return new Entry(log, (sectionName == null ? SR.LOG_EndSection(): SR.LOG_EndSection(sectionName)), logType, threshold, threshold == 0 ? null: arg);
 		}
 
 		public static Entry Create(Logger log, string? startMessage, string? endMessage, LogType logType, int threshold, IEnumerable<NameValueTuple<string, object?>>? arg)
@@ -210,7 +210,7 @@ public class Logger: ILogging
 				var rec = new LogRecord(LogGroupingType.BeginGroup, logType, log.Source, startMessage ?? SR.LOG_BeginGroup(), arg);
 				log.Log(rec);
 			}
-			return new Entry(log, (endMessage ?? SR.LOG_EndGroup()), logType, threshold, threshold == 0 ? null : arg);
+			return new Entry(log, (endMessage ?? SR.LOG_EndGroup()), logType, threshold, threshold == 0 ? null: arg);
 		}
 
 		void IDisposable.Dispose()
@@ -222,7 +222,7 @@ public class Logger: ILogging
 				if (_threshold == 0 || _threshold <= time)
 				{
 					_log.Log(
-						new LogRecord(_threshold == 0 ? LogGroupingType.EndGroup : LogGroupingType.Message,
+						new LogRecord(_threshold == 0 ? LogGroupingType.EndGroup: LogGroupingType.Message,
 							_logType, _log.Source, _endMessage + " (" + WatchTimer.ToString(time, false) + ")", _arg)
 						);
 				}

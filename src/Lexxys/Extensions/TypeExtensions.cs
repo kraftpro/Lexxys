@@ -92,10 +92,10 @@ public static class TypeExtensions
 			BuildTypeName(text, args[i]);
 			c = ',';
 		}
-		return text.Append(valueType ? ')' : '>');
+		return text.Append(valueType ? ')': '>');
 	}
 
-	private static string SimpleName(Type type) => __builtInTypes.TryGetValue(type, out var s) ? s : type.Name;
+	private static string SimpleName(Type type) => __builtInTypes.TryGetValue(type, out var s) ? s: type.Name;
 
 	private static readonly Dictionary<Type, string> __builtInTypes = new()
 	{

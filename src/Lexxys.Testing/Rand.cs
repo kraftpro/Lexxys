@@ -145,7 +145,7 @@ public static class Rand
 	/// <param name="trueValue">The value to return if the event occurs.</param>
 	/// <param name="falseValue">The value to return if the event does not occur.</param>
 	/// <returns></returns>
-	public static T Case<T>(double bound, T trueValue, T falseValue) => Bool(bound) ? trueValue : falseValue;
+	public static T Case<T>(double bound, T trueValue, T falseValue) => Bool(bound) ? trueValue: falseValue;
 
 	/// <summary>
 	/// Returns <paramref name="case1"/> with probability <paramref name="bound1"/>, <paramref name="case2"/> with probability <paramref name="bound2"/> and <paramref name="falseValue"/> otherwise.
@@ -158,8 +158,8 @@ public static class Rand
 	/// <param name="falseValue">The value to return if the events do not occur.</param>
 	/// <returns></returns>
 	public static T Case<T>(double bound1, T case1, double bound2, T case2, T falseValue) =>
-		Bool(bound1) ? case1 :
-		Bool(bound2) ? case2 : falseValue;
+		Bool(bound1) ? case1:
+		Bool(bound2) ? case2: falseValue;
 
 	/// <summary>
 	/// Returns <paramref name="case1"/> with probability <paramref name="bound1"/>, <paramref name="case2"/> with probability <paramref name="bound2"/>, <paramref name="case3"/> with probability <paramref name="bound3"/> and <paramref name="falseValue"/> otherwise.
@@ -174,9 +174,9 @@ public static class Rand
 	/// <param name="falseValue">The value to return if the events do not occur.</param>
 	/// <returns></returns>
 	public static T Case<T>(double bound1, T case1, double bound2, T case2, double bound3, T case3, T falseValue) =>
-		Bool(bound1) ? case1 :
-		Bool(bound2) ? case2 :
-		Bool(bound3) ? case3 : falseValue;
+		Bool(bound1) ? case1:
+		Bool(bound2) ? case2:
+		Bool(bound3) ? case3: falseValue;
 
 	/// <summary>
 	/// Returns <paramref name="case1"/> with probability <paramref name="bound1"/>, <paramref name="case2"/> with probability <paramref name="bound2"/>, <paramref name="case3"/> with probability <paramref name="bound3"/>, <paramref name="case4"/> with probability <paramref name="bound4"/> and <paramref name="falseValue"/> otherwise.
@@ -192,10 +192,10 @@ public static class Rand
 	/// <param name="case4">The value to return if the fourth event occurs.</param>
 	/// <param name="falseValue">The value to return if the events do not occur.</param>
 	public static T Case<T>(double bound1, T case1, double bound2, T case2, double bound3, T case3, double bound4, T case4, T falseValue) =>
-		Bool(bound1) ? case1 :
-		Bool(bound2) ? case2 :
-		Bool(bound3) ? case3 :
-		Bool(bound4) ? case4 : falseValue;
+		Bool(bound1) ? case1:
+		Bool(bound2) ? case2:
+		Bool(bound3) ? case3:
+		Bool(bound4) ? case4: falseValue;
 
 	/// <summary>
 	/// Returns a random element from the specified <paramref name="values"/>.

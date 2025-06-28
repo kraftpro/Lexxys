@@ -32,7 +32,7 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 		MonthList = Months(monthList);
 	}
 
-	public MonthlySchedule(ScheduleWeekType week, DayOfWeek weekDay, IEnumerable<int>? monthList = null, ScheduleReminder? reminder = null) : base(Type, reminder)
+	public MonthlySchedule(ScheduleWeekType week, DayOfWeek weekDay, IEnumerable<int>? monthList = null, ScheduleReminder? reminder = null): base(Type, reminder)
 	{
 		if (week == ScheduleWeekType.None) throw new ArgumentOutOfRangeException(nameof(week), week, null);
 
@@ -45,7 +45,7 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 	{
 		if (monthList == null) return AllMonths;
 		var ss = new SortedSet<int>(monthList.Where(o => o is >= 1 and <= 12)).ToList();
-		return ss.Count == 0 || ss.Count == 12 ? AllMonths : ReadOnly.Wrap(ss)!;
+		return ss.Count == 0 || ss.Count == 12 ? AllMonths: ReadOnly.Wrap(ss)!;
 	}
 	private static readonly IReadOnlyList<int> AllMonths = ReadOnly.Wrap(new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 })!;
 

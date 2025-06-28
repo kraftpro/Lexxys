@@ -16,10 +16,9 @@ public class WhiteSpaceTokenRule: LexicalTokenRule
 		NewLineTokenType = newLineToken;
 	}
 
-	public WhiteSpaceTokenRule(bool keepWhiteSpace = false, bool keepNewLine = false, bool keepNewLineCount = false)
-		: this(
-			keepWhiteSpace ? LexicalTokenType.WHITESPACE : LexicalTokenType.IGNORE, 
-			keepNewLine ? keepNewLineCount ? LexicalTokenType.NEWLINE2: LexicalTokenType.NEWLINE : LexicalTokenType.IGNORE)
+	public WhiteSpaceTokenRule(bool keepWhiteSpace = false, bool keepNewLine = false, bool keepNewLineCount = false): this(
+		keepWhiteSpace ? LexicalTokenType.WHITESPACE: LexicalTokenType.IGNORE, 
+		keepNewLine ? keepNewLineCount ? LexicalTokenType.NEWLINE2: LexicalTokenType.NEWLINE: LexicalTokenType.IGNORE)
 	{
 	}
 

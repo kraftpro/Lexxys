@@ -237,7 +237,7 @@ public readonly struct Money:
 	public Money[] Allocate(params double[] baskets)
 	{
 		if (baskets == null) throw new ArgumentNullException(nameof(baskets));
-		if (baskets.Length < 2) return baskets.Length == 0 ? [] : [this];
+		if (baskets.Length < 2) return baskets.Length == 0 ? []: [this];
 
 		double total = 0;
 		for (int i = 0; i < baskets.Length; i++)
@@ -409,7 +409,7 @@ public readonly struct Money:
 			throw new ArgumentException(SR.DifferentCurrencyCodes(value.Currency, min.Currency));
 		if (value.Currency != max.Currency)
 			throw new ArgumentException(SR.DifferentCurrencyCodes(value.Currency, max.Currency));
-		return value < min ? min : value > max ? max : value;
+		return value < min ? min: value > max ? max: value;
 	}
 
 	/// <summary>
@@ -438,14 +438,14 @@ public readonly struct Money:
 	{
 		if (x.Currency != y.Currency)
 			throw new ArgumentException(SR.DifferentCurrencyCodes(x.Currency, y.Currency));
-		return x._value < y._value ? y : x;
+		return x._value < y._value ? y: x;
 	}
 
 	public static Money Min(Money x, Money y)
 	{
 		if (x.Currency != y.Currency)
 			throw new ArgumentException(SR.DifferentCurrencyCodes(x.Currency, y.Currency));
-		return x._value > y._value ? y : x;
+		return x._value > y._value ? y: x;
 	}
 
 	public static Money Parse(string s, NumberStyles style, IFormatProvider? provider)
@@ -688,7 +688,7 @@ public readonly struct Money:
 	{
 		if (builder is null)
 			throw new ArgumentNullException(nameof(builder));
-		return builder.InAttribute ? builder.Value(XmlTools.Convert(Amount) + " " + Currency.Code) :
+		return builder.InAttribute ? builder.Value(XmlTools.Convert(Amount) + " " + Currency.Code):
 			builder.Item("amount", Amount).Item("currency", Currency.Code);
 	}
 
@@ -697,7 +697,7 @@ public readonly struct Money:
 	{
 		if (json is null)
 			throw new ArgumentNullException(nameof(json));
-		return json.InArray ? json.Val(XmlTools.Convert(Amount) + " " + Currency.Code) :
+		return json.InArray ? json.Val(XmlTools.Convert(Amount) + " " + Currency.Code):
 			json.Item("amount").Val(Amount).Item("currency").Val(Currency.Code);
 	}
 
@@ -1002,13 +1002,13 @@ public readonly struct Money:
 		if (typeof(TOther) == typeof(double))
 		{
 			var dv = (double)(object)value;
-			result = new Money((ulong)(dv > (double)c.MaxValue ? long.MaxValue : dv < (double)c.MinValue ? long.MinValue : (long)(dv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+			result = new Money((ulong)(dv > (double)c.MaxValue ? long.MaxValue: dv < (double)c.MinValue ? long.MinValue: (long)(dv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(float))
 		{
 			var fv = (float)(object)value;
-			result = new Money((ulong)(fv > (float)c.MaxValue ? long.MaxValue : fv < (float)c.MinValue ? long.MinValue : (long)(fv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+			result = new Money((ulong)(fv > (float)c.MaxValue ? long.MaxValue: fv < (float)c.MinValue ? long.MinValue: (long)(fv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(Half))
@@ -1022,7 +1022,7 @@ public readonly struct Money:
 			var lv = (long)(object)value;
 			var minInt = long.MinValue / c.Multiplier;
 			var maxInt = long.MaxValue / c.Multiplier;
-			result = new Money((ulong)(lv > maxInt ? long.MaxValue : lv < minInt ? long.MinValue : lv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+			result = new Money((ulong)(lv > maxInt ? long.MaxValue: lv < minInt ? long.MinValue: lv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(Int128))
@@ -1030,7 +1030,7 @@ public readonly struct Money:
 			var xv = (Int128)(object)value;
 			var minInt = long.MinValue / c.Multiplier;
 			var maxInt = long.MaxValue / c.Multiplier;
-			result = new Money((ulong)(xv > maxInt ? long.MaxValue : xv < minInt ? long.MinValue : (long)xv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
+			result = new Money((ulong)(xv > maxInt ? long.MaxValue: xv < minInt ? long.MinValue: (long)xv * Currency.ApplicationDefault.Multiplier), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(int))
@@ -1067,19 +1067,19 @@ public readonly struct Money:
 		if (typeof(TOther) == typeof(decimal))
 		{
 			var nv = (decimal)(object)value;
-			result = new Money((ulong)(nv > c.MaxValue ? long.MaxValue : nv < c.MinValue ? long.MinValue : (long)(nv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+			result = new Money((ulong)(nv > c.MaxValue ? long.MaxValue: nv < c.MinValue ? long.MinValue: (long)(nv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(double))
 		{
 			var dv = (double)(object)value;
-			result = new Money((ulong)(dv > (double)c.MaxValue ? long.MaxValue : dv < (double)c.MinValue ? long.MinValue : (long)(dv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+			result = new Money((ulong)(dv > (double)c.MaxValue ? long.MaxValue: dv < (double)c.MinValue ? long.MinValue: (long)(dv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(float))
 		{
 			var fv = (float)(object)value;
-			result = new Money((ulong)(fv > (float)c.MaxValue ? long.MaxValue : fv < (float)c.MinValue ? long.MinValue : (long)(fv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
+			result = new Money((ulong)(fv > (float)c.MaxValue ? long.MaxValue: fv < (float)c.MinValue ? long.MinValue: (long)(fv * Currency.ApplicationDefault.Multiplier)), Currency.ApplicationDefault);
 			return true;
 		}
 		if (typeof(TOther) == typeof(Half))
@@ -1224,12 +1224,12 @@ public readonly struct Money:
 		}
 		if (typeof(TOther) == typeof(short))
 		{
-			result = (TOther)(object)(value > short.MaxValue ? short.MaxValue : value < short.MinValue ? short.MinValue : (short)value);
+			result = (TOther)(object)(value > short.MaxValue ? short.MaxValue: value < short.MinValue ? short.MinValue: (short)value);
 			return true;
 		}
 		if (typeof(TOther) == typeof(sbyte))
 		{
-			result = (TOther)(object)(value > sbyte.MaxValue ? sbyte.MaxValue : value < sbyte.MinValue ? sbyte.MinValue : (sbyte)value);
+			result = (TOther)(object)(value > sbyte.MaxValue ? sbyte.MaxValue: value < sbyte.MinValue ? sbyte.MinValue: (sbyte)value);
 			return true;
 		}
 		result = default;
@@ -1261,7 +1261,7 @@ public readonly struct Money:
 		}
 		if (typeof(TOther) == typeof(Half))
 		{
-			result = (TOther)(object)(value > 65504 ? Half.MaxValue : value < -65504 ? Half.MinValue : (Half)(float)value);
+			result = (TOther)(object)(value > 65504 ? Half.MaxValue: value < -65504 ? Half.MinValue: (Half)(float)value);
 			return true;
 		}
 		if (typeof(TOther) == typeof(long))
@@ -1701,22 +1701,22 @@ public readonly struct Money:
 	static Money IMultiplyOperators<Money, Money, Money>.operator *(Money left, Money right) => left * right.Amount;
 
 	/// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-	static Money INumber<Money>.Clamp(Money value, Money min, Money max) => value < min ? min : value > max ? max : value;
+	static Money INumber<Money>.Clamp(Money value, Money min, Money max) => value < min ? min: value > max ? max: value;
 
 	/// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-	static Money INumber<Money>.CopySign(Money value, Money sign) => (value._value & long.MinValue) == (sign._value & long.MinValue) ? value : -value;
+	static Money INumber<Money>.CopySign(Money value, Money sign) => (value._value & long.MinValue) == (sign._value & long.MinValue) ? value: -value;
 
 	/// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-	static Money INumber<Money>.Max(Money x, Money y) => x > y ? x : y;
+	static Money INumber<Money>.Max(Money x, Money y) => x > y ? x: y;
 
 	/// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
-	static Money INumber<Money>.MaxNumber(Money x, Money y) => x > y ? x : y;
+	static Money INumber<Money>.MaxNumber(Money x, Money y) => x > y ? x: y;
 
 	/// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-	static Money INumber<Money>.Min(Money x, Money y) => x < y ? x : y;
+	static Money INumber<Money>.Min(Money x, Money y) => x < y ? x: y;
 
 	/// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
-	static Money INumber<Money>.MinNumber(Money x, Money y) => x < y ? x : y;
+	static Money INumber<Money>.MinNumber(Money x, Money y) => x < y ? x: y;
 
 #endif
 
