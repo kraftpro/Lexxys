@@ -2,13 +2,13 @@ using System;
 
 namespace Lexxys.Configuration.New;
 
-public static class ConfigNodeExtensions
+public static partial class ConfigNodeExtensions
 {
 
-    public static T? AsValue<T>(this ConfigNode? node)
+    public static T AsValue<T>(this ConfigNode node)
     {
-        if (node is null or node.IsEmpty)
-            return default;
+        if (node.IsEmpty)
+            return default!;
 
         if (typeof(T) == typeof(ConfigNode))
             return (T)(object)node;
@@ -19,7 +19,7 @@ public static class ConfigNodeExtensions
         if (typeof(T) == typeof(string))
             return (T)(object)node.ToString();
 
-		if ()
+		return default!;
     }
 
 }

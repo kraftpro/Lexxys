@@ -17,7 +17,7 @@ public class ResultTests
 	public async Task Result_Fail_ShouldCreateErrorResult()
 	{
 		// Act
-		var error = Result.Fail("Error message", "Error title", 500, new[] { ("key1", "value1") });
+		var error = Result.Fail("Error message", "Error title", 500, [("key1", (string?)"value1")]);
 
 		// Assert
 		await Assert.That(error.Message).IsEqualTo("Error message");
@@ -86,7 +86,8 @@ public class ResultTests
 		if (success)
 		{
 			// This should execute
-			await Assert.That(true).IsTrue();
+			var t = true;
+			await Assert.That(t).IsTrue();
 		}
 		else
 		{
@@ -162,23 +163,25 @@ public class ResultTests
 	}
 
 	[Test]
-	public async Task ResultGeneric_AccessingValueOnFailure_ShouldThrowException()
+	public Task ResultGeneric_AccessingValueOnFailure_ShouldThrowException()
 	{
 		// Arrange
 		Result<int> result = new ErrorResult("Error");
 
 		// Act - should throw
 		Assert.Throws<InvalidOperationException>(() => _ = result.Value);
+		return Task.CompletedTask;
 	}
 
 	[Test]
-	public async Task ResultGeneric_AccessingErrorOnSuccess_ShouldThrowException()
+	public Task ResultGeneric_AccessingErrorOnSuccess_ShouldThrowException()
 	{
 		// Arrange
 		Result<int> result = 42;
 
 		// Act - should throw
 		Assert.Throws<InvalidOperationException>(() => _ = result.Error);
+		return Task.CompletedTask;
 	}
 
 	[Test]
@@ -197,10 +200,10 @@ public class ResultTests
 	public async Task SuccessResult_ToString_ShouldFormatCorrectly()
 	{
 		// Arrange & Act
-		var nullResult = new SuccessResult<string>(null);
+		var nullResult = new SuccessResult<string?>(null);
 		var stringResult = new SuccessResult<string>("test");
 		var intResult = new SuccessResult<int>(42);
-		var listResult = new SuccessResult<List<int>>(new List<int> { 1, 2, 3 });
+		var listResult = new SuccessResult<List<int>>([1, 2, 3]);
 
 		// Assert
 		await Assert.That(nullResult.ToString()).IsEqualTo("Success: null");

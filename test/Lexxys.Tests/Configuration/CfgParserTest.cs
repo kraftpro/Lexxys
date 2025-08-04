@@ -308,7 +308,7 @@ public class CfgParserTest
 			% $items = [1,2, 3, <#4,#> 5]
 
 			config
-				${{name}}: ${{api}}
+				${{name}}: "${{api}}"
 				count "${{count}}"
 				items ${{items}}
 				root ${{root}}
