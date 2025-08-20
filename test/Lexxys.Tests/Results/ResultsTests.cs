@@ -168,25 +168,23 @@ public class ResultTests
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(InvalidOperationException))]
 	public void ResultGeneric_AccessingValueOnFailure_ShouldThrowException()
 	{
 		// Arrange
 		Result<int> result = new ErrorResult("Error");
 
 		// Act - should throw
-		_ = result.Value;
+		Assert.ThrowsExactly<InvalidOperationException>(() => _ = result.Value);
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(InvalidOperationException))]
 	public void ResultGeneric_AccessingErrorOnSuccess_ShouldThrowException()
 	{
 		// Arrange
 		Result<int> result = 42;
 
 		// Act - should throw
-		_ = result.Error;
+		Assert.ThrowsExactly<InvalidOperationException>(() => _ = result.Error);
 	}
 
 	[TestMethod]

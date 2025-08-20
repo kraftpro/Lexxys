@@ -69,7 +69,7 @@ public sealed class SqlServerDataContext: IDataContext
 
 	public bool InTransaction => _context.TransactionsCount > 0;
 
-	public DateTime Now => _context.Now;
+	public ITimeProvider Time => _context.Time;
 
 	public IContextHolder Connection() => new Dc.Connecting(this);
 

@@ -40,9 +40,9 @@ public interface IDataContext: IDisposable
 	bool InTransaction { get; }
 
 	/// <summary>
-	/// Returns the current date and time on the database server.
+	/// Returns the current date and time on the database server as a <see cref="ITimeProvider"/>.
 	/// </summary>
-	DateTime Now { get; }
+	ITimeProvider Time { get;}
 
 	/// <summary>
 	/// Action to be executed when the database transaction is canceled.

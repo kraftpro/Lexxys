@@ -19,10 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MSTest" Version="3.9.*" />
+    <PackageReference Include="MSTest" Version="3.10.*" />
     <PackageReference Include="BenchmarkDotNet" Version="0.15.*" />
-    <PackageReference Include="System.Formats.Asn1" Version="9.0.*" />
-    <PackageReference Include="System.Private.Uri" Version="4.3.2" />
   </ItemGroup>
 
   <ItemGroup>

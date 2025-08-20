@@ -3,47 +3,77 @@ using System.Text;
 
 namespace Lexxys.Configuration.New;
 
+/// <summary>
+/// Represents a configuration node that can hold either a single value or a collection of configuration nodes.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <see cref="ConfigNode"/> is an immutable struct used to model hierarchical configuration data.
+/// It can encapsulate a string value, a collection of child nodes, or both.
+/// </para>
+/// </remarks>
 public readonly partial struct ConfigNode: IEquatable<ConfigNode>
 {
-	public ConfigNode(string? value) => Value = value;
+	/// <summary>
+	/// Initializes a new instance of the <see cref="ConfigNode"/> struct with an value and optional collection.
+	/// </summary>
+	/// <param name="value">The string value of the configuration node.</param>
+	/// <param name="collection">An optional collection of child configuration nodes.</param>
+	public ConfigNode(string? value, ConfigNodeCollection? collection = null) => (Value, Collection) = (value, collection);
 
-	public ConfigNode(ConfigNodeCollection collection) => Collection = collection;
+	/// <summary>
+	/// Initializes a new instance of the <see cref="ConfigNode"/> struct with an collection.
+	/// </summary>
+	/// <param name="collection">The collection of child configuration nodes.</param>
+	/// <exception cref="ArgumentNullException"></exception>
+	public ConfigNode(ConfigNodeCollection collection) => Collection = collection ?? throw new ArgumentNullException(nameof(collection));
 
+	/// <summary>
+	/// Gets the string value of the configuration node.
+	/// </summary>
 	public string? Value { get; }
 
+	/// <summary>
+	/// Gets the collection of child configuration nodes.
+	/// </summary>
 	public ConfigNodeCollection? Collection { get; }
 
-	public bool IsValue => Value != null;
+	/// <summary>
+	/// Gets a value indicating whether the configuration node is empty.
+	/// A node is considered empty if it has no value and no child nodes.
+	/// </summary>
+	public bool IsEmpty => String.IsNullOrEmpty(Value) && Collection.IsEmpty();
 
-	public bool IsCollection => Collection != null;
-
-	public bool IsEmpty => Value == null && Collection == null;
-
-	internal static ConfigNode Join(IReadOnlyCollection<ConfigNode>? nodes)
-	{
-		if (nodes is null || nodes.Count == 0) return new ConfigNode();
-		if (nodes.Count == 1) return nodes.FirstOrDefault();
-		return new ConfigNode(new ConfigNodeCollection(nodes));
-	}
+	// internal static ConfigNode Join(IReadOnlyCollection<ConfigNode>? nodes)
+	// {
+	// 	if (nodes is null || nodes.Count == 0) return new ConfigNode();
+	// 	if (nodes.Count == 1) return nodes.FirstOrDefault()!;
+	// 	return new ConfigNode(new ConfigNodeCollection(nodes));
+	// }
 
 	public bool Equals(ConfigNode other)
 	{
-		if (Value != null)
-			return Value == other.Value;
-		if (Collection != null)
-			return Collection.Equals(other.Collection);
-		return other.Value == null && other.Collection == null;
+		if (Value != other.Value)
+			return false;
+		if (Collection.IsEmpty())
+			return other.Collection.IsEmpty();
+		return Collection!.Equals(other.Collection);
 	}
 
 	public override bool Equals(object? obj) => obj is ConfigNode other && Equals(other);
 
 	public override int GetHashCode() => Value?.GetHashCode() ?? Collection?.GetHashCode() ?? 0;
 
-	public override string ToString() => ToString(new StringBuilder()).ToString();
+	public override string ToString() => Collection is null ? Value?.ToString() ?? String.Empty: ToString(new StringBuilder()).ToString();
 
-	public StringBuilder ToString(StringBuilder text) =>
-		Value != null ?  text.Append(Value):
-		Collection != null ? Collection.ToString(text): text.Append("null");
+	public StringBuilder ToString(StringBuilder text)
+	{
+		if (Value is null)
+			return Collection is null ? text.Append("null"): Collection.ToString(text);
+
+		text.Append(Value);
+		return Collection.IsEmpty() ? text: Collection.ToString(text.Append(' '));
+	}
 
 	public static bool operator ==(ConfigNode left, ConfigNode right) => left.Equals(right);
 
@@ -64,7 +94,6 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyCo
 
 	public ConfigNodeCollection(IEnumerable<(string? Key, ConfigNode Value)> nodes)
 	{
-		ValueTuple<string?, ConfigNode>[]? xx = nodes == null ? null: [.. nodes];
 		_nodes = [];
 		_map = [];
 		AddRange(nodes);
@@ -74,32 +103,30 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyCo
 	{
 		if (nodes == null) throw new ArgumentNullException(nameof(nodes));
 
-		_nodes = [.. nodes.Where(n => !n.IsEmpty).Select(n => ((string?)null, n))];
+		_nodes = [.. nodes.Select(n => ((string?)null, n))]; // nodes.Where(n => !n.IsEmpty).Select(n => ((string?)null, n))];
 		_map = [];
 	}
 
-	public ConfigNodeCollection(string? key, IEnumerable<ConfigNode> nodes)
-	{
-		if (key == null) throw new ArgumentNullException(nameof(key));
-		if (nodes == null) throw new ArgumentNullException(nameof(nodes));
+	// public ConfigNodeCollection(string? key, IEnumerable<ConfigNode> nodes)
+	// {
+	// 	if (key == null) throw new ArgumentNullException(nameof(key));
+	// 	if (nodes == null) throw new ArgumentNullException(nameof(nodes));
 
-		_nodes = [(key, ConfigNode.Join([.. nodes]))];
-		_map = [];
-		_map[key] = 0;
-	}
+	// 	_nodes = [(key, ConfigNode.Join([.. nodes]))];
+	// 	_map = [];
+	// 	_map[key] = 0;
+	// }
 
 	public ConfigNode this[int index] => _nodes[index].Value;
 
-	public ConfigNode this[string key] => _map.TryGetValue(key, out int index) ? _nodes[index].Value: throw new KeyNotFoundException();
+	public ConfigNode this[string key] => _map.TryGetValue(key, out int index) ? _nodes[index].Value : throw new KeyNotFoundException();
 
 	public int Count => _nodes.Count;
-
-	public bool IsEmpty => Count == 0;
 
 	public bool IsArray => _map.Count == 0;
 
 	public bool IsMap => _map.Count == _nodes.Count;
-	
+
 	public bool IsMixed => _map.Count > 0 && _map.Count < _nodes.Count;
 
 	public bool ContainsKey(string? key) => key != null && _map.ContainsKey(key);
@@ -129,8 +156,8 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyCo
 		}
 		else if (_map.TryGetValue(key, out int index))
 		{
-			var existing = _nodes[index].Value;
-			_nodes[index] = (key, existing.IsEmpty ? node: ConfigNode.Join([existing, node]));
+			// var existing = _nodes[index].Value;
+			_nodes[index] = (key, node); // existing.IsEmpty ? node : ConfigNode.Join([existing, node]));
 		}
 		else
 		{
@@ -166,7 +193,7 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyCo
 
 	public bool Equals(ConfigNodeCollection? other)
 	{
-		if (other == null) return false;
+		if (other is null) return false;
 		if (Count != other.Count) return false;
 		for (int i = 0; i < Count; ++i)
 		{
@@ -186,7 +213,7 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyCo
 
 	public StringBuilder ToString(StringBuilder text)
 	{
-		if (IsEmpty) return text.Append("[]");
+		if (this.IsEmpty()) return text.Append("[]");
 
 		string comma = string.Empty;
 
@@ -204,6 +231,9 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyCo
 		return text;
 	}
 
+	public static bool operator ==(ConfigNodeCollection left, ConfigNodeCollection right) => left.Equals(right);
+	public static bool operator !=(ConfigNodeCollection left, ConfigNodeCollection right) => !left.Equals(right);
+
 	public IEnumerator<(string? Key, ConfigNode Value)> GetEnumerator() => _nodes.GetEnumerator();
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -212,7 +242,7 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyCo
 	{
 		private readonly ConfigNodeCollection _collection = collection;
 
-		public ConfigNode this[string key] => _collection._map.TryGetValue(key, out var index) ? _collection._nodes[index].Value: throw new KeyNotFoundException();
+		public ConfigNode this[string key] => _collection._map.TryGetValue(key, out var index) ? _collection._nodes[index].Value : throw new KeyNotFoundException();
 
 		public int Count => _collection.Count;
 
@@ -337,4 +367,9 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyCo
 			public void Reset() => _index = -1;
 		}
 	}
+}
+
+public static partial class ConfigNodeExtensions
+{
+	public static bool IsEmpty([NotNullWhen(false)] this ConfigNodeCollection? collection) => collection is null || collection.Count == 0;
 }

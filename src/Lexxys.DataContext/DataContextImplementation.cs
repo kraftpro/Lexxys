@@ -14,7 +14,7 @@ namespace Lexxys.Data;
 class DataContextImplementation: IDisposable
 {
 	private static readonly TimeSpan TimeSyncInterval = new TimeSpan(1, 0, 0);
-	private static readonly ConcurrentDictionary<string, (DateTime Stamp, long Offset)> _timeSyncMap = new ConcurrentDictionary<string, (DateTime, long)>();
+	private static readonly ConcurrentDictionary<string, (DateTime Stamp, DbTimeProvider Provider)> _timeSyncMap = new ConcurrentDictionary<string, (DateTime, DbTimeProvider)>();
 
 	private int _transactionsCount;
 	private int _connectionsCount;
@@ -24,7 +24,7 @@ class DataContextImplementation: IDisposable
 	private TimeSpan _commandTimeout;
 	private TimeSpan _defaultCommandTimeout;
 	private DateTime _timeSyncStamp;
-	private long _timeSyncOffset;
+	private DbTimeProvider? _timeProvider;
 
 	private Action? _committed;
 	private Action? _cancelled;
@@ -39,7 +39,7 @@ class DataContextImplementation: IDisposable
 		if (_timeSyncMap.TryGetValue(_connection.ConnectionString, out var sync))
 		{
 			_timeSyncStamp = sync.Stamp;
-			_timeSyncOffset = sync.Offset;
+			_timeProvider = sync.Provider;
 		}
 		Audit = audit;
 	}
@@ -113,51 +113,86 @@ class DataContextImplementation: IDisposable
 	private void SyncTime()
 	{
 		var syncKey = _connection.ConnectionString;
-		if (!_timeSyncMap.TryGetValue(syncKey, out var sv) || sv.Stamp <= _timeSyncStamp)
+		if (_timeSyncMap.TryGetValue(syncKey, out var sv) && sv.Stamp > _timeSyncStamp) return;
+
+		_timeProvider ??= sv.Provider ?? GetTimeProvider();
+
+		long offset;
+		DateTime now;
+		long delta = long.MaxValue;
+		int c = 0;
+		var dd = new List<long>();
+
+		using DbCommand cmd = NewCommand("select sysutcdatetime();");
+		for (; ; )
 		{
-			long offset;
-			DateTime now;
-			using (DbCommand cmd = NewCommand("select 1;"))
+			now = DateTime.UtcNow;
+			var t = WatchTimer.Start();
+			var dbNow = (DateTime)cmd.ExecuteScalar()!;
+			long duration = TimeSpan.FromTicks(WatchTimer.Query(t)).Ticks;
+			offset = (dbNow - now).Ticks - duration / 2;
+			if (duration < delta)
 			{
-				cmd.ExecuteScalar();
-				cmd.CommandText = "select sysdatetime();";
-				long delta = long.MaxValue;
-				int c = 0;
-				var dd = new List<long>();
-				for (; ; )
-				{
-					now = DateTime.Now;
-					var t = WatchTimer.Start();
-					var dbNow = (DateTime)cmd.ExecuteScalar()!;
-					long duration = TimeSpan.FromTicks(WatchTimer.Query(t)).Ticks;
-					offset = (dbNow - now).Ticks - duration / 2;
-					if (duration < delta)
-					{
-						delta = duration;
-						c = 0;
-						dd.Clear();
-						dd.Add(offset);
-					}
-					else
-					{
-						dd.Add(offset);
-						if (++c >= 3)
-							break;
-					}
-				}
-				offset = (long)(dd.Average() + 0.5);
+				delta = duration;
+				c = 0;
+				dd.Clear();
+				dd.Add(offset);
 			}
-			sv = _timeSyncMap.AddOrUpdate(syncKey, (now, offset), (_, o) => o.Stamp > now ? o: (now, offset));
+			else
+			{
+				dd.Add(offset);
+				if (++c >= 3)
+					break;
+			}
 		}
-		(_timeSyncStamp, _timeSyncOffset) = sv;
+
+		offset = (long)(dd.Average() + 0.5);
+		_timeProvider.Reset(new TimeSpan(offset));
+		sv = _timeSyncMap.AddOrUpdate(syncKey, _ => (now, _timeProvider), (_, o) => o.Stamp == sv.Stamp ? (now, _timeProvider) : o);
+		(_timeSyncStamp, _timeProvider) = (sv.Stamp, sv.Provider);
 	}
 
-	public DateTime Now => DateTime.Now + TimeSpan.FromTicks(_timeSyncOffset);
+	private DbTimeProvider GetTimeProvider()
+	{
+		if (_timeSyncMap.TryGetValue(_connection.ConnectionString, out var sv))
+			return sv.Provider;
+
+		using DbCommand cmd = NewCommand("select sysdatetimeoffset();");
+
+		var dto = (DateTimeOffset)cmd.ExecuteScalar()!;
+		cmd.CommandText = "select current_timezone_id();";
+		string? tzid = null;
+		try { tzid = (string?)cmd.ExecuteScalar(); } catch { }
+		if (tzid == null)
+		{
+			cmd.CommandText = """
+					exec master.dbo.xp_regread
+						'HKEY_LOCAL_MACHINE',
+						'SYSTEM\CurrentControlSet\Control\TimeZoneInformation',
+						'TimeZoneKeyName',@tz out
+					select @tz;
+					""";
+			try { tzid = (string?)cmd.ExecuteScalar(); } catch { }
+		}
+		var tz = FindTimeZone(tzid) ?? TimeZoneInfo.CreateCustomTimeZone("Database Time", dto.Offset, null, null);
+		return new DbTimeProvider(TimeSpan.Zero, tz);
+
+		static TimeZoneInfo? FindTimeZone(string? id)
+		{
+#if NET
+			return id == null || !TimeZoneInfo.TryFindSystemTimeZoneById(id, out var tz) ? null : tz;
+#else
+			return id == null ? null: TimeZoneInfo.GetSystemTimeZones().FirstOrDefault(o => String.Equals(o.Id, id, StringComparison.OrdinalIgnoreCase));
+#endif
+		}
+	}
+
+	public ITimeProvider Time => _timeProvider ??= GetTimeProvider();
 
 	public DataContextImplementation Clone()
 		=> new DataContextImplementation(_connectionFactory, _commandTimeout, Audit.Clone())
 		{
-			_timeSyncOffset = _timeSyncOffset,
+			_timeProvider = _timeProvider,
 			_timeSyncStamp = _timeSyncStamp,
 		};
 

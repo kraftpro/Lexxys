@@ -2,11 +2,12 @@
   <PropertyGroup>
     <TargetFrameworks>net9.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+    <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <IsTestProject>true</IsTestProject>
     <GenerateProgramFile>false</GenerateProgramFile>
-    <LangVersion>preview</LangVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
   </PropertyGroup>
@@ -30,6 +31,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="*" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lexxys.Arguments\Lexxys.Arguments.csproj" />
