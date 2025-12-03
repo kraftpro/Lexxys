@@ -1,0 +1,6 @@
+@Lexxys.Web_HostAddress = http://localhost:5067
+
+GET {{Lexxys.Web_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

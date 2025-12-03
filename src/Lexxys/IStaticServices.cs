@@ -6,23 +6,26 @@ public interface IStaticServices
 {
 	bool IsInitialized { get; }
 	IServiceProvider ServiceProvider { get; }
-	bool ContainsService(Type serviceType);
+	bool ContainsService(Type? serviceType);
 	bool AddService(ServiceDescriptor? service, bool unique = false);
 }
 
 public static partial class StaticServicesExtensions
 {
-	public static bool AddServices(this IStaticServices staticServices, IEnumerable<ServiceDescriptor>? services, bool unique = false)
+	extension(IStaticServices staticServices)
 	{
-		if (services == null)
-			return false;
-
-		bool added = false;
-		foreach (var item in services)
+		public bool AddServices(IEnumerable<ServiceDescriptor>? services, bool unique = false)
 		{
-			added |= staticServices.AddService(item, unique);
+			if (services == null)
+				return false;
+
+			bool added = false;
+			foreach (var item in services)
+			{
+				added |= staticServices.AddService(item, unique);
+			}
+			return added;
 		}
-		return added;
 	}
 
 	public static bool ContainsService<T>(this IStaticServices staticServices) where T: class

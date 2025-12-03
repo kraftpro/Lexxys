@@ -109,7 +109,7 @@ statechart ElevatorSystem
 
   state Maintenance
     on MAINTENANCE_DEACTIVATED -> Idle
-    on EMERGENCY       -> Emergency
+    on EMERGENCY -> Emergency
 
   state Emergency
     on EMERGENCY_CLEARED -> Idle

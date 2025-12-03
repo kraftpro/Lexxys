@@ -21,7 +21,7 @@ public enum LogGroupingType
 	EndGroup = 2
 }
 
-public class LogRecord: IDumpJson
+public class LogRecord: IDump
 {
 	private const string NullArg = "null";
 	private static readonly AsyncLocal<int> _currentIndent = new();
@@ -132,20 +132,20 @@ public class LogRecord: IDumpJson
 		return arg;
 	}
 
-	public JsonBuilder ToJsonContent(JsonBuilder json)
+	public void DumpContent(IDumpWriter writer)
 	{
-		return json
-			.Item("eventId", EventId)
-			.Item("type", LogType)
-			.Item("indent", Indent)
-			.Item("source", Source)
-			.Item("message", Message)
-			.Item("data", Data)
-			.Item("exception", Exception)
-			.Item("context", Context);
+		writer
+			.Write("eventId", EventId)
+			.Write("type", LogType)
+			.Write("indent", Indent)
+			.Write("source", Source)
+			.Write("message", Message)
+			.Write("data", Data)
+			.Write("exception", Exception)
+			.Write("context", Context);
 	}
 
-	public class ExceptionInfo: IDumpJson
+	public class ExceptionInfo: IDump
 	{
 		private readonly IReadOnlyCollection<NameValueTuple<string, object?>>? _data;
 
@@ -180,13 +180,13 @@ public class LogRecord: IDumpJson
 		public string? StackTrace { get; }
 		public IReadOnlyList<ExceptionInfo>? InnerExceptions { get; }
 
-		public JsonBuilder ToJsonContent(JsonBuilder json)
+		public void DumpContent(IDumpWriter writer)
 		{
-			return json
-				.Item("message", Message)
-				.Item("data", Data)
-				.Item("stackTrace", StackTrace)
-				.Item("innerException", InnerExceptions);
+			writer
+				.Write("message", Message)
+				.Write("data", Data)
+				.Write("stackTrace", StackTrace)
+				.Write("innerException", InnerExceptions);
 		}
 	}
 }

@@ -213,44 +213,6 @@ csharp_preserve_single_line_statements = true
 
 #### Naming styles ####
 
-# Naming rules
-
-dotnet_naming_rule.interface_should_be_begins_with_i.severity = suggestion
-dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
-dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i
-
-dotnet_naming_rule.types_should_be_pascal_case.severity = suggestion
-dotnet_naming_rule.types_should_be_pascal_case.symbols = types
-dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case
-
-dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = suggestion
-dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
-dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
-
-dotnet_naming_rule.const_should_be_pascal_case.severity = suggestion
-dotnet_naming_rule.const_should_be_pascal_case.symbols = const
-dotnet_naming_rule.const_should_be_pascal_case.style = pascal_case
-
-dotnet_naming_rule.static_readonly_field_should_be_pascal_case.severity = suggestion
-dotnet_naming_rule.static_readonly_field_should_be_pascal_case.symbols = static_readonly_field
-dotnet_naming_rule.static_readonly_field_should_be_pascal_case.style = pascal_case
-
-dotnet_naming_rule.static_readonly_field_may_be_pascal_case.severity = suggestion
-dotnet_naming_rule.static_readonly_field_may_be_pascal_case.symbols = private_or_internal_field
-dotnet_naming_rule.static_readonly_field_may_be_pascal_case.style = pascal_case
-
-dotnet_naming_rule.private_or_internal_field_should_be__fieldname.severity = suggestion
-dotnet_naming_rule.private_or_internal_field_should_be__fieldname.symbols = private_or_internal_field
-dotnet_naming_rule.private_or_internal_field_should_be__fieldname.style = _fieldname
-
-dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.severity = suggestion
-dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.symbols = private_static_readonly_field
-dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.style = __fieldname
-
-dotnet_naming_rule.private_static_field_should_be___fieldname.severity = suggestion
-dotnet_naming_rule.private_static_field_should_be___fieldname.symbols = private_static_field
-dotnet_naming_rule.private_static_field_should_be___fieldname.style = __fieldname
-
 # Symbol specifications
 
 dotnet_naming_symbols.interface.applicable_kinds = interface
@@ -306,6 +268,77 @@ dotnet_naming_style.__fieldname.required_prefix = __
 dotnet_naming_style.__fieldname.required_suffix = 
 dotnet_naming_style.__fieldname.word_separator = 
 dotnet_naming_style.__fieldname.capitalization = camel_case
+
+# Naming rules
+
+# dotnet_naming_rule.interface_should_be_begins_with_i.severity = suggestion
+# dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
+# dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i
+# 
+# dotnet_naming_rule.types_should_be_pascal_case.severity = suggestion
+# dotnet_naming_rule.types_should_be_pascal_case.symbols = types
+# dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case
+# 
+# dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = suggestion
+# dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
+# dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
+
+# dotnet_naming_rule.const_should_be_pascal_or_upper_case.severity = suggestion
+# dotnet_naming_rule.const_should_be_pascal_or_upper_case.symbols = const
+# dotnet_naming_rule.const_should_be_pascal_or_upper_case.style = pascal_case, all_upper
+
+# dotnet_naming_rule.private_static_readonly_field_should_be_pascal_or_upper_or_field_case.severity = suggestion
+# dotnet_naming_rule.private_static_readonly_field_should_be_pascal_or_upper_or_field_case.symbols = private_static_readonly_field
+# dotnet_naming_rule.private_static_readonly_field_should_be_pascal_or_upper_or_field_case.style = pascal_case, _fieldname, __fieldname, all_upper
+
+# dotnet_naming_rule.const_should_be_all_upper.severity = suggestion
+# dotnet_naming_rule.const_should_be_all_upper.symbols = const
+# dotnet_naming_rule.const_should_be_all_upper.style = all_upper
+
+# dotnet_naming_rule.const_should_be_pascal_case.severity = suggestion
+# dotnet_naming_rule.const_should_be_pascal_case.symbols = const
+# dotnet_naming_rule.const_should_be_pascal_case.style = pascal_case
+# 
+# dotnet_naming_rule.const_should_be_all_upper.severity = suggestion
+# dotnet_naming_rule.const_should_be_all_upper.symbols = const
+# dotnet_naming_rule.const_should_be_all_upper.style = all_upper
+
+# dotnet_naming_rule.private_static_field_should_be___fieldname.severity = suggestion
+# dotnet_naming_rule.private_static_field_should_be___fieldname.symbols = private_static_field
+# dotnet_naming_rule.private_static_field_should_be___fieldname.style = _fieldname
+# 
+# dotnet_naming_rule.private_static_field_should_be___fieldname.severity = suggestion
+# dotnet_naming_rule.private_static_field_should_be___fieldname.symbols = private_static_field
+# dotnet_naming_rule.private_static_field_should_be___fieldname.style = __fieldname
+# 
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.severity = suggestion
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.symbols = private_static_readonly_field
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.style = pascal_case
+# 
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.severity = suggestion
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.symbols = private_static_readonly_field
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.style = _fieldname
+# 
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.severity = suggestion
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.symbols = private_static_readonly_field
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.style = __fieldname
+
+# dotnet_naming_rule.static_readonly_field_should_be_pascal_case.severity = suggestion
+# dotnet_naming_rule.static_readonly_field_should_be_pascal_case.symbols = static_readonly_field
+# dotnet_naming_rule.static_readonly_field_should_be_pascal_case.style = pascal_case
+# 
+# dotnet_naming_rule.static_readonly_field_may_be_pascal_case.severity = suggestion
+# dotnet_naming_rule.static_readonly_field_may_be_pascal_case.symbols = private_or_internal_field
+# dotnet_naming_rule.static_readonly_field_may_be_pascal_case.style = pascal_case
+# 
+# dotnet_naming_rule.private_or_internal_field_should_be__fieldname.severity = suggestion
+# dotnet_naming_rule.private_or_internal_field_should_be__fieldname.symbols = private_or_internal_field
+# dotnet_naming_rule.private_or_internal_field_should_be__fieldname.style = _fieldname
+
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.severity = suggestion
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.symbols = private_static_readonly_field
+# dotnet_naming_rule.private_static_readonly_field_should_be___fieldname.style = __fieldname | _fieldname | pascal_case
+
 
 # CA1510: Use ArgumentNullException throw helper
 dotnet_diagnostic.CA1510.severity = silent

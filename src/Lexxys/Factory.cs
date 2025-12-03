@@ -16,7 +16,7 @@ namespace Lexxys;
 using Configuration;
 using Tokenizer;
 
-public static class Factory
+public static partial class Factory
 {
 	public const string ConfigurationRoot = "lexxys.factory";
 	public const string ConfigurationSynonyms = ConfigurationRoot + ".synonyms.*";
@@ -24,16 +24,17 @@ public static class Factory
 #if NETFRAMEWORK && DEBUG
 	public static readonly DebugInfoGenerator DebugInfo = DebugInfoGenerator.CreatePdbGenerator();
 #endif
-
-	private static readonly object SyncRoot = new object();
+#if NET9_0_OR_GREATER
+	private static readonly Lock SyncRoot = new Lock();
+#else
+	private static readonly object SyncRoot = new Object();
+#endif
 
 	private static readonly ConcurrentDictionary<Func<Type, bool>, IEnumerable<Type>> __foundTypesP = [];
 	private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesC = [];
 	private static readonly ConcurrentDictionary<Type, IEnumerable<Type>> __foundTypesA = [];
 
 	private static readonly ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?> __constructors = new ConcurrentDictionary<(Type Ret, Type?[] Args), Func<object?[], object>?>(new ConstructorTypesComparer());
-	private static readonly ConcurrentDictionary<MemberInfo, Func<object?, object?[], object?>?> __compiledMethods = [];
-	private static readonly ConcurrentDictionary<Type, ObjectTypeAccessor> __typeAccessors = [];
 
 	#region Assemblies
 
@@ -1099,268 +1100,6 @@ public static class Factory
 			TypeCode.UInt64 => (ulong)value,
 			_ => (int)value,
 		};
-	}
-
-	public static IObjectAccessor CreateAccessor(object obj)
-	{
-		if (obj == null) throw new ArgumentNullException(nameof(obj));
-
-		var type = obj.GetType();
-		var accessor = __typeAccessors.GetOrAdd(type, o => new ObjectTypeAccessor(o));
-		return new ObjectAccessor(accessor, obj);
-	}
-
-	class ObjectTypeAccessor
-	{
-		private readonly Type _type;
-
-		public ObjectTypeAccessor(Type type)
-		{
-			_type = type ?? throw new ArgumentNullException(nameof(type));
-			CollectProperties();
-		}
-
-		private void CollectProperties()
-		{
-			var props = _type.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-			foreach (var p in props)
-			{
-				var getMethod = p.GetGetMethod(true);
-				var setMethod = p.GetSetMethod(true);
-				var indexes = p.GetIndexParameters();
-				if (indexes.Length > 1) continue;
-				if (indexes.Length == 0)
-				{
-					Func<object?, object?>? getter = getMethod == null ? null: Compile0(getMethod);
-					Func<object?, object?, object?>? setter = setMethod == null ? null: Compile1(setMethod);
-					_properties[p.Name] = (getter, setter);
-				}
-				else
-				{
-					Func<object?, object?, object?>? getter = getMethod == null ? null: Compile1(getMethod);
-					Func<object?, object?, object?, object?>? setter = setMethod == null ? null: Compile2(setMethod);
-					_indexedProperties[p.Name] = (getter, setter);
-				}
-			}
-		}
-
-		private readonly Dictionary<string, (Func<object?, object?>? Get, Func<object?, object?, object?>? Set)> _properties
-			= new Dictionary<string, (Func<object?, object?>?, Func<object?, object?, object?>?)>(StringComparer.OrdinalIgnoreCase);
-
-		private readonly Dictionary<string, (Func<object?, object?, object?>? Get, Func<object?, object?, object?, object?>? Set)> _indexedProperties
-			= new Dictionary<string, (Func<object?, object?, object?>?, Func<object?, object?, object?, object?>?)>(StringComparer.OrdinalIgnoreCase);
-
-		public bool TryGetValue(object? instance, string name, out object? result)
-		{
-			if (!_properties.TryGetValue(name, out var accessor) || accessor.Get == null)
-			{
-				result = null;
-				return false;
-			}
-			result = accessor.Get(instance);
-			return true;
-		}
-
-		public bool TryGetValue(object? instance, string name, object index, out object? result)
-		{
-			if (!_indexedProperties.TryGetValue(name, out var accessor) || accessor.Get == null)
-			{
-				result = null;
-				return false;
-			}
-			result = accessor.Get(instance, index);
-			return true;
-		}
-
-		public bool TrySetValue(object? instance, string name, object? value)
-		{
-			if (!_properties.TryGetValue(name, out var accessor) || accessor.Set == null)
-				return false;
-			accessor.Set(instance, value);
-			return true;
-		}
-
-		public bool TrySetValue(object? instance, string name, object index, object? value)
-		{
-			if (!_indexedProperties.TryGetValue(name, out var accessor) || accessor.Set == null)
-				return false;
-			accessor.Set(instance, index, value);
-			return true;
-		}
-	}
-
-	class ObjectAccessor(ObjectTypeAccessor accessor, object? obj): IObjectAccessor
-	{
-		private readonly ObjectTypeAccessor _accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));
-
-		public bool TryGetValue(string name, out object? result)
-			=> _accessor.TryGetValue(obj, name, out result);
-
-		public bool TryGetValue(string name, object index, out object? result)
-			=> _accessor.TryGetValue(obj, name, index, out result);
-
-		public bool TrySetValue(string name, object? value)
-			=> _accessor.TrySetValue(obj, name, value);
-
-		public bool TrySetValue(string name, object index, object? value)
-			=> _accessor.TrySetValue(obj, name, index, value);
-	}
-
-	public static object? Invoke(object? instance, MethodInfo method, params object?[] parameters)
-	{
-		if (method == null) throw new ArgumentNullException(nameof(method));
-		if (instance == null && !method.IsStatic) throw new ArgumentNullException(nameof(instance));
-
-		Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
-		return f?.Invoke(instance, parameters);
-	}
-
-	public static object? Invoke(MethodInfo method, params object?[] parameters)
-	{
-		if (method == null) throw new ArgumentNullException(nameof(method));
-		if (!method.IsStatic) throw new ArgumentOutOfRangeException(nameof(method), method, null);
-
-		Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(method, o => Compile((MethodInfo)o));
-		return f?.Invoke(null, parameters);
-	}
-
-	public static object? Invoke(ConstructorInfo constructor, params object?[] parameters)
-	{
-		if (constructor == null) throw new ArgumentNullException(nameof(constructor));
-
-		Func<object?, object?[], object?>? f = __compiledMethods.GetOrAdd(constructor, o => Compile((ConstructorInfo)o));
-		return f?.Invoke(null, parameters);
-	}
-
-	private static Func<object?, object?[], object?> Compile(MethodInfo method)
-	{
-		if (method == null) throw new ArgumentNullException(nameof(method));
-
-		ParameterExpression arg0 = Expression.Parameter(typeof(object));
-		ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
-		Expression[] pp = CompileParameters(method, args);
-		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg0, method.DeclaringType);
-		Expression call = method.IsStatic ? Expression.Call(method, pp): Expression.Call(instance, method, pp);
-		if (method.ReturnType != typeof(void) && method.ReturnType.IsValueType)
-			call = Expression.TypeAs(call, typeof(object));
-
-		if (method.ReturnType == typeof(void))
-			call = Expression.Block(call, Expression.Constant(null));
-
-		return Expression.Lambda<Func<object?, object?[], object?>>(call, arg0, args)
-#if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo)!;
-#else
-			.Compile();
-#endif
-
-	}
-
-	private static Func<object?, object?> Compile0(MethodInfo method)
-	{
-		if (method == null) throw new ArgumentNullException(nameof(method));
-
-		ParameterExpression arg0 = Expression.Parameter(typeof(object));
-		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg0, method.DeclaringType);
-		Expression call = method.IsStatic ? Expression.Call(method): Expression.Call(instance, method);
-		if (method.ReturnType != typeof(void) && method.ReturnType.IsValueType)
-			call = Expression.TypeAs(call, typeof(object));
-
-		if (method.ReturnType == typeof(void))
-			call = Expression.Block(call, Expression.Constant(null));
-
-		return Expression.Lambda<Func<object?, object?>>(call, arg0)
-#if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo)!;
-#else
-			.Compile();
-#endif
-
-	}
-
-	private static Func<object?, object?, object?> Compile1(MethodInfo method)
-	{
-		if (method == null) throw new ArgumentNullException(nameof(method));
-
-		ParameterInfo[] pp = method.GetParameters();
-		if (pp.Length != 1) throw new ArgumentException($"Invalid number of parameters. Expected 1, actual {pp.Length}.", nameof(method));
-
-		ParameterExpression arg0 = Expression.Parameter(typeof(object));
-		ParameterExpression arg1 = Expression.Parameter(typeof(object), "arg");
-		Expression p1 = Expression.Convert(arg1, pp[0].ParameterType);
-		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg0, method.DeclaringType);
-		Expression call = method.IsStatic ? Expression.Call(method, p1): Expression.Call(instance, method, p1);
-		if (method.ReturnType != typeof(void) && method.ReturnType.IsValueType)
-			call = Expression.TypeAs(call, typeof(object));
-
-		if (method.ReturnType == typeof(void))
-			call = Expression.Block(call, Expression.Constant(null));
-
-		return Expression.Lambda<Func<object?, object?, object?>>(call, arg0, arg1)
-#if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo)!;
-#else
-			.Compile();
-#endif
-	}
-
-	private static Func<object?, object?, object?, object?> Compile2(MethodInfo method)
-	{
-		if (method == null) throw new ArgumentNullException(nameof(method));
-
-		ParameterInfo[] pp = method.GetParameters();
-		if (pp.Length != 2) throw new ArgumentException($"Invalid number of parameters. Expected 2, actual {pp.Length}.", nameof(method));
-
-		ParameterExpression arg0 = Expression.Parameter(typeof(object));
-		ParameterExpression arg1 = Expression.Parameter(typeof(object), "arg1");
-		ParameterExpression arg2 = Expression.Parameter(typeof(object), "arg2");
-		Expression p1 = Expression.Convert(arg1, pp[0].ParameterType);
-		Expression p2 = Expression.Convert(arg2, pp[1].ParameterType);
-		Expression? instance = method.IsStatic || method.DeclaringType == null ? null: Expression.Convert(arg0, method.DeclaringType);
-		Expression call = method.IsStatic ? Expression.Call(method, p1, p2): Expression.Call(instance, method, p1, p2);
-		if (method.ReturnType != typeof(void) && method.ReturnType.IsValueType)
-			call = Expression.TypeAs(call, typeof(object));
-
-		if (method.ReturnType == typeof(void))
-			call = Expression.Block(call, Expression.Constant(null));
-
-		return Expression.Lambda<Func<object?, object?, object?, object?>>(call, arg0, arg1, arg2)
-#if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo)!;
-#else
-			.Compile();
-#endif
-	}
-
-	private static Func<object?, object?[], object?> Compile(ConstructorInfo constructor)
-	{
-		if (constructor == null) throw new ArgumentNullException(nameof(constructor));
-
-		ParameterExpression instance = Expression.Parameter(typeof(object));
-		ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
-		Expression[] pp = CompileParameters(constructor, args);
-		Expression call = Expression.New(constructor, pp);
-		if (constructor.ReflectedType is { IsValueType: true })
-			call = Expression.TypeAs(call, typeof(object));
-
-		return Expression.Lambda<Func<object?, object?[], object?>>(call, instance, args)
-#if NETFRAMEWORK && DEBUG
-			.Compile(DebugInfo)!;
-#else
-			.Compile();
-#endif
-	}
-
-	private static Expression[] CompileParameters(MethodBase method, ParameterExpression args)
-	{
-		ParameterInfo[] ppInfo = method.GetParameters();
-		var pp = new Expression[ppInfo.Length];
-		for (int i = 0; i < ppInfo.Length; ++i)
-		{
-			Expression e = Expression.ArrayAccess(args, Expression.Constant(i));
-			pp[i] = e.Type == ppInfo[i].ParameterType ? e: Expression.Convert(e, ppInfo[i].ParameterType);
-		}
-		return pp;
 	}
 
 	internal static void Add<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, TValue value) where TKey: notnull

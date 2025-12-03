@@ -1,4 +1,4 @@
-﻿// Lexxys Infrastructural library.
+// Lexxys Infrastructural library.
 // file: BlobStorage.cs
 //
 // Copyright (c) 2001-2014, ANN, Kraft Pro Utilities.
@@ -13,15 +13,16 @@ namespace Lexxys;
 public interface IBlobStorageFactory
 {
 	/// <summary>
-	/// Returns <see cref="IBlobStorageService"/> for the specified <paramref name="location"/> or null.
+	/// Returns <see cref="IBlobStorageService"/> for the specified <paramref name="domain"/> or null.
 	/// </summary>
-	/// <param name="location">Blob location</param>
+	/// <param name="domain">Blob storage identifier</param>
 	/// <returns></returns>
-	IBlobStorageService? TryGetService(Uri location);
+	IBlobStorageService? TryGetStorage(string domain);
 
 	/// <summary>
 	/// Registers a blob storage service.
 	/// </summary>
+	/// <param name="domain">Blob storage identifier</param>
 	/// <param name="service">Blob storage service</param>
-	void Register(IBlobStorageService service);
+	IBlobStorageService RegisterStorage(string domain, IBlobStorageService service);
 }

@@ -4,11 +4,6 @@
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
 //
-using Lexxys.Xml;
-
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
@@ -16,6 +11,11 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
+using Lexxys.Xml;
 
 namespace Lexxys.Data;
 
@@ -45,8 +45,6 @@ public static class Dc
 	public static ILogger Timing => __logTrace ??= Statics.TryGetLogger("Dc-Timing") ?? NullLogger.Instance;
 	private static ILogger? __logTrace;
 
-	static Lazy<IDataContextFactory> _dataFactory = new(() => StaticDataFactory);
-
 	private static IDataContextFactory? __staticDataFactory;
 	[ThreadStatic]
 	private static IDataContext? __instance;
@@ -59,10 +57,14 @@ public static class Dc
 
 	private class SimpleDataFactory: IDataContextFactory
 	{
-		public IDataContext CreateContext(ConnectionStringInfo connectionInfo) => new SqlServerDataContext(connectionInfo);
+		public IDataContext Create(ConnectionStringInfo connectionInfo) => connectionInfo.ConnectionType switch
+		{
+			ConnectionType.SqlServer or ConnectionType.Default => new SqlServerDataContext(connectionInfo),
+			_ => throw new NotSupportedException($"Unsupported connection type: {connectionInfo.ConnectionType}")
+		};
 	}
 
-	public static IDataContext Instance => __instance ??= StaticDataFactory.CreateContext(Config.Current.GetValue<ConnectionStringInfo>(ConfigSection).Value);
+	public static IDataContext Instance => __instance ??= StaticDataFactory.Create(Config.Current.GetValue<ConnectionStringInfo>(ConfigSection).Value);
 
 	#region Tools
 
@@ -90,7 +92,7 @@ public static class Dc
 		return new DataParameter(name, dbValue, dbType);
 	}
 
-	private static (object, DbType) UnderlyingValue(Enum value) => (value.GetTypeCode()) switch
+	private static (object, DbType) UnderlyingValue(Enum value) => value.GetTypeCode() switch
 	{
 		TypeCode.Byte => (((IConvertible)value).ToByte(CultureInfo.InvariantCulture), DbType.Byte),
 		TypeCode.SByte => (((IConvertible)value).ToSByte(CultureInfo.InvariantCulture), DbType.SByte),
@@ -209,35 +211,23 @@ public static class Dc
 	{
 		if (value == null)
 			return NullValue;
-		var ss = value.AsSpan();
-		bool apos = false;
-		for (int i = 0; i < ss.Length; ++i)
-		{
-			if (ss[i] > 127)
-				return (SqlPart)("N'" + value.Replace("'", "''") + "'");
-			if (ss[i] == '\'')
-				apos = true;
-		}
-
-		if (apos)
-			return (SqlPart)("'" + value.Replace("'", "''") + "'");
-#if NET
-		return (SqlPart)String.Concat("'", ss, ";");
-#else
-		return (SqlPart)("'" + ss.ToString() + "'");
-#endif
+		bool nstr = value.Any(o => o > 127);
+		return (SqlPart)((nstr ? "N'" : "'") + value.Replace("'", "''") + "'");
 	}
+	public static SqlPart Value(char value) => (SqlPart)(value > 127 ? $"N'{value}'" : value == '\'' ? "''''" : $"'{value}'"); 
 	public static SqlPart Value(string? value, bool unicode) => value == null ? NullValue: (SqlPart)((unicode ? "N'": "'") + value.Replace("'", "''") + "'");
 	public static SqlPart Value(DateTime? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static SqlPart Value(DateTime value) => (SqlPart)value.ToString(value.TimeOfDay == default ? @"\'yyyyMMdd\'": @"\'yyyyMMdd HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
+	public static SqlPart Value(DateTime value) => (SqlPart)value.ToString(value.TimeOfDay == TimeSpan.Zero ? @"\'yyyyMMdd\'": @"\'yyyyMMdd HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
 	public static SqlPart Value(DateTimeOffset? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
-	public static SqlPart Value(DateTimeOffset value) => (SqlPart)value.ToString(value.TimeOfDay == default ? @"\'yyyyMMdd\'": @"\'yyyyMMdd HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
+	public static SqlPart Value(DateTimeOffset value) => (SqlPart)value.ToString(value.TimeOfDay == TimeSpan.Zero ? @"\'yyyyMMdd\'": @"\'yyyyMMdd HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
 	public static SqlPart Value(TimeSpan? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
 	public static SqlPart Value(TimeSpan value) => (SqlPart)value.ToString(@"\'HH:mm:ss.fff\'", CultureInfo.InvariantCulture);
 	public static SqlPart Value(Guid value) => (SqlPart)("cast ('" + value.ToString("D") + "' as uniqueidentifier)");
 	public static SqlPart Value(bool value) => value ? TrueValue: FalseValue;
 	public static SqlPart Value(int? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
 	public static SqlPart Value(int value) => (SqlPart)value.ToString();
+	public static SqlPart Value(uint? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
+	public static SqlPart Value(uint value) => (SqlPart)value.ToString();
 	public static SqlPart Value(long? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
 	public static SqlPart Value(long value) => (SqlPart)value.ToString();
 	public static SqlPart Value(ulong? value) => value == null ? NullValue: Value(value.GetValueOrDefault());
@@ -255,10 +245,10 @@ public static class Dc
 	public static SqlPart Value<T>(T? value) where T: struct, Enum => value == null ? NullValue: Value(value.GetValueOrDefault());
 	public static SqlPart Value<T>(T value) where T: struct, Enum => (value.GetTypeCode()) switch
 	{
-		TypeCode.Byte => Value(((IConvertible)value).ToByte(CultureInfo.InvariantCulture)),
+		TypeCode.Byte => Value((uint)((IConvertible)value).ToByte(CultureInfo.InvariantCulture)),
 		TypeCode.SByte => Value(((IConvertible)value).ToSByte(CultureInfo.InvariantCulture)),
 		TypeCode.Int16 => Value(((IConvertible)value).ToInt16(CultureInfo.InvariantCulture)),
-		TypeCode.UInt16 => Value(((IConvertible)value).ToUInt16(CultureInfo.InvariantCulture)),
+		TypeCode.UInt16 => Value((uint)((IConvertible)value).ToUInt16(CultureInfo.InvariantCulture)),
 		TypeCode.Int32 => Value(((IConvertible)value).ToInt32(CultureInfo.InvariantCulture)),
 		TypeCode.UInt32 => Value(((IConvertible)value).ToUInt32(CultureInfo.InvariantCulture)),
 		TypeCode.Int64 => Value(((IConvertible)value).ToInt64(CultureInfo.InvariantCulture)),
@@ -277,7 +267,7 @@ public static class Dc
 		{
 			TypeCode.Empty or TypeCode.DBNull => NullValue,
 			TypeCode.Boolean => Value((bool)value),
-			TypeCode.Byte => Value((byte)value),
+			TypeCode.Byte => Value((uint)(byte)value),
 			TypeCode.Char => Value((char)value),
 			TypeCode.DateTime => Value((DateTime)value),
 			TypeCode.Decimal => Value((decimal)value),
@@ -288,13 +278,15 @@ public static class Dc
 			TypeCode.SByte => Value((sbyte)value),
 			TypeCode.Single => Value((float)value),
 			TypeCode.String => Value((string)value),
-			TypeCode.UInt16 => Value((ushort)value),
+			TypeCode.UInt16 => Value((uint)(ushort)value),
 			TypeCode.UInt32 => Value((uint)value),
 			TypeCode.UInt64 => Value((ulong)value),
 			_ => value switch
 			{
 				Money money => Value(money),
 				TimeSpan span => Value(span),
+				DateTimeOffset dto => Value(dto),
+				RowVersion rv => Value(rv),
 				Guid guid => Value(guid),
 				byte[] bytes => Value(bytes),
 				IEnum enm => Value(enm.Value),
@@ -305,18 +297,27 @@ public static class Dc
 
 	#endregion
 
+	/// <summary>
+	/// Creates a SQL object name from the given <paramref name="value"/>. The <paramref name="value"/> can be a table, column, or another database object name.
+	/// </summary>
+	/// <param name="value">The name of the database objects to be escaped.</param>
+	/// <returns>A <see cref="SqlPart"/> representing the object name, properly escaped for SQL usage.</returns>
 	public static SqlPart Name(string? value)
 	{
 		if (value == null)
 			return SqlPart.Empty;
 		Match m = __objectPartsRex.Match(value.Trim());
-		return (SqlPart)(String.Join("", m.Groups[1].Captures.Cast<Capture>().Select(o => NamePart(o.Value) + ".")) + NamePart(m.Groups[2].Value));
+		return (SqlPart)(String.Join("", m.Groups[1].Captures
+#if !NET
+			.Cast<Capture>()
+#endif
+			.Select(o => NamePart(o.Value) + ".")) + NamePart(m.Groups[2].Value));
 
 		static string NamePart(string name)
 			=> name.Length == 0 || (name[0] == '[' && name[^1] == ']') ? name: "[" + name.Replace("]", "]]") + "]";
 
 	}
-	private static readonly Regex __objectPartsRex = new Regex(@"\A(?:(?<a>\[(?:[^\]]|]])*\]|[^\.\[]*)\.){0,3}(?<b>.*)?\z", RegexOptions.IgnoreCase);
+	private static readonly Regex __objectPartsRex = new Regex(@"\A(?:(?<a>\[(?:[^\]]|]])*\]|[^\.\[]*)\.)*(?<b>.*)?\z", RegexOptions.IgnoreCase);
 
 	public static SqlPart IdFilter(IEnumerable<int>? ids)
 	{
@@ -360,7 +361,7 @@ public static class Dc
 		return text.Length == 0 ? EmptySqlFilter: (SqlPart)text.Append(')').ToString();
 	}
 
-	public static SqlPart IdFilter(IEnumerable<string>? ids)
+	public static SqlPart IdFilter(IEnumerable<string?>? ids)
 	{
 		if (ids is null)
 			return EmptySqlFilter;
@@ -429,7 +430,7 @@ public static class Dc
 		}
 		else
 		{
-			#if NET6_0_OR_GREATER
+			#if NET
 			await 
 			#endif
 			using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
@@ -452,7 +453,7 @@ public static class Dc
 
 	internal static async Task<List<T>> ListMapperAsync<T>(DbCommand cmd)
 	{
-#if NET6_0_OR_GREATER
+#if NET
 		await
 #endif
 		using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
@@ -497,7 +498,7 @@ public static class Dc
 	{
 		if (text == null) throw new ArgumentNullException(nameof(text));
 		bool here = false;
-#if NET6_0_OR_GREATER
+#if NET
 		await
 #endif
 		using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
@@ -550,7 +551,7 @@ public static class Dc
 	internal static async Task<List<IXmlReadOnlyNode>> XmlMapperAsync(DbCommand cmd)
 	{
 		var builder = XmlNodeBuilder.Create<IXmlReadOnlyNode>();
-#if NET6_0_OR_GREATER
+#if NET
 		await
 #endif
 		using DbDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
@@ -574,9 +575,10 @@ public static class Dc
 
 	private static class AnonymousType<T>
 	{
+		// ReSharper disable once StaticMemberInGenericType
 		private static readonly SortedList<int, Func<object?[], object?>> Constructors = CollectConstructors();
 		
-		public static bool IsBuiltInType { get; } = __systemTypes.ContainsKey(typeof(T));
+		public static bool IsBuiltInType { get; } = __builtinTypes.ContainsKey(typeof(T));
 
 		public static T Construct(object?[] values)
 		{
@@ -600,10 +602,8 @@ public static class Dc
 		private static SortedList<int, Func<object?[], object?>> CollectConstructors()
 		{
 			Type type = typeof(T);
-			if (__systemTypes.TryGetValue(type, out var f))
-			{
+			if (__builtinTypes.TryGetValue(type, out var f))
 				return new SortedList<int, Func<object?[], object?>>{ { 1, f } };
-			}
 			Type t = Factory.NullableTypeBase(type);
 			if (t.IsEnum)
 			{
@@ -626,26 +626,26 @@ public static class Dc
 		}
 	}
 
-	#region System types constructors
+	#region Builtin types constructors
 
-	private static readonly Dictionary<Type, Func<object?[], object?>> __systemTypes = new Dictionary<Type, Func<object?[], object?>>
+	private static readonly Dictionary<Type, Func<object?[], object?>> __builtinTypes = new Dictionary<Type, Func<object?[], object?>>
 		{
-			{ typeof(bool), o => (bool?)o[0] ?? default },
-			{ typeof(byte), o => (byte?)o[0] ?? default },
-			{ typeof(sbyte), o => (sbyte?)(byte?)o[0] ?? default },
-			{ typeof(char), o => (char?)o[0] ?? default },
-			{ typeof(short), o => (short?)o[0] ?? default },
-			{ typeof(ushort), o => (ushort?)(short?)o[0] ?? default },
-			{ typeof(int), o => (int?)o[0] ?? default },
-			{ typeof(uint), o => (uint?)(int?)o[0] ?? default },
-			{ typeof(long), o => (long?)o[0] ?? default },
-			{ typeof(ulong), o => (ulong?)(long?)o[0] ?? default },
-			{ typeof(decimal), o => (decimal?)o[0] ?? default },
-			{ typeof(Money), o => (Money)((decimal?)o[0] ?? default) },
+			{ typeof(bool), o => (bool?)o[0] ?? false },
+			{ typeof(byte), o => (byte?)o[0] ?? 0 },
+			{ typeof(sbyte), o => (sbyte?)(byte?)o[0] ?? 0 },
+			{ typeof(char), o => (char?)o[0] ?? '\0' },
+			{ typeof(short), o => (short?)o[0] ?? 0 },
+			{ typeof(ushort), o => (ushort?)(short?)o[0] ?? 0 },
+			{ typeof(int), o => (int?)o[0] ?? 0 },
+			{ typeof(uint), o => (uint?)(int?)o[0] ?? 0 },
+			{ typeof(long), o => (long?)o[0] ?? 0 },
+			{ typeof(ulong), o => (ulong?)(long?)o[0] ?? 0 },
+			{ typeof(decimal), o => (decimal?)o[0] ?? 0 },
+			{ typeof(Money), o => (Money)((decimal?)o[0] ?? 0) },
 			{ typeof(DateTime), o => (DateTime?)o[0] ?? default },
 			{ typeof(DateTimeOffset), o => (DateTimeOffset?)o[0] ?? default },
-			{ typeof(TimeSpan), o => (TimeSpan?)o[0] ?? default },
-			{ typeof(Guid), o => (Guid?)o[0] ?? default },
+			{ typeof(TimeSpan), o => (TimeSpan?)o[0] ?? TimeSpan.Zero },
+			{ typeof(Guid), o => (Guid?)o[0] ?? Guid.Empty },
 			{ typeof(RowVersion), o =>
 			{
 				var v = o[0];
@@ -695,17 +695,11 @@ public static class Dc
 
 	#region Disposible objects
 
-	internal class Connecting: IContextHolder
+	internal class Connecting(SqlServerDataContext context): IContextHolder
 	{
-		private readonly SqlServerDataContext _context;
-		private readonly int _count;
+		private readonly SqlServerDataContext _context = context;
+		private readonly int _count = context.Context.Connect();
 		private bool _disposed;
-
-		public Connecting(SqlServerDataContext context)
-		{
-			_context = context;
-			_count = context.Context.Connect();
-		}
 
 		public IDataContext Context => _context;
 
@@ -765,14 +759,9 @@ public static class Dc
 		}
 	}
 
-	internal sealed class ContextHolder: IContextHolder
+	internal sealed class ContextHolder(IDataContext context): IContextHolder
 	{
-		public ContextHolder(IDataContext context)
-		{
-			Context = context ?? throw new ArgumentNullException(nameof(context));
-		}
-
-		public IDataContext Context { get; }
+		public IDataContext Context { get; } = context ?? throw new ArgumentNullException(nameof(context));
 
 		public void Dispose()
 		{

@@ -70,22 +70,7 @@ public readonly struct ValidationResults: IEnumerable<ValidationResultsItem>
 		return new ValidationResults([value]);
 	}
 
-	public static ValidationResults Create(params ValidationResults[]? value)
-	{
-		if (value == null || value.Length == 0) return Empty;
-
-		List<ValidationResultsItem>? items = null;
-		foreach (var item in value)
-		{
-			if (item.Success) continue;
-			if (items == null)
-				items = new List<ValidationResultsItem>(item._items!);
-			else
-				items.AddRange(item._items!);
-		}
-
-		return items == null ? Empty: new ValidationResults(items.ToArray());
-	}
+	public static ValidationResults Create(params ValidationResults[]? value) => Create((IEnumerable<ValidationResults>?)value);
 
 	public static ValidationResults Create(IEnumerable<ValidationResults>? value)
 	{

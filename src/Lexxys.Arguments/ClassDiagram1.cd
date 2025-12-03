@@ -1,43 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
-  <Class Name="Lexxys.ArgumentParameter">
-    <Position X="1" Y="14.5" Width="2.5" />
-    <AssociationLine Name="Value" Type="Lexxys.ParameterValue" FixedFromPoint="true">
-      <Path>
-        <Point X="2.25" Y="16.247" />
-        <Point X="2.25" Y="17.5" />
-      </Path>
-      <MemberNameLabel ManuallyPlaced="true">
-        <Position X="0.11" Y="0.289" />
-      </MemberNameLabel>
-    </AssociationLine>
-    <TypeIdentifier>
-      <HashCode>CAAAAAAAAAAACAAAAAAAAAQAAAAAAAAAAAAgAAAAAAA=</HashCode>
-      <FileName>ArgumentParameter.cs</FileName>
-    </TypeIdentifier>
-    <ShowAsAssociation>
-      <Property Name="Definition" />
-      <Property Name="Value" />
-    </ShowAsAssociation>
-  </Class>
-  <Class Name="Lexxys.ArgumentParameterCollection">
-    <Position X="1" Y="9.5" Width="2.5" />
-    <TypeIdentifier>
-      <HashCode>CAIAAEAAAAAESZAACAAAAAQAAAAAgAAEAAAgAAAAAAA=</HashCode>
-      <FileName>ArgumentParameterCollection.cs</FileName>
-    </TypeIdentifier>
-    <ShowAsAssociation>
-      <Property Name="Definition" />
-    </ShowAsAssociation>
-    <ShowAsCollectionAssociation>
-      <Field Name="_parameters" />
-    </ShowAsCollectionAssociation>
-    <Lollipop Position="0.2" />
-  </Class>
   <Class Name="Lexxys.ParameterDefinition">
-    <Position X="5" Y="14.5" Width="2.5" />
+    <Position X="0.5" Y="10.25" Width="2.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAABAAABgCCCAgAAAhAQgAAAKAAAAAAAAAAgQAAA=</HashCode>
+      <HashCode>AAAAAADAAABgCAAAgAAAhAQgAAAKAAAAAAAAAAgQAAA=</HashCode>
       <FileName>ParameterDefinition.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -47,12 +13,9 @@
       <Compartment Name="Fields" Collapsed="true" />
     </Compartments>
     <TypeIdentifier>
-      <HashCode>AIIAAAAAAAAEAhAACAAgAAQAAAAAAAAEAAAAAAAAAIA=</HashCode>
+      <HashCode>AIIAAAAAAAAEAhAACAAgBAQAAAAAAAAEAAAAAAAAAIA=</HashCode>
       <FileName>ParameterDefinitionCollection.cs</FileName>
     </TypeIdentifier>
-    <ShowAsCollectionAssociation>
-      <Field Name="_parameters" />
-    </ShowAsCollectionAssociation>
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="Lexxys.CommandDefinition">
@@ -63,18 +26,18 @@
       </MemberNameLabel>
     </AssociationLine>
     <TypeIdentifier>
-      <HashCode>AAIAAgBAAAA0AgAAAAAAQBQAAAAAAAAAAIAAABAAAIA=</HashCode>
+      <HashCode>AAIAAgAAAgI0AgAAAAAAQBQAAAAAAAAAAIAAABAAAJA=</HashCode>
       <FileName>CommandDefinition.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
-      <Field Name="_commands" />
       <Field Name="_parameters" />
+      <Field Name="_commands" />
     </ShowAsAssociation>
   </Class>
   <Class Name="Lexxys.CommandDefinitionCollection">
     <Position X="5" Y="0.5" Width="2.5" />
     <TypeIdentifier>
-      <HashCode>AAIAAAAAAAAgABAAAAAABAQAAAAAAAAEAAAAABABAIA=</HashCode>
+      <HashCode>AAIAAAAAAAAAABAAAAAABAQAAAAAAAAEAAAAABABAIA=</HashCode>
       <FileName>CommandDefinitionCollection.cs</FileName>
     </TypeIdentifier>
     <ShowAsCollectionAssociation>
@@ -83,69 +46,46 @@
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="Lexxys.ArgumentCommand" BaseTypeListCollapsed="true">
-    <Position X="1" Y="4.75" Width="2.5" />
+    <Position X="10.5" Y="19.25" Width="2.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAACAAAAAAABAQAAAAAAAAAAIAAAAAAAAA=</HashCode>
-      <FileName>ArgumentCommand.cs</FileName>
+      <HashCode>AAAAAAAAEgAACBAACAAABAQgAAAAgAgkAIAAAAAQAAA=</HashCode>
+      <FileName>ArgCommand.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
       <Property Name="Definition" />
     </ShowAsAssociation>
     <Lollipop Position="0.2" />
   </Class>
-  <Class Name="Lexxys.CliArgumentsAttribute" Collapsed="true">
-    <Position X="9" Y="3.75" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>ABAAAAEAAAgAEgAAAAQAAAIAAAAAhAAAAAAQAAAAAAQ=</HashCode>
-      <FileName>ArgumentCommand.cs</FileName>
-    </TypeIdentifier>
-  </Class>
   <Class Name="Lexxys.CliCommandAttribute" Collapsed="true">
-    <Position X="9" Y="5.75" Width="1.5" />
+    <Position X="11.5" Y="4" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAIgAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>ArgumentCommand.cs</FileName>
+      <FileName>CliCommandAttribute.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="Lexxys.CliParamAttribute" Collapsed="true">
-    <Position X="9" Y="4.75" Width="1.5" />
+  <Class Name="Lexxys.CliOptionAttribute" Collapsed="true">
+    <Position X="11.5" Y="2.75" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAMgAAAAAAAAAAQAAAAAgAAAAAAAAAgAAAA=</HashCode>
-      <FileName>ArgumentCommand.cs</FileName>
+      <FileName>CliOptionAttribute.cs</FileName>
     </TypeIdentifier>
-  </Class>
-  <Class Name="Lexxys.ICliOptionExtensions" Collapsed="true">
-    <Position X="9" Y="1.5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>ArgumentCommand.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Class Name="Lexxys.Arguments">
-    <Position X="5" Y="22" Width="2.5" />
-    <Compartments>
-      <Compartment Name="Fields" Collapsed="true" />
-    </Compartments>
-    <TypeIdentifier>
-      <HashCode>CBAwCABBAAgkQ4hAaRAEhWCEKAACiIiIEYBiwBGEYYQ=</HashCode>
-      <FileName>Arguments.cs</FileName>
-    </TypeIdentifier>
-    <Lollipop Position="0.2" />
   </Class>
   <Class Name="Lexxys.ArgumentsBuilder">
-    <Position X="1" Y="23.5" Width="2.5" />
+    <Position X="1" Y="20.25" Width="2.5" />
     <Compartments>
       <Compartment Name="Fields" Collapsed="true" />
     </Compartments>
     <TypeIdentifier>
-      <HashCode>ECILDARJEQxIAKAALAUAAgIACKAWiQAAAAQQRABAAAQ=</HashCode>
+      <HashCode>AAAgAAAAAgAIAKAAAAAABAAAAKAUgAAAAAAABAAAAAA=</HashCode>
       <FileName>ArgumentsBuilder.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Struct Name="Lexxys.ParameterValue">
-    <Position X="1" Y="17.5" Width="2.5" />
+    <Position X="0.5" Y="17" Width="2.5" />
     <Compartments>
       <Compartment Name="Fields" Collapsed="true" />
+      <Compartment Name="Properties" Collapsed="true" />
+      <Compartment Name="Methods" Collapsed="true" />
     </Compartments>
     <NestedTypes>
       <Struct Name="Lexxys.ParameterValue.Enumerator" Collapsed="true">
@@ -156,30 +96,23 @@
       </Struct>
     </NestedTypes>
     <TypeIdentifier>
-      <HashCode>ABBAAAAAAAAACBQMAAIAAEQABAgCAQI0AAAAAABAAAA=</HashCode>
+      <HashCode>ABBAAIAAIAAACBQsAAKAAEQABAgCAQJ0CAAAAABAAAA=</HashCode>
       <FileName>ParameterValue.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
   </Struct>
-  <Interface Name="Lexxys.IArgumentCommand">
-    <Position X="1" Y="0.5" Width="2.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAACAAAAAAABAQAAAAAAAAAAIAAAAAAAAA=</HashCode>
-      <FileName>ArgumentCommand.cs</FileName>
-    </TypeIdentifier>
-  </Interface>
   <Interface Name="Lexxys.ICliOption&lt;T&gt;" Collapsed="true">
-    <Position X="9" Y="2.25" Width="1.5" />
+    <Position X="11.5" Y="1.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>ArgumentCommand.cs</FileName>
+      <HashCode>AAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>ICliOption.cs</FileName>
     </TypeIdentifier>
   </Interface>
-  <Interface Name="Lexxys.ICliOption2&lt;T&gt;" Collapsed="true">
-    <Position X="9" Y="3" Width="1.5" />
+  <Interface Name="Lexxys.IArguments">
+    <Position X="0.75" Y="0.75" Width="2.5" />
     <TypeIdentifier>
-      <HashCode>AAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAIAAAAAAAAAA=</HashCode>
-      <FileName>ArgumentCommand.cs</FileName>
+      <HashCode>AAAAAAAAAAAACAAACAAABAQAAAAAgAAAAAAAAAAQAAA=</HashCode>
+      <FileName>IArgumentCommand.cs</FileName>
     </TypeIdentifier>
   </Interface>
   <Font Name="Segoe UI" Size="9" />

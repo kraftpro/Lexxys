@@ -1,0 +1,24 @@
+namespace Lexxys.Configuration;
+
+public static partial class ConfigNodeExtensions
+{
+	extension(ConfigNode node)
+	{
+		public T AsValue<T>()
+		{
+			if (node.IsEmpty)
+				return default!;
+
+			if (typeof(T) == typeof(ConfigNode))
+				return (T)(object)node;
+
+			if (node.Value is not null)
+				return node.Value.AsValue<T>();
+
+			if (typeof(T) == typeof(string))
+				return (T)(object)node.ToString();
+
+			return default!;
+		}
+	}
+}

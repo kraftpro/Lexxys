@@ -11,27 +11,30 @@ using System.Globalization;
 using System.Text;
 using System.Xml;
 
-using static System.Net.Mime.MediaTypeNames;
-
 namespace Lexxys;
 
 
-[Serializable]
+/// <summary>
+/// Represents an abstract item in a JSON structure, providing access to its value, type information, and optional attributes.
+/// </summary>
+/// <remarks>The JsonItem class serves as the base for all JSON element representations, including objects,
+/// arrays, and scalar values. It exposes properties and indexers for querying attributes and values, and supports
+/// serialization to text and streams. Derived types implement specific behaviors for different JSON element types. This
+/// class is thread-safe for read-only operations, but thread safety for mutation depends on derived
+/// implementations.</remarks>
 public abstract class JsonItem
 {
 	protected const string NullValue = "null";
 	protected const string TrueValue = "true";
 	protected const string FalseValue = "false";
 	protected const string NaNValue = "NaN";
-	protected static readonly byte[] NullBytes = [(byte)'n', (byte)'u', (byte)'l', (byte)'l'];
-	protected static readonly byte[] TrueBytes = [(byte)'t', (byte)'r', (byte)'u', (byte)'e'];
-	protected static readonly byte[] FalseBytes = [(byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e'];
+	protected internal static readonly byte[] NullBytes = "null"u8.ToArray();
+	protected internal static readonly byte[] TrueBytes = "true"u8.ToArray();
+	protected internal static readonly byte[] FalseBytes = "false"u8.ToArray();
 
 
 	public IReadOnlyList<JsonPair> Attributes { get; }
 	public virtual object? Value => null;
-	public virtual JsonItem? this[string item] => null;
-	public virtual JsonItem? this[int index] => null;
 	public virtual bool IsArray => false;
 	public virtual bool IsObject => false;
 	public virtual bool IsScalar => false;
@@ -98,7 +101,13 @@ public abstract class JsonItem
 	public override string ToString() => ToString(new StringBuilder()).ToString();
 }
 
-[Serializable]
+/// <summary>
+/// Represents a name-value pair in a JSON object, where the name is a string and the value is a JSON item.
+/// </summary>
+/// <remarks>A JsonPair is typically used to model a property within a JSON object, associating a property name
+/// with its corresponding value. The struct is immutable and supports equality comparison. The name must be a non-empty
+/// string, and the value cannot be null. Use the IsEmpty property to determine if the pair is empty, which occurs when
+/// the name is an empty string.</remarks>
 public readonly struct JsonPair: IEquatable<JsonPair>
 {
 	public string Name { get; }
@@ -106,13 +115,9 @@ public readonly struct JsonPair: IEquatable<JsonPair>
 
 	public JsonPair(string name, JsonItem item)
 	{
-		if (name is not { Length: >0 })
-			throw new ArgumentNullException(nameof(name));
-		if (item is null)
-			throw new ArgumentNullException(nameof(item));
-
+		if (name is not { Length: >0 }) throw new ArgumentNullException(nameof(name));
 		Name = name;
-		Item = item;
+		Item = item ?? throw new ArgumentNullException(nameof(item));
 	}
 
 	public void Deconstruct(out string name, out JsonItem item)
@@ -125,11 +130,9 @@ public readonly struct JsonPair: IEquatable<JsonPair>
 
 	public StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
 	{
-		if (text is null)
-			throw new ArgumentNullException(nameof(text));
+		if (text is null) throw new ArgumentNullException(nameof(text));
+		if (IsEmpty) return text;
 
-		if (IsEmpty)
-			return text;
 		Strings.EscapeCsString(text, Name);
 		text.Append(indent == null ? ":": ": ");
 		if (Item is null)
@@ -141,34 +144,28 @@ public readonly struct JsonPair: IEquatable<JsonPair>
 
 	public void Write(Stream stream)
 	{
-		if (stream is null)
-			throw new ArgumentNullException(nameof(stream));
+		if (stream is null) throw new ArgumentNullException(nameof(stream));
+		if (IsEmpty) return;
 
-		if (IsEmpty)
-			return;
 		stream.Write(Encoding.UTF8.GetBytes(Strings.EscapeCsString(Name)));
 		stream.Write((byte)':');
 		if (Item is null)
-			stream.Write(NullBytes);
+			stream.Write(JsonItem.NullBytes);
 		else
 			Item.Write(stream);
 	}
-	private static readonly byte[] NullBytes = [(byte)'n', (byte)'u', (byte)'l', (byte)'l'];
 
-	public string ToString(bool format, bool pair = false)
-	{
-		if (IsEmpty)
-			return "";
-		if (format)
-			return pair ? ToString(new StringBuilder(), "").ToString(): ToString(new StringBuilder().Append("{\n  "), "  ").Append("\n}").ToString();
-		else
-			return pair ? ToString(new StringBuilder()).ToString(): ToString(new StringBuilder().Append('{')).Append('}').ToString();
-	}
+	public string ToString(bool format, bool pair = false) =>
+		IsEmpty ? String.Empty:
+			format ?
+				pair ?
+					ToString(new StringBuilder(), "").ToString():
+					ToString(new StringBuilder().Append("{\n  "), "  ").Append("\n}").ToString():
+				pair ?
+					ToString(new StringBuilder()).ToString():
+					ToString(new StringBuilder().Append('{')).Append('}').ToString();
 
-	public override string ToString()
-	{
-		return ToString(false);
-	}
+	public override string ToString() => ToString(false);
 
 	public bool Equals(JsonPair other) => Name == other.Name && Item == other.Item;
 
@@ -179,11 +176,21 @@ public readonly struct JsonPair: IEquatable<JsonPair>
 	public static bool operator == (JsonPair left, JsonPair right) => left.Equals(right);
 
 	public static bool operator != (JsonPair left, JsonPair right) => !left.Equals(right);
+
+	public static implicit operator JsonPair((string name, JsonItem item) value) => new JsonPair(value.name, value.item);
 }
 
 
-[Serializable]
-public class JsonScalar: JsonItem
+/// <summary>
+/// Represents a scalar JSON value, such as a string, number, boolean, or null.
+/// </summary>
+/// <remarks>Use the static fields to access common scalar values, such as <see cref="Null"/>, <see cref="True"/>,
+/// <see cref="False"/>, and <see cref="NaN"/>. The <see cref="JsonScalar"/> type provides conversion properties for
+/// retrieving the value as various .NET types, including <see langword="string"/>, <see langword="bool"/>, <see
+/// langword="DateTime"/>, <see langword="DateTimeOffset"/>, <see langword="double"/>, <see langword="decimal"/>, <see
+/// langword="int"/>, <see langword="long"/>, and <see langword="byte[]"/>. This type is immutable and
+/// thread-safe.</remarks>
+public sealed class JsonScalar: JsonItem
 {
 	public static readonly JsonScalar Null = new JsonScalar(null);
 	public static readonly JsonScalar True = new JsonScalar(true);
@@ -292,7 +299,7 @@ public class JsonScalar: JsonItem
 			uint ui => text.Append(ui),
 			long l => text.Append(l),
 			ulong ul => text.Append(ul),
-#if NET6_0_OR_GREATER
+#if NET
 			float f => Single.IsFinite(f) ? text.Append(f): text.Append(NaNValue),
 			double d => Double.IsFinite(d) ? text.Append(d): text.Append(NaNValue),
 #else
@@ -359,33 +366,33 @@ public class JsonScalar: JsonItem
 				stream.Write(Quote);
 				break;
 			case byte b:
-				stream.Write(digits.Slice(DigitsUInt(digits, Size, b)));
+				stream.Write(digits[DigitsUInt(digits, Size, b)..]);
 				break;
 			case sbyte sb:
-				stream.Write(digits.Slice(DigitsInt(digits, Size, sb)));
+				stream.Write(digits[DigitsInt(digits, Size, sb)..]);
 				break;
 			case short h:
-				stream.Write(digits.Slice(DigitsInt(digits, Size, h)));
+				stream.Write(digits[DigitsInt(digits, Size, h)..]);
 				break;
 			case ushort uh:
-				stream.Write(digits.Slice(DigitsUInt(digits, Size, uh)));
+				stream.Write(digits[DigitsUInt(digits, Size, uh)..]);
 				break;
 			case int i:
-				stream.Write(digits.Slice(DigitsInt(digits, Size, i)));
+				stream.Write(digits[DigitsInt(digits, Size, i)..]);
 				break;
 			case uint ui:
-				stream.Write(digits.Slice(DigitsUInt(digits, Size, ui)));
+				stream.Write(digits[DigitsUInt(digits, Size, ui)..]);
 				break;
 			case long l:
-				stream.Write(digits.Slice(DigitsLong(digits, Size, l)));
+				stream.Write(digits[DigitsLong(digits, Size, l)..]);
 				break;
 			case ulong ul:
-				stream.Write(digits.Slice(DigitsULong(digits, Size, ul)));
+				stream.Write(digits[DigitsULong(digits, Size, ul)..]);
 				break;
 			case float f:
-#if NET8_0_OR_GREATER
+#if NET
 				if (Single.IsFinite(f) && f.TryFormat(digits, out var nf))
-					stream.Write(digits.Slice(0, nf));
+					stream.Write(digits[..nf]);
 				else
 					stream.Write(NullBytes);
 #else
@@ -396,9 +403,9 @@ public class JsonScalar: JsonItem
 #endif
 				break;
 			case double d:
-#if NET8_0_OR_GREATER
+#if NET
 				if (Double.IsFinite(d) && d.TryFormat(digits, out var nd))
-					stream.Write(digits.Slice(0, nd));
+					stream.Write(digits[..nd]);
 				else
 					stream.Write(NullBytes);
 #else
@@ -409,9 +416,9 @@ public class JsonScalar: JsonItem
 #endif
 				break;
 			case decimal m:
-#if NET8_0_OR_GREATER
+#if NET
 				m.TryFormat(digits, out var nm);
-				stream.Write(digits.Slice(0, nm));
+				stream.Write(digits[..nm]);
 #else
 				stream.Write(Encoding.UTF8.GetBytes(m.ToString(CultureInfo.InvariantCulture)));
 #endif
@@ -425,18 +432,21 @@ public class JsonScalar: JsonItem
 		static void ToBase64(byte[] data, Stream stream)
 		{
 			const int BufferSize = 4096;
-			var base64 = ArrayPool<byte>.Shared.Rent(BufferSize);
-			var buffer = base64.AsSpan();
+
+			var len = Base64.GetMaxEncodedToUtf8Length(data.Length);
+			byte[]? array = len > Tools.MaxStackAllocSize ? ArrayPool<byte>.Shared.Rent(BufferSize): null;
+			Span<byte> buffer = array is null ? stackalloc byte[BufferSize] : array.AsSpan();
 			int left = data.Length;
 			var bytes = data.AsSpan();
 			while (left > 0)
 			{
 				Base64.EncodeToUtf8(bytes, buffer, out int count, out int written);
 				left -= count;
-				bytes = bytes.Slice(count);
-				stream.Write(base64, 0, written);
+				bytes = bytes[count..];
+				stream.Write(buffer[..written]);
 			}
-			ArrayPool<byte>.Shared.Return(base64);
+			if (array != null)
+				ArrayPool<byte>.Shared.Return(array);
 		}
 
 		static void WriteTimeSpan(TimeSpan value, Stream stream)
@@ -446,7 +456,7 @@ public class JsonScalar: JsonItem
 			
 			if (ticks == 0)
 			{
-				stream.Write(ZeroTime);
+				stream.Write("PT0S"u8);
 				return;
 			}
 			Span<byte> mem = stackalloc byte[50];
@@ -478,7 +488,7 @@ public class JsonScalar: JsonItem
 				index = TimePart(mem, index, (int)ticks, 'D');
 			mem[--index] = (byte)'P';
 			mem[--index] = (byte)'T';
-			stream.Write(mem.Slice(index));
+			stream.Write(mem[index..]);
 		}
 
 		static int TimePart(Span<byte> mem, int index, int value, char sign)
@@ -541,7 +551,7 @@ public class JsonScalar: JsonItem
 		{
 			Span<byte> mem = stackalloc byte[50];
 			int index = PutDateTime(mem, 50, value);
-			stream.Write(mem.Slice(index));
+			stream.Write(mem[index..]);
 		}
 
 		static int PutDateTime(Span<byte> mem, int index, DateTime value)
@@ -595,7 +605,7 @@ public class JsonScalar: JsonItem
 				mem[--index] = (byte)'Z';
 			}
 			index = PutDateTime(mem, index, value.DateTime);
-			stream.Write(mem.Slice(index));
+			stream.Write(mem[index..]);
 		}
 
 		static int Digits4(Span<byte> mem, int index, int value)
@@ -620,41 +630,43 @@ public class JsonScalar: JsonItem
 	}
 	private const byte Colon = (byte)':';
 	private const byte Quote = (byte)'"';
-	private static readonly byte[] ZeroTime = [(byte)'P', (byte)'T', (byte)'0', (byte)'S'];
 }
 
-[Serializable]
-public class JsonMap: JsonItem, IEnumerable<JsonPair>
-{
-	public IReadOnlyList<JsonPair> Properties { get; }
 
-	public override JsonItem? this[string name] => Properties.FirstOrDefault(o => o.Name == name).Item;
-	public override JsonItem? this[int index] => index >= 0 && index < Properties.Count ? Properties[index].Item: null;
-	public override int Count => Properties.Count;
+/// <summary>
+/// Represents a read-only JSON object composed of named property pairs, providing access to properties by name or
+/// index.
+/// </summary>
+/// <remarks>
+/// The JsonMap class models a JSON object as a collection of JsonPair instances, each representing a
+/// property name and value. Properties can be accessed by their string name or by their zero-based index. The class
+/// implements <see cref="IReadOnlyList{T}">IReadOnlyList&lt;JsonPair&gt;</see> to support enumeration and indexed access.
+/// Instances are immutable after construction. This type is typically used when parsing or manipulating JSON data
+/// structures that represent objects. Thread safety is guaranteed for read operations if the provided property list
+/// is not modified externally.
+/// </remarks>
+public sealed class JsonMap: JsonItem, IReadOnlyList<JsonPair>
+{
+	private readonly IReadOnlyList<JsonPair> _map;
+
+	public JsonItem? this[string name] => _map.FirstOrDefault(o => o.Name == name).Item;
+	public JsonPair this[int index] => _map[index];
+	public override int Count => _map.Count;
 	public override bool IsObject => true;
+
 
 	public JsonMap(IReadOnlyList<JsonPair> properties)
 	{
 		if (properties is null)
 			throw new ArgumentNullException(nameof(properties));
-		Properties = ReadOnly.ReWrap(properties);
-	}
-
-	public JsonMap(IWrappedList<JsonPair> properties)
-	{
-		Properties = properties ?? throw new ArgumentNullException(nameof(properties));
+		_map = properties;
 	}
 
 	public JsonMap(IReadOnlyList<JsonPair> properties, IReadOnlyList<JsonPair>? attributes): base(attributes)
 	{
 		if (properties is null)
 			throw new ArgumentNullException(nameof(properties));
-		Properties = ReadOnly.ReWrap(properties);
-	}
-
-	public JsonMap(IWrappedList<JsonPair> properties, IReadOnlyList<JsonPair>? attributes): base(attributes)
-	{
-		Properties = properties ?? throw new ArgumentNullException(nameof(properties));
+		_map = properties;
 	}
 
 	public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
@@ -664,11 +676,11 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 
 		base.ToString(text, indent, stringLimit, arrayLimit);
 		text.Append('{');
-		if (Properties.Count > 0)
+		if (_map.Count > 0)
 		{
 			string? indent2 = indent == null ? null: indent + "  ";
 			string comma = "";
-			foreach (var item in Properties)
+			foreach (var item in _map)
 			{
 				if (item.IsEmpty)
 					continue;
@@ -690,10 +702,10 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 	{
 		base.Write(stream);
 		stream.Write((byte)'{');
-		if (Properties.Count > 0)
+		if (_map.Count > 0)
 		{
 			bool next = false;
-			foreach (var item in Properties)
+			foreach (var item in _map)
 			{
 				if (item.IsEmpty)
 					continue;
@@ -707,41 +719,41 @@ public class JsonMap: JsonItem, IEnumerable<JsonPair>
 		stream.Write((byte)'}');
 	}
 
-	public IEnumerator<JsonPair> GetEnumerator() => Properties.GetEnumerator();
+	public IEnumerator<JsonPair> GetEnumerator() => _map.GetEnumerator();
 
-	IEnumerator IEnumerable.GetEnumerator() => Properties.GetEnumerator();
+	IEnumerator IEnumerable.GetEnumerator() => _map.GetEnumerator();
 }
 
-[Serializable]
-public class JsonArray: JsonItem, IEnumerable<JsonItem>
+
+/// <summary>
+/// Represents a JSON array, providing read-only access to its elements as a collection of JSON items.
+/// </summary>
+/// <remarks>
+/// Use this class to work with JSON arrays in a structured and type-safe manner. The array elements are
+/// accessible by index and the collection implements read-only list semantics. This type is immutable after
+/// construction. Thread safety is guaranteed for read operations. The class also supports serialization to JSON text
+/// and writing to streams.
+/// </remarks>
+public sealed class JsonArray: JsonItem, IReadOnlyList<JsonItem>
 {
-	public IReadOnlyList<JsonItem> Items { get; }
-	public override JsonItem? this[int index] => index >= 0 && index < Items.Count ? Items[index]: null;
-	public override int Count => Items.Count;
+	private readonly IReadOnlyList<JsonItem> _items;
+
+	public JsonItem this[int index] => index >= 0 && index < _items.Count ? _items[index]: throw new ArgumentOutOfRangeException(nameof(index), index, null);
+	public override int Count => _items.Count;
 	public override bool IsArray => true;
 
 	public JsonArray(IReadOnlyList<JsonItem> items)
 	{
 		if (items is null)
 			throw new ArgumentNullException(nameof(items));
-		Items = ReadOnly.ReWrap(items);
-	}
-
-	public JsonArray(IWrappedList<JsonItem> items)
-	{
-		Items = items ?? throw new ArgumentNullException(nameof(items));
+		_items = ReadOnly.ReWrap(items);
 	}
 
 	public JsonArray(IReadOnlyList<JsonItem> items, IReadOnlyList<JsonPair>? attributes): base(attributes)
 	{
 		if (items is null)
 			throw new ArgumentNullException(nameof(items));
-		Items = ReadOnly.ReWrap(items);
-	}
-
-	public JsonArray(IWrappedList<JsonItem> items, IReadOnlyList<JsonPair>? attributes): base(attributes)
-	{
-		Items = items ?? throw new ArgumentNullException(nameof(items));
+		_items = ReadOnly.ReWrap(items);
 	}
 
 	public override StringBuilder ToString(StringBuilder text, string? indent = null, int stringLimit = 0, int arrayLimit = 0)
@@ -754,7 +766,7 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 		string? indent2 = indent == null ? null: indent + "  ";
 		string comma = "";
 		int i = 0;
-		foreach (JsonItem item in Items)
+		foreach (JsonItem item in _items)
 		{
 			if (indent == null)
 				text.Append(comma);
@@ -779,7 +791,7 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 		base.Write(stream);
 		stream.Write((byte)'[');
 		bool next = false;
-		foreach (JsonItem item in Items)
+		foreach (JsonItem item in _items)
 		{
 			if (next)
 				stream.Write((byte)',');
@@ -790,12 +802,20 @@ public class JsonArray: JsonItem, IEnumerable<JsonItem>
 		stream.Write((byte)']');
 	}
 
-	public IEnumerator<JsonItem> GetEnumerator() => Items.GetEnumerator();
+	public IEnumerator<JsonItem> GetEnumerator() => _items.GetEnumerator();
 
-	IEnumerator IEnumerable.GetEnumerator() => Items.GetEnumerator();
+	IEnumerator IEnumerable.GetEnumerator() => _items.GetEnumerator();
 }
 
-
+/// <summary>
+/// Provides static factory methods for creating JSON elements, including scalars, arrays, maps, and key-value pairs, in
+/// a concise and type-safe manner.
+/// </summary>
+/// <remarks>
+/// The methods in this class offer multiple overloads to simplify the construction of JSON structures from
+/// various .NET types and collections. This enables fluent and readable creation of complex JSON objects without
+/// manual instantiation of individual JSON element types. All methods are thread-safe and do not modify input collections.
+/// </remarks>
 public static class ZenJson
 {
 	// JsonScalar
@@ -808,33 +828,36 @@ public static class ZenJson
 	public static JsonMap J(JsonPair pair) => new JsonMap([pair]);
 	public static JsonMap J(params JsonPair[] pair) => new JsonMap(pair);
 	public static JsonMap J(List<JsonPair> pair) => new JsonMap(pair);
-	public static JsonMap J(IList<JsonPair> pair) => new JsonMap(ReadOnly.Wrap(pair));
+	public static JsonMap J(IList<JsonPair> pair) => new JsonMap(pair.ToIReadOnlyList());
 	public static JsonMap J(IReadOnlyList<JsonPair> pair) => new JsonMap(pair);
-	public static JsonMap J(IEnumerable<JsonPair> pair) => new JsonMap(ReadOnly.WrapCopy(pair));
+	public static JsonMap J(IEnumerable<JsonPair> pair) => new JsonMap(pair.ToIReadOnlyList());
 
 	// JsonArray
 
-	public static JsonArray J(JsonItem pair) => new JsonArray([pair]);
-	public static JsonArray J(params JsonItem[] pair) => new JsonArray(pair);
-	public static JsonArray J(List<JsonItem> pair) => new JsonArray(pair);
-	public static JsonArray J(IList<JsonItem> pair) => new JsonArray(ReadOnly.Wrap(pair));
-	public static JsonArray J(IReadOnlyList<JsonItem> pair) => new JsonArray(pair);
-	public static JsonArray J(IEnumerable<JsonItem> pair) => new JsonArray(ReadOnly.WrapCopy(pair));
-
+	public static JsonArray J(JsonItem item) => new JsonArray([item]);
+	public static JsonArray J(params JsonItem[] items) => new JsonArray(items);
+	public static JsonArray J(List<JsonItem> items) => new JsonArray(items);
+	public static JsonArray J(IList<JsonItem> items) => new JsonArray(items.ToIReadOnlyList());
+	public static JsonArray J(IReadOnlyList<JsonItem> items) => new JsonArray(items);
+	public static JsonArray J(IEnumerable<JsonItem> items) => new JsonArray(items.ToIReadOnlyList());
+	public static JsonArray J(JsonArray item) => new JsonArray([item]);
+	public static JsonArray J(JsonMap item) => new JsonArray([item]);
 	// JsonPair
 
-	public static JsonPair J(string name, JsonItem value) => new JsonPair(name, value);
 	public static JsonPair J(string name, object value) => new JsonPair(name, new JsonScalar(value));
 
 	public static JsonPair J(string name, params JsonPair[] value) => new JsonPair(name, new JsonMap(value));
-	public static JsonPair J(string name, List<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)));
-	public static JsonPair J(string name, IList<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.Wrap(value)));
+	public static JsonPair J(string name, List<JsonPair> value) => new JsonPair(name, new JsonMap(value));
+	public static JsonPair J(string name, IList<JsonPair> value) => new JsonPair(name, new JsonMap(value.ToIReadOnlyList()));
 	public static JsonPair J(string name, IReadOnlyList<JsonPair> value) => new JsonPair(name, new JsonMap(value));
-	public static JsonPair J(string name, IEnumerable<JsonPair> value) => new JsonPair(name, new JsonMap(ReadOnly.WrapCopy(value)));
+	public static JsonPair J(string name, IEnumerable<JsonPair> value) => new JsonPair(name, new JsonMap(value.ToIReadOnlyList()));
 
+	public static JsonPair J(string name, JsonItem value) => new JsonPair(name, value);
+	public static JsonPair J(string name, JsonMap value) => new JsonPair(name, value);
+	public static JsonPair J(string name, JsonArray value) => new JsonPair(name, value);
 	public static JsonPair J(string name, params JsonItem[] value) => new JsonPair(name, new JsonArray(value));
 	public static JsonPair J(string name, List<JsonItem> value) => new JsonPair(name, new JsonArray(value));
-	public static JsonPair J(string name, IList<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.Wrap(value)));
+	public static JsonPair J(string name, IList<JsonItem> value) => new JsonPair(name, new JsonArray(value.ToIReadOnlyList()));
 	public static JsonPair J(string name, IReadOnlyList<JsonItem> value) => new JsonPair(name, new JsonArray(value));
-	public static JsonPair J(string name, IEnumerable<JsonItem> value) => new JsonPair(name, new JsonArray(ReadOnly.WrapCopy(value)));
+	public static JsonPair J(string name, IEnumerable<JsonItem> value) => new JsonPair(name, new JsonArray(value.ToIReadOnlyList()));
 }

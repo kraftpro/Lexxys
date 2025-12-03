@@ -32,9 +32,9 @@ public static class ReadOnlySpanByteExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe string? ReadString(this scoped ref ReadOnlySpan<byte> span)
 	{
-		int length = (int)span.ReadPackedUInt() - 1;
-		if (length < 0)
-			return null;
+		int length = span.ReadPackedInt() - 1;
+		if (length <= 0)
+			return length == 0 ? String.Empty: null;
 #if NET5_0_OR_GREATER
 		var value = Encoding.UTF8.GetString(span.Slice(0, length));
 #else
@@ -69,7 +69,7 @@ public static class ReadOnlySpanByteExtensions
 	public static int ReadPackedInt(this scoped ref ReadOnlySpan<byte> span)
 	{
 		uint value = span.ReadPackedUInt();
-		return (value & 1) == 1 ? -(int)(value >> 1): (int)(value >> 1);
+		return (int)((value & 1) == 0 ? value >> 1: ~(value >> 1));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -93,7 +93,7 @@ public static class ReadOnlySpanByteExtensions
 	public static long ReadPackedLong(this scoped ref ReadOnlySpan<byte> span)
 	{
 		ulong value = span.ReadPackedULong();
-		return (value & 1) == 1 ? -(long)(value >> 1): (long)(value >> 1);
+		return (long)((value & 1) == 0 ? value >> 1: ~(value >> 1));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -16,7 +16,7 @@ public static class ConfigServiceExtensions
 		services.AddSingleton<IConfigService>(service);
 		services.AddSingleton<IConfigSource>(service);
 		services.AddSingleton<IConfigLogger>(service);
-		services.AddSingleton(typeof(IConfigSection), typeof(ConfigSection));
+		services.AddSingleton<IConfigSection, ConfigSection>();
 
 		config?.Invoke(service);
 

@@ -20,7 +20,7 @@ internal class DbTimeProvider: ITimeProvider
 			_timeZone = timeZone;
 	}
 
-	public DateTimeOffset UtcNow => _utcNow ??= DateTimeOffset.UtcNow.Add(_offset);
+	public DateTimeOffset UtcNow => _utcNow ?? DateTimeOffset.UtcNow.Add(_offset);
 
 	public DateTimeOffset LocalNow => UtcNow.ToOffset(_timeZone.BaseUtcOffset);
 

@@ -693,7 +693,7 @@ public static class MimeMapping
 			#endregion
 		};
 
-		IXmlReadOnlyNode node = Config.Current.GetValue(ConfigSection, Xml.XmlNodeBuilder.EmptyReadOnly).Value;
+		IXmlReadOnlyNode node = Config.Current.GetValue(ConfigSection, XmlNodeBuilder.EmptyReadOnly).Value;
 
 		foreach (var item in node.Where("map"))
 		{

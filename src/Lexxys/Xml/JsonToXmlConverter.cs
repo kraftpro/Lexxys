@@ -16,7 +16,8 @@ public static class JsonToXmlConverter
 		if (rootName is not { Length: > 0 })
 			throw new ArgumentNullException(nameof(rootName));
 
-		return JsonParser.Parse(text)
+			return JsonParser.Parse(text)
+			.GetValueOrThrow(o => new FormatException("Invalid JSON format: " + o.Message))
 			.ToXml(rootName, ignoreCase, forceAttributes);
 	}
 
@@ -26,6 +27,7 @@ public static class JsonToXmlConverter
 			throw new ArgumentNullException(nameof(text));
 
 		return JsonParser.Parse(text)
+			.GetValueOrThrow(o => new FormatException("Invalid JSON format: " + o.Message))
 			.ToXml("x", ignoreCase, forceAttributes).Elements;
 	}
 }

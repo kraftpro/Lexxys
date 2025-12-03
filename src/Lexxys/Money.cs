@@ -5,6 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 using System.Collections;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -28,7 +29,7 @@ public readonly struct Money:
 #else
 	IFormattable, IComparable, IComparable<Money>, IEquatable<Money>,
 #endif
-	IConvertible, ISerializable, IDumpValue, IDumpXml, IDumpJson
+	IConvertible, ISerializable, IDumpValue
 {
 	private readonly long _value;
 	private readonly Currency _currency;
@@ -83,6 +84,18 @@ public readonly struct Money:
 			throw new OverflowException($"The computed value {v} overflows of the valid range.")
 				.Add(nameof(value), value);
 		_value = (long)v;
+	}
+
+	/// <summary>
+	/// Initializes a new instance of the Money class with the specified monetary value and currency code.
+	/// </summary>
+	/// <param name="value">The monetary amount to represent.</param>
+	/// <param name="currencyCode">The ISO 4217 currency code that identifies the currency of the monetary value. The code must be valid and
+	/// recognized.</param>
+	/// <exception cref="ArgumentException">Thrown when the specified currency code is not valid or not recognized.</exception>
+	public Money(decimal value, string currencyCode):
+		this(value, Currency.Find(currencyCode) ?? throw new ArgumentException($"Currency code '{currencyCode}' is not valid.", nameof(currencyCode)))
+	{
 	}
 
 	private Money(ulong value, Currency currency)
@@ -344,13 +357,11 @@ public readonly struct Money:
 	}
 
 	/// <inheritdoc />
-	public DumpWriter DumpContent(DumpWriter writer)
+	public void DumpContent(IDumpWriter writer)
 	{
 		if (writer is null) throw new ArgumentNullException(nameof(writer));
-		return writer.Dump(Amount).Text('[').Text(Currency.Code).Text(']');
+		writer.Write($"{Amount} {Currency.Code}");
 	}
-
-	string IDumpXml.XmlElementName => "money";
 
 	private static readonly Money __negOne = new Money(-1);
 	private static readonly Money __one = new Money(1);
@@ -682,24 +693,6 @@ public readonly struct Money:
 #endif
 
 	#endregion
-
-	/// <inheritdoc />
-	public XmlBuilder ToXmlContent(XmlBuilder builder)
-	{
-		if (builder is null)
-			throw new ArgumentNullException(nameof(builder));
-		return builder.InAttribute ? builder.Value(XmlTools.Convert(Amount) + " " + Currency.Code):
-			builder.Item("amount", Amount).Item("currency", Currency.Code);
-	}
-
-	/// <inheritdoc />
-	public JsonBuilder ToJsonContent(JsonBuilder json)
-	{
-		if (json is null)
-			throw new ArgumentNullException(nameof(json));
-		return json.InArray ? json.Val(XmlTools.Convert(Amount) + " " + Currency.Code):
-			json.Item("amount").Val(Amount).Item("currency").Val(Currency.Code);
-	}
 
 	#endregion
 
@@ -1766,7 +1759,19 @@ public sealed class Currency
 	/// </summary>
 	public readonly Money Zero;
 
-	private static Hashtable __mapByCode = new Hashtable();
+	private static ImmutableDictionary<string, Currency> __mapByCode = ImmutableDictionary.ToImmutableDictionary(
+		[
+			new KeyValuePair<string, Currency>("CUR", new Currency("CUR", 2, "\x00A4")),
+			new KeyValuePair<string, Currency>("USD", new Currency("USD", 2, "$")),
+			new KeyValuePair<string, Currency>("EUR", new Currency("EUR", 2, "\x20AC")),
+			new KeyValuePair<string, Currency>("JPY", new Currency("JPY", 0, "\x00A5")),
+			new KeyValuePair<string, Currency>("GPB", new Currency("GPB", 2, "\x00A3")),
+			new KeyValuePair<string, Currency>("CNY", new Currency("NCY", 2, "\x00A5")),
+			new KeyValuePair<string, Currency>("CHF", new Currency("CHF", 2)),
+			new KeyValuePair<string, Currency>("KRW", new Currency("KRW", 2, "\x20AD")),
+			new KeyValuePair<string, Currency>("INR", new Currency("INR", 2, "\x20BD")),
+			new KeyValuePair<string, Currency>("RUB", new Currency("RUB", 2, "\x20BD")),
+		]);
 
 	private Currency(string code, int precision, string? symbol = null)
 	{
@@ -1796,17 +1801,12 @@ public sealed class Currency
 
 	public override int GetHashCode() => Code.GetHashCode();
 
-	public override bool Equals(object? obj) => obj is Currency other && Code == other.Code;
-
 	/// <summary>
 	/// Finds a currency by currency code.
 	/// </summary>
 	/// <param name="code">Three-letter currency code</param>
 	/// <returns>A found currency or null.</returns>
-	public static Currency? Find(string? code)
-	{
-		return code == null ? null: (Currency?)__mapByCode[code.ToUpperInvariant()];
-	}
+	public static Currency? Find(string? code) => code != null && __mapByCode.TryGetValue(code.ToUpperInvariant(), out var currency) ? currency : null;
 
 	/// <summary>
 	/// Creates a new currency or returns an existing one.
@@ -1823,34 +1823,32 @@ public sealed class Currency
 		code = code.ToUpperInvariant();
 		Currency? result = null;
 
-		Hashtable hash;
-		Hashtable temp;
+		ImmutableDictionary<string, Currency> hash;
+		ImmutableDictionary<string, Currency> temp;
 		do
 		{
 			hash = __mapByCode;
-			object? obj = __mapByCode[code];
-			if (obj != null)
-				return (Currency)obj;
+			if (hash.TryGetValue(code, out var currency))
+				return currency;
 			result ??= new Currency(code, precision, symbol);
-			temp = (Hashtable)hash.Clone();
-			temp[code] = result;
+			temp = hash.Add(code, result);
 		} while (Interlocked.CompareExchange(ref __mapByCode, temp, hash) != hash);
 
 		return result;
 	}
 
-	public static readonly Currency Current = Create(RegionInfo.CurrentRegion.ISOCurrencySymbol, CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalDigits, RegionInfo.CurrentRegion.CurrencySymbol);
-	public static readonly Currency Empty = Create("CUR", 2, "\x00A4");
-	public static readonly Currency Usd = Create("USD", 2, "$");
-	public static readonly Currency Eur = Create("EUR", 2, "\x20AC");
-	public static readonly Currency Jpy = Create("JPY", 0, "\x00A5");
-	public static readonly Currency Gpb = Create("GPB", 2, "\x00A3");
-	public static readonly Currency Cny = Create("NCY", 2, "\x00A5");
-	public static readonly Currency Chf = Create("CHF", 2);
-	public static readonly Currency Krw = Create("KRW", 2, "\x20AD");
-	public static readonly Currency Inr = Create("INR", 2, "\x20BD");
-	public static readonly Currency Rub = Create("RUB", 2, "\x20BD");
-	public static readonly Currency Uzs = Create("UZS", 2);
+	public static readonly Currency Current = Find(RegionInfo.CurrentRegion.ISOCurrencySymbol) ?? Create(RegionInfo.CurrentRegion.ISOCurrencySymbol, CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalDigits, RegionInfo.CurrentRegion.CurrencySymbol);
+	public static readonly Currency Empty = Find("CUR")!;
+	public static readonly Currency Usd = Find("USD")!;
+	public static readonly Currency Eur = Find("EUR")!;
+	public static readonly Currency Jpy = Find("JPY")!;
+	public static readonly Currency Gpb = Find("GPB")!;
+	public static readonly Currency Cny = Find("NCY")!;
+	public static readonly Currency Chf = Find("CHF")!;
+	public static readonly Currency Krw = Find("KRW")!;
+	public static readonly Currency Inr = Find("INR")!;
+	public static readonly Currency Rub = Find("RUB")!;
+	public static readonly Currency Uzs = Find("UZS")!;
 
 	/// <summary>
 	/// Gets or sets default <see cref="Currency"/> value.

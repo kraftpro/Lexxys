@@ -19,12 +19,6 @@ namespace Lexxys.Tests.Xml
 	[TestClass()]
 	public class ReadableXmlTest
 	{
-		/// <summary>
-		///Gets or sets the test context which provides
-		///information about and functionality for the current test run.
-		///</summary>
-		public TestContext TestContext { get; set; }
-
 		#region Additional test attributes
 		// 
 		//You can use the following additional attributes as you write your tests:
@@ -270,9 +264,8 @@ namespace Lexxys.Tests.Xml
 		{
 			if (File.Exists(@"test.db.config.txt"))
 			{
-				var p = Config.AddConfiguration(@"test.db.config.txt");
-				Assert.IsNotNull(p);
-				var c = Config.Current.GetValue<Lexxys.Data.ConnectionStringInfo>("database.connection", () => null).Value;
+				var p = Config.AddConfiguration(Path.GetFullPath(@"test.db.config.txt"));
+				var c = Config.Current.GetValue<Lexxys.Data.ConnectionStringInfo?>("database.connection", () => null).Value;
 				if (c == null)
 					Debugger.Break();
 				Assert.IsNotNull(c);

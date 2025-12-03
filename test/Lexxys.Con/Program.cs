@@ -1,9 +1,63 @@
-﻿using Lexxys;
+using Amazon.S3;
+
+using Lexxys;
+using Lexxys.Con;
+using Lexxys.Con.ArgsCon;
 using Lexxys.Configuration;
 using Lexxys.Data;
 
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 
+
+
+
+
+
+
+var cmd = args.Length > 0 ? args[0]: null;
+if (cmd != null)
+	args = args[1..];
+
+CallContext.Go();
+
+(int, object?[]) tpl = (3, [123]);
+var tpl2 = tpl;
+var tpl3 = (Count: 3, Data: new[] { 123 });
+Console.WriteLine(TplStr(tpl2));
+Console.WriteLine(TplStr(tpl));
+Console.WriteLine(TplStr3(tpl3));
+
+cmd ??= "args";
+
+switch (cmd)
+{
+	case "args":
+		ArgsUsage.Run(args);
+		return;
+
+	case "dump":
+		DumpTest.Run(args);
+		return;
+
+	default:
+		break;
+}
+
+static string TplStr((int Count, object?[] Data) obj)
+{
+	return obj.ToString() ?? "";
+}
+
+static string TplStr3(object? obj)
+{
+	return obj?.ToString() ?? "";
+}
 
 static string SqlStr(ref SqlInterpolatedHandler value)
 {
@@ -19,11 +73,34 @@ Statics.AddConfigServices();
 
 var r = new RowVersion(0x00000000000007da);
 Console.WriteLine(r.ToString());
+var sr = SqlStr($"select * from Documents where Version = {r}");
 
-var nf = new BlobNameFormatter(minLength: 3, segmentCount: 2, segmentLength: -2);
-Console.WriteLine(nf.CreateName("abcdef"));
+IBlobStorageService<string> bsss = Unsafe.BitCast<IBlobStorageService, IBlobStorageService<string>>(new FileStorageService(@"D:\Data\Documents"));
 
-var sc = Dc.StaticDataFactory.CreateContext(new ConnectionStringInfo
+
+IHostBuilder host = Host.CreateDefaultBuilder(args);
+host.ConfigureServices((context, services) =>
+{
+	var config = context.Configuration;
+	var documentsLocation = config.GetValue<string>("BlobStorage:DocumentsLocation") ?? @"D:\Data\Documents";
+	var checksLocation = config.GetValue<string>("BlobStorage:ChecksLocation") ?? @"D:\Data\Checks";
+	var awsOpt = context.Configuration.GetAWSOptions();
+
+	services.AddBlobStorageFactory();
+	services.AddKeyedSingleton<IBlobStorageService>("documents", (_, _) =>
+		new FileStorageService(documentsLocation));
+	services.AddKeyedSingleton<IBlobStorageService>("images", (sp, _) =>
+		new AmazonBlobStorageService("image-bucket", awsOpt.CreateServiceClient<IAmazonS3>()));
+
+	services.AddBlobStorage<ServiceTag.Documents>(sp => new FileStorageService(documentsLocation));
+	services.AddBlobStorage<ServiceTag.Checks>(sp => new FileStorageService(checksLocation));
+	services.AddBlobStorage<ServiceTag.Images>(new AmazonBlobStorageService("image-bucket", awsOpt.CreateServiceClient<IAmazonS3>()));
+});
+
+//var nf = new PathFormatter(minLength: 3, segmentCount: 2, segmentLength: -2);
+//Console.WriteLine(nf.CreateName("abcdef"));
+
+var sc = Dc.StaticDataFactory.Create(new ConnectionStringInfo
 {
 	TrustServerCertificate = true,
 	Server = ".",
@@ -73,3 +150,11 @@ docs.AsParallel()
 //		total += await Dc.Instance.GetValueAsync<int>("select FileLength from Documents where ID=@D", Dc.Parameter("@D", id));
 //	});
 Console.WriteLine($"total: {total} {(DateTime.UtcNow - t).TotalSeconds}");
+
+
+public static class ServiceTag
+{
+	public class Documents { }
+	public class Checks { }
+	public class Images { }
+}

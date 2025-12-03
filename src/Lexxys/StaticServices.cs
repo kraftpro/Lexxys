@@ -16,7 +16,7 @@ public sealed class StaticServices: IStaticServices
 
 	public IServiceProvider ServiceProvider => _provider ??= _collection.BuildServiceProvider();
 
-	public bool ContainsService(Type serviceType)
+	public bool ContainsService(Type? serviceType)
 		=> serviceType != null && _collection.Any(s => s.ServiceType == serviceType);
 
 	public bool AddService(ServiceDescriptor? service, bool unique = false)

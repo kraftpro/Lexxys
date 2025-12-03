@@ -50,27 +50,20 @@ public static class ValueValidator
 	#endregion
 
 	#region Zip Validators
-	private static readonly Regex _validDbUsZipCode = new Regex(@"\A\d{5}(\d{4})?\z", RegexOptions.Singleline);
-	private static readonly Regex _invalidDbUsZipCode = new Regex(@"\A0{5}(\d{4})?\z", RegexOptions.Singleline);
+
+	private static readonly Regex _validDbUsZipCode = new Regex(@"\A\d[1-9]\d{3}(\d{4})?\z", RegexOptions.Singleline);
 	private static readonly Regex _validPostalCode = new Regex(@"^[a-zA-Z0-9]([a-zA-Z0-9 -]*[a-zA-Z0-9])?$");
 
-	public static bool IsUsZipCode(string? value)
-	{
-		return (value != null) && _validDbUsZipCode.IsMatch(value) && !_invalidDbUsZipCode.IsMatch(value);
-	}
+	public static bool IsUsZipCode([NotNullWhen(true)] string? value) => (value != null) && _validDbUsZipCode.IsMatch(value);
 
-	public static bool IsUsZipCode(int value)
-	{
-		return value is >= 999 and < 999999999 && (value > 99999 ? IsUsZipCode(value.ToString("000000000")): IsUsZipCode(value.ToString("00000")));
-	}
+	public static bool IsUsZipCode(int value) => value is > 999 and < 999999999;
 
-	public static bool IsPostalCode(string? value)
-	{
-		return value != null && _validPostalCode.IsMatch(value);
-	}
+	public static bool IsPostalCode([NotNullWhen(true)] string? value) => value != null && _validPostalCode.IsMatch(value);
+
 	#endregion
 
 	#region Phone Validators
+
 	//  1234567890 format only
 	private static readonly Regex _validDbPhone = new Regex(@"\A\d{10}([xX].{2,10})?\z");
 	private static readonly Regex _invalidDbPhone0 = new Regex(@"\A0{10}");
@@ -102,151 +95,14 @@ public static class ValueValidator
 	#endregion
 
 	#region EIN Validators
-	private static readonly Regex _validDbEin = new Regex(@"\A(0[1-9]|[1-9]\d)\d{7}\z", RegexOptions.Singleline);
 
-	public static bool IsEin(string? value)
-	{
-		return value != null && _validDbEin.IsMatch(value);
-	}
+	private static readonly Regex _validDbEin = new Regex(@"\A(?:0[1-9]|[1-9]\d)\d{7}\z", RegexOptions.Singleline);
 
-	public static bool IsEin(int value)
-	{
-		return value is >= 10000000 and <= 999999999;
-	}
+	public static bool IsEin(string? value) => value != null && _validDbEin.IsMatch(value);
+
+	public static bool IsEin(int value) => value is >= 10000000 and <= 999999999;
+
 	#endregion
-
-	//#region Range Validators
-	//public static bool IsValueInRange<T1, T2>(T1 value, T2 min, T2 max) where T1: IComparable<T2>
-	//{
-	//	return value.CompareTo(min) >= 0 && value.CompareTo(max) <= 0;
-	//}
-
-	//public static bool IsValueInList<T1, T2>(T1 value, IEnumerable<T2> validValues) where T1: IEquatable<T2>
-	//{
-	//	foreach (T2 v in validValues)
-	//	{
-	//		if (value.Equals(v))
-	//			return true;
-	//	}
-	//	return false;
-	//}
-
-	//public static bool IsInRange<T>(T value, T min, T max, bool allowNull) where T: IField
-	//{
-	//	if (value.IsNull)
-	//		return allowNull;
-	//	return (value.CompareTo(min) >= 0) && (value.CompareTo(max) <= 0);
-	//}
-
-	//public static bool IsInRange<T>(T value, T min, T max) where T: IField
-	//{
-	//	return (value.CompareTo(min) >= 0) && (value.CompareTo(max) <= 0);
-	//}
-
-	////.?
-	//public static bool IsInRange(IntField value, int min, int max, bool allowNull)
-	//{
-	//	if (value.IsNull)
-	//		return allowNull;
-	//	return (value.CompareTo(min) >= 0) && (value.CompareTo(max) <= 0);
-	//}
-
-	//public static bool IsInRange(IntField value, int min, int max)
-	//{
-	//	return (value.CompareTo(min) >= 0) && (value.CompareTo(max) <= 0);
-	//}
-
-	//public static bool IsInList(IntField value, IEnumerable<int> validValues, bool allowNull)
-	//{
-	//	if (value.IsNull)
-	//		return allowNull;
-	//	return IsValueInList(value.GetValue(), validValues);
-	//}
-
-	//public static bool IsInList(IntField value, IEnumerable<int> validValues)
-	//{
-	//	return IsValueInList(value.GetValue(), validValues);
-	//}
-	////.?$Range = above("IntField", "int");
-
-	//#region More Ranges
-	////.#back($Range, "ByteField", "byte")
-	////.=
-	////.#back($Range, "ShortField", "short")
-	////.=
-	////.#back($Range, "LongField", "long")
-	////.=
-	////.#back($Range, "DoubleField", "double")
-	////.=
-	////.#back($Range, "FloatField", "float")
-	////.=
-	////.#back($Range, "DecimalField", "decimal")
-	////.=
-	////.#back($Range, "MoneyField", "decimal")
-	////.=
-	////.#back($Range, "DateTimeField", "DateTime")
-	////.=
-	//#endregion
-
-	//#endregion
-
-	//#region Miscellaneous Simple Validators
-	//public static bool IsString(string? value, int maxLength)
-	//{
-	//	return value != null && value.Length <= maxLength;
-	//}
-
-	//public static bool IsString(string? value, int minLength, int maxLength)
-	//{
-	//	return value != null && (value.Length >= minLength) && (maxLength > 0 && value.Length <= maxLength);
-	//}
-
-	//public static bool IsString(StringField value, int maxLength, bool allowNull)
-	//{
-	//	return value.IsNull ? allowNull: IsString(value.GetValue(), maxLength);
-	//}
-
-	//public static bool IsString(StringField value, int minLength, int maxLength, bool allowNull)
-	//{
-	//	return value.IsNull ? allowNull: IsString(value.GetValue(), minLength, maxLength);
-	//}
-
-	//public static bool IsString(StringField value, int maxLength)
-	//{
-	//	return IsString(value.GetValue(), maxLength);
-	//}
-
-	//public static bool IsString(StringField value, int minLength, int maxLength)
-	//{
-	//	return IsString(value.GetValue(), minLength, maxLength);
-	//}
-
-	//public static bool IsValue<T>(T value, bool allowNull) where T: IField
-	//{
-	//	return allowNull || value.HasValue;
-	//}
-
-	//public static bool IsValue<T>(T value) where T: IField
-	//{
-	//	return value.HasValue;
-	//}
-	//#endregion
-
-	//public static bool IsReference<T>(T value, string tableName, bool allowNull) where T: IField
-	//{
-	//	if (value.IsNull)
-	//		return allowNull;
-	//	return IsReference(value, tableName);
-	//}
-
-	//[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId="tableName")]
-	//public static bool IsReference<T>(T value, string tableName) where T: IField
-	//{
-	//	// TODO: Add reference validation
-
-	//	long id;
-	//	return long.TryParse(value.ToString(), out id) && id > 0;
-	//}
 }
 
 public static class UrlValueValidator

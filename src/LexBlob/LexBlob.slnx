@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="./Lexxys.Blob.Aws/Lexxys.Blob.Aws.csproj" />
+  <Project Path="./Lexxys.Blob.Azr/Lexxys.Blob.Azr.csproj" />
+  <Project Path="../Lexxys.Blob/Lexxys.Blob.csproj" />
+</Solution>

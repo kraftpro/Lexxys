@@ -68,7 +68,7 @@ namespace Lexxys.Tests.Configuration
 			var list = Statics.TryGetService<IConfigSection>().GetCollection<int>("GetListCollectsItemsFromAllConfigs.list.item");
 			Assert.IsNotNull(list);
 			Assert.IsNotNull(list.Value);
-			Assert.AreEqual(5, list.Value.Count);
+			Assert.HasCount(5, list.Value);
 		}
 
 		[TestMethod]
@@ -96,10 +96,10 @@ namespace Lexxys.Tests.Configuration
 			var list = Statics.TryGetService<IConfigSection>().GetValue<List<int>>("GetValueReflectsConfigChanges.list");
 			Assert.IsNotNull(list);
 			Assert.IsNotNull(list.Value);
-			Assert.AreEqual(3, list.Value.Count);
+			Assert.HasCount(3, list.Value);
 
 			service.AddConfiguration(config2);
-			Assert.AreEqual(2, list.Value.Count);
+			Assert.HasCount(2, list.Value);
 		}
 
 		[TestMethod]
@@ -127,10 +127,10 @@ namespace Lexxys.Tests.Configuration
 			var list = Statics.TryGetService<IConfigSection>().GetCollection<int>("GetListReflectsConfigChanges.list.item");
 			Assert.IsNotNull(list);
 			Assert.IsNotNull(list.Value);
-			Assert.AreEqual(3, list.Value.Count);
+			Assert.HasCount(3, list.Value);
 
 			service.AddConfiguration(config2);
-			Assert.AreEqual(5, list.Value.Count);
+			Assert.HasCount(5, list.Value);
 		}
 	}
 

@@ -71,33 +71,14 @@ public class DailySchedule: Schedule, IEquatable<DailySchedule>
 
 	public override int GetHashCode() => HashCode.Join(base.GetHashCode(), DayPeriod.GetHashCode());
 
-	public override DumpWriter DumpContent(DumpWriter writer)
+	public override void DumpContent(IDumpWriter writer)
 	{
 		if (writer is null) throw new ArgumentNullException(nameof(writer));
-		return base.DumpContent(writer)
-			.Then("DayPeriod", DayPeriod);
-	}
-
-	public override XmlBuilder ToXmlContent(XmlBuilder builder)
-	{
-		if (builder is null) throw new ArgumentNullException(nameof(builder));
-		builder.Item("type", ScheduleType);
-		if (DayPeriod != 1)
-			builder.Item("day", DayPeriod);
-		if (!Reminder.IsEmpty)
-			builder.Element("reminder").Value(Reminder).End();
-		return builder;
-	}
-
-	public override JsonBuilder ToJsonContent(JsonBuilder json)
-	{
-		if (json is null) throw new ArgumentNullException(nameof(json));
-		json.Item("type").Val(ScheduleType);
-		if (DayPeriod != 1)
-			json.Item("day").Val(DayPeriod);
-		if (!Reminder.IsEmpty)
-			json.Item("reminder").Val(Reminder);
-		return json;
+		writer.Write("type", ScheduleType);
+		if (DayPeriod != 1 || writer.Level > ObjectDumpLevel.Regular)
+			writer.Write("day", DayPeriod);
+		if (!Reminder.IsEmpty || writer.Level > ObjectDumpLevel.Regular)
+			writer.Write("reminder", Reminder);
 	}
 
 	public new static DailySchedule FromXml(Xml.IXmlReadOnlyNode xml)

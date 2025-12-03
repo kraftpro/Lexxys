@@ -4,7 +4,6 @@ namespace Lexxys.Testing;
 
 public static partial class Resources
 {
-
 	public static RandItem<string> Phone { get; } = R.Concat(
 		R.Picture("###-###-####", "(###) ###-####", "1-###-###-####", "###.###.####"),
 		R.Picture((5, ""),(1, " x ###"), (1, " x ####"))
@@ -52,22 +51,22 @@ public static partial class Resources
 	public static RandItem<string> AddressUsCity { get; } = R.Picture("{CityPrefix} {FirstOrLastName}", "{FirstOrLastName} {CitySuffix}", "{CityPrefix} {FirstOrLastName} {CitySuffix}");
 	public static RandItem<string> AddressUsStateCode { get; } = Resource["AddressUsState"];
 	public static RandItem<string> AddressUsZip { get; } = R.Picture((5, "####"), (1, "#####-####"));
-	public static RandItem<(string City, string State)> AddressUsCityState { get; } = GetUsCityState();
+	public static RandItem<CityState> AddressUsCityState { get; } = GetUsCityState();
 
 	public static RandItem<string> MimeType { get; } = Resource["MimeType"];
 	public static RandItem<string> Website { get; } = R.Picture("www.{LoremWords}.{TopLevelDomainName}");
 
 	public static RandItem<string> UrlMedia { get; } = Resource["Url"];
 
-	private static RandItem<(string City, string State)> GetUsCityState()
+	private static RandItem<CityState> GetUsCityState()
 	{
 		var r = Resource["AddressUsCityState"];
-		return r.IsEmpty ? RandItem<(string City, string State)>.Empty:
-			new RandItem<(string City, string State)>(() =>
+		return r.IsEmpty ? RandItem<CityState>.Empty:
+			new RandItem<CityState>(() =>
 			{
 				var s = r.NextValue();
 				var p = s.LastIndexOf(',');
-				return p < 0 ? (s, String.Empty): (s.AsSpan().Slice(0, p).TrimEnd().ToString(), s.AsSpan(p + 1).TrimStart().ToString());
+				return p < 0 ? new CityState(s, String.Empty): new CityState(s.AsSpan().Slice(0, p).TrimEnd().ToString(), s.AsSpan(p + 1).TrimStart().ToString());
 			});
 	}
 
@@ -75,4 +74,6 @@ public static partial class Resources
 	{
 		Resource["FirstOrLastName"] = FirstName | LastName;
 	}
+
+	public record struct CityState(string City, string State);
 }

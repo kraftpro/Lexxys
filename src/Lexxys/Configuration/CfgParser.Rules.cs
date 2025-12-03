@@ -1,4 +1,4 @@
-﻿using Lexxys.Tokenizer;
+using Lexxys.Tokenizer;
 using Lexxys.Xml;
 
 using System;
@@ -21,7 +21,7 @@ public ref partial struct CfgParser
 		_nodePath = new List<string>(4);
 
 		var options = _options;
-		Func<string, string> Macro = o => GetVarValue(o, options);
+		Func<string, ResultValue<string>> Macro = o => GetVarValue(o, options);
 
 		_back = new OneBackFilter();
 
@@ -232,7 +232,7 @@ public ref partial struct CfgParser
 			}
 		}
 
-		public string ToString(Func<string, string> macro)
+		public ResultValue<string> ToString(Func<string, ResultValue<string>> macro)
 		{
 			if (_chunk == null)
 				return _value ?? String.Empty;
@@ -241,7 +241,12 @@ public ref partial struct CfgParser
 			{
 				text.Append(s);
 				if (m != null)
-					text.Append(macro.Invoke(m));
+				{
+					var r = macro(m);
+					if (r.IsFailure)
+						return r.Error;
+					text.Append(r.Value);
+				}
 			}
 			return text.ToString();
 		}
@@ -271,9 +276,9 @@ public ref partial struct CfgParser
 	private class NodeNameRule: LexicalTokenRule
 	{
 		private readonly LexicalTokenType _tokenType;
-		private readonly Func<string, string>? _macro;
+		private readonly Func<string, ResultValue<string>>? _macro;
 
-		public NodeNameRule(LexicalTokenType tokenType, Func<string, string>? macro = null)
+		public NodeNameRule(LexicalTokenType tokenType, Func<string, ResultValue<string>>? macro = null)
 		{
 			_tokenType = tokenType;
 			_macro = macro;

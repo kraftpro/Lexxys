@@ -24,8 +24,6 @@ public static class ExceptionExtensions
 		var val = value switch
 		{
 			IDump idump => idump.Dump(),
-			IDumpJson jdump => jdump.ToJson(),
-			IDumpXml xdump => xdump.ToXml(),
 			null => null,
 			_ => value.ToString(),
 		};

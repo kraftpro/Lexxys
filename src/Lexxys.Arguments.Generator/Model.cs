@@ -1,8 +1,8 @@
-﻿namespace Lexxys.Arguments.Generator;
+namespace Lexxys.Argument.Generator;
 
-public record CliArgumentsModel(string? IgnoreCase, string? AllowSlash, string? StrictDoubleDash, string? DoubleDashSeparator, string? IgnoreNameSeparators, string? AllowUnknown, string? SplitPositional, string? CombineOptions, string? ColonSeparator, string? EqualSeparator, string? BlankSeparator)
+public record CliArgumentsModel(string? IgnoreCase, string? AllowSlash, string? Strict, string? AllowUnknown, string? ColonSeparator, string? EqualSeparator, string? BlankSeparator, string? NamingStyle, string? MatchingType)
 {
-	public CliArgumentsModel(): this(null, null, null, null, null, null, null, null, null, null, null) { }
+	public CliArgumentsModel(): this(null, null, null, null, null, null, null, null, null) { }
 }
 
 public record CliCommandModel(string? Name, string[] Alias, string? Description)
@@ -20,7 +20,7 @@ public record CliParamModel(string? Name, string[] Alias, string? ValueName, str
 	}
 }
 
-public record ArgumentClassModel(string Name, string NameSpace, CliArgumentsModel? Attribute = null)
+public record ArgumentClassModel(string Name, string NameSpace, string Accessibility, CliArgumentsModel? Attribute = null)
 {
 	public List<ArgumentPropertyModel> Properties { get; } = [];
 
@@ -35,13 +35,17 @@ public class ArgumentPropertyModel
 	
 	public ArgumentPropertyModel(string? name, string? type, CliParamModel? paramAttribute = null, CliCommandModel? commandAttribute = null)
 	{
-		Name = paramAttribute?.Name ?? commandAttribute?.Name ?? name;
+		MemberName = name;
+		ExplicitName = paramAttribute?.Name ?? commandAttribute?.Name;
+		Name = ExplicitName ?? name;
 		Type = type;
 		ParamAttribute = paramAttribute;
 		CommandAttribute = commandAttribute;
 	}
 
+	public string? MemberName { get; init; }
 	public string? Name { get; init; }
+	public string? ExplicitName { get; init; }
 	public string? Type { get; init; }
 	public CliParamModel? ParamAttribute { get; init; }
 	public CliCommandModel? CommandAttribute { get; init; }

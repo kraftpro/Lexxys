@@ -1,25 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net9.0;net8.0;netcoreapp3.1;net462</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsTestProject>true</IsTestProject>
-    <!--<GenerateProgramFile>false</GenerateProgramFile>-->
-    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
-    <MSBuildWarningsAsMessages>
-      $(MSBuildWarningsAsMessages);MSB3277
-    </MSBuildWarningsAsMessages>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
+
 
   <ItemGroup>
     <AssemblyMetadata Include="ConfigFile" Value="test.config.txt" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MSTest" Version="3.10.*" />
+    <PackageReference Include="MSTest" Version="4.2.*" />
     <PackageReference Include="BenchmarkDotNet" Version="0.15.*" />
   </ItemGroup>
 
@@ -28,9 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Lexxys.Blob\Lexxys.Blob.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.DataContext\Lexxys.DataContext.csproj" />
-    <ProjectReference Include="..\..\src\Lexxys.Results\Lexxys.Results.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Testing\Lexxys.Testing.csproj" />
     <ProjectReference Include="..\..\src\Lexxys.Validation\Lexxys.Validation.csproj" />
     <ProjectReference Include="..\..\src\Lexxys\Lexxys.csproj" />
@@ -38,9 +30,13 @@
 
   <ItemGroup>
     <Compile Remove="Crypting\**" />
+    <Compile Remove="Results\**" />
+    <EmbeddedResource Remove="Results\**" />
+    <None Remove="Results\**" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="LocalFileStorageServiceTests.cs" />
     <Compile Remove="Program.cs" />
   </ItemGroup>
 

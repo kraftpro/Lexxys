@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -15,7 +15,7 @@ public ref partial struct CfgParser
 	}
 
 	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	public class Node
+	public class Node: IDump
 	{
 		public string Name { get; set; }
 		public string? Value { get; set; }
@@ -82,10 +82,10 @@ public ref partial struct CfgParser
 			(Items ??= []).Add(node);
 		}
 
-		public JsonBuilder BuildJsonObject(JsonBuilder json)
-		{
-			return BuildJson(json.Obj(), false).End();
-		}
+		//public JsonBuilder BuildJsonObject(JsonBuilder json)
+		//{
+		//	return BuildJson(json.Obj(), false).End();
+		//}
 
 		public override string ToString() => ToString(false);
 
@@ -148,60 +148,124 @@ public ref partial struct CfgParser
 			}
 		}
 
-		public JsonBuilder BuildJson(JsonBuilder json, bool valueOnly = false)
+		//public JsonBuilder BuildJson(JsonBuilder json, bool valueOnly = false)
+		//{
+		//	if (!valueOnly)
+		//		json.Item(Name);
+		//	if (Items is not { Count: > 0 })
+		//	{
+		//		SetJsonValue(json, Value);
+		//	}
+		//	else if (Items.Any(o => o.IsArrayItem))
+		//	{
+		//		json.Arr();
+		//		foreach (var item in Items!)
+		//		{
+		//			item.BuildJson(json, true);
+		//		}
+		//		json.End();
+		//	}
+		//	else
+		//	{
+		//		json.Obj();
+		//		foreach (var item in Items!)
+		//		{
+		//			item.BuildJson(json);
+		//		}
+		//		json.End();
+		//	}
+		//	return json;
+		//}
+
+		//private void SetJsonValue(JsonBuilder json, string? value)
+		//{
+		//	if (value == null || value == "null")
+		//	{
+		//		json.Val((string?)null);
+		//	}
+		//	else if (value == "true")
+		//	{
+		//		json.Val(true);
+		//	}
+		//	else if (value == "false")
+		//	{
+		//		json.Val(false);
+		//	}
+		//	else if (IsQuoted || value.Length > 29 || !__numberRegex.IsMatch(value))
+		//	{
+		//		json.Val(value);
+		//	}
+		//	else
+		//	{
+		//		if (value.Contains('e') || value.Contains('E'))
+		//			json.Val(double.Parse(value, CultureInfo.InvariantCulture));
+		//		else
+		//			json.Val(decimal.Parse(value, CultureInfo.InvariantCulture));
+		//	}
+		//}
+
+		public void DumpContent(IDumpWriter writer)
 		{
-			if (!valueOnly)
-				json.Item(Name);
-			if (Items is not { Count: > 0 })
+			if (writer.Type is "json" or "xml")
 			{
-				SetJsonValue(json, Value);
+				DumpObject(writer);
+				return;
+			}
+
+			writer.Write("Name", Name);
+			writer.Write("Value", Value);
+			writer.Write("AttributeMark", AttributeMark);
+			writer.Write("Position", Position);
+			writer.Write("IsArrayItem", IsArrayItem);
+			writer.Write("IsQuoted", IsQuoted);
+			if (Items is { Count: > 0 })
+			{
+				writer.Write("Items", Items);
+			}
+		}
+
+		private void DumpObject(IDumpWriter writer, bool ignoreName = false)
+		{
+			if (Items is null || Items.Count == 0)
+			{
+				WriteJsonValue(writer, ignoreName);
 			}
 			else if (Items.Any(o => o.IsArrayItem))
 			{
-				json.Arr();
-				foreach (var item in Items!)
+				writer.BeginArray(ignoreName ? null: Name);
+				foreach (var item in Items)
 				{
-					item.BuildJson(json, true);
+					item.DumpObject(writer, true);
 				}
-				json.End();
+				writer.End();
 			}
 			else
 			{
-				json.Obj();
-				foreach (var item in Items!)
+				writer.BeginObject(ignoreName ? null : Name);
+				foreach (var item in Items)
 				{
-					item.BuildJson(json);
+					item.DumpObject(writer, false);
 				}
-				json.End();
+				writer.End();
 			}
-			return json;
 		}
 
-		private void SetJsonValue(JsonBuilder json, string? value)
+		private void WriteJsonValue(IDumpWriter writer, bool skipName = false)
 		{
+			string? name = skipName ? null: Name;
+			string? value = Value;
 			if (value == null || value == "null")
-			{
-				json.Val((string?)null);
-			}
+				writer.Write(name, (string?)null);
 			else if (value == "true")
-			{
-				json.Val(true);
-			}
+				writer.Write(name, true);
 			else if (value == "false")
-			{
-				json.Val(false);
-			}
+				writer.Write(name, false);
 			else if (IsQuoted || value.Length > 29 || !__numberRegex.IsMatch(value))
-			{
-				json.Val(value);
-			}
+				writer.Write(name, value);
+			else if (value.Contains('e') || value.Contains('E'))
+				writer.Write(name, double.Parse(value, CultureInfo.InvariantCulture));
 			else
-			{
-				if (value.Contains('e') || value.Contains('E'))
-					json.Val(double.Parse(value, CultureInfo.InvariantCulture));
-				else
-					json.Val(decimal.Parse(value, CultureInfo.InvariantCulture));
-			}
+				writer.Write(name, decimal.Parse(value, CultureInfo.InvariantCulture));
 		}
 
 		private static readonly Regex __numberRegex = new Regex(@"^-?(:?[1-9]\d*(\.\d+)?|0\.\d+)([eE][+-]?\d+)?$");

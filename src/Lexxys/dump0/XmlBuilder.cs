@@ -1,0 +1,1062 @@
+// Lexxys Infrastructural library.
+// file: XmlBuilder.cs
+//
+// Copyright (c) 2001-2014, Kraft Pro Utilities.
+// You may use this code under the terms of the MIT license
+//
+using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Text;
+using System.Xml;
+
+using Lexxys.Xml;
+
+namespace Lexxys;
+
+/// <summary>
+/// Represents a writer that provides a fast, non-cached, forward-only way to generate
+/// streams or files that contain XML data.
+/// </summary>
+[Obsolete]
+public abstract class XmlBuilder: IXmlBuilder
+{
+	private enum State
+	{
+		Value,
+		Element,
+		Attribute
+	}
+
+	private readonly Stack<string> _elements;
+	private readonly HashSet<object> _visited;
+	private State _state;
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="XmlBuilder"/> class.
+	/// </summary>
+	protected XmlBuilder(NamingCaseRule namingRule, bool preferElements)
+	{
+		_elements = new Stack<string>();
+		_visited = new HashSet<object>();
+		NamingRule = namingRule;
+		PreferElements = preferElements;
+	}
+
+	/// <summary>
+	/// Writes a <see cref="String"/> value to a stream.
+	/// </summary>
+	/// <param name="value">The <see cref="String"/> value to write.</param>
+	/// <returns></returns>
+	protected abstract XmlBuilder Text(string? value);
+	/// <summary>
+	/// Writes a <see cref="Char"/> value to a stream.
+	/// </summary>
+	/// <param name="value">The <see cref="Char"/> value to write.</param>
+	/// <returns></returns>
+	protected abstract XmlBuilder Text(char value);
+	/// <summary>
+	/// Encodes a <see cref="String"/> value as XML attribute value and writes the encoded value to a stream.
+	/// </summary>
+	/// <param name="value">The <see cref="String"/> value to write.</param>
+	/// <returns></returns>
+	protected abstract XmlBuilder EncodeAttribute(string? value);
+	/// <summary>
+	/// Encodes a <see cref="String"/> value as XML value and writes the encoded value to a stream.
+	/// </summary>
+	/// <param name="value">The <see cref="String"/> value to write.</param>
+	/// <returns></returns>
+	protected abstract XmlBuilder EncodeValue(string? value);
+
+	/// <summary>
+	/// Naming rules of the XML elements and attributes (default <see cref="NamingCaseRule.None"/>).
+	/// </summary>
+	public NamingCaseRule NamingRule { get; }
+	/// <summary>
+	/// Indicates that XML elements are better than XML attributes while writing <see cref="System.Object"/> value (default <code>false</code>).
+	/// </summary>
+	public bool PreferElements { get; }
+
+	/// <summary>
+	/// Indicates that the <see cref="XmlBuilder"/> is writing start element tag.
+	/// </summary>
+	public bool InElement => _state != State.Value;
+	/// <summary>
+	/// Indicates that the <see cref="XmlBuilder"/> is writing attribute.
+	/// </summary>
+	public bool InAttribute => _state == State.Attribute;
+
+	private string ForceName(string name)
+	{
+		if (((int)NamingRule & 8) != 0)
+			name = Rename(name);
+		return XmlConvert.EncodeName(name);
+	}
+
+	private string PreferName(string name) => XmlConvert.EncodeName(Rename(name));
+
+	private string Rename(string value) => Strings.ToNamingRule(value, NamingRule);
+
+	private static string ReferenceValue(object value) => $"^[{value}]";
+
+	/// <summary>
+	/// Writes a start tag with specified <paramref name="name"/>.
+	/// </summary>
+	/// <param name="name">The name of the element</param>
+	/// <returns><see cref="XmlBuilder"/></returns>
+	public XmlBuilder Element(string name)
+	{
+		if (name is not { Length: >0 })
+			throw new ArgumentNullException(nameof(name));
+		if (_state == State.Attribute)
+			Text("\"\">");
+		else if (_state == State.Element)
+			Text('>');
+		var s = ForceName(name);
+		Text('<').Text(s);
+		_elements.Push(s);
+		_state = State.Element;
+		return this;
+	}
+
+	/// <summary>
+	/// Writes end tag of current element.
+	/// </summary>
+	/// <returns><see cref="XmlBuilder"/></returns>
+	public XmlBuilder End()
+	{
+		var s = _elements.Pop();
+		if (_state == State.Attribute)
+			Text("\"\"/>");
+		if (_state == State.Element)
+			Text("/>");
+		else
+			Text("</").Text(s).Text('>');
+		_state = State.Value;
+		return this;
+	}
+
+	/// <summary>
+	/// Switches to the inner Xml elements.
+	/// </summary>
+	/// <returns></returns>
+	public XmlBuilder ToInnerElements()
+	{
+		if (_elements.Count == 0)
+			return this;
+		if (_state == State.Attribute)
+			Text("\"\">");
+		if (_state == State.Element)
+			Text('>');
+		_state = State.Value;
+		return this;
+	}
+
+	/// <summary>
+	/// Writes the start of attribute with the specified <paramref name="name"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Attrib(string name)
+	{
+		if (name is not { Length: >0 })
+			throw new ArgumentNullException(nameof(name));
+		if (_state == State.Value)
+			throw new InvalidOperationException("Trying to add attribute without element.");
+		if (_state == State.Attribute)
+			Text("\"\"");
+		else
+			_state = State.Attribute;
+		return Text(' ').Text(ForceName(name)).Text('=');
+	}
+
+	#region Item
+
+	private XmlBuilder AppendItem(string name, string? value)
+	{
+		if (name is not { Length: >0 })
+			throw new ArgumentNullException(nameof(name));
+		var s = ForceName(name);
+		if (_state == State.Value)
+			return String.IsNullOrEmpty(value) ? Text('<').Text(s).Text("/>"): Text('<').Text(s).Text('>').Text(value).Text("</").Text(s).Text('>');
+		if (_state == State.Attribute)
+		{
+			Text("\"\"");
+			_state = State.Element;
+		}
+		return String.IsNullOrEmpty(value) ? this: Text(' ').Text(s).Text('=').EncodeAttribute(value);
+	}
+
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, string value) => AppendItem(name, value);
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, bool value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, sbyte value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, byte value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, short value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, ushort value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, int value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, uint value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, long value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, ulong value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, float value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, double value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, decimal value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, Guid value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, TimeSpan value) => AppendItem(name, XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, DateTime value, bool omitTimeZone = false) => AppendItem(name, XmlTools.Convert(value, omitTimeZone));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, DateTimeOffset value, bool omitTimeZone = false) => AppendItem(name, XmlTools.Convert(value, omitTimeZone));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, bool? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, sbyte? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, byte? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, short? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, ushort? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, int? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, uint? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, long? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, ulong? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, float? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, double? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, decimal? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, Guid? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, TimeSpan? value) => AppendItem(name, value == null ? null: XmlTools.Convert(value));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, DateTime? value, bool omitTimeZone = false) => AppendItem(name, value == null ? null: XmlTools.Convert(value, omitTimeZone));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, DateTimeOffset? value, bool omitTimeZone = false) => AppendItem(name, value == null ? null: XmlTools.Convert(value, omitTimeZone));
+	/// <summary>
+	/// Writes an attribute or single element with specified <paramref name="name"/> and <paramref name="value"/>.
+	/// </summary>
+	/// <param name="name">The name of the attribute.</param>
+	/// <param name="value">The value of the attribute.</param>
+	/// <returns></returns>
+	public XmlBuilder Item(string name, object? value)
+	{
+		if (value == null)
+			return AppendItem(name, null);
+		if (value is IDumpXml id)
+			return Element(name).Value(id).End();
+		string? s = XmlTools.Convert(value);
+		if (s != null)
+			return AppendItem(name, s);
+		return Element(name).ComplexObject(value).End();
+	}
+
+	#endregion
+
+	#region Value
+
+	/// <summary>
+	/// Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">Encoded element value to append to the buffer</param>
+	/// <returns><see cref="XmlBuilder"/></returns>
+	private XmlBuilder AppendValue(string? value)
+	{
+		if (_state == State.Attribute)
+		{
+			_state = State.Element;
+			return value == null ? Text("\"\""): EncodeAttributeValue(value);
+		}
+		if (_state == State.Element)
+		{
+			_state = State.Value;
+			Text('>');
+		}
+		return Text(value);
+	}
+
+	private XmlBuilder EncodeAttributeValue(string value)
+	{
+		if (value.IndexOf('"') < 0)
+			return Text('"').Text(value).Text('"');
+		if (value.IndexOf('\'') < 0)
+			return Text('\'').Text(value).Text('\'');
+		return Text('"').Text(value.Replace("\"", "&quot;")).Text('"');
+	}
+
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(string? value)
+	{
+		if (_state == State.Attribute)
+		{
+			_state = State.Element;
+			return EncodeAttribute(value);
+		}
+		if (_state == State.Element)
+		{
+			_state = State.Value;
+			Text('>');
+		}
+		return EncodeValue(value);
+	}
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(bool value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(sbyte value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(byte value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(short value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(ushort value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(int value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(uint value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(long value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(ulong value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(float value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(double value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(decimal value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(Guid value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(TimeSpan value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(DateTime value) => AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(DateTime value, bool omitTimeZone) => AppendValue(XmlTools.Convert(value, omitTimeZone));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(DateTimeOffset value) => AppendValue(XmlTools.Convert(value));
+
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(bool? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(sbyte? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(byte? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(short? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(ushort? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(int? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(uint? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(long? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(ulong? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(float? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(double? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(decimal? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(Guid? value) => value == null ? this: AppendValue(XmlTools.Convert(value.GetValueOrDefault()));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(TimeSpan? value) => value == null ? this: AppendValue(XmlTools.Convert(value));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <param name="omitTimeZone">If true, the time zone will be omitted in the result.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(DateTime? value, bool omitTimeZone = false) => value == null ? this: AppendValue(XmlTools.Convert(value, omitTimeZone));
+	/// <summary>
+	///  Writes the value of the current XML element or attribute.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(DateTimeOffset? value) => value == null ? this: AppendValue(XmlTools.Convert(value));
+
+	#endregion
+
+	/// <summary>
+	/// Writes object value
+	/// </summary>
+	/// <param name="value">The value to write</param>
+	/// <returns></returns>
+	public XmlBuilder Value(IDumpXml? value) => value == null ? this: value.ToXmlContent(this);
+
+	/// <summary>
+	/// Writes collection of values
+	/// </summary>
+	/// <param name="items">The collection to write</param>
+	/// <param name="itemName">Optional name of the element item.</param>
+	/// <returns></returns>
+	public XmlBuilder Value(IEnumerable<IDumpXml>? items, string? itemName = null)
+	{
+		if (items is null)
+			return this;
+		foreach (var item in items)
+		{
+			Element(itemName ?? item.XmlElementName).Value(item).End();
+		}
+		return this;
+	}
+
+	/// <summary>
+	/// Writes object value.
+	/// </summary>
+	/// <param name="value">Value to write</param>
+	/// <returns><see cref="XmlBuilder"/></returns>
+	public XmlBuilder Value(object? value) => value == null ? this: Value(value, PreferElements);
+
+	/// <summary>
+	/// Writes object value.
+	/// </summary>
+	/// <param name="value">Value to write</param>
+	/// <param name="elements">Use XML elements instead of attributes for properties of <paramref name="value"/></param>
+	/// <returns><see cref="XmlBuilder"/></returns>
+	public XmlBuilder Value(object? value, bool elements) => value is IDumpXml dump ? dump.ToXmlContent(this): Object(value, elements);
+
+	/// <summary>
+	/// Writes object value ignoring <see cref="IDumpXml"/> implementation.
+	/// </summary>
+	/// <param name="value">Value to write</param>
+	/// <param name="elements">Use XML elements instead of attributes for properties of <paramref name="value"/></param>
+	/// <returns><see cref="XmlBuilder"/></returns>
+	public XmlBuilder Object(object? value, bool elements = false)
+	{
+		if (value == null)
+			return this;
+
+		string? xmlValue = XmlTools.Convert(value);
+		if (xmlValue != null)
+			return AppendValue(xmlValue);
+
+		return ComplexObject(value, elements);
+	}
+
+	private XmlBuilder ComplexObject(object value, bool elements = false)
+	{
+		if (!_visited.Add(value))
+			return Value(ReferenceValue(value));
+
+		if (value is not IEnumerable enumerable)
+		{
+			AppendProperties(value, elements);
+			return this;
+		}
+		var itemName = Rename("item");
+		foreach (var item in enumerable)
+		{
+			if (item is IDumpXml dumpXml)
+				Element(dumpXml.XmlElementName).Value(dumpXml).End();
+			else
+				Element(itemName).Value(item, elements).End();
+		}
+		return this;
+	}
+
+	/// <summary>
+	/// Writes XML element and value.
+	/// </summary>
+	/// <param name="name">Name of the XML element</param>
+	/// <param name="value">Value of the XML element</param>
+	/// <returns></returns>
+	public XmlBuilder Element(string name, object? value) => Element(name).Value(value, PreferElements).End();
+
+	/// <summary>
+	/// Writes XML element and value.
+	/// </summary>
+	/// <param name="name">Name of the XML element</param>
+	/// <param name="value">Value of the XML element</param>
+	/// <param name="elements">Use XML elements instead of attributes for properties of <paramref name="value"/></param>
+	/// <returns></returns>
+	public XmlBuilder Element(string name, object? value, bool elements) => Element(name).Value(value, elements).End();
+
+	/// <summary>
+	/// Writes XML element and value.
+	/// </summary>
+	/// <param name="name">Name of the XML element</param>
+	/// <param name="value">Value of the XML element</param>
+	/// <returns></returns>
+	public XmlBuilder Element(string name, IDumpXml? value) => Element(name).Value(value).End();
+
+	/// <summary>
+	/// Writes XML element and collection of sub-elements.
+	/// </summary>
+	/// <param name="name">Name of the XML element</param>
+	/// <param name="value">Value of the XML element</param>
+	/// <param name="itemName">Optional name of the collection item</param>
+	/// <returns></returns>
+	public XmlBuilder Element(string name, IEnumerable<IDumpXml>? value, string? itemName = null) => Element(name).Value(value, itemName).End();
+
+	private void AppendElement(string name, object? value, bool elements)
+	{
+		if (value == null)
+			return;
+
+		string? xmlValue = XmlTools.Convert(value);
+		if (xmlValue != null)
+		{
+			if (elements || _state == State.Value)
+				Element(name).AppendValue(xmlValue).End();
+			else
+				AppendItem(name, xmlValue);
+			return;
+		}
+
+		if (!_visited.Add(value))
+		{
+			Element(name).AppendValue(ReferenceValue(value)).End();
+			return;
+		}
+
+		if (value is not IEnumerable enumerable)
+		{
+			Element(name);
+			AppendProperties(value, elements);
+			End();
+		}
+		else
+		{
+			AppendValue("");
+			foreach (var item in enumerable)
+			{
+				AppendElement(name, item, elements);
+			}
+		}
+	}
+
+	private void AppendProperties(object? value, bool elements)
+	{
+		if (value == null)
+			return;
+
+		Type type = value.GetType();
+		var items = new List<KeyValuePair<string, object?>>();
+		foreach (var item in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetField))
+		{
+			try
+			{
+				object? v = item.GetValue(value);
+				items.Add(new KeyValuePair<string, object?>(item.Name, v));
+			}
+			catch
+			{
+				// ignore all internal exceptions
+			}
+		}
+		foreach (var item in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty))
+		{
+			if (item is { CanRead: true, PropertyType: { IsGenericTypeDefinition: false, IsAbstract: false } } &&
+			    item.GetIndexParameters().Length == 0 &&
+			    !item.PropertyType.IsGenericParameter)
+			{
+				try
+				{
+					object? v = item.GetValue(value);
+					items.Add(new KeyValuePair<string, object?>(item.Name, v));
+				}
+				catch
+				{
+					// ignore all internal exceptions
+				}
+			}
+		}
+		if (elements || _state == State.Value)
+		{
+			foreach (var item in items)
+			{
+				AppendElement(PreferName(item.Key), item.Value, elements);
+			}
+		}
+		else
+		{
+			var rest = new List<KeyValuePair<string, object?>>();
+			for (int i = 0; i < items.Count; ++i)
+			{
+				var item = items[i];
+				string? xmlValue = XmlTools.Convert(item.Value);
+				if (xmlValue == null)
+				{
+					rest.Add(item);
+				}
+				else
+				{
+					AppendItem(PreferName(item.Key), xmlValue);
+					items[i] = new KeyValuePair<string, object?>();
+				}
+			}
+			foreach (var item in rest)
+			{
+				AppendElement(PreferName(item.Key), item.Value, false);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Write all ends of elements.
+	/// </summary>
+	public virtual void Flush()
+	{
+		while (_elements.Count > 0)
+			End();
+	}
+}
+
+/// <summary>
+/// Represents <see cref="XmlBuilder"/> that uses <see cref="StringBuilder"/> to write an XML stream.
+/// </summary>
+[DebuggerDisplay($"{{{nameof(_buffer)}}}")]
+[Obsolete]
+public class XmlStringBuilder: XmlBuilder
+{
+	private readonly StringBuilder _buffer;
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="XmlStringBuilder"/> class.
+	/// </summary>
+	public XmlStringBuilder(StringBuilder? buffer = null, NamingCaseRule namingRule = NamingCaseRule.None, bool preferElements = false): base(namingRule, preferElements)
+	{
+		_buffer = buffer ?? new StringBuilder();
+	}
+
+	/// <summary>
+	/// Underlying <see cref="StringBuilder"/>.
+	/// </summary>
+	public StringBuilder Buffer => _buffer;
+
+	/// <inheritdoc />
+	protected override XmlBuilder Text(char value)
+	{
+		_buffer.Append(value);
+		return this;
+	}
+
+	/// <inheritdoc />
+	protected override XmlBuilder Text(string? value)
+	{
+		_buffer.Append(value);
+		return this;
+	}
+
+	/// <inheritdoc />
+	protected override XmlBuilder EncodeAttribute(string? value)
+	{
+		XmlTools.EncodeAttribute(_buffer, value.AsSpan());
+		return this;
+	}
+
+	/// <inheritdoc />
+	protected override XmlBuilder EncodeValue(string? value)
+	{
+		XmlTools.Encode(_buffer, value.AsSpan());
+		return this;
+	}
+
+	/// <summary>
+	/// Get XML as a string
+	/// </summary>
+	/// <returns></returns>
+	public override string ToString()
+	{
+		Flush();
+		return _buffer.ToString();
+	}
+
+	/// <summary>
+	/// Returns internal <see cref="StringBuilder"/> buffer of the <see cref="XmlStringBuilder"/>.
+	/// </summary>
+	/// <param name="xml"></param>
+	/// <returns></returns>
+	public static explicit operator StringBuilder(XmlStringBuilder xml)
+	{
+		if (xml is null)
+			throw new ArgumentNullException(nameof(xml));
+		return xml.Buffer;
+	}
+	/// <summary>
+	/// Creates a new <see cref="XmlStringBuilder"/> from <see cref="StringBuilder"/>.
+	/// </summary>
+	/// <param name="text"></param>
+	/// <returns></returns>
+	public static implicit operator XmlStringBuilder(StringBuilder text)
+	{
+		return new XmlStringBuilder(text);
+	}
+}
+
+/// <summary>
+/// Represents <see cref="XmlBuilder"/> that uses <see cref="TextWriter"/> to write an XML stream.
+/// </summary>
+[Obsolete]
+public class XmlStreamBuilder: XmlBuilder
+{
+	private readonly TextWriter _writer;
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="XmlStreamBuilder"/> class.
+	/// </summary>
+	public XmlStreamBuilder(TextWriter writer, NamingCaseRule namingRule = NamingCaseRule.None, bool preferElements = false): base(namingRule, preferElements)
+	{
+		_writer = writer ?? throw new ArgumentNullException(nameof(writer));
+	}
+
+	/// <summary>
+	/// Underlying <see cref="TextWriter"/>.
+	/// </summary>
+	public TextWriter Writer => _writer;
+
+	/// <inheritdoc />
+	protected override XmlBuilder Text(string? value)
+	{
+		_writer.Write(value);
+		return this;
+	}
+
+	/// <inheritdoc />
+	protected override XmlBuilder Text(char value)
+	{
+		_writer.Write(value);
+		return this;
+	}
+
+	/// <inheritdoc />
+	protected override XmlBuilder EncodeAttribute(string? value)
+	{
+		_writer.Write(XmlTools.EncodeAttribute(value.AsSpan()));
+		return this;
+	}
+
+	/// <inheritdoc />
+	protected override XmlBuilder EncodeValue(string? value)
+	{
+		_writer.Write(XmlTools.Encode(value.AsSpan()));
+		return this;
+	}
+
+	/// <inheritdoc />
+	public override void Flush()
+	{
+		base.Flush();
+		_writer.Flush();
+	}
+}

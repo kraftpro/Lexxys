@@ -13,12 +13,14 @@ namespace Lexxys.Testing;
 public static class RandExtensions
 {
 	/// <summary>
-	/// Returns a random integer value greater or equal to 0 and less than <paramref name="maxValue"/>.
+	/// Returns a non-negative random integer that is less than the specified maximum value.
 	/// </summary>
-	/// <param name="rnd">The random number generator.</param>
-	/// <param name="maxValue">Maximum value (exclusive).</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
+	/// <param name="rnd">The random number generator to use for producing the random integer. Cannot be null.</param>
+	/// <param name="maxValue">The exclusive upper bound of the random number to be generated. Must be greater than or equal to 0.</param>
+	/// <returns>A 32-bit signed integer greater than or equal to 0 and less than <paramref name="maxValue"/>. Returns 0 if
+	/// <paramref name="maxValue"/> is 0.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="rnd"/> is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="maxValue"/> is less than 0.</exception>
 	public static int NextInt32(this IRand rnd, int maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
@@ -27,14 +29,19 @@ public static class RandExtensions
 	}
 
 	/// <summary>
-	/// Returns a random integer value greater or equal to <paramref name="minValue"/> and less than <paramref name="maxValue"/>.
+	/// Returns a random 32-bit integer that is greater than or equal to the specified minimum value and less than the
+	/// specified maximum value.
 	/// </summary>
-	/// <param name="rnd">The random number generator.</param>
-	/// <param name="minValue">Minimum value (inclusive).</param>
-	/// <param name="maxValue">Maximum value (exclusive).</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is negative or <paramref name="maxValue"/> is less than <paramref name="minValue"/>.</exception>
+	/// <param name="rnd">The random number generator to use for producing the random value. Cannot be null.</param>
+	/// <param name="minValue">The inclusive lower bound of the random number to be generated. Must be greater than or equal to 0 and less than or
+	/// equal to <paramref name="maxValue"/>.</param>
+	/// <param name="maxValue">The exclusive upper bound of the random number to be generated. Must be greater than or equal to <paramref
+	/// name="minValue"/>.</param>
+	/// <returns>A 32-bit integer greater than or equal to <paramref name="minValue"/> and less than <paramref name="maxValue"/>. If
+	/// <paramref name="minValue"/> equals <paramref name="maxValue"/>, returns <paramref name="minValue"/>.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="rnd"/> is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="minValue"/> is less than 0, or if <paramref name="maxValue"/> is less than <paramref
+	/// name="minValue"/>.</exception>
 	public static int NextInt32(this IRand rnd, int minValue, int maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
@@ -44,13 +51,15 @@ public static class RandExtensions
 	}
 
 	/// <summary>
-	/// Returns a random non-negative <see cref="double"/> value less than <paramref name="maxValue"/>.
+	/// Returns a random double-precision floating-point number that is greater than or equal to 0.0 and less than the
+	/// specified maximum value.
 	/// </summary>
-	/// <param name="rnd"></param>
-	/// <param name="maxValue"></param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is negative or infinity or NaN.</exception>
+	/// <param name="rnd">The random number generator to use for producing the value. Cannot be null.</param>
+	/// <param name="maxValue">The exclusive upper bound of the random number to be generated. Must be a finite, non-negative number.</param>
+	/// <returns>A double-precision floating-point number greater than or equal to 0.0 and less than <paramref name="maxValue"/>. If
+	/// <paramref name="maxValue"/> is 0, the method returns 0.0.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="rnd"/> is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="maxValue"/> is negative, NaN, or infinite.</exception>
 	public static double NextDouble(this IRand rnd, double maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
@@ -59,14 +68,16 @@ public static class RandExtensions
 	}
 
 	/// <summary>
-	/// Returns a random <see cref="double"/> value greater or equal to <paramref name="minValue"/> and less than <paramref name="maxValue"/>.
+	/// Returns a random double-precision floating-point number within the specified range.
 	/// </summary>
-	/// <param name="rnd"></param>
-	/// <param name="minValue">The inclusive lower bound of the random number returned.</param>
-	/// <param name="maxValue">The exclusive upper bound of the random number returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is negative or infinity or NaN or <paramref name="maxValue"/> is less than <paramref name="minValue"/> or infinity or NaN.</exception>"/>
+	/// <param name="rnd">The random number generator to use for producing the value. Cannot be null.</param>
+	/// <param name="minValue">The inclusive lower bound of the random number returned. Must be a finite, non-negative number.</param>
+	/// <param name="maxValue">The exclusive upper bound of the random number returned. Must be a finite number greater than or equal to <paramref name="minValue"/>.</param>
+	/// <returns>A double-precision floating-point number greater than or equal to <paramref name="minValue"/>, and less than
+	/// <paramref name="maxValue"/>.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="rnd"/> is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="minValue"/> is negative, not finite, or if <paramref name="maxValue"/> is less than
+	/// <paramref name="minValue"/>, not finite, or NaN.</exception>
 	public static double NextDouble(this IRand rnd, double minValue, double maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
@@ -76,28 +87,28 @@ public static class RandExtensions
 	}
 
 	/// <summary>
-	/// Returns a non-negative random decimal value greater or equal to 0 and less then 1 * (10 ^ <paramref name="scale"/>).
+	/// Generates a random decimal number with the specified number of decimal places.
 	/// </summary>
-	/// <param name="rnd"></param>
-	/// <param name="scale">Number of digits before the decimal point in the return value.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="scale"/> is less than zero or greater than 28.</exception>
+	/// <param name="rnd">The random number generator to use for producing the decimal value. Cannot be null.</param>
+	/// <param name="scale">The number of decimal places for the generated value. Must be between 0 and 28. Defaults to 0.</param>
+	/// <returns>A random decimal number with the specified scale.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="rnd"/> is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="scale"/> is less than 0 or greater than 28.</exception>
 	public static decimal NextDecimal(this IRand rnd, int scale = 0)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
 		if (scale is <0 or >28) throw new ArgumentOutOfRangeException(nameof(scale), scale, null);
-		return new Decimal(rnd.NextInt32(268435456), rnd.NextInt32(1042612834), rnd.NextInt32(542101087), false, (byte)(28 - scale));
+		return new Decimal(rnd.NextInt32(268435456), rnd.NextInt32(1042612834), rnd.NextInt32(542101087), false, (byte)(28 - scale)) / 1m;
 	}
 
 	/// <summary>
-	/// Returns a non-negative random decimal value less than <paramref name="maxValue"/>.
+	/// Returns a non-negative random decimal number that is less than the specified maximum value.
 	/// </summary>
-	/// <param name="rnd"></param>
-	/// <param name="maxValue">The exclusive upper bound of the random number returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is negative.</exception>
+	/// <param name="rnd">The random number generator to use for producing the decimal value. Cannot be null.</param>
+	/// <param name="maxValue">The exclusive upper bound of the random number to be generated. Must be greater than or equal to 0.</param>
+	/// <returns>A decimal number greater than or equal to 0.0 and less than <paramref name="maxValue"/>.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="rnd"/> is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="maxValue"/> is less than 0.</exception>
 	public static decimal NextDecimal(this IRand rnd, decimal maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
@@ -106,31 +117,31 @@ public static class RandExtensions
 	}
 
 	/// <summary>
-	/// Returns a non-negative random decimal value in the range from <paramref name="minValue"/> to <paramref name="maxValue"/>.
+	/// Returns a random decimal number that is greater than or equal to the specified minimum value and less than the
+	/// specified maximum value.
 	/// </summary>
-	/// <param name="rnd"></param>
-	/// <param name="minValue">The inclusive lower bound of the random number returned.</param>
-	/// <param name="maxValue">The exclusive upper bound of the random number returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is negative or <paramref name="maxValue"/> is less than <paramref name="minValue"/>.</exception>
+	/// <param name="rnd">The random number generator to use for producing the decimal value. Cannot be null.</param>
+	/// <param name="minValue">The inclusive lower bound of the random number to be generated.</param>
+	/// <param name="maxValue">The exclusive upper bound of the random number to be generated. Must be greater than or equal to <paramref
+	/// name="minValue"/>.</param>
+	/// <returns>A decimal number greater than or equal to <paramref name="minValue"/> and less than <paramref name="maxValue"/>.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="rnd"/> is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="maxValue"/> is less than <paramref name="minValue"/>.</exception>
 	public static decimal NextDecimal(this IRand rnd, decimal minValue, decimal maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
-		if (minValue < 0) throw new ArgumentOutOfRangeException(nameof(minValue), minValue, null);
 		if (maxValue < minValue) throw new ArgumentOutOfRangeException(nameof(maxValue), maxValue, null);
-		var precision = Math.Max(minValue.GetPrecision(true), maxValue.GetPrecision(true));
-		return Math.Round(minValue + rnd.NextDecimal() * (maxValue - minValue), precision);
+		return minValue + rnd.NextDecimal() * (maxValue - minValue);
 	}
 
 	/// <summary>
-	/// Returns a non-negative random long value less then <paramref name="maxValue"/>.
+	/// Returns a non-negative random 64-bit integer that is less than the specified maximum value.
 	/// </summary>
-	/// <param name="rnd"></param>
-	/// <param name="maxValue">The exclusive upper bound of the random number returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than zero.</exception>
+	/// <param name="rnd">The random number generator to use for producing the random value. Cannot be null.</param>
+	/// <param name="maxValue">The exclusive upper bound of the random number to be generated. Must be greater than or equal to 0.</param>
+	/// <returns>A 64-bit integer greater than or equal to 0 and less than <paramref name="maxValue"/>. Returns 0 if <paramref name="maxValue"/> is 0.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="rnd"/> is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="maxValue"/> is less than 0.</exception>
 	public static long NextInt64(this IRand rnd, long maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));
@@ -139,14 +150,18 @@ public static class RandExtensions
 	}
 
 	/// <summary>
-	/// Returns a random long value in the range of <paramref name="minValue"/> and <paramref name="maxValue"/>.
+	/// Returns a random 64-bit signed integer that is greater than or equal to the specified minimum value and less than
+	/// the specified maximum value.
 	/// </summary>
-	/// <param name="rnd"></param>
-	/// <param name="minValue">The inclusive lower bound of the random number returned.</param>
-	/// <param name="maxValue">The exclusive upper bound of the random number returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is less than zero or <paramref name="maxValue"/> is less than <paramref name="minValue"/>.</exception>
+	/// <param name="rnd">The random number generator to use for producing the random value. Cannot be null.</param>
+	/// <param name="minValue">The inclusive lower bound of the random number to be generated. Must be greater than or equal to 0 and less than or
+	/// equal to <paramref name="maxValue"/>.</param>
+	/// <param name="maxValue">The exclusive upper bound of the random number to be generated. Must be greater than or equal to <paramref name="minValue"/>.</param>
+	/// <returns>A 64-bit signed integer greater than or equal to <paramref name="minValue"/> and less than <paramref
+	/// name="maxValue"/>.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="rnd"/> is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="minValue"/> is less than 0, or if <paramref name="maxValue"/> is less than <paramref
+	/// name="minValue"/>.</exception>
 	public static long NextInt64(this IRand rnd, long minValue, long maxValue)
 	{
 		if (rnd is null) throw new ArgumentNullException(nameof(rnd));

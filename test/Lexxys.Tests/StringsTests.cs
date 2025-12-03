@@ -55,8 +55,8 @@ namespace Lexxys.Tests
 				Assert.AreEqual(expected, condensed);
 				foreach (var x in xx)
 				{
-					Assert.IsTrue(x.Length > 0, $"\"{x}\".Length == 0");
-					Assert.IsTrue(x.Length <= i, $"\"{x}\".Length = {x.Length} <= {i}");
+					Assert.IsGreaterThan(0, x.Length, $"\"{x}\".Length == 0");
+					Assert.IsLessThanOrEqualTo(i, x.Length, $"\"{x}\".Length = {x.Length} <= {i}");
 				}
 			}
 		}

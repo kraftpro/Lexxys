@@ -841,14 +841,13 @@ public static class Lingua
 			bool next = false;
 			for (int i = 0; i < values.Length; ++i)
 			{
-				if (values[i] != null)
-				{
-					if (next)
-						text.Append('|');
-					else
-						next = true;
-					text.Append(values[i]).Append(ending);
-				}
+				if (values[i] == null) continue;
+
+				if (next)
+					text.Append('|');
+				else
+					next = true;
+				text.Append(values[i]).Append(ending);
 			}
 			text.Append(")|");
 		}

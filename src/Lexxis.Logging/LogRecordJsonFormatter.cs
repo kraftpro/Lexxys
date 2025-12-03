@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,6 +27,6 @@ public class LogRecordJsonFormatter: ILogRecordFormatter
 
 	public void Format(TextWriter writer, LogRecord record)
 	{
-		record.ToJson(JsonBuilder.Create(writer).WithNamingRule(_namingRule));
+		record.Dump(JsonDumpWriter.Create(writer).Configure(o => o.NamingRule = _namingRule));
 	}
 }

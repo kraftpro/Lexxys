@@ -1,85 +1,85 @@
-﻿namespace Lexxys.Argument.Tests;
+namespace Lexxys.Argument.Tests;
 
 public class DynamicArgumentsValueTests
 {
-	private static readonly string[] Args1 = new[] { "", "a", "b", "-ca", "C", "/db:D" };
+	private static readonly string[] Args1 = ["", "a", "b", "-ca", "C", "/db:D"];
 
-	[Fact]
-	public void ArgsTest()
+	[Test]
+	public async Task ArgsTest()
 	{
-		var a = new Arguments(Enumerable.Empty<string>());
-		Assert.NotNull(a.Args);
-		Assert.Empty(a.Args);
-		a = new Arguments(Args1);
-		Assert.Equal(Args1, a.Args.ToList());
+		var a = Arguments.Parse([]);
+		await Assert.That(a).IsNotNull();
+		await Assert.That(a.Count).IsEqualTo(0);
+		a = Arguments.Parse(Args1);
+		await Assert.That(a.Count + a.Positional.Count).IsEqualTo(6);
 	}
 
-	[Fact]
-	public void SwitchTest()
+	[Test]
+	public async Task SwitchTest()
 	{
-		var a = new Arguments(Args1);
-		Assert.True(a.Switch("ca"));
-		Assert.True(a.Switch("category"));
-		Assert.True(a.Switch("cross across"));
-		Assert.False(a.Switch("data base"));
-		Assert.False(a.Switch("database"));
-		Assert.False(a.Switch("c"));
-		Assert.False(a.Switch("cat balance"));
+		var a = Arguments.Parse(Args1, new ArgumentsConfig { MatchingType = ParameterMatching.Fluent });
+		await Assert.That(a.GetValue<bool>("ca")).IsTrue();
+		await Assert.That(a.GetValue<bool>("category")).IsTrue();
+		await Assert.That(a.GetValue<bool>("cross across")).IsTrue();
+		await Assert.That(a.GetValue<bool>("data base")).IsFalse();
+		await Assert.That(a.GetValue<bool>("database")).IsFalse();
+		await Assert.That(a.GetValue<bool>("c")).IsFalse();
+		await Assert.That(a.GetValue<bool>("cat balance")).IsFalse();
 	}
 
-	[Fact]
-	public void StringValueTest()
+	[Test]
+	public async Task StringValueTest()
 	{
-		var a = new Arguments(Args1);
-		Assert.Equal("true", a.Value("ca", "default"));
-		Assert.Equal("default", a.Value("xx", "default"));
-		Assert.Equal("D", a.Value("db", "default"));
+		var a = Arguments.Parse(Args1, allowSlash: true);
+		await Assert.That(a.GetValue<bool>("ca")).IsTrue();
+		await Assert.That(a.GetValue("xx", "default")).IsEqualTo("default");
+		await Assert.That(a.GetValue("db", "default")).IsEqualTo("D");
 	}
 
-	[Fact]
-	public void IntValueTest()
+	[Test]
+	public async Task IntValueTest()
 	{
 		var args = Args1.ToList();
 		args.Add("-i:123");
 		args.Add("-j:");
 		args.Add("234");
-		var a = new Arguments(args);
-		Assert.Equal(-1, a.Value("ca", -1));
-		Assert.Equal(-1, a.Value("xx", -1));
-		Assert.Equal(-1, a.Value("db", -1));
-		Assert.Equal(123, a.Value("i", -1));
-		Assert.Equal(234, a.Value("j", -1));
+		var a = Arguments.Parse(args);
+		await Assert.That(a.GetValue("ca", -1)).IsEqualTo(-1);
+		await Assert.That(a.GetValue("xx", -1)).IsEqualTo(-1);
+		await Assert.That(a.GetValue("db", -1)).IsEqualTo(-1);
+		await Assert.That(a.GetValue("i", -1)).IsEqualTo(123);
+		await Assert.That(a.GetValue("j", -1)).IsEqualTo(234);
 	}
 
-	[Fact]
-	public void DecimalValueTest()
+	[Test]
+	public async Task DecimalValueTest()
 	{
 		var args = Args1.Append("-io:123.11", "-j:", "234");
-		var a = new Arguments(args);
-		Assert.Equal(-1m, a.Value("ca", -1m));
-		Assert.Equal(-1m, a.Value("xx", -1m));
-		Assert.Equal(-1m, a.Value("db", -1m));
-		Assert.Equal(123.11m, a.Value("index of", -1m));
-		Assert.Equal(234, a.Value("j", default(decimal?)));
+		var a = Arguments.Parse(args, new ArgumentsConfig { MatchingType = ParameterMatching.Fluent });
+		await Assert.That(a.GetValue("ca", -1m)).IsEqualTo(-1m);
+		await Assert.That(a.GetValue("xx", -1m)).IsEqualTo(-1m);
+		await Assert.That(a.GetValue("db", -1m)).IsEqualTo(-1m);
+		await Assert.That(a.GetValue("index of", -1m)).IsEqualTo(123.11m);
+		await Assert.That(a.GetValue("j", default(decimal?))).IsEqualTo(234m);
 	}
 
-	[Fact]
-	public void DateTimeValueTest()
+	[Test]
+	public async Task DateTimeValueTest()
 	{
 		var args = Args1.Append("-io:2011-11-11", "-j:", "20111122");
-		var a = new Arguments(args);
-		Assert.Equal(default, a.Value("ca", default(DateTime)));
-		Assert.Equal(default, a.Value("xx", default(DateTime)));
-		Assert.Equal(default, a.Value("db", default(DateTime)));
-		Assert.Equal(new DateTime(2011, 11, 11), a.Value<DateTime?>("index of"));
-		Assert.Equal(new DateTime(2011, 11, 22), a.Value("june", DateTime.MinValue));
+		var a = Arguments.Parse(args, new ArgumentsConfig { MatchingType = ParameterMatching.Fluent });
+		await Assert.That(a.GetValue("ca", default(DateTime))).IsEqualTo(default);
+		await Assert.That(a.GetValue("xx", default(DateTime))).IsEqualTo(default);
+		await Assert.That(a.GetValue("db", default(DateTime))).IsEqualTo(default);
+		await Assert.That(a.GetValue("index of", default(DateTime?))).IsEqualTo(new DateTime(2011, 11, 11));
+		await Assert.That(a.GetValue("june", DateTime.MinValue)).IsEqualTo(new DateTime(2011, 11, 22));
 	}
 
-	[Fact]
-	public void PositionalTest()
+	[Test]
+	public async Task PositionalTest()
 	{
 		var args = Args1.Append("-xx:", "X", "Y");
-		var a = new Arguments(args);
-		Assert.Equal(new [] { "a", "b", "C", "Y" }, a.Positional.SelectMany(o => o.ToArray()).ToList());
+		var a = Arguments.Parse(args, allowSlash: true);
+		await Assert.That(a.Positional.ToArray().ToList()).IsEquivalentTo(["a", "b", "C", "Y"]);
 	}
 }

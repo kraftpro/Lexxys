@@ -101,40 +101,17 @@ public class WeeklySchedule: Schedule, IEquatable<WeeklySchedule>
 	public override int GetHashCode()
 		=> HashCode.Join(HashCode.Join(base.GetHashCode(), WeekPeriod.GetHashCode()), DayList);
 
-	public override DumpWriter DumpContent(DumpWriter writer)
+	public override void DumpContent(IDumpWriter writer)
 	{
 		if (writer is null) throw new ArgumentNullException(nameof(writer));
-		return base.DumpContent(writer)
-			.Then("WeekPeriod", WeekPeriod)
-			.Then("DayList", DayList);
-	}
-
-	public override XmlBuilder ToXmlContent(XmlBuilder builder)
-	{
-		if (builder is null) throw new ArgumentNullException(nameof(builder));
-
-		builder.Item("type", ScheduleType);
-		if (WeekPeriod != 1)
-			builder.Item("week", WeekPeriod);
-		if (!Object.ReferenceEquals(DayList, FridayOnly))
-			builder.Item("days", String.Join(",", DayList.Select(o => ((int)o).ToString())));
-		if (!Reminder.IsEmpty)
-			builder.Element("reminder").Value(Reminder).End();
-		return builder;
-	}
-
-	public override JsonBuilder ToJsonContent(JsonBuilder json)
-	{
-		if (json is null) throw new ArgumentNullException(nameof(json));
-
-		json.Item("type").Val(ScheduleType);
-		if (WeekPeriod != 1)
-			json.Item("week").Val(WeekPeriod);
-		if (!Object.ReferenceEquals(DayList, FridayOnly))
-			json.Item("days").Val(DayList.Select(o => (int)o));
-		if (!Reminder.IsEmpty)
-			json.Item("reminder").Val(Reminder);
-		return json;
+		
+		writer.Write("type", ScheduleType);
+		if (WeekPeriod != 1 || writer.Level > ObjectDumpLevel.Regular)
+			writer.Write("week",  WeekPeriod);
+		if (!Object.ReferenceEquals(DayList, FridayOnly) || writer.Level > ObjectDumpLevel.Regular)
+			writer.Write("days", DayList);
+		if (!Reminder.IsEmpty || writer.Level > ObjectDumpLevel.Regular)
+			writer.Write("reminder", Reminder);
 	}
 
 	public new static WeeklySchedule FromXml(Xml.IXmlReadOnlyNode xml)

@@ -21,7 +21,7 @@ public static class DecimalExtensions
 	/// <returns></returns>
 	public static int GetPrecision(this decimal value, bool actual = false)
 	{
-		return (new DecOverlay(actual ? value: value / 1.000000000000000000000000000000m).Flags >> 16) & 31;
+		return (new DecOverlay(actual ? value: value / 1m).Flags >> 16) & 31;
 	}
 
 	[StructLayout(LayoutKind.Explicit)]

@@ -5,9 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 using System.Buffers;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Lexxys
 {
@@ -404,14 +402,14 @@ namespace Lexxys
 			ulong result = 0;
 			foreach (char c in value)
 			{
-				int j = Index(c);
+				int j = CharIndex(c);
 				if (j >= 0)
 					result = result * 62 + (ulong)j;
 			}
 			return result;
 
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			static int Index(char c) => c switch
+			static int CharIndex(char c) => c switch
 			{
 				>='0' and <= '9' => c - '0',
 				>='A' and <= 'Z' => c - ('A' - ('9' - '0' + 1)),
@@ -504,7 +502,6 @@ namespace Lexxys
 		{
 			if (value.Length == 0)
 				return (0, 0);
-			int len = value.Length * 15;
 
 			int i = 0;
 			int n;

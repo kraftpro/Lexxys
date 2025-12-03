@@ -1,5 +1,6 @@
-﻿using System.Text;
+using System.Text;
 
+using Lexxys;
 using Lexxys.Tokenizer;
 using Lexxys.Xml;
 
@@ -51,25 +52,26 @@ public ref partial struct CfgParser
 		_nodePath.Clear();
 	}
 
-	public void Convert(ref CharStream stream, Action<Node> action)
+	public void Convert(ref CharStream stream, Action<Node> action, Action<ErrorResult> fail)
 	{
 		if (action is null) throw new ArgumentNullException(nameof(action));
 		if (stream[0] == ':') return;
 
-		Node? node = ParseNode(ref stream);
-		while (node != null)
+		ResultValue<Node> node = ParseNode(ref stream);
+		while (node.IsSuccess)
 		{
-			action(node);
+			action(node.Value);
 			node = ParseNode(ref stream);
 		}
+		node.ActOnError(fail, 400);
 	}
 
-	private static string GetVarValue(string name, ConfigOptions options)
+	private static ResultValue<string> GetVarValue(string name, ConfigOptions options)
 	{
 		int i = name.IndexOf('|');
 		return i >= 0 ?
 			options.GetVariableText(name[..i]) ?? name[(i + 1)..]:
-			options.GetVariableText(name) ?? throw new SyntaxException($"Cannot find macro \"{name}\"");
+			options.GetVariableText(name) ?? ErrorResult.Problem($"Cannot find macro \"{name}\"").AsResultValue<string>();
 	}
 
 	[return: NotNullIfNotNull(nameof(value))]
@@ -113,38 +115,67 @@ public ref partial struct CfgParser
 	private static readonly char[] BeginMacro = ['$', '{', '{'];
 	private static readonly char[] EndMacro = ['}', '}'];
 
-	public static List<Node> ParseConfig(string text)
+	public static (List<Node> Nodes, ErrorResult? Error) ParseConfig(string text)
 	{
 		var parser = new CfgParser();
 		var cs = new CharStream(text);
 		return parser.ParseNodeList(ref cs);
 	}
 
-	public static JsonBuilder? ParseToJson(string text)
+	public static (JsonDumpWriter? Json, ErrorResult? Error) ParseToJson(string text)
 	{
-		var node = ParseConfig(text);
-		return node.Count == 0 ? null: node.Count == 1 ? ConvertToJson(node[0]): ConvertToJson(node);
+		var (nodes, error) = ParseConfig(text);
+		return
+			nodes.Count == 0 ?
+				(null, error):
+			nodes.Count == 1 ?
+				(ConvertToJson(nodes[0]), error):
+				(ConvertToJson(nodes), error);
 	}
 
-	public static JsonBuilder ConvertToJson(IEnumerable<Node> node, bool nameValuePair = false)
+	public static ErrorResult? ParseTo(IDumpWriter writer, string text)
+	{
+		var (nodes, error) = ParseConfig(text);
+		if (nodes.Count == 0 || error != null)
+			return error;
+		if (nodes.Count == 1)
+			writer.Write("config", nodes[0]);
+		else
+			writer.Write("config", nodes);
+		return null;
+	}
+
+	public static JsonDumpWriter ConvertToJson(IEnumerable<Node> node, bool nameValuePair = false)
 	{
 		if (node is null) throw new ArgumentNullException(nameof(node));
-		var json = JsonBuilder.Create(new StringBuilder());
+		var json = JsonDumpWriter.Create(new StringBuilder());
 
-		json.Arr();
+		json.BeginArray();
 		foreach (var item in node)
 		{
-			if (nameValuePair)
-				item.BuildJsonObject(json);
-			else
-				item.BuildJson(json);
+			ConvertToJson(item, json);
 		}
 		json.End();
 		return json;
 	}
 
-	private static JsonBuilder ConvertToJson(Node node)
-		=> node.BuildJsonObject(JsonBuilder.Create(new StringBuilder()));
+	private static JsonDumpWriter ConvertToJson(Node node)
+	{
+		var json = JsonDumpWriter.Create(new StringBuilder());
+		ConvertToJson(node, json);
+		return json;
+	}
+
+	private static JsonDumpWriter ConvertToJson(Node node, JsonDumpWriter json)
+	{
+		bool obj = node.Items is { Count: > 0 };
+		if (obj)
+			json.BeginObject();
+		node.DumpContent(json);
+		if (obj)
+			json.End();
+		return json;
+	}
 
 	//public static IXmlReadOnlyNode ConvertToXmlLite(Node node, bool ignoreCase)
 	//{
@@ -172,6 +203,24 @@ public ref partial struct CfgParser
 	//	return new XmlLiteNode(node.Name, SubstituteMacro(node.Value), ignoreCase, attrib, child);
 	//}
 
+	private ErrorResult SyntaxError(in LexicalToken token, in CharStream stream, string? message)
+		=> SyntaxError(stream, token.Position, message);
+
+	private ErrorResult SyntaxError(in CharStream stream, int position, string? message)
+	{
+		var at = stream.GetCharPosition(position);
+		message ??= SR.SyntaxException();
+		string error = _sourceName is null ?
+			$"{message} at ({at.Line,+1}, {at.Column + 1})" :
+			$"{message} in {_sourceName} at ({at.Line + 1}, {at.Column + 1})";
+		var result = ErrorResult.Problem(error, "Syntax error").With(
+			("line", at.Line + 1),
+			("column", at.Column + 1));
+		if (_sourceName != null)
+			result.With("file", _sourceName);
+		return result;
+	}
+
 	private Exception SyntaxException(in LexicalToken token, in CharStream stream, string? message)
 	{
 		return stream.SyntaxException(message, _sourceName, token.Position);
@@ -193,16 +242,16 @@ public ref partial struct CfgParser
 		_nodePath.Add(value.Name);
 	}
 
-	public List<Node> ParseNodeList(ref CharStream stream)
+	public (List<Node> Nodes, ErrorResult? Error) ParseNodeList(ref CharStream stream)
 	{
 		var result = new List<Node>();
-		Node? node = ParseNode(ref stream);
-		while (node != null)
+		ResultValue<Node> node = ParseNode(ref stream);
+		while (node.IsSuccess)
 		{
-			result.Add(node);
+			result.Add(node.Value);
 			node = ParseNode(ref stream);
 		}
-		return result;
+		return (result, GetError(node));
 	}
 
 	private void PopNode()
@@ -229,7 +278,7 @@ public ref partial struct CfgParser
 	internal static bool IsIdentifier(LexicalToken token) => token.Is(LexicalTokenType.IDENTIFIER, LexicalTokenType.STRING);
 
 
-	private Node? ParseNode(ref CharStream stream)
+	private ResultValue<Node> ParseNode(ref CharStream stream)
 	{
 		LexicalToken token;
 		// Skip empty lines and parse options
@@ -238,17 +287,14 @@ public ref partial struct CfgParser
 			if (token.TokenType.Is(TOKEN, OPTION))
 			{
 				var node = ParseOptions(ref stream);
-				if (node != null)
+				if (HasResult(node))
 					return node;
 			}
 		}
-		if (stream.Eof)
-			return null;
-
-		return ParseNode(token, ref stream);
+		return stream.Eof ? NoResult(): ParseNode(token, ref stream);
 	}
 
-	private string GetStringValue(LexicalToken token, in CharStream stream)
+	private ResultValue<string> GetStringValue(LexicalToken token, in CharStream stream)
 	{
 		var v = token.GetValue(stream);
 		if (v is ConfigValue c)
@@ -259,15 +305,29 @@ public ref partial struct CfgParser
 		return v?.ToString() ?? String.Empty;
 	}
 
-	private Node? ParseNode(LexicalToken token, ref CharStream stream)
+	private static ErrorResult NoResult() => new ErrorResult("", errorCode: 0);
+
+	private static ErrorResult? GetError(ResultValue<Node> node)
+		=> node.IsFailure && node.Error.ErrorCode != 0 ? node.Error : null;
+
+	private static bool HasError(ResultValue<Node> node)
+		=> node.IsFailure && node.Error.ErrorCode != 0;
+
+	private static bool HasResult(ResultValue<Node> node)
+		=> node.IsSuccess || node.Error.ErrorCode != 0;
+
+	private ResultValue<Node> ParseNode(LexicalToken token, ref CharStream stream)
 	{
 		if (token.IsEof || token.Is(LexicalTokenType.INDENT, LexicalTokenType.UNDENT))
-			return null;
+			return NoResult();
 		bool dash = token.Is(TOKEN, DASH);
 		if (!dash && !token.Is(LexicalTokenType.IDENTIFIER))
-			throw SyntaxException(token, stream, SR.ExpectedNodeName());
+			return SyntaxError(token, stream, SR.ExpectedNodeName());
 
-		string nodeName = GetStringValue(token, stream);
+		var nodeNameValue = GetStringValue(token, stream);
+		if (nodeNameValue.IsFailure)
+			return nodeNameValue.Error;
+		string nodeName = nodeNameValue.Value;
 		bool attribute = false;
 		int i = SkipSpace(stream);
 		if (stream[i] is '=' or ':')
@@ -280,50 +340,58 @@ public ref partial struct CfgParser
 
 		SyntaxRule? rule = _syntaxRules.Find(CurrentNodePath, dash, _options.Comparer);
 
-		ParseStartNode(node, rule, ref stream);
+		var result = ParseStartNode(node, rule, ref stream);
+		if (result.IsFailure) return result;
 
 		if (dash && node.Name == "-")
 			node.Name = "item";
 
 		token = _nodeScanner.Next(ref stream);
 		if (token.TokenType == LexicalTokenType.INDENT)
-			ParseNodeTree(node, ref stream);
-		else
-			Back();
-		return node;
+			return ParseNodeTree(node, ref stream);
+
+		Back();
+		return result;
 	}
 
-	private void ParseStartNode(Node node, SyntaxRule? rule, ref CharStream stream)
+	private ResultValue<Node> ParseStartNode(Node node, SyntaxRule? rule, ref CharStream stream)
 	{
 		if (rule == null)
-		{
-			ParseNodeValue(node, ref stream);
-		}
-		else
-		{
-			throw new NotImplementedException(nameof(ParseStartNode));
-		}
+			return ParseNodeValue(node, ref stream);
+
+		throw new NotImplementedException(nameof(ParseStartNode));
 	}
 
-	private void ParseNodeValue(Node node, ref CharStream stream)
+	private ResultValue<Node> ParseNodeValue(Node node, ref CharStream stream)
 	{
 		var token = _nodeValueScanner.Next(ref stream);
-		if (token.IsEof || token.Is(LexicalTokenType.NEWLINE)) return;
+		ResultValue<Node> result = node;
+
+		if (token.IsEof || token.Is(LexicalTokenType.NEWLINE)) return result;
 
 		if (token.Is(TOKEN, PARAMETER, OBJECT))
-			ParseObject(node, token.Is(TOKEN, PARAMETER), ref stream);
+			result = ParseObject(node, token.Is(TOKEN, PARAMETER), ref stream);
 		else if (token.Is(TOKEN, ARRAY))
-			ParseArray(node, ref stream);
+			result = ParseArray(node, ref stream);
 		else
-			node.AppendValue(GetStringValue(token, stream));
+		{
+			var value = GetStringValue(token, stream);
+			if (value.IsFailure)
+				return value.Error;
+			node.AppendValue(value.Value);
+		}
+		if (result.IsFailure) return result;
+
 		if (token.Is(LexicalTokenType.STRING))
 			node.IsQuoted = true;
 		token = _nodeValueScanner.Next(ref stream);
-		if (!token.IsEof && !token.Is(LexicalTokenType.NEWLINE))
-			throw SyntaxException(token, in stream, SR.ExpectedEndOfLine());
+
+		return token.IsEof || token.Is(LexicalTokenType.NEWLINE) ?
+			result:
+			SyntaxError(token, in stream, SR.ExpectedEndOfLine());
 	}
 
-	private void ParseObject(Node node, bool parameter, ref CharStream stream)
+	private ResultValue<Node> ParseObject(Node node, bool parameter, ref CharStream stream)
 	{
 		var offRule = parameter ? "Object": "Param";
 		for (;;)
@@ -331,17 +399,19 @@ public ref partial struct CfgParser
 			var at = stream.Position - 1;
 			LexicalToken token = _objectScanner.Next(ref stream);
 			if (token.TokenType.Is(TOKEN, END))
-				return;
+				return node;
 
 			if (stream.Eof)
-				throw SyntaxException(stream, at, $"The closing {(parameter ? "parenthesis": "brace")} is not found until end of file");
+				return SyntaxError(stream, at, $"The closing {(parameter ? "parenthesis" : "brace")} is not found until end of file");
 			if (!token.Is(TEXT))
-				throw SyntaxException(token, in stream, "Name of argument is expected");
+				return SyntaxError(token, in stream, "Name of argument is expected");
 			at = token.Position;
-			var name = GetStringValue(token, stream);
+			var nameValue = GetStringValue(token, stream);
+			if (nameValue.IsFailure)
+				return nameValue.Error;
+			var name = nameValue.Value;
 			if (!(token = _objectScanner.Next(ref stream)).Is(TOKEN, ATTRIB, EQUAL))
-				throw SyntaxException(token, in stream, "Assign symbol is expected");
-
+				return SyntaxError(token, in stream, "Assign symbol is expected");
 			var inner = new Node(name, position: GetPosition(at, stream), attribute: parameter || token.Is(TOKEN, ATTRIB));
 
 			int i = SkipSpace(stream);
@@ -351,14 +421,20 @@ public ref partial struct CfgParser
 
 			_objectScanner.EnableRule(o => o.RuleName == "Name" || o.RuleName == offRule, false);
 
+			ResultValue<Node> result;
 			if (ch == ARRAY_MARK)
-				ParseArray(inner, ref stream);
+				result = ParseArray(inner, ref stream);
 			else if (ch is OBJECT_MARK or PARAM_MARK)
-				ParseObject(inner, ch == PARAM_MARK, ref stream);
+				result = ParseObject(inner, ch == PARAM_MARK, ref stream);
 			else if ((token = _objectScanner.Next(ref stream)).Is(TEXT, LexicalTokenType.STRING))
-				inner.Value = GetStringValue(token, stream);
+			{
+				var value = GetStringValue(token, stream);
+				if (value.IsFailure)
+					return value.Error;
+				inner.Value = value.Value;
+			}
 			else
-				throw SyntaxException(token, in stream, "Argument value is expected");
+				return SyntaxError(token, in stream, "Argument value is expected");
 
 			_objectScanner.EnableRule(o => o.RuleName == "Name" || o.RuleName == offRule, true);
 
@@ -366,7 +442,7 @@ public ref partial struct CfgParser
 		}
 	}
 
-	private void ParseArray(Node node, ref CharStream stream)
+	private ResultValue<Node> ParseArray(Node node, ref CharStream stream)
 	{
 		var at = stream.Position - 1;
 
@@ -377,48 +453,71 @@ public ref partial struct CfgParser
 			if (ch is ARRAY_MARK or OBJECT_MARK or PARAM_MARK)
 				stream.Forward(i + 1);
 
-
 			LexicalToken token = _arrayScanner.Next(ref stream);
 			if (token.Is(TOKEN, END_ARRAY))
-				return;
+				return node;
 			if (stream.Eof)
-				throw SyntaxException(stream, at, "The array closing brace is not found before the end of the file");
+				return SyntaxError(stream, at, "The array closing brace is not found before the end of the file");
 
 			var item = new Node("item", position: GetPosition(token.Position, stream), arrayItem: true);
 			if (token.Is(TEXT))
-				item.AppendValue(GetStringValue(token, stream));
+			{
+				var value = GetStringValue(token, stream);
+				if (value.IsFailure)
+					return value.Error;
+				item.AppendValue(value.Value);
+			}
 			else if (token.Is(TOKEN, PARAMETER, OBJECT))
-				ParseObject(item, token.Is(TOKEN, PARAMETER), ref stream);
+			{
+				var value = ParseObject(item, token.Is(TOKEN, PARAMETER), ref stream);
+				if (value.IsFailure)
+					return value.Error;
+			}
 			else if (token.Is(TOKEN, ARRAY))
-				ParseArray(item, ref stream);
+			{
+				var value = ParseArray(item, ref stream);
+				if (value.IsFailure)
+					return value.Error;
+			}
 			else
-				throw SyntaxException(token, in stream, "Array item is expected");
+			{
+				return SyntaxError(token, in stream, "Array item is expected");
+			}
 			node.Add(item);
 		}
 	}
 
-	private void ParseNodeTree(Node node, ref CharStream stream)
+	private ResultValue<Node> ParseNodeTree(Node node, ref CharStream stream)
 	{
 		LexicalToken token;
 		while ((token = _nodeScanner.Next(ref stream)).TokenType != LexicalTokenType.UNDENT)
 		{
 			if (token.TokenType.Is(TOKEN))
 			{
-				Node? child = ParseToken(token, node, ref stream);
-				node.Add(child);
+				var child = ParseToken(token, node, ref stream);
+				if (child.IsSuccess)
+					node.Add(child.Value);
+				else if (HasError(child))
+					return child.Error;
 			}
 			else if (token.TokenType == LexicalTokenType.IDENTIFIER)
 			{
-				Node? child = ParseNode(token, ref stream);
-				node.Add(child);
+				var child = ParseNode(token, ref stream);
+				if (child.IsSuccess)
+					node.Add(child.Value);
+				else if (HasError(child))
+					return child.Error;
 			}
 			else if (token.TokenType.Is(TEXT))
 			{
-				node.AppendValue(GetStringValue(token, stream));
+				var value = GetStringValue(token, stream);
+				if (value.IsFailure)
+					return value.Error;
+				node.AppendValue(value.Value);
 			}
 			else if (!token.IsEof && !token.TokenType.Is(LexicalTokenType.NEWLINE))
 			{
-				throw SyntaxException(token, in stream, SR.ExpectedEndOfLine());
+				return SyntaxError(token, in stream, SR.ExpectedEndOfLine());
 			}
 		}
 
@@ -426,17 +525,18 @@ public ref partial struct CfgParser
 		if (!token.TokenType.Is(TOKEN, ENDNODE))
 		{
 			Back();
-			return;
+			return node;
 		}
 
 		token = _nodeScanner.Next(ref stream);
 		if (!token.GetSpan(stream).Equals(node.Name.AsSpan(), StringComparison.Ordinal))
-			throw SyntaxException(token, stream, SR.ExpectedEndOfNode(node.Name));
-		ParseNodeValue(node, ref stream);
+			return SyntaxError(token, in stream, SR.ExpectedEndOfNode(node.Name));
+		return ParseNodeValue(node, ref stream);
 	}
 
-	private Node? ParseToken(LexicalToken token, Node node, ref CharStream stream)
+	private ResultValue<Node> ParseToken(LexicalToken token, Node node, ref CharStream stream)
 	{
+		ResultValue<Node> value;
 		switch (token.TokenType.Item)
 		{
 			case OPTION:
@@ -444,30 +544,30 @@ public ref partial struct CfgParser
 
 			case LINE:
 				node.AppendNewLine();
-				ParseNodeValue(node, ref stream);
-				return null;
+				value = ParseNodeValue(node, ref stream);
+				return value.IsFailure ? value.Error: NoResult();
 
 			case DASH:
 				return ParseNode(token, ref stream);
 
 			case PARAMETER:
-				ParseObject(node, true, ref stream);
-				return null;
+				value = ParseObject(node, true, ref stream);
+				return value.IsFailure ? value.Error : NoResult();
 
 			case OBJECT:
-				ParseObject(node, false, ref stream);
-				return null;
+				value = ParseObject(node, false, ref stream);
+				return value.IsFailure ? value.Error : NoResult();
 
 			case ARRAY:
-				ParseArray(node, ref stream);
-				return null;
+				value = ParseArray(node, ref stream);
+				return value.IsFailure ? value.Error : NoResult();
 
 			default:
-				throw SyntaxException(token, stream, null);
+				return SyntaxError(token, stream, null);
 		}
 	}
 
-	private Node? ParseOptions(ref CharStream stream)
+	private ResultValue<Node> ParseOptions(ref CharStream stream)
 	{
 		int i = SkipSpace(stream);
 		var ch = stream[i];
@@ -476,15 +576,22 @@ public ref partial struct CfgParser
 
 		LexicalToken token = _optionNameScanner.Next(ref stream);
 		if (!token.Is(TEXT, LexicalTokenType.STRING))
-			throw SyntaxException(token, in stream, SR.ExpectedNodePattern());
+			return SyntaxError(token, in stream, SR.ExpectedNodePattern());
 
-		var name = GetStringValue(token, stream);
+		var nameValue = GetStringValue(token, stream);
+		if (nameValue.IsFailure)
+			return nameValue.Error;
+		var name = nameValue.Value;
+
 		i = SkipSpace(stream);
 		if (stream[i] is ':' or '=')
 			stream.Forward(i + 1);
 
-		List<Node> parameters = ParseOptionValue(name, ref stream);
+		var parms = ParseOptionValue(name, ref stream);
+		if (parms.IsFailure)
+			return parms.Error;
 
+		var parameters = parms.Value;
 		Node? result = null;
 
 		if (ch == VAR_MARK)
@@ -492,13 +599,12 @@ public ref partial struct CfgParser
 		else if (ch != ACTION_MARK)
 			_syntaxRules.Add(CurrentNodePath, name, parameters, _options.Comparer);
 		else if (!_options.TryExecuteExternalAction(name, ref this, parameters, out result))
-			throw SyntaxException(token, in stream, SR.ActionNotFound(name));
+			return SyntaxError(token, in stream, SR.ActionNotFound(name));
 
-		return result;
-
+		return result == null ? NoResult(): result;
 	}
 
-	private List<Node> ParseOptionValue(string name, ref CharStream stream)
+	private ResultValue<List<Node>> ParseOptionValue(string name, ref CharStream stream)
 	{
 		var parameters = new List<Node>();
 		for (;;)
@@ -520,11 +626,14 @@ public ref partial struct CfgParser
 			}
 			else if (token.Is(TEXT, LexicalTokenType.STRING))
 			{
-				parameters.Add(new Node(name, token.GetString(stream), position: GetPosition(token.Position, stream), arrayItem: true));
+				var value = GetStringValue(token, stream);
+				if (value.IsFailure)
+					return value.Error;
+				parameters.Add(new Node(name, value.Value, position: GetPosition(token.Position, stream), arrayItem: true));
 			}
 			else
 			{
-				throw SyntaxException(token, in stream, SR.ExpectedNodePattern());
+				return SyntaxError(token, in stream, SR.ExpectedNodePattern());
 			}
 		}
 	}

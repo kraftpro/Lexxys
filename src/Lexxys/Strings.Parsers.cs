@@ -75,8 +75,8 @@ public static partial class Strings
 		if (returnType.IsEnum || Nullable.GetUnderlyingType(returnType) is { IsEnum: true })
 		{
 			(Type regular, Type? nullable) = NullableTypes(returnType);
-			__stringConditionalConstructor.TryAdd(regular, (string x, out object? y) => TryGetEnum(x, regular, out y));
-			__stringConditionalConstructor.TryAdd(nullable!, (string x, out object? y) => TryGetEnum(x, regular, out y));
+			__stringConditionalConstructor.TryAdd(regular, (x, out y) => TryGetEnum(x, regular, out y));
+			__stringConditionalConstructor.TryAdd(nullable!, (x, out y) => TryGetEnum(x, regular, out y));
 
 			return TryGetEnum(value, regular, out result);
 		}
@@ -125,7 +125,7 @@ public static partial class Strings
 		
 		TypeConverter? converter = CreateTypeConverter(targetType);
 		if (converter != null && converter.CanConvertFrom(typeof(string)))
-			parser = (string v, out object? r) =>
+			parser = (v, out r) =>
 			{
 				try
 				{
@@ -388,7 +388,7 @@ public static partial class Strings
 		if (nullable)
 			condition = Expression.OrElse(Expression.Call(((Func<string, bool>)String.IsNullOrWhiteSpace).Method, argValue), condition);
 		BlockExpression body = Expression.Block(typeof(bool),
-			new[] { tmp, res },
+			[tmp, res],
 			Expression.Assign(tmp, Expression.Default(type)),
 			Expression.Assign(res, condition),
 				Expression.Assign(argResult, Expression.TypeAs(tmp, typeof(object))),
@@ -402,8 +402,10 @@ public static partial class Strings
 		result = value;
 		return true;
 	}
-	internal delegate bool ConcreteValueParser<T>(string value, [MaybeNullWhen(false)] out T result);
-	internal delegate bool ValueParser(string value, out object? result);
+
+	private delegate bool ConcreteValueParser<T>(string value, [MaybeNullWhen(false)] out T result);
+	private delegate bool ValueParser(string value, out object? result);
+	
 	private struct ParserPair
 	{
 		public readonly Type Type;

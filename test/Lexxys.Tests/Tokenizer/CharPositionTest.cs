@@ -20,13 +20,6 @@ namespace Lexxys.Tests.Tokenizer
 	public class CharPositionTest
 	{
 
-
-		/// <summary>
-		///Gets or sets the test context which provides
-		///information about and functionality for the current test run.
-		///</summary>
-		public TestContext TestContext { get; set; }
-
 		#region Additional test attributes
 		// 
 		//You can use the following additional attributes as you write your tests:
@@ -126,8 +119,8 @@ namespace Lexxys.Tests.Tokenizer
 			{
 				CharPosition value = NextCharPosition();
 				string target = value.ToString();
-				Assert.IsTrue(target.Contains((value.Line + 1).ToString()));
-				Assert.IsTrue(target.Contains((value.Column + 1).ToString()));
+				Assert.Contains((value.Line + 1).ToString(), target);
+				Assert.Contains((value.Column + 1).ToString(), target);
 			}
 		}
 
@@ -141,8 +134,8 @@ namespace Lexxys.Tests.Tokenizer
 			{
 				CharPosition value = NextCharPosition();
 				string target = value.ToString(CultureInfo.CurrentCulture);
-				Assert.IsTrue(target.Contains((value.Line + 1).ToString()));
-				Assert.IsTrue(target.Contains((value.Column + 1).ToString()));
+				Assert.Contains((value.Line + 1).ToString(), target);
+				Assert.Contains((value.Column + 1).ToString(), target);
 			}
 		}
 

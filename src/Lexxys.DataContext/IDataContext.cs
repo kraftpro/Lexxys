@@ -1,4 +1,4 @@
-﻿// Lexxys Infrastructural library.
+// Lexxys Infrastructural library.
 // file: DcLocal.cs
 //
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
@@ -15,24 +15,9 @@ namespace Lexxys.Data;
 public interface IDataContext: IDisposable
 {
 	/// <summary>
-	/// Total time spent in connection to the database.
+	/// Gets the audit information for the data context.
 	/// </summary>
-	TimeSpan ConnectTime { get; }
-
-	/// <summary>
-	/// Indicates that the database transaction is active.
-	/// </summary>
-	TimeSpan TransactTime { get; }
-
-	/// <summary>
-	/// Total time spent in executing SQL commands.
-	/// </summary>
-	TimeSpan QueryTime { get; }
-
-	/// <summary>
-	/// Total time spent in the database operations.
-	/// </summary>
-	TimeSpan TotalTime { get; }
+	IDataContextAudit Audit { get; }
 
 	/// <summary>
 	/// Indicates that the database transaction is active.

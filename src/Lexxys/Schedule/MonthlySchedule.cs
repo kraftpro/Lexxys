@@ -148,58 +148,26 @@ public class MonthlySchedule: Schedule, IEquatable<MonthlySchedule>
 	public override int GetHashCode()
 		=> HashCode.Join(HashCode.Join(base.GetHashCode(), Day.GetHashCode(), Week.GetHashCode()), MonthList);
 
-	public override DumpWriter DumpContent(DumpWriter writer)
+	public override void DumpContent(IDumpWriter writer)
 	{
 		if (writer is null) throw new ArgumentNullException(nameof(writer));
-		return base.DumpContent(writer)
-			.Then("Day", Day)
-			.Then("Week", Week)
-			.Then("WeekDay", WeekDay)
-			.Then("Months", MonthList);
-	}
+		base.DumpContent(writer);
 
-	public override XmlBuilder ToXmlContent(XmlBuilder builder)
-	{
-		if (builder is null) throw new ArgumentNullException(nameof(builder));
-
-		builder.Item("type", ScheduleType);
+		writer.Write("type", ScheduleType);
 		if (Week == ScheduleWeekType.None)
 		{
 			if (Day != 1)
-				builder.Item("day", Day);
+				writer.Write("day", Day);
 		}
 		else
 		{
-			builder.Item("week", Week)
-				.Item("weekDay", WeekDay);
+			writer.Write("week", Week)
+				.Write("weekDay", WeekDay);
 		}
 		if (!Object.ReferenceEquals(MonthList, AllMonths))
-			builder.Item("months", String.Join(",", MonthList.Select(o => o.ToString())));
-		if (!Reminder.IsEmpty)
-			builder.Element("reminder").Value(Reminder).End();
-		return builder;
-	}
-
-	public override JsonBuilder ToJsonContent(JsonBuilder json)
-	{
-		if (json is null) throw new ArgumentNullException(nameof(json));
-
-		json.Item("type").Val(ScheduleType);
-		if (Week == ScheduleWeekType.None)
-		{
-			if (Day != 1)
-				json.Item("day").Val(Day);
-		}
-		else
-		{
-			json.Item("week").Val(Week)
-				.Item("weekDay").Val(WeekDay);
-		}
-		if (!Object.ReferenceEquals(MonthList, AllMonths))
-			json.Item("months").Val(MonthList);
-		if (!Reminder.IsEmpty)
-			json.Item("reminder").Val(Reminder);
-		return json;
+			writer.Write("months",String.Join(",", MonthList.Select(o => o.ToString())));
+		if (!Reminder.IsEmpty || writer.Level > ObjectDumpLevel.Regular)
+			writer.Write("reminder", Reminder);
 	}
 
 	public new static MonthlySchedule FromXml(Xml.IXmlReadOnlyNode xml)

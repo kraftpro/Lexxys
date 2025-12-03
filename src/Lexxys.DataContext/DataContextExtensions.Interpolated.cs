@@ -99,7 +99,7 @@ public static partial class DataContextExtensions
 		{
 			using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
 			int count = 0;
-			while (count < limit && await reader.ReadAsync().ConfigureAwait(false))
+			while (count != limit && await reader.ReadAsync().ConfigureAwait(false))
 			{
 				++count;
 				mapper(reader);

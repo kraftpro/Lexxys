@@ -1,4 +1,4 @@
-﻿#if NETCOREAPP
+#if NETCOREAPP
 
 using System.Buffers;
 using System.Text;
@@ -37,15 +37,22 @@ public static class BufferWriterExtensions
 			writer.Write((byte)0);
 			return;
 		}
-		var len = (uint)Encoding.UTF8.GetByteCount(value.AsSpan());
-		writer.WritePacked((uint)len + 1);
-		Encoding.UTF8.GetBytes(value, writer);
+        // get exact UTF-8 byte count and write bytes directly into writer span
+        var len = Encoding.UTF8.GetByteCount(value);
+        writer.WritePacked(len + 1);
+        if (len > 0)
+        {
+            var span = writer.GetSpan(len);
+            int written = Encoding.UTF8.GetBytes(value, span);
+            writer.Advance(written);
+        }
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void WritePacked(this IBufferWriter<byte> writer, ulong value)
-	{
-		var span = writer.GetSpan(sizeof(uint) + 1);
+    public static void WritePacked(this IBufferWriter<byte> writer, ulong value)
+    {
+        // allocate enough space for a 64-bit packed integer (max 10 bytes)
+        var span = writer.GetSpan(10);
 		int i = 0;
 		while (value > 0x7F)
 		{
@@ -59,13 +66,15 @@ public static class BufferWriterExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void WritePacked(this IBufferWriter<byte> writer, long value)
 	{
-		WritePacked(writer, value < 0 ? ((ulong)-value << 1) + 1: (ulong)value << 1);
+		ulong uv = value < 0 ? (~unchecked((ulong)value) << 1) | 1: (ulong)value << 1;
+		WritePacked(writer, uv);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void WritePacked(this IBufferWriter<byte> writer, uint value)
 	{
-		var span = writer.GetSpan(sizeof(uint) + 1);
+        // allocate up to 5 bytes for 32-bit packed integer
+        var span = writer.GetSpan(5);
 		int i = 0;
 		while (value > 0x7F)
 		{
@@ -79,7 +88,8 @@ public static class BufferWriterExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void WritePacked(this IBufferWriter<byte> writer, int value)
 	{
-		WritePacked(writer, value < 0 ? ((uint)-value << 1) + 1: (uint)value << 1);
+		uint uv = value < 0 ? (~unchecked((uint)value) << 1) | 1: (uint)value << 1;
+		WritePacked(writer, uv);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

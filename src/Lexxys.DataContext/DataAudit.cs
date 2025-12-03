@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Lexxys.Data;
 
-class DataAudit
+class DataAudit: IDataContextAudit
 {
 	private long _connectTime;
 	private long _transactTime;
@@ -18,7 +18,7 @@ class DataAudit
 
 	private readonly ILogger _log;
 
-	public DataAudit(TimeSpan connectionAudit, TimeSpan commandAudit, TimeSpan batchAudit, ILogger? log = null): this(
+	public DataAudit(TimeSpan connectionAudit, TimeSpan commandAudit, TimeSpan batchAudit, ILogger? log = null) : this(
 		Math.Max(0, connectionAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
 		Math.Max(0, commandAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
 		Math.Max(0, batchAudit.Ticks / TimeSpan.TicksPerMillisecond * WatchTimer.TicksPerMillisecond),
@@ -35,12 +35,24 @@ class DataAudit
 		_timingGroupItems = [];
 	}
 
+	/// <summary>
+	/// Gets the total time spent opening, committing, and rolling back transactions.
+	/// </summary>
 	public TimeSpan TransactTime => WatchTimer.ToTimeSpan(_transactTime);
 
+	/// <summary>
+	/// Gets the total time spent establishing connections.
+	/// </summary>
 	public TimeSpan ConnectTime => WatchTimer.ToTimeSpan(_connectTime);
 
+	/// <summary>
+	/// Gets the total time spent executing SQL statements.
+	/// </summary>
 	public TimeSpan QueryTime => WatchTimer.ToTimeSpan(_queryTime);
 
+	/// <summary>
+	/// Gets the total time spent on all activities, including connections, transactions, and queries.
+	/// </summary>
 	public TimeSpan TotalTime => WatchTimer.ToTimeSpan(_connectTime + _transactTime + _queryTime);
 
 	public void LockTiming()
@@ -54,10 +66,7 @@ class DataAudit
 			--_lockTiming;
 	}
 
-	public long Start()
-	{
-		return WatchTimer.Start();
-	}
+	public long Start() => WatchTimer.Start();
 
 	public void ConnectionEnd(long time)
 	{

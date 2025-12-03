@@ -7,6 +7,9 @@
 
 namespace Lexxys;
 
+/// <summary>
+/// Represents information about a blob in the storage.
+/// </summary>
 public interface IBlobInfo
 {
 	/// <summary>
@@ -25,9 +28,9 @@ public interface IBlobInfo
 	string Path { get; }
 
 	/// <summary>
-	/// Represents the date and time when the item was last modified. The value is in the DateTimeOffset format.
+	/// Represents the UTC date and time when the item was last modified.
 	/// </summary>
-	DateTimeOffset? LastModified { get; }
+	DateTime? LastModified { get; }
 
 	/// <summary>
 	/// Opens a stream for reading data. This allows for reading the contents of a blob.
@@ -39,7 +42,5 @@ public interface IBlobInfo
 	/// Asynchronously opens a stream for reading data. It allows for non-blocking access to the blob.
 	/// </summary>
 	/// <returns>Returns a Task that represents the asynchronous operation, with a Stream as the result.</returns>
-	Task<Stream> OpenReadStreamAsync();
+	Task<Stream> OpenReadStreamAsync(CancellationToken cancellationToken = default);
 }
-
-

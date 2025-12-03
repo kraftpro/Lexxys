@@ -212,7 +212,6 @@ class DataContextImplementation: IDisposable
 			if (_connectionsCount > 0)
 			{
 				Debug.Assert(_connection.State != ConnectionState.Closed);
-				Audit.ConnectionEnd(t);
 				++_connectionsCount;
 			}
 			else
@@ -314,29 +313,36 @@ class DataContextImplementation: IDisposable
 			}
 
 			var t = Audit.Start();
-			_cancelled = null;
 			var committed = _committed;
+			var cancelled = _cancelled;
+			var transaction = _transaction;
 			_committed = null;
+			_cancelled = null;
+			_transaction = null;
 			var broadcast = _broadcast.Values.ToList();
 			_broadcast.Clear();
+			bool failed = false;
 			try
 			{
-				_transaction.Commit();
+				transaction.Commit();
 			}
 			catch (Exception flaw)
 			{
 				Dc.Log.Error("Dc.Commit", flaw);
+				failed = true;
 			}
 			finally
 			{
 				_transactionsCount = 0;
-				_transaction.Dispose();
+				transaction.Dispose();
 			}
-			_transaction = null;
 
 			Audit.TransactionEnd(t);
 			SafeDisconnect();
 			Audit.GroupEnd();
+
+			if (failed)
+				committed = cancelled;
 
 			try
 			{
@@ -379,15 +385,17 @@ class DataContextImplementation: IDisposable
 			}
 
 			var t = Audit.Start();
-			_cancelled = null;
 			var cancelled = _cancelled;
+			var transaction = _transaction;
 			_committed = null;
+			_cancelled = null;
+			_transaction = null;
 			var broadcast = _broadcast.Values.ToList();
 			_broadcast.Clear();
 
 			try
 			{
-				_transaction.Rollback();
+				transaction.Rollback();
 			}
 			catch (Exception flaw)
 			{
@@ -396,8 +404,7 @@ class DataContextImplementation: IDisposable
 			finally
 			{
 				_transactionsCount = 0;
-				_transaction.Dispose();
-				_transaction = null;
+				transaction.Dispose();
 			}
 
 			Audit.TransactionEnd(t);

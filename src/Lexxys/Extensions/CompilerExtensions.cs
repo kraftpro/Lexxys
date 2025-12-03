@@ -1,15 +1,29 @@
-﻿#if !NET
+#if !NET
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.CompilerServices
 {
 	internal class IsExternalInit
 	{
+	}
+
+	[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+	internal
+	sealed class CallerArgumentExpressionAttribute: Attribute
+	{
+		public CallerArgumentExpressionAttribute(string parameterName)
+		{
+			ParameterName = parameterName;
+		}
+
+		public string ParameterName { get; }
 	}
 }
 
@@ -93,7 +107,7 @@ namespace System
 	/// int lastElement = someArray[^1]; // lastElement = 5
 	/// </code>
 	/// </remarks>
-    public readonly struct Index: IEquatable<Index>
+	internal readonly struct Index: IEquatable<Index>
 	{
 		private readonly int _value;
 
@@ -236,7 +250,7 @@ namespace System
 	/// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
 	/// </code>
 	/// </remarks>
-    public readonly struct Range: IEquatable<Range>
+	internal readonly struct Range: IEquatable<Range>
 	{
 		/// <summary>Represent the inclusive start index of the Range.</summary>
 		public Index Start { get; }
@@ -267,7 +281,9 @@ namespace System
 		/// <summary>Returns the hash code for this instance.</summary>
 		public override int GetHashCode()
 		{
-			return Lexxys.HashCode.Join(Start.GetHashCode(), End.GetHashCode());
+			return Join(Start.GetHashCode(), End.GetHashCode());
+
+			static int Join(int h1, int h2) => ((h1 << 5) + h1) ^ h2;
 		}
 
 		/// <summary>Converts the value of the current Range object to its equivalent string representation.</summary>

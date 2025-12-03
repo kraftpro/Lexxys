@@ -1,0 +1,11 @@
+Assert.IsTrue\((.*)\);
+await Assert.That($1).IsTrue();
+
+Assert.IsFalse\((.*)\);
+await Assert.That($1).IsFalse();
+
+Assert.AreEqual\((._?),\s*(.+)\);
+await Assert.That($2).IsEqualTo($1);
+
+Assert.IsNull\((.*)\);
+await Assert.That($1).IsNull();

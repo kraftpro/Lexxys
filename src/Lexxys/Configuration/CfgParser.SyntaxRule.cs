@@ -1,4 +1,4 @@
-﻿namespace Lexxys.Configuration;
+namespace Lexxys.Configuration;
 
 public ref partial struct CfgParser
 {
@@ -200,7 +200,7 @@ public ref partial struct CfgParser
 		//	{
 		//		var item = pattern[0];
 		//		if (dash && pattern.Length == 1)
-		//			return item is not "*" or "**";
+		//			return item is not "*" and not "**";
 		//		if (item == "**")
 		//			return TryMatch(value, index, pattern.Slice(1), dash, comparison) ||
 		//				index < value.Count && TryMatch(value, index + 1, pattern, dash, comparison);
@@ -218,7 +218,7 @@ public ref partial struct CfgParser
 			{
 				var item = pattern[0];
 				if (dash && pattern.Length == 1)
-					return value.Count == 1 && item is not "*" or "**";
+					return value.Count == 1 && item is not "*" and not "**";
 				if (item == "**")
 					return TryMatch(value, pattern.Slice(1), dash, comparer) ||
 						!value.IsEmpty && TryMatch(value.Slice(1), pattern, dash, comparer);

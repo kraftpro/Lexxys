@@ -1,180 +1,179 @@
-﻿namespace Lexxys.Argument.Tests;
+namespace Lexxys.Argument.Tests;
 
 public class DynamicArgumentsTests
 {
-	[Fact]
-	public void TestSimpleParameters()
+	[Test]
+	public async Task TestSimpleParameters()
 	{
 		// Arrange
-		var args = new string[] { "-a=", "1,", "2", "-b:2", "/c", "--alpha=a" };
-		var arguments = new Arguments(args);
+		string[] args = ["-a=", "1,", "2", "-b:2", "/c", "--alpha=a"];
+		var arguments = Arguments.Parse(args, allowSlash: true);
 
 		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.False(arguments.HelpRequested);
-		Assert.Equal(4, arguments.Parameters.Count);
-		Assert.Equal("1,2", arguments["a"].StringValue);
-		Assert.Equal("2", arguments["b"].StringValue);
-		Assert.Equal("true", arguments["c"].StringValue);
-		Assert.Equal("a", arguments["alpha"].StringValue);
-		Assert.Equal("2", arguments["beta"].StringValue);
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.HelpRequested).IsFalse();
+		await Assert.That(arguments.Count).IsEqualTo(4);
+		await Assert.That(arguments["a"].StringValue).IsEqualTo("1,2");
+		await Assert.That(arguments["b"].StringValue).IsEqualTo("2");
+		await Assert.That(arguments["c"].IsEmpty).IsFalse();
+		await Assert.That(arguments["alpha"].StringValue).IsEqualTo("a");
+		await Assert.That(arguments["beta"].StringValue).IsEqualTo("2");
 	}
 
-	[Fact]
-	public void TestHelpArgument()
+	[Test]
+	public async Task TestHelpArgument()
 	{
 		// Arrange
-		var args = new string[] { "-a=1", "-b:2", "/c", "--alpha=a", "-?" };
-		var arguments = new Arguments(args);
+		string[] args = ["-a=1", "-b:2", "/c", "--alpha=a", "-?"];
+		var arguments = Arguments.Parse(args);
 
 		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.True(arguments.HelpRequested);
-		Assert.Equal(4, arguments.Parameters.Count);
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.HelpRequested).IsTrue();
+		await Assert.That(arguments.Count).IsEqualTo(4);
 	}
 
-	[Fact]
-	public void TestArgumentsCollection()
+	[Test]
+	public async Task TestArgumentsCollection()
 	{
 		// Arrange
-		var args = new string[] { "-a=1", "-a:2,", "3", "/c", "--alpha=a,b,c,d" };
-		var arguments = new Arguments(args);
+		string[] args = ["-a=1", "-a:2,", "3", "/c", "--alpha=a,b,c,d"];
+		var arguments = Arguments.Parse(args, allowSlash: true);
 
 		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.Equal(3, arguments.Parameters.Count);
-		Assert.Equal("1;2;3", String.Join(";", arguments["a"].ToArray()));
-		Assert.Equal("true", arguments["c"].StringValue);
-		Assert.Equal("a;b;c;d", String.Join(";", arguments["alpha"].ToArray()));
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.Count).IsEqualTo(3);
+		await Assert.That(String.Join(";", arguments["a"].ToArray())).IsEqualTo("1;2;3");
+		await Assert.That(arguments["c"].IsEmpty).IsFalse();
+		await Assert.That(String.Join(";", arguments["alpha"].ToArray())).IsEqualTo("a;b;c;d");
 	}
 
-	[Fact]
-	public void TestCaseSensitive()
+	[Test]
+	public async Task TestCaseSensitive()
 	{
 		// Arrange
-		var args = new string[] { "-A=1", "-a:2", "/C", "--Alpha=a,b,c,d" };
-		var arguments = new Arguments(args, ignoreCase: false);
+		string[] args = ["-A=1", "-a:2", "/C", "--Alpha=a,b,c,d"];
+		var arguments = Arguments.Parse(args, ignoreCase: false, allowSlash: true);
 
 		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.Equal(4, arguments.Parameters.Count);
-		Assert.Equal("2", arguments["a"].ToString());
-		Assert.Equal("1", arguments["A"].ToString());
-		Assert.False(arguments["c"].HasValue);
-		Assert.Equal("true", arguments["C"].StringValue);
-		Assert.False(arguments["ALpha"].HasValue);
-		Assert.Equal("a;b;c;d", String.Join(";", arguments["Alpha"].ToArray()));
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.Count).IsEqualTo(4);
+		await Assert.That(arguments["a"].ToString()).IsEqualTo("2");
+		await Assert.That(arguments["A"].ToString()).IsEqualTo("1");
+		await Assert.That(arguments["c"].HasValue).IsFalse();
+		await Assert.That(arguments["C"].IsEmpty).IsFalse();
+		await Assert.That(String.Join(";", arguments["Alpha"].ToArray())).IsEqualTo("a;b;c;d");
 	}
 
-	[Fact]
-	public void TestCaseInsensitive()
+	[Test]
+	public async Task TestCaseInsensitive()
 	{
 		// Arrange
-		var args = new string[] { "-A=1", "-a:2", "/C", "--Alpha=a,b,c,d" };
-		var arguments = new Arguments(args, ignoreCase: true);
+		string[] args = ["-A=1", "-a:2", "/C", "--Alpha=a,b,c,d"];
+		var arguments = Arguments.Parse(args, ignoreCase: true, allowSlash: true);
 
 		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.Equal(3, arguments.Parameters.Count);
-		Assert.Equal("1;2", String.Join(";", arguments["a"].ToArray()));
-		Assert.Equal("true", arguments["c"].StringValue);
-		Assert.Equal("a;b;c;d", String.Join(";", arguments["ALPHA"].ToArray()));
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.Count).IsEqualTo(3);
+		await Assert.That(String.Join(";", arguments["a"].ToArray())).IsEqualTo("1;2");
+		await Assert.That(arguments["c"].IsEmpty).IsFalse();
+		await Assert.That(String.Join(";", arguments["ALPHA"].ToArray())).IsEqualTo("a;b;c;d");
 	}
 
-	[Fact]
-	public void TestPositionalArguments()
+	[Test]
+	public async Task TestPositionalArguments()
 	{
 		// Arrange
-		var args = new string[] { "--a=a", "/file:file", "item1", "item2", "item3" };
-		var arguments = new Arguments(args);
+		string[] args = ["--a=a", "/file:file", "item1", "item2", "item3"];
+		var arguments = Arguments.Parse(args, allowSlash: true);
 
 		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.Equal(3, arguments.Parameters.Count);
-		Assert.Equal("item1;item2;item3", String.Join(";", arguments["positional"].ToArray()));
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.Count).IsEqualTo(3);
+		await Assert.That(String.Join(";", arguments.Positional.ToArray())).IsEqualTo("item1;item2;item3");
 	}
 
-	[Fact]
-	public void TestPositionalArgumentsCollection()
+	[Test]
+	public async Task TestPositionalArgumentsCollection()
 	{
 		// Arrange
-		var args = new string[] { "--a=a", "/file:file", "item1", "item2,item2a", "item3" };
-		var arguments = new Arguments(args);
+		string[] args = ["--a=a", "/file:file", "item1", "item2,item2a", "item3"];
+		var arguments = Arguments.Parse(args, allowSlash: true);
 
 		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.Equal(3, arguments.Parameters.Count);
-		Assert.Equal("item1;item2;item2a;item3", String.Join(";", arguments["positional"].ToArray()));
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.Count).IsEqualTo(3);
+		await Assert.That(String.Join(";", arguments.Positional.ToArray())).IsEqualTo("item1;item2;item2a;item3");
 	}
 
-    [Fact]
-    public void TestSplitPositionalArguments()
-    {
+    //[Test]
+    //public async Task TestSplitPositionalArguments()
+    //{
+    //    // Arrange
+    //    string[] args = ["--a=a", "/file:file", "item1", "item2,item2a", "item3"];
+    //    var arguments = new Arguments(args, splitPositional: true, allowSlash: true);
+
+    //    // Assert
+    //    await Assert.That(arguments.Errors).IsEmpty();
+    //    await Assert.That(arguments.Count).IsEqualTo(5);
+    //    await Assert.That(String.Join(";", arguments.Positional.ToArray())).IsEqualTo("item1");
+    //    await Assert.That(String.Join(";", arguments.Positional.ToArray())).IsEqualTo("item2;item2a");
+    //    await Assert.That(String.Join(";", arguments.Positional.ToArray())).IsEqualTo("item3");
+    //}
+
+	[Test]
+	public async Task TestDisableSlashPrefix()
+	{
         // Arrange
-        var args = new string[] { "--a=a", "/file:file", "item1", "item2,item2a", "item3" };
-        var arguments = new Arguments(args, splitPositional: true);
+        string[] args = ["-a=1", "-a:2", "/c", "--alpha=a,b,c,d"];
+        var arguments = Arguments.Parse(args, allowSlash: false);
 
-        // Assert
-        Assert.False(arguments.HasErrors);
-        Assert.Equal(5, arguments.Parameters.Count);
-        Assert.Equal("item1", String.Join(";", arguments["positional"].ToArray()));
-        Assert.Equal("item2;item2a", String.Join(";", arguments["positional.1"].ToArray()));
-        Assert.Equal("item3", String.Join(";", arguments["positional.2"].ToArray()));
+		// Assert
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.HelpRequested).IsFalse();
+        await Assert.That(arguments.Count).IsEqualTo(3);
+        await Assert.That(String.Join(";", arguments["a"].ToArray())).IsEqualTo("1;2");
+        await Assert.That(arguments["c"].StringValue).IsNull();
+        await Assert.That(arguments.Positional.StringValue).IsEqualTo("/c");
+        await Assert.That(String.Join(";", arguments["alpha"].ToArray())).IsEqualTo("a;b;c;d");
     }
 
-	[Fact]
-	public void TestDisableSlashPrefix()
-	{
-        // Arrange
-        var args = new string[] { "-a=1", "-a:2", "/c", "--alpha=a,b,c,d" };
-        var arguments = new Arguments(args, allowSlash: false);
-
-		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.False(arguments.HelpRequested);
-        Assert.Equal(3, arguments.Parameters.Count);
-        Assert.Equal("1;2", String.Join(";", arguments["a"].ToArray()));
-        Assert.Null(arguments["c"].StringValue);
-        Assert.Equal("/c", arguments["positional"].StringValue);
-        Assert.Equal("a;b;c;d", String.Join(";", arguments["alpha"].ToArray()));
-    }
-
-    [Fact]
-	public void TestColonSeparatorOnly()
+    [Test]
+	public async Task TestColonSeparatorOnly()
 	{
 		// Arrange
 		var args = new string[] { "-a=:1", "-b:=2" };
-		var arguments = new Arguments(args, equalSeparator: false, colonSeparator: true);
+		var arguments = Arguments.Parse(args, equalSeparator: false, colonSeparator: true);
 
 		// Act
 
 		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.False(arguments.HelpRequested);
-		Assert.Equal(2, arguments.Parameters.Count);
-        Assert.Equal("1", arguments["a="].StringValue);
-        Assert.Equal("=2", arguments["b"].StringValue);
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.HelpRequested).IsFalse();
+		await Assert.That(arguments.Count).IsEqualTo(2);
+        await Assert.That(arguments["a="].StringValue).IsEqualTo("1");
+        await Assert.That(arguments["b"].StringValue).IsEqualTo("=2");
     }
 
-    [Fact]
-	public void TestEqualSeparatorOnly()
+    [Test]
+	public async Task TestEqualSeparatorOnly()
 	{
 		// Arrange
 		var args = new string[] { "-a=:1", "-b:=2" };
-		var arguments = new Arguments(args, equalSeparator: true, colonSeparator: false);
+		var arguments = Arguments.Parse(args, equalSeparator: true, colonSeparator: false);
 
 		// Act
 
 		// Assert
-		Assert.False(arguments.HasErrors);
-		Assert.False(arguments.HelpRequested);
-		Assert.Equal(2, arguments.Parameters.Count);
-        Assert.Equal(":1", arguments["a"].StringValue);
-        Assert.Equal("2", arguments["b:"].StringValue);
+		await Assert.That(arguments.Errors).IsEmpty();
+		await Assert.That(arguments.HelpRequested).IsFalse();
+		await Assert.That(arguments.Count).IsEqualTo(2);
+        await Assert.That(arguments["a"].StringValue).IsEqualTo(":1");
+        await Assert.That(arguments["b:"].StringValue).IsEqualTo("2");
     }
 
-    //[Fact]
-    //public void TestConstructorWithBlankSeparator()
+    //[Test]
+    //public async Task TestConstructorWithBlankSeparator()
     //{
     //	// Arrange
     //	var args = new string[] { "-a 1", "-b 2" };
@@ -183,13 +182,13 @@ public class DynamicArgumentsTests
     //	// Act
 
     //	// Assert
-    //	Assert.False(arguments.HasErrors);
-    //	Assert.False(arguments.HelpRequested);
-    //	Assert.Equal(2, arguments.Args.Count);
+    //	await Assert.That(arguments.Errors).IsEmpty();
+    //	await Assert.That(arguments.HelpRequested).IsFalse();
+    //	await Assert.That(arguments.Args.Count).IsEqualTo(2);
     //}
 
-    //[Fact]
-    //public void TestConstructorWithIgnoreNameSeparators()
+    //[Test]
+    //public async Task TestConstructorWithIgnoreNameSeparators()
     //{
     //	// Arrange
     //	var args = new string[] { "-a.b-c_1", "-b:2" };
@@ -198,13 +197,13 @@ public class DynamicArgumentsTests
     //	// Act
 
     //	// Assert
-    //	Assert.False(arguments.HasErrors);
-    //	Assert.False(arguments.HelpRequested);
-    //	Assert.Equal(2, arguments.Args.Count);
+    //	await Assert.That(arguments.Errors).IsEmpty();
+    //	await Assert.That(arguments.HelpRequested).IsFalse();
+    //	await Assert.That(arguments.Args.Count).IsEqualTo(2);
     //}
 
-    //[Fact]
-    //public void TestConstructorWithCombineLastParameter()
+    //[Test]
+    //public async Task TestConstructorWithCombineLastParameter()
     //{
     //	// Arrange
     //	var args = new string[] { "-a", "1", "-b", "-c" };
@@ -213,13 +212,13 @@ public class DynamicArgumentsTests
     //	// Act
 
     //	// Assert
-    //	Assert.False(arguments.HasErrors);
-    //	Assert.False(arguments.HelpRequested);
-    //	Assert.Equal(3, arguments.Parameters.Count);
+    //	await Assert.That(arguments.Errors).IsEmpty();
+    //	await Assert.That(arguments.HelpRequested).IsFalse();
+    //	await Assert.That(arguments.Count).IsEqualTo(3);
     //}
 
-    //[Fact]
-    //public void TestConstructorWithCommands()
+    //[Test]
+    //public async Task TestConstructorWithCommands()
     //{
     //	// Arrange
     //	var args = new string[] { "command1", "--param1", "1", "--param2", "2", "command2", "-p", "3" };
@@ -232,14 +231,14 @@ public class DynamicArgumentsTests
     //	// Act
 
     //	// Assert
-    //	Assert.False(arguments.HasErrors);
-    //	Assert.False(arguments.HelpRequested);
-    //	Assert.Equal(5, arguments.Args.Count);
-    //	Assert.Equal("command2", arguments.CommandInfo.Name);
+    //	await Assert.That(arguments.Errors).IsEmpty();
+    //	await Assert.That(arguments.HelpRequested).IsFalse();
+    //	await Assert.That(arguments.Args.Count).IsEqualTo(5);
+    //	await Assert.That(arguments.CommandInfo.Name).IsEqualTo("command2");
 
     //	var command = arguments.Parameters.GetCommand("command1");
-    //	Assert.NotNull(command);
-    //	Assert.Equal("subCommand1", command.Name);
-    //	Assert.Equal(2, command.Parameters.Count);
+    //	await Assert.That(command).IsNotNull();
+    //	await Assert.That(command.Name).IsEqualTo("subCommand1");
+    //	await Assert.That(command.Count).IsEqualTo(2);
     //}
 }

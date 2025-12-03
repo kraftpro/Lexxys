@@ -40,18 +40,12 @@ public sealed class SqlServerDataContext: IDataContext
 
 		connectionFactory ??= __defaultConnectionFactory;
 		string connectionString = connectionInfo.GetConnectionString();
-		_context = new DataContextImplementation(() => connectionFactory(connectionString), connectionInfo.CommandTimeout, new DataAudit(connectionInfo.ConnectionAuditThreshold, connectionInfo.ConnectionAuditThreshold, connectionInfo.BatchAuditThreshold));
+		_context = new DataContextImplementation(() => connectionFactory(connectionString), connectionInfo.CommandTimeout, new DataAudit(connectionInfo.ConnectionAuditThreshold, connectionInfo.CommandAuditThreshold, connectionInfo.BatchAuditThreshold));
 	}
 
 	internal DataContextImplementation Context => _context;
 
-	public TimeSpan ConnectTime => _context.Audit.ConnectTime;
-
-	public TimeSpan TransactTime => _context.Audit.TransactTime;
-
-	public TimeSpan QueryTime => _context.Audit.QueryTime;
-
-	public TimeSpan TotalTime => _context.Audit.TotalTime;
+	public IDataContextAudit Audit => _context.Audit;
 
 	public event Action Committed
 	{
@@ -103,6 +97,7 @@ public sealed class SqlServerDataContext: IDataContext
 		{
 			connect = _context.Connect();
 			command.Connection = _context.Connection;
+			command.Transaction = _context.Transaction;
 			t = _context.Audit.Start();
 			T result = mapper(command);
 			return result;
@@ -144,6 +139,7 @@ public sealed class SqlServerDataContext: IDataContext
 		{
 			connect = _context.Connect();
 			command.Connection = _context.Connection;
+			command.Transaction = _context.Transaction;
 			t = _context.Audit.Start();
 			var result = await mapper(command).ConfigureAwait(false);
 			return result;

@@ -1,31 +1,46 @@
-﻿using System.Text;
-using System.Text.RegularExpressions;
-
-#pragma warning disable CA1720 // Identifier contains type name
-
-namespace Lexxys.Testing;
+﻿namespace Lexxys.Testing;
 
 /// <summary>
-/// Static class with methods to generate random values.
+/// Provides static factory methods for creating and manipulating random value generators and weighted random item
+/// selectors.
 /// </summary>
-public static class R
+/// <remarks>
+/// The R class offers a variety of methods to construct instances of <see cref="RandItem{T}"/> for generating random
+/// values, including numbers, characters, strings, and custom objects, with support for weighted selection, filtering,
+/// and formatting. It also includes utilities for loading and parsing data from files, and for generating random text
+/// and patterns. All members are thread-safe for typical usage, as they do not maintain internal mutable
+/// state.
+/// </remarks>
+public static partial class R
 {
 	private const int DefaultMaxTries = 9999;
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> randomly returning item from provided collection <paramref name="items"/>.
+	/// Creates a random item selector that returns a randomly chosen element from the specified items each time it is
+	/// invoked.
 	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="items">Collection of items.</param>
-	/// <returns></returns>
+	/// <remarks>If the array contains duplicate items, each occurrence has an equal chance of being selected. The
+	/// selection is performed independently on each invocation.</remarks>
+	/// <typeparam name="T">The type of the items to select from.</typeparam>
+	/// <param name="items">The array of items to select from. Cannot be null or empty.</param>
+	/// <returns>A <see cref="RandItem{T}"/> that, when evaluated, returns a randomly selected item from the provided array.</returns>
 	public static RandItem<T> Any<T>(params T[] items) => new RandItem<T>(() => Rand.Item(items));
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> randomly returning item from provided collection <paramref name="items"/>.
+	/// Returns a random item from the specified sequence, or an empty result if the sequence is null or contains no
+	/// elements.
 	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="items">Collection of items.</param>
-	/// <returns></returns>
+	/// <remarks>
+	/// If the sequence contains exactly one element, that element is always returned. If the sequence
+	/// contains more than one element, a random item is selected each time the <see cref="RandItem{T}"/> is evaluated. The method
+	/// materializes the input sequence; avoid passing large or infinite sequences.
+	/// </remarks>
+	/// <typeparam name="T">The type of elements in the input sequence.</typeparam>
+	/// <param name="items">The sequence of items to select from. Can be null.</param>
+	/// <returns>
+	/// A <see cref="RandItem{T}"/> representing a randomly selected item from the sequence. If the sequence is null or empty, returns
+	/// <see cref="RandItem{T}.Empty"/>.
+	/// </returns>
 	public static RandItem<T> Any<T>(IEnumerable<T>? items)
 	{
 		if (items == null)
@@ -41,80 +56,94 @@ public static class R
 	}
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> with single value and a weight of 1.
+	/// Creates a new <see cref="RandItem{T}"/> instance containing the specified value.
 	/// </summary>
-	/// <typeparam name="T">Type of the value</typeparam>
-	/// <param name="value">The value</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <typeparam name="T">The type of the value to be wrapped by the <see cref="RandItem{T}"/>.</typeparam>
+	/// <param name="value">The value to be encapsulated in the <see cref="RandItem{T}"/> instance.</param>
+	/// <returns>A <see cref="RandItem{T}"/> that contains the specified value.</returns>
 	public static RandItem<T> I<T>(T value) => new RandItem<T>(value);
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> with single value and the specified weight.
+	/// Creates a new random item with the specified weight and value.
 	/// </summary>
-	/// <typeparam name="T">Type of the value</typeparam>
-	/// <param name="weight">Weight of the value</param>
-	/// <param name="value">The value</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <typeparam name="T">The type of the value to associate with the random item.</typeparam>
+	/// <param name="weight">The relative probability weight assigned to the item. Must be non-negative.</param>
+	/// <param name="value">The value to associate with the random item.</param>
+	/// <returns>A new instance of <see cref="RandItem{T}"/> containing the specified weight and value.</returns>
 	public static RandItem<T> I<T>(double weight, T value) => new RandItem<T>(weight, value);
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> with the specified value generator and weight = 1.0
+	/// Creates a new instance of the <see cref="RandItem{T}"/> class using the specified value generator and a default
+	/// weight of 1.0.
 	/// </summary>
-	/// <typeparam name="T">Type of the value</typeparam>
-	/// <param name="generator">Value generator</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <typeparam name="T">The type of value generated by the <paramref name="generator"/> function.</typeparam>
+	/// <param name="generator">A function that generates values of type <typeparamref name="T"/> when invoked. Cannot be null.</param>
+	/// <returns>A new <see cref="RandItem{T}"/> initialized with the specified value generator and a weight of 1.0.</returns>
 	public static RandItem<T> I<T>(Func<T> generator) => new RandItem<T>(generator);
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> with the specified value generator and the specified weight.
+	/// Creates a new random item with the specified weight and value generator.
 	/// </summary>
-	/// <typeparam name="T">Type of the value</typeparam>
-	/// <param name="weight">Weight of the value</param>
-	/// <param name="generator">Value generator</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <typeparam name="T">The type of value produced by the generator.</typeparam>
+	/// <param name="weight">The relative probability weight assigned to this item. Must be non-negative.</param>
+	/// <param name="generator">A function that generates the value for this item when selected. Cannot be null.</param>
+	/// <returns>A new <see cref="RandItem{T}"/> instance configured with the specified weight and generator.</returns>
 	public static RandItem<T> I<T>(double weight, Func<T> generator) => new RandItem<T>(weight, generator);
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> randomly returning item from provided collection of <paramref name="items"/>.
+	/// Creates a new random item as a composition of the specified items.
 	/// </summary>
-	/// <typeparam name="T">Type of the value</typeparam>
-	/// <param name="items">Collection of <see cref="RandItem{T}"/>s.</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <remarks>Use this method to compose a random item from multiple existing random items. The selection
+	/// behavior depends on the implementation of <see cref="RandItem{T}"/>.</remarks>
+	/// <typeparam name="T">The type of the values contained in the random items.</typeparam>
+	/// <param name="items">An array of random items to select from. Cannot be null or empty.</param>
+	/// <returns>A new <see cref="RandItem{T}"/> instance that represents a random selection from the provided items.</returns>
 	public static RandItem<T> I<T>(params RandItem<T>[] items) => new RandItem<T>(items);
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> randomly returning item from provided collection of <paramref name="items"/>.
+	/// Creates a new random item selector from a collection of random items.
 	/// </summary>
-	/// <typeparam name="T">Type of the value</typeparam>
-	/// <param name="items">Collection of <see cref="RandItem{T}"/>s.</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <typeparam name="T">The type of value contained in each random item.</typeparam>
+	/// <param name="items">The collection of random items to include in the selector. Cannot be null.</param>
+	/// <returns>A new <see cref="RandItem{T}"/> instance initialized with the specified collection of random items.</returns>
 	public static RandItem<T> I<T>(IEnumerable<RandItem<T>> items) => new RandItem<T>(items);
 
 	/// <summary>
-	/// Create new <see cref="RandItem{T}"/> randomly returning item from provided collection <paramref name="pairs"/>.
+	/// Creates a composite random item from a set of weighted value pairs.
 	/// </summary>
-	/// <typeparam name="T">Type of the value</typeparam>
-	/// <param name="pairs">Collection of weight-value pairs.</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <remarks>The resulting <see cref="RandItem{T}"/> can be used to perform random selections where each value's likelihood is
+	/// proportional to its specified weight.</remarks>
+	/// <typeparam name="T">The type of the values to associate with each weight.</typeparam>
+	/// <param name="pairs">An array of tuples, each containing a weight and a value. The weight determines the relative probability of
+	/// selecting the associated value. All weights must be greater than zero.</param>
+	/// <returns>A <see cref="RandItem{T}"/> instance representing a weighted random selection among the provided values.</returns>
 	public static RandItem<T> I<T>(params (double Weight, T Value)[] pairs) => new RandItem<T>(Array.ConvertAll(pairs, o => new RandItem<T>(o.Weight, o.Value)), false);
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> with the specified weight.
+	/// Creates a new random item with the specified weight and existing random item.
 	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="weight">Weight of the value</param>
-	/// <param name="value">The <see cref="RandItem{T}"/></param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <typeparam name="T">The type of the value to associate with the random item.</typeparam>
+	/// <param name="weight">The positive relative weight to assign to the item.</param>
+	/// <param name="value">The existing <see cref="RandItem{T}"/> to wrap with the specified weight.</param>
+	/// <returns>A <see cref="RandItem{T}"/> instance containing the specified value and weight.</returns>
 	public static RandItem<T> I<T>(double weight, RandItem<T> value) => value.WithWeight(weight);
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/>
+	/// Creates a random item generator that produces values using the specified generator and only returns values that
+	/// satisfy the given filter.
 	/// </summary>
-	/// <typeparam name="T">Type of the item value.</typeparam>
-	/// <param name="generator">Item value generator.</param>
-	/// <param name="filter">Predicate to filter out the item values.</param>
-	/// <param name="maxTries">Max number of tries</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <remarks>This method is useful when you need to generate random values that must meet specific criteria. If
+	/// a suitable value cannot be found within the specified number of tries, an exception is thrown. The default maximum
+	/// number of tries is used if <paramref name="maxTries"/> is not specified or is less than or equal to zero.</remarks>
+	/// <typeparam name="T">The type of value to generate.</typeparam>
+	/// <param name="generator">A function that generates candidate values of type T. Cannot be null.</param>
+	/// <param name="filter">A predicate used to determine whether a generated value is acceptable. Only values for which this function returns
+	/// <see langword="true"/> will be returned. Cannot be null.</param>
+	/// <param name="maxTries">The maximum number of attempts to generate a value that satisfies the filter. If zero, a default
+	/// maximum is used.</param>
+	/// <returns>A <see cref="RandItem{T}"/> that generates values from the specified generator, filtered by the provided predicate.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="generator"/> or <paramref name="filter"/> is null.</exception>
+	/// <exception cref="InvalidOperationException">Thrown if no value satisfying the filter is generated within the allowed number of attempts.</exception>
 	public static RandItem<T> I<T>(Func<T> generator, Func<T, bool> filter, int maxTries = 0)
 	{
 		if (generator == null)
@@ -126,7 +155,7 @@ public static class R
 
 		return new RandItem<T>(() =>
 		{
-			for (int i = 0; i != maxTries; ++i)
+			for (int i = 0; i < maxTries; ++i)
 			{
 				var t = generator();
 				if (filter(t))
@@ -137,13 +166,19 @@ public static class R
 	}
 
 	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> based on the specifies <paramref name="generator"/> and the specified <paramref name="filter"/>.
+	/// Creates a new random item generator that produces values from the specified <see cref="RandItem{T}"/> and
+	/// only returns values that satisfy the given <paramref name="filter"/>.
 	/// </summary>
-	/// <typeparam name="T">Type of the item value</typeparam>
-	/// <param name="generator">Random item values generator.</param>
-	/// <param name="filter">Predicate to filter out generated item values.</param>
-	/// <param name="maxTries">Max number of tries</param>
-	/// <returns>new <see cref="RandItem{T}"/></returns>
+	/// <remarks>If maxTries is set to 0, the method will continue attempting to generate values until the filter
+	/// condition is met. If maxTries is greater than 0, the method will stop after the specified number of attempts and
+	/// return an unsuccessful result if no value satisfies the filter.</remarks>
+	/// <typeparam name="T">The type of value generated and filtered.</typeparam>
+	/// <param name="generator">The random value generator to use for producing candidate values. Cannot be null.</param>
+	/// <param name="filter">A predicate that determines whether a generated value is accepted. Cannot be null.</param>
+	/// <param name="maxTries">The maximum number of attempts to generate a value that satisfies the filter. Specify 0 for unlimited attempts.</param>
+	/// <returns>A <see cref="RandItem{T}"/> containing the first value that satisfies the filter, or an unsuccessful result if no such value is
+	/// found within the allowed number of tries.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if either generator or filter is null.</exception>
 	public static RandItem<T> I<T>(RandItem<T> generator, Func<T, bool> filter, int maxTries = 0)
 	{
 		if (generator == null)
@@ -151,584 +186,5 @@ public static class R
 		if (filter == null)
 			throw new ArgumentNullException(nameof(filter));
 		return I(generator.NextValue, filter, maxTries);
-	}
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> returning random integer in range <paramref name="min"/> (inclusive) to <paramref name="max"/> (exclusive)
-	/// </summary>
-	/// <param name="min">The inclusive lower bound of the random number to be returned.</param>
-	/// <param name="max">The exclusive upper bound of the random number to be returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="min"/> is negative or <paramref name="max"/> is less than <paramref name="min"/>.</exception>
-	public static RandItem<int> Int(int min, int max)
-	{
-		if (min < 0) throw new ArgumentOutOfRangeException(nameof(min), min, null);
-		if (max < min) throw new ArgumentOutOfRangeException(nameof(max), max, null);
-		return new RandItem<int>(() => Rand.Int(min, max));
-	}
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> returning random integer in range 0 (inclusive) to <paramref name="max"/> (exclusive)
-	/// </summary>
-	/// <param name="max">The exclusive upper bound of the random number to be returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="max"/> is negative.</exception>
-	public static RandItem<int> Int(int max)
-	{
-		if (max < 0) throw new ArgumentOutOfRangeException(nameof(max), max, null);
-		return new RandItem<int>(() => Rand.Int(max));
-	}
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> returning random long numbers in range <paramref name="min"/> (inclusive) to <paramref name="max"/> (exclusive)
-	/// </summary>
-	/// <param name="min">The inclusive lower bound of the random number to be returned.</param>
-	/// <param name="max">The exclusive upper bound of the random number to be returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="min"/> is negative or <paramref name="max"/> is less than <paramref name="min"/>.</exception>
-	public static RandItem<long> Int(long min, long max)
-	{
-		if (min < 0) throw new ArgumentOutOfRangeException(nameof(min), min, null);
-		if (max < min) throw new ArgumentOutOfRangeException(nameof(max), max, null);
-		return new RandItem<long>(() => Rand.Long(min, max));
-	}
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> returning random long numbers in range 0 (inclusive) to <paramref name="max"/> (exclusive)
-	/// </summary>
-	/// <param name="max">The exclusive upper bound of the random number to be returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="max"/> is negative.</exception>
-	public static RandItem<long> Int(long max)
-	{
-		if (max < 0) throw new ArgumentOutOfRangeException(nameof(max), max, null);
-		return new RandItem<long>(() => Rand.Long(max));
-	}
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> returning random decimal numbers in range <paramref name="min"/> (inclusive) to <paramref name="max"/> (exclusive)
-	/// </summary>
-	/// <param name="min">The inclusive lower bound of the random number to be returned.</param>
-	/// <param name="max">The exclusive upper bound of the random number to be returned.</param>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="min"/> is negative or <paramref name="max"/> is less than <paramref name="min"/>.</exception>
-	/// <returns></returns>
-	public static RandItem<decimal> Dec(decimal min, decimal max)
-	{
-		if (min < 0) throw new ArgumentOutOfRangeException(nameof(min), min, null);
-		if (max < min) throw new ArgumentOutOfRangeException(nameof(max), max, null);
-		return new RandItem<decimal>(() => Rand.Dec(min, max));
-	}
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> returning random decimal numbers in range 0 (inclusive) to <paramref name="max"/> (exclusive)
-	/// </summary>
-	/// <param name="max">The exclusive upper bound of the random number to be returned.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="max"/> is negative.</exception>
-	public static RandItem<decimal> Dec(decimal max)
-	{
-		if (max < 0) throw new ArgumentOutOfRangeException(nameof(max), max, null);
-		return new RandItem<decimal>(() => Rand.Dec(max));
-	}
-
-	/// <summary>
-	/// Returns a new <see cref="RandItem{T}"/> returning random double numbers in range <paramref name="min"/> (inclusive) to <paramref name="max"/> (exclusive)
-	/// </summary>
-	/// <param name="min">The inclusive lower bound of the random number to be returned.</param>
-	/// <param name="max">The exclusive upper bound of the random number to be returned.</param>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="min"/> is negative or infinity or NaN or <paramref name="max"/> is less than <paramref name="min"/> or infinity or NaN.</exception>
-	/// <returns></returns>
-	public static RandItem<double> Dbl(double min, double max)
-	{
-		if (min < 0 || double.IsInfinity(min) || double.IsNaN(min)) throw new ArgumentOutOfRangeException(nameof(min), min, null);
-		if (max < min || double.IsInfinity(max) || double.IsNaN(max)) throw new ArgumentOutOfRangeException(nameof(max), max, null);
-		return new RandItem<double>(() => Rand.Dbl(min, max));
-	}
-
-	/// <summary>
-	/// Returns a new <see cref="RandItem{T}"/> returning random double numbers in range 0 (inclusive) to <paramref name="max"/> (exclusive)
-	/// </summary>
-	/// <param name="max"></param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="max"/> is negative or infinity or NaN.</exception>
-	public static RandItem<double> Dbl(double max)
-	{
-		if (max < 0 || double.IsInfinity(max) || double.IsNaN(max)) throw new ArgumentOutOfRangeException(nameof(max), max, null);
-		return new RandItem<double>(() => Rand.Dbl(max));
-	}
-
-	/// <summary>
-	/// Returns a new <see cref="RandItem{T}">RandItem&lt;<see cref="string"/>&gt;</see> returning the formatted string value of the <paramref name="item"/> using <paramref name="format"/> and the specified <paramref name="formatProvider"/>.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="item">The item to format.</param>
-	/// <param name="format">Format string.</param>
-	/// <param name="formatProvider">Format provider.</param>
-	/// <returns></returns>
-	public static RandItem<string> Fmt<T>(RandItem<T> item, string format, IFormatProvider? formatProvider = null) => new RandItem<string>(() => item.ToString(format, formatProvider));
-
-	/// <summary>
-	/// Returns a new <see cref="RandItem{T}">RandItem&lt;<see cref="string"/>&gt;</see> returning the formatted string value of the <paramref name="item"/> using randomly selected <paramref name="format"/> and the specified <paramref name="formatProvider"/>.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="item">The item to format.</param>
-	/// <param name="format">Format string generator.</param>
-	/// <param name="formatProvider">Format provider.</param>
-	/// <returns></returns>
-	public static RandItem<string> Fmt<T>(RandItem<T> item, RandItem<string> format, IFormatProvider? formatProvider = null) => new RandItem<string>(() => item.ToString(format, formatProvider));
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> containing values of the specified <paramref name="items"/>.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="items">Items to concatenate.</param>
-	/// <returns></returns>
-	public static RandItem<string> Concat<T>(params RandItem<T>[] items) => new RandItem<string>(() => String.Join(null, items));
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> containing concatenated values of the specified <paramref name="items"/>.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="items">Items to concatenate.</param>
-	/// <returns></returns>
-	public static RandItem<string> Concat<T>(IReadOnlyCollection<RandItem<T>> items) => new RandItem<string>(() => String.Join(null, items));
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> containing concatenated values of the specified <paramref name="items"/> converted to string using the specified <paramref name="convert"/> function.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="convert">Conversion function.</param>
-	/// <param name="items">Items to concatenate.</param>
-	/// <returns></returns>
-	public static RandItem<string> Concat<T>(Func<T, string> convert, params RandItem<T>[] items) => new RandItem<string>(() => String.Join(null, items.Select(o => convert(o!))));
-
-	/// <summary>
-	/// Creates a new <see cref="RandItem{T}"/> containing concatenated values of the specified <paramref name="items"/> converted to string using the specified <paramref name="convert"/> function.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="convert">Conversion function.</param>
-	/// <param name="items">Items to concatenate.</param>
-	/// <returns></returns>
-	public static RandItem<string> Concat<T>(Func<T, string> convert, IReadOnlyCollection<RandItem<T>> items) => new RandItem<string>(() => String.Join(null, items.Select(o => convert(o!))));
-
-	private const int NC = 'z' - 'a' + 1;
-	private const int NC2 = NC + NC;
-	/// <summary>
-	/// A <see cref="RandItem{T}"/> that returns a random char in range '0' to '9'.
-	/// </summary>
-	public static RandItem<char> DigitChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, 10) + '0'));
-	/// <summary>
-	/// A <see cref="RandItem{T}"/> that returns a random char in range 'a' to 'z'.
-	/// </summary>
-	public static RandItem<char> LowerChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, NC) + 'a'));
-	/// <summary>
-	/// A <see cref="RandItem{T}"/> that returns a random char in range 'A' to 'Z'.
-	/// </summary>
-	public static RandItem<char> UpperChar { get; } = new RandItem<char>(() => (char)(Rand.Int(0, NC) + 'A'));
-	/// <summary>
-	/// A <see cref="RandItem{T}"/> that returns a random char in range 'a' to 'z' or 'A' to 'Z'.
-	/// </summary>
-	public static RandItem<char> LetterChar { get; } = new RandItem<char>(() => { int i = Rand.Int(0, NC * 2); return (char)(i < NC ? i + 'a': i + ('A' - NC)); });
-	/// <summary>
-	/// A <see cref="RandItem{T}"/> that returns a random char in range 'a' to 'z' or 'A' to 'Z' or '0' to '9'.
-	/// </summary>
-	public static RandItem<char> LetterOrDigitChar { get; } = new RandItem<char>(() => { int i = R.Int(0, NC2 + 10); return (char)(i < NC ? i + 'a': i < NC2 ? i + ('A' - NC): i + ('0' - NC2)); });
-	/// <summary>
-	/// A <see cref="RandItem{T}"/> that returns a random char in range ' ' to '~'.
-	/// </summary>
-	public static RandItem<char> AsciiChar { get; } = new RandItem<char>(() => (char)Rand.Int(' ', 127));
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random char in range <paramref name="min"/> to <paramref name="max"/> (inclusive).
-	/// </summary>
-	/// <param name="min">Minimum char code.</param>
-	/// <param name="max">Maximum char code.</param>
-	/// <returns></returns>
-	public static RandItem<char> Chr(int min, int max) => new RandItem<char>(() => (char)Rand.Int(min, max + 1));
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random char from the specified collection of characters.
-	/// </summary>
-	/// <param name="chars">Collection of characters.</param>
-	/// <returns></returns>
-	public static RandItem<char> Chr(char[] chars) => new RandItem<char>(() => chars[Rand.Int(0, chars.Length)]);
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random char from the specified string.
-	/// </summary>
-	/// <param name="chars">String of characters.</param>
-	/// <returns></returns>
-	public static RandItem<char> Chr(string chars) => new RandItem<char>(() => chars[Rand.Int(0, chars.Length)]);
-
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from ' ' to '~'.
-	/// </summary>
-	/// <param name="minLength">Minimum length of the generated string.</param>
-	/// <param name="maxLength">Maximum length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Ascii(int minLength, int maxLength) => Str(AsciiChar, minLength, maxLength);
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from ' ' to '~'.
-	/// </summary>
-	/// <param name="length">Length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Ascii(int length) => Str(AsciiChar, length);
-
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from '0' to '9'.
-	/// </summary>
-	/// <param name="minLength">Minimum length of the generated string.</param>
-	/// <param name="maxLength">Maximum length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Digit(int minLength, int maxLength) => Str(DigitChar, minLength, maxLength);
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from '0' to '9'.
-	/// </summary>
-	/// <param name="length">Length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Digit(int length) => Str(DigitChar, length);
-
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from 'a' to 'z'.
-	/// </summary>
-	/// <param name="minLength">Minimum length of the generated string.</param>
-	/// <param name="maxLength">Maximum length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Lower(int minLength, int maxLength) => Str(LowerChar, minLength, maxLength);
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from 'a' to 'z'.
-	/// </summary>
-	/// <param name="length">Length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Lower(int length) => Str(LowerChar, length);
-
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from 'A' to 'Z'.
-	/// </summary>
-	/// <param name="minLength">Minimum length of the generated string.</param>
-	/// <param name="maxLength">Maximum length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Upper(int minLength, int maxLength) => Str(UpperChar, minLength, maxLength);
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from 'A' to 'Z'.
-	/// </summary>
-	/// <param name="length">Length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Upper(int length) => Str(UpperChar, length);
-
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from 'a' to 'z' or 'A' to 'Z'.
-	/// </summary>
-	/// <param name="minLength">Minimum length of the generated string.</param>
-	/// <param name="maxLength">Maximum length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Letter(int minLength, int maxLength) => Str(LetterChar, minLength, maxLength);
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from 'a' to 'z' or 'A' to 'Z'.
-	/// </summary>
-	/// <param name="length">Length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> Letter(int length) => Str(LetterChar, length);
-
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from 'a' to 'z' or 'A' to 'Z' or '0' to '9'.
-	/// </summary>
-	/// <param name="minLength">Minimum length of the generated string.</param>
-	/// <param name="maxLength">Maximum length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> LetterOrDigit(int minLength, int maxLength) => Str(LetterOrDigitChar, minLength, maxLength);
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters in range from 'a' to 'z' or 'A' to 'Z' or '0' to '9'.
-	/// </summary>
-	/// <param name="length">Length of the generated string.</param>
-	/// <returns></returns>
-	public static RandItem<string> LetterOrDigit(int length) => Str(LetterOrDigitChar, length);
-
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters from the specified random character generator.
-	/// </summary>
-	/// <param name="ci">Character generator.</param>
-	/// <param name="minLength">Minimum length of the generated string.</param>
-	/// <param name="maxLength">Maximum length of the generated string.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentOutOfRangeException"></exception>
-	public static RandItem<string> Str(RandItem<char> ci, int minLength, int maxLength = 0)
-	{
-		if (minLength < 0) throw new ArgumentOutOfRangeException(nameof(minLength), minLength, null);
-		if (maxLength < minLength) throw new ArgumentOutOfRangeException(nameof(maxLength), maxLength, null);
-
-		if (minLength == maxLength)
-			return Str(ci, minLength);
-
-		int min = minLength;
-		int max = maxLength + 1;
-		return new RandItem<string>(() =>
-		{
-			var text = new char[Rand.Int(min, max)];
-			for (int i = 0; i < text.Length; ++i)
-				text[i] = ci.NextValue();
-			return new String(text);
-		});
-	}
-
-	/// <summary>
-	/// Returns a <see cref="RandItem{T}"/> that returns a random string of characters from the specified random character generator.
-	/// </summary>
-	/// <param name="ci">Character generator.</param>
-	/// <param name="length">Length of the generated string.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentOutOfRangeException"></exception>
-	public static RandItem<string> Str(RandItem<char> ci, int length)
-	{
-		if (length == 0) return new RandItem<string>(() => String.Empty);
-		if (length == 1) return new RandItem<string>(() => Char.ToString(ci.NextValue()));
-		return new RandItem<string>(() =>
-		{
-			var text = new char[length];
-			for (int i = 0; i < text.Length; ++i)
-				text[i] = ci.NextValue();
-			return new String(text);
-		});
-	}
-
-	/// <summary>
-	/// Loads a file and returns a list strings. Leading and trailing empty lines are removed.
-	/// </summary>
-	/// <param name="path">Path to the file.</param>
-	/// <param name="filter">Filter function that is called for each line. If it returns null, the line is ignored.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	public static IList<string> LoadFile(string path, Func<string, string?>? filter = null)
-	{
-		if (path == null) throw new ArgumentNullException(nameof(path));
-		var lines = new List<string>();
-		int blanks = 0;
-		filter ??= o => o.TrimToNull();
-
-		foreach (var item in File.ReadLines(path))
-		{
-			var line = filter(item);
-			if (line == null)
-				continue;
-			if (line.Length == 0)
-			{
-				if (lines.Count > 0)
-					++blanks;
-				continue;
-			}
-			while (blanks > 0)
-			{
-				lines.Add(String.Empty);
-				--blanks;
-			}
-			lines.Add(line);
-		}
-		return lines;
-	}
-
-	/// <summary>
-	/// Genetic value parser declaration.
-	/// </summary>
-	/// <typeparam name="T">Result type.</typeparam>
-	public delegate bool TryParse<T>(string text, out T value);
-
-	/// <summary>
-	/// Loads a file and returns a list of parsed values. All empty lines are ignored.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="path">Path to the file.</param>
-	/// <param name="parser">Parser function that is called for each line to construct the value. If it returns false, the line is ignored.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	public static IList<T> LoadFile<T>(string path, TryParse<T> parser)
-	{
-		if (path == null) throw new ArgumentNullException(nameof(path));
-		if (parser == null) throw new ArgumentNullException(nameof(parser));
-		var result = new List<T>();
-		foreach (var item in File.ReadLines(path))
-		{
-			var line = item.TrimToNull();
-			if (line == null || !parser(line, out var value))
-				continue;
-			result.Add(value);
-		}
-		return result;
-	}
-
-	/// <summary>
-	/// Creates a <see cref="RandItem{T}"/> using the specified <paramref name="weight"/> and the specified <paramref name="picture"/> for the item generator.
-	/// </summary>
-	/// <param name="weight">Weight of the item.</param>
-	/// <param name="picture">The picture for the item generator.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	public static RandItem<string> Picture(double weight, string picture) => new RandItem<string>(GetPicture(weight, picture ?? throw new ArgumentNullException(nameof(picture))));
-
-	/// <summary>
-	/// Creates a <see cref="RandItem{T}"/> using the specified collection of <paramref name="picture"/>s to be randomly selected for the item generator.
-	/// </summary>
-	/// <param name="picture">Collection of the pictures for the item generator.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	public static RandItem<string> Picture(IEnumerable<string> picture) => new RandItem<string>(picture.Select(o => GetPicture(1, o)));
-
-	/// <summary>
-	/// Creates a <see cref="RandItem{T}"/> using the specified collection of <paramref name="picture"/>s to be randomly selected for the item generator.
-	/// </summary>
-	/// <param name="picture">Collection of the pictures for the item generator.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	public static RandItem<string> Picture(params string[] picture) => new RandItem<string>(Array.ConvertAll(picture, o => GetPicture(1, o)), false);
-
-	/// <summary>
-	/// Creates a <see cref="RandItem{T}"/> using the specified collection of <paramref name="items"/>s to be randomly selected for the item generator.
-	/// </summary>
-	/// <param name="items">Collection of the weight-pictures pairs for the item generator.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"></exception>
-	public static RandItem<string> Picture(params (double Weight, string Picture)[] items) => new RandItem<string>(Array.ConvertAll(items, o => GetPicture(o.Weight, o.Picture)), false);
-
-	/// <summary>
-	/// Creates a <see cref="RandItem{T}"/> using the specified random item generator <paramref name="item"/> for selecting the picture.
-	/// </summary>
-	/// <param name="item">Random item generator for selecting the picture.</param>
-	/// <returns></returns>
-	public static RandItem<string> Picture(RandItem<string> item) => new RandItem<string>(() => ParsePicture(1, item.NextValue()).NextValue());
-
-	private static RandItem<string> GetPicture(double weight, string picture) => ParsePicture(weight, picture);
-
-	private static RandItem<string> ParsePicture(double weight, string picture)
-	{
-		var items = new List<RandItem<string>>();
-		int l = 0;
-		var rs = __pic.Replace(picture, Evaluator);
-		if (rs == picture)
-			return new RandItem<string>(weight, picture);
-		if (l < picture.Length)
-			items.Add(I(picture.Substring(l)));
-		var array = items.ToArray();
-		return new RandItem<string>(weight, () => String.Join(null, array));
-
-		string Evaluator(Match m)
-		{
-			string pad = String.Empty;
-			if (m.Index > l)
-			{
-				string txt = picture.Substring(l, m.Index - l);
-				if (txt.EndsWith(' '))
-				{
-					pad = " ";
-					txt = txt.Substring(0, txt.Length - 1);
-				}
-				if (txt.Length > 0)
-					items.Add(I(txt));
-			}
-			l = m.Index + m.Length;
-			string value = m.Value;
-			string s = value;
-			RandItem<string> item;
-			if (!s.StartsWith('{'))
-			{
-				int len = s.Length;
-				item = I(() => pad + new String(R.DigitChar.Collect(len)));
-			}
-			else
-			{
-				s = s.Substring(1, s.Length - 2);
-				int i = s.IndexOf(':');
-				string? f = null;
-				double p = 1.0;
-				if (i >= 0)
-				{
-					f = s.Substring(i + 1);
-					s = s.Substring(0, i);
-				}
-				i = s.IndexOf('|');
-				if (i >= 0 && double.TryParse(s.Substring(0, i), out p))
-					s = s.Substring(0, i + 1);
-				item = I(() => Pad(pad, GetResourceItem(p, s, f)));
-			}
-			items.Add(item);
-			return String.Empty;
-		}
-	}
-	private static readonly Regex __pic = new Regex(@"#+|\{[^}]*}");
-
-	private static string GetResourceItem(double probability, string name, string? format)
-	{
-		return Rand.Dbl() >= probability ? "":
-			!Resources.Resource.TryGetValue(name, out var val) ? "":
-			format == null ? val.ToString():
-			val.ToString(format, null);
-	}
-
-	private static string Pad(string pad, string? value)
-	{
-		if (value == null)
-			return "";
-		value = value.Trim();
-		return value.Length == 0 ? value: pad + value;
-	}
-
-	private const int MinLoremLength = 12;
-
-	/// <summary>
-	/// Generates a random text using the specified collection of <paramref name="words"/> to be randomly selected for the text generator.
-	/// </summary>
-	/// <param name="maxLength">Maximum length of the generated text.</param>
-	/// <param name="words">Random item generator for selecting the words.</param>
-	/// <returns></returns>
-	public static RandItem<string> Text(int maxLength, RandItem<string> words) => new RandItem<string>(() => GetText(0, maxLength, words));
-	
-	/// <summary>
-	/// Generates a random text using the specified collection of <paramref name="words"/> to be randomly selected for the text generator.
-	/// </summary>
-	/// <param name="minLength">Minimum length of the generated text.</param>
-	/// <param name="maxLength">Maximum length of the generated text.</param>
-	/// <param name="words">Random item generator for selecting the words.</param>
-	/// <returns></returns>
-	public static RandItem<string> Text(int minLength, int maxLength, RandItem<string> words) => new RandItem<string>(() => GetText(minLength, maxLength, words));
-
-	private static string GetText(int minLength, int maxLength, RandItem<string> words)
-	{
-		if (minLength < 0)
-			throw new ArgumentOutOfRangeException(nameof(minLength), minLength, null);
-		if (maxLength < MinLoremLength)
-			throw new ArgumentOutOfRangeException(nameof(maxLength), maxLength, null);
-		if (minLength > maxLength)
-			throw new ArgumentOutOfRangeException(nameof(minLength), minLength, null);
-
-		int len = Rand.Int(Math.Max(minLength, MinLoremLength), maxLength);
-		var text = new StringBuilder();
-		int point = Rand.Int(3, 15);
-		int coma = point < 5 ? 0: Rand.Case(0.4, 0, Rand.Int(3, point));
-		bool upper = true;
-		while (text.Length < len)
-		{
-			var s = words.NextValue();
-			if (text.Length > 0)
-			{
-				if (--point == 0)
-				{
-					text.Append('.');
-					point = Rand.Int(3, 15);
-					coma = point < 5 ? 0: Rand.Case(0.4, 0, Rand.Int(3, point));
-					upper = true;
-				}
-				else if (--coma == 0)
-				{
-					text.Append(',');
-					coma = point < 5 ? 0: Rand.Case(0.4, 0, Rand.Int(3, point));
-				}
-				text.Append(' ');
-			}
-			if (upper)
-				text.Append(Char.ToUpperInvariant(s[0])).Append(s.AsSpan(1));
-			else
-				text.Append(s);
-			upper = false;
-		}
-		if (text.Length >= maxLength)
-			text.Length = maxLength - 1;
-		if (text.Length > 0 && text[text.Length - 1] != '.')
-			text.Append('.');
-		return text.ToString();
 	}
 }

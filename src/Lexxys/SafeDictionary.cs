@@ -44,7 +44,7 @@ namespace Lexxys
 			_emptyValue = emptyValue;
 		}
 
-		public TValue this[TKey key] { get => _map.TryGetValue(key, out var v) ? v: _emptyValue; set => _map[key] = value; }
+		public TValue this[TKey key] { get => _map.GetValueOrDefault(key, _emptyValue); set => _map[key] = value; }
 
 		public ICollection<TKey> Keys => ((IDictionary<TKey, TValue>)_map).Keys;
 

@@ -5,12 +5,7 @@
 // You may use this code under the terms of the MIT license
 //
 using System.Buffers;
-using System.Globalization;
 using System.Text;
-using System.Xml;
-using System.Diagnostics.CodeAnalysis;
-using System;
-using System.Reflection;
 
 namespace Lexxys;
 
@@ -25,7 +20,7 @@ public static partial class Strings
 	/// <param name="value">The string to escape.</param>
 	/// <returns></returns>
 	public static string EscapeCsString(string value)
-		=> EscapeCsString(new StringBuilder(), value.AsSpan(), '"').ToString();
+		=> EscapeCsString(new StringBuilder(), value.AsSpan(), '"', '\\').ToString();
 
 	/// <summary>
 	/// Escapes string for use in C#/JavaScript using the specified string's marker.
@@ -54,7 +49,7 @@ public static partial class Strings
 	/// <param name="value">The string to escape.</param>
 	/// <returns></returns>
 	public static string EscapeCsString(ReadOnlySpan<char> value)
-		=> EscapeCsString(value, '"');
+		=> EscapeCsString(value, '"', '\\');
 
 	/// <summary>
 	/// Escapes string for use in C#/JavaScript using the specified string's marker.
@@ -335,7 +330,7 @@ public static partial class Strings
 			return i;
 		}
 	}
-	private static readonly byte[] HexByteDigits = [(byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f'];
+	private static readonly byte[] HexByteDigits = "0123456789abcdef"u8.ToArray();
 
 	/// <summary>
 	/// Removes extra braces from the string.

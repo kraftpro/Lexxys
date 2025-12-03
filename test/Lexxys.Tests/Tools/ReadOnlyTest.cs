@@ -17,12 +17,6 @@ namespace Lexxys.Tests.Tools
 	[TestClass()]
 	public class ReadOnlyTest
 	{
-		/// <summary>
-		///Gets or sets the test context which provides
-		///information about and functionality for the current test run.
-		///</summary>
-		public TestContext TestContext { get; set; }
-
 		#region Additional test attributes
 		//[ClassInitialize()]
 		//public static void MyClassInitialize(TestContext testContext)
@@ -342,11 +336,11 @@ namespace Lexxys.Tests.Tools
 
 			var item = NextListItem();
 			value.Add(item);
-			Assert.IsTrue(actual.Contains(item));
+			Assert.Contains(item, actual);
 
 			item = NextListItem();
 			value[2] = item;
-			Assert.IsTrue(actual.Contains(item));
+			Assert.Contains(item, actual);
 
 			TestGenericIList(actual);
 		}
@@ -415,11 +409,11 @@ namespace Lexxys.Tests.Tools
 
 			var item = NextListItem();
 			value.Add(item);
-			Assert.IsTrue(actual.Contains(item));
+			Assert.Contains(item, actual);
 
 			item = NextListItem();
 			value[2] = item;
-			Assert.IsTrue(actual.Contains(item));
+			Assert.Contains(item, actual);
 
 			TestGenericICollection(actual);
 		}
@@ -444,11 +438,11 @@ namespace Lexxys.Tests.Tools
 
 			var item = NextListItem();
 			value.Add(item);
-			Assert.IsFalse(actual.Contains(item));
+			Assert.DoesNotContain(item, actual);
 
 			item = NextListItem();
 			value[2] = item;
-			Assert.IsFalse(actual.Contains(item));
+			Assert.DoesNotContain(item, actual);
 
 			TestGenericICollection(actual);
 		}

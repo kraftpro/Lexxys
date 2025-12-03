@@ -16,7 +16,7 @@ public enum BusinessDayShiftType
 }
 
 [Serializable]
-public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<ScheduleReminder>
+public sealed class ScheduleReminder: IDump, IEquatable<ScheduleReminder>
 {
 	public static readonly ScheduleReminder Empty = new ScheduleReminder();
 
@@ -124,43 +124,18 @@ public sealed class ScheduleReminder: IDump, IDumpXml, IDumpJson, IEquatable<Sch
 
 	public override int GetHashCode() => HashCode.Join(Value.GetHashCode(), RemindInBusinessDays.GetHashCode(), ShiftToBusinessDay.GetHashCode());
 
-	public DumpWriter DumpContent(DumpWriter writer)
+	public void DumpContent(IDumpWriter writer)
 	{
 		if (writer is null) throw new ArgumentNullException(nameof(writer));
-		return writer
-			.Text("Value=").Dump(Value)
-			.Text(",RemindInBusinessDays=").Dump(RemindInBusinessDays)
-			.Text(",ShiftToBusinessDay=").Dump(ShiftToBusinessDay);
-	}
 
-	string IDumpXml.XmlElementName => "reminder";
-
-	public XmlBuilder ToXmlContent(XmlBuilder builder)
-	{
-		if (builder is null) throw new ArgumentNullException(nameof(builder));
-		if (Value != TimeSpan.Zero)
+		if (Value != TimeSpan.Zero || writer.Level > ObjectDumpLevel.Regular)
 		{
-			builder.Item("value", Value);
-			if (RemindInBusinessDays)
-				builder.Item("businessDays", RemindInBusinessDays);
+			writer.Write("Value", Value);
+			if (RemindInBusinessDays || writer.Level > ObjectDumpLevel.Regular)
+				writer.Write("businessDays", RemindInBusinessDays);
 		}
-		if (ShiftToBusinessDay != BusinessDayShiftType.None)
-			builder.Item("shift", ShiftToBusinessDay);
-		return builder;
-	}
-
-	public JsonBuilder ToJsonContent(JsonBuilder json)
-	{
-		if (json is null) throw new ArgumentNullException(nameof(json));
-		if (Value != TimeSpan.Zero)
-		{
-			json.Item("value").Val(Value);
-			if (RemindInBusinessDays)
-				json.Item("businessDays").Val(true);
-		}
-		if (ShiftToBusinessDay != BusinessDayShiftType.None)
-			json.Item("shift").Val(ShiftToBusinessDay);
-		return json;
+		if (ShiftToBusinessDay != BusinessDayShiftType.None || writer.Level > ObjectDumpLevel.Regular)
+			writer.Write("shift", ShiftToBusinessDay);
 	}
 
 	public static ScheduleReminder Create(TimeSpan reminder = default, bool remindInBusinessDays = false, BusinessDayShiftType shiftToBusinessDay = BusinessDayShiftType.None) =>

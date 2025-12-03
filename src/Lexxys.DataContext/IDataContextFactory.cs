@@ -1,4 +1,4 @@
-﻿// Lexxys Infrastructural library.
+// Lexxys Infrastructural library.
 // file: Dc.cs
 //
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
@@ -8,5 +8,5 @@ namespace Lexxys.Data;
 
 public interface IDataContextFactory
 {
-	IDataContext CreateContext(ConnectionStringInfo connectionInfo);
+	IDataContext Create(ConnectionStringInfo connectionInfo);
 }

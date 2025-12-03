@@ -1,4 +1,6 @@
-﻿namespace Lexxys.Testing;
+﻿using System.Buffers;
+
+namespace Lexxys.Testing;
 
 /// <summary>
 /// Implementation of <see cref="IRand"/> using regular pseudo-random number generator.
@@ -14,7 +16,7 @@ public class RndSys: IRand
 	public int NextInt32() => _r.Next();
 
 	/// <inheritdoc/>
-#if NET6_0_OR_GREATER
+#if NET
 	public long NextInt64() => _r.NextInt64();
 #else
 	public long NextInt64() => ((long)_r.Next() << 31) | (long)_r.Next();
@@ -24,14 +26,15 @@ public class RndSys: IRand
 	public double NextDouble() => _r.NextDouble();
 
 	/// <inheritdoc/>
-#if NET6_0_OR_GREATER
+#if NET
 	public void NextBytes(Span<byte> buffer) => _r.NextBytes(buffer);
 #else
 	public void NextBytes(Span<byte> buffer)
 	{
-		byte[] bb = new byte[buffer.Length];
+		var bb = ArrayPool<byte>.Shared.Rent(buffer.Length);
 		_r.NextBytes(bb);
 		bb.AsSpan().CopyTo(buffer);
+		ArrayPool<byte>.Shared.Return(bb);
 	}
 #endif
 }

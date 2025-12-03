@@ -7,208 +7,256 @@
 
 namespace Lexxys;
 
-/// <summary>
-/// Implements <see cref="IBlobStorageService"/> for local file system.
-/// </summary>
 public class FileStorageService: IBlobStorageService
 {
-	private const int DefaultBufferSize = 81920;
-	private static readonly IReadOnlyCollection<string> _schemes = [Uri.UriSchemeFile, ""];
+	private const int DefaultBufferSize = 65536;
+	private string _directory;
 
-	/// <summary>
-	/// Collection of supported schemes ("file:" or empty).
-	/// </summary>
-	public IReadOnlyCollection<string> SupportedSchemes => _schemes;
-
-	/// <summary>
-	/// Determines whether the specified <paramref name="location"/> can be opened by this provider.
-	/// </summary>
-	/// <param name="location">File location</param>
-	/// <returns>True if the specified file exists.</returns>
-	/// <exception cref="ArgumentNullException"><paramref name="location"/> is null.</exception>
-	public virtual bool CanOpen(Uri location)
+	public FileStorageService()
 	{
-		if (location is null) throw new ArgumentNullException(nameof(location));
-
-		return !location.IsAbsoluteUri || location.IsFile;
+		_directory = Path.GetFullPath(".");
 	}
 
-	/// <summary>
-	/// Returns a <see cref="IBlobInfo"/> for the specified <paramref name="location"/> or null if the blob does not exist.
-	/// </summary>
-	/// <param name="location">The file location</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"><paramref name="location"/> is null.</exception>
-	public IBlobInfo GetFileInfo(Uri location)
+	public FileStorageService(string directory)
+	{
+		_directory = Path.GetFullPath(directory);
+	}
+
+	public void Initialize(string directory)
+	{
+		_directory = Path.GetFullPath(directory);
+	}
+
+	public IBlobInfo GetBlobInfo(string location, CancellationToken cancellationToken = default)
 	{
 		if (location is null) throw new ArgumentNullException(nameof(location));
 
 		return new LocalFileInfo(GetPath(location));
 	}
 
-	private static string GetPath(Uri location) => location.IsAbsoluteUri ? location.LocalPath: location.OriginalString;
-
-	/// <summary>
-	/// Returns a <see cref="IBlobInfo"/> for the specified <paramref name="location"/> or null if the blob does not exist.
-	/// </summary>
-	/// <param name="location">The file location.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentNullException"><paramref name="location"/> is null.</exception>
-	public Task<IBlobInfo> GetFileInfoAsync(Uri location, CancellationToken cancellationToken = default)
+	public Task<IBlobInfo> GetBlobInfoAsync(string location, CancellationToken cancellationToken = default)
 	{
 		if (location is null) throw new ArgumentNullException(nameof(location));
 
-		return Task.FromResult(GetFileInfo(location));
+		return Task.FromResult(GetBlobInfo(location));
 	}
 
-	/// <summary>
-	/// Saves the specified <paramref name="stream"/> to the specified <paramref name="location"/>.
-	/// </summary>
-	/// <param name="location">The file location.</param>
-	/// <param name="stream">The stream to save.</param>
-	/// <param name="overwrite">If true, the existing blob will be overwritten.</param>
-	/// <exception cref="ArgumentNullException"><paramref name="location"/> or <paramref name="stream"/> is null.</exception>
-	/// <exception cref="ArgumentOutOfRangeException"><paramref name="location"/> is not a valid file location.</exception>
-	public void WriteFile(Uri location, Stream stream, bool overwrite)
+
+	public Stream Read(string location, CancellationToken cancellationToken = default)
+	{
+		if (location is null) throw new ArgumentNullException(nameof(location));
+
+		var path = GetPath(location);
+		return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
+	}
+
+	public Task<Stream> ReadAsync(string location, CancellationToken cancellationToken = default) => Task.FromResult(Read(location));
+
+	public void Write(string location, Stream stream, BlobWriteMode mode = default, CancellationToken cancellationToken = default)
 	{
 		if (location is null) throw new ArgumentNullException(nameof(location));
 		if (stream == null) throw new ArgumentNullException(nameof(stream));
-		if (!CanOpen(location)) throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
-		var path = GetPath(location);
-		CreateDirectory(path);
-		using var file = new FileStream(path, overwrite ? FileMode.Create: FileMode.CreateNew, FileAccess.Write, FileShare.None, 8192, FileOptions.SequentialScan);
+		var path = CreatePath(location);
+		var fileMode = MapWriteMode(mode, FileMode.Create);
+
+		using var file = new FileStream(path, fileMode, FileAccess.Write, FileShare.None, 8192, FileOptions.SequentialScan);
 		stream.CopyTo(file);
 	}
 
-	/// <summary>
-	/// Saves the specified <paramref name="stream"/> to the specified <paramref name="location"/>.
-	/// </summary>
-	/// <param name="location">The file location.</param>
-	/// <param name="stream">The stream to save.</param>
-	/// <param name="overwrite">If true, the existing blob will be overwritten.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <exception cref="ArgumentNullException">location or stream is null.</exception>
-	/// <exception cref="ArgumentOutOfRangeException">location is not a valid file location.</exception>
-	public async Task WriteFileAsync(Uri location, Stream stream, bool overwrite, CancellationToken cancellationToken = default)
+	public async Task WriteAsync(string location, Stream stream, BlobWriteMode mode = default, CancellationToken cancellationToken = default)
 	{
 		if (location is null) throw new ArgumentNullException(nameof(location));
 		if (stream == null) throw new ArgumentNullException(nameof(stream));
-		if (!CanOpen(location)) throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
-		var path = GetPath(location);
-		CreateDirectory(path);
-#if NET8_0_OR_GREATER
+		var path = CreatePath(location);
+		var fileMode = MapWriteMode(mode, FileMode.Create);
+
+#if NET
 		await
 #endif
-		using var file = File.Open(path, overwrite ? FileMode.Create: FileMode.CreateNew, FileAccess.Write);
+		using var file = File.Open(path, fileMode, FileAccess.Write);
+#if NET
+		await stream.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
+#else
 		int bufferSize = stream.CanSeek ? (int)Math.Min(DefaultBufferSize, stream.Length): DefaultBufferSize;
 		await stream.CopyToAsync(file, bufferSize, cancellationToken).ConfigureAwait(false);
+#endif
 	}
 
-	/// <summary>
-	/// Copies a file from the specified <paramref name="source"/> to the selected <paramref name="destination"/>.
-	/// </summary>
-	/// <param name="source">Source file location.</param>
-	/// <param name="destination">Destination file location.</param>
-	/// <exception cref="ArgumentNullException">The source or destination is null.</exception>
-	/// <exception cref="ArgumentOutOfRangeException">The source or destination is not a valid file location.</exception>
-	public void CopyFile(Uri source, Uri destination)
+	public void Copy(string source, string destination, BlobWriteMode mode = default, CancellationToken cancellationToken = default)
 	{
 		if (source is null) throw new ArgumentNullException(nameof(source));
 		if (destination is null) throw new ArgumentNullException(nameof(destination));
-		if (!CanOpen(source)) throw new ArgumentOutOfRangeException(nameof(source), source, null);
-		if (!CanOpen(destination)) throw new ArgumentOutOfRangeException(nameof(destination), destination, null);
 
 		var path1 = GetPath(source);
-		var path2 = GetPath(destination);
-		CreateDirectory(path2);
-		File.Copy(path1, path2, true);
+		var path2 = CreatePath(destination);
+		switch (mode)
+		{
+			case BlobWriteMode.Create:
+			case BlobWriteMode.Default:
+				File.Copy(path1, path2, false);
+				break;
+
+			case BlobWriteMode.Overwrite:
+				File.Copy(path1, path2, true);
+				break;
+
+			case BlobWriteMode.Append:
+				{
+					using var file1 = new FileStream(path1, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.SequentialScan);
+					using var file2 = new FileStream(path2, FileMode.Append, FileAccess.Write, FileShare.None, DefaultBufferSize, FileOptions.SequentialScan);
+					file1.CopyTo(file2);
+					break;
+				}
+
+			default:
+				throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
+		}
 	}
 
-	/// <summary>
-	/// Copies a file from the specified <paramref name="source"/> to the selected <paramref name="destination"/>.
-	/// </summary>
-	/// <param name="source">Source file location.</param>
-	/// <param name="destination">Destination file location.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <exception cref="ArgumentNullException">The <paramref name="source"/> or <paramref name="destination"/> is null.</exception>
-	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="source"/> or <paramref name="destination"/> is not a valid file location.</exception>
-	public async Task CopyFileAsync(Uri source, Uri destination, CancellationToken cancellationToken = default)
+	public async Task CopyAsync(string source, string destination, BlobWriteMode mode = default, CancellationToken cancellationToken = default)
 	{
 		if (source is null) throw new ArgumentNullException(nameof(source));
 		if (destination is null) throw new ArgumentNullException(nameof(destination));
-		if (!CanOpen(source)) throw new ArgumentOutOfRangeException(nameof(source), source, null);
-		if (!CanOpen(destination)) throw new ArgumentOutOfRangeException(nameof(destination), destination, null);
 
 		var path1 = GetPath(source);
-		var path2 = GetPath(destination);
-		CreateDirectory(path2);
+		var path2 = CreatePath(destination);
 
-#if NET8_0_OR_GREATER
+#if NET
 		await
 #endif
-		using var sourceStream = new FileStream(path1, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan);
-#if NET8_0_OR_GREATER
+		using var sourceStream = new FileStream(path1, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
+		FileMode destMode = MapWriteMode(mode, FileMode.CreateNew);
+#if NET
 		await
 #endif
-		using var destinationStream = new FileStream(path2, FileMode.Create, FileAccess.Write, FileShare.None, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan);
+		using var destinationStream = new FileStream(path2, destMode, FileAccess.Write, FileShare.None, 8192, FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+#if NET
+		await sourceStream.CopyToAsync(destinationStream, cancellationToken).ConfigureAwait(false);
+#else
 		int bufferSize = sourceStream.CanSeek ? (int)Math.Min(DefaultBufferSize, sourceStream.Length): DefaultBufferSize;
 		await sourceStream.CopyToAsync(destinationStream, bufferSize, cancellationToken).ConfigureAwait(false);
+#endif
 	}
 
-	private static void CreateDirectory(string path)
-	{
-		var dir = Path.GetDirectoryName(path);
-		if (!String.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-			Directory.CreateDirectory(dir);
-	}
-
-	/// <summary>
-	/// Moves a file the specified <paramref name="source"/> to the selected <paramref name="destination"/>.
-	/// </summary>
-	/// <param name="source">Source file location.</param>
-	/// <param name="destination">Destination file location.</param>
-	/// <exception cref="ArgumentNullException">The <paramref name="source"/> or <paramref name="destination"/> is null.</exception>
-	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="source"/> or <paramref name="destination"/> is not a valid file location.</exception>
-	public void MoveFile(Uri source, Uri destination)
+	public void Move(string source, string destination, BlobWriteMode mode = default, CancellationToken cancellationToken = default)
 	{
 		if (source is null) throw new ArgumentNullException(nameof(source));
 		if (destination is null) throw new ArgumentNullException(nameof(destination));
-		if (!CanOpen(source)) throw new ArgumentOutOfRangeException(nameof(source), source, null);
-		if (!CanOpen(destination)) throw new ArgumentOutOfRangeException(nameof(destination), destination, null);
 
 		var path1 = GetPath(source);
-		var path2 = GetPath(destination);
-		CreateDirectory(path2);
-		File.Move(path1, path2);
+		var path2 = CreatePath(destination);
+		switch (mode)
+		{
+			case BlobWriteMode.Default:
+			case BlobWriteMode.Create:
+				File.Move(path1, path2);
+				break;
+
+			case BlobWriteMode.Overwrite:
+#if NET
+				File.Move(path1, path2, true);
+#else
+				if (File.Exists(path2))
+					File.Delete(path2);
+				File.Move(path1, path2);
+#endif
+				break;
+
+			case BlobWriteMode.Append:
+				{
+					if (File.Exists(path2))
+						AppendFile(path1, path2);
+					else
+						File.Move(path1, path2);
+					break;
+				}
+			default:
+				throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
+		}
+
+		static void AppendFile(string path1, string path2)
+		{
+			using (var file1 = new FileStream(path1, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.SequentialScan))
+			using (var file2 = new FileStream(path2, FileMode.Append, FileAccess.Write, FileShare.None, DefaultBufferSize, FileOptions.SequentialScan))
+			{
+				file1.CopyTo(file2);
+			}
+			File.Delete(path1);
+		}
 	}
 
-	/// <summary>
-	/// Moves a file the specified <paramref name="source"/> to the selected <paramref name="destination"/>.
-	/// </summary>
-	/// <param name="source">Source file location.</param>
-	/// <param name="destination">Destination file location.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
+
+	/// <inheritdoc />
 	/// <exception cref="ArgumentNullException">The <paramref name="source"/> or <paramref name="destination"/> is null.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="source"/> or <paramref name="destination"/> is not a valid file location.</exception>
-	public Task MoveFileAsync(Uri source, Uri destination, CancellationToken cancellationToken = default)
+	public Task MoveAsync(string source, string destination, BlobWriteMode mode = default, CancellationToken cancellationToken = default)
 	{
-		MoveFile(source, destination);
+		if (source is null) throw new ArgumentNullException(nameof(source));
+		if (destination is null) throw new ArgumentNullException(nameof(destination));
+
+		var path1 = GetPath(source);
+		var path2 = CreatePath(destination);
+
+		switch (mode)
+		{
+			case BlobWriteMode.Default:
+			case BlobWriteMode.Create:
+				File.Move(path1, path2);
+				break;
+
+			case BlobWriteMode.Overwrite:
+#if NET
+				File.Move(path1, path2, true);
+#else
+				if (File.Exists(path2))
+					File.Delete(path2);
+				File.Move(path1, path2);
+#endif
+				break;
+
+			case BlobWriteMode.Append:
+				if (File.Exists(path2))
+					return AppendFile(path1, path2, cancellationToken);
+
+				File.Move(path1, path2);
+				break;
+
+			default:
+				throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
+		}
 		return Task.CompletedTask;
+
+		static async Task AppendFile(string path1, string path2, CancellationToken cancellationToken)
+		{
+			{
+#if NET
+				await
+#endif
+				using var file1 = new FileStream(path1, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.SequentialScan);
+#if NET
+				await
+#endif
+				using var file2 = new FileStream(path2, FileMode.Append, FileAccess.Write, FileShare.None, DefaultBufferSize, FileOptions.SequentialScan);
+#if NET
+				await file1.CopyToAsync(file2, cancellationToken).ConfigureAwait(false);
+#else
+				int bufferSize = file1.CanSeek ? (int)Math.Min(DefaultBufferSize, file1.Length): DefaultBufferSize;
+				await file1.CopyToAsync(file2, bufferSize, cancellationToken).ConfigureAwait(false);
+#endif
+			}
+			File.Delete(path1);
+		}
 	}
 
-	/// <summary>
-	/// Deletes a file at the specified <paramref name="location"/>.
-	/// </summary>
-	/// <param name="location">A file location</param>
+	/// <inheritdoc />
 	/// <exception cref="ArgumentNullException">The <paramref name="location"/> is null.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="location"/> is not a valid file location.</exception>
-	public void DeleteFile(Uri location)
+	public void Delete(string location, CancellationToken cancellationToken = default)
 	{
 		if (location is null) throw new ArgumentNullException(nameof(location));
-		if (!CanOpen(location)) throw new ArgumentOutOfRangeException(nameof(location), location, null);
 
 		var path = GetPath(location);
 		if (File.Exists(path))
@@ -222,11 +270,37 @@ public class FileStorageService: IBlobStorageService
 	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <exception cref="ArgumentNullException">The <paramref name="location"/> is null.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">The <paramref name="location"/> is not a valid file location.</exception>
-	public Task DeleteFileAsync(Uri location, CancellationToken cancellationToken = default)
+	public Task DeleteAsync(string location, CancellationToken cancellationToken = default)
 	{
-		DeleteFile(location);
+		Delete(location);
 		return Task.CompletedTask;
 	}
+
+	private string GetPath(string location)
+	{
+		var path = Path.Combine(_directory, location);
+		if (!path.StartsWith(_directory, StringComparison.OrdinalIgnoreCase))
+			throw new ArgumentOutOfRangeException(nameof(location), location, null);
+		return path;
+	}
+
+	private string CreatePath(string location)
+	{
+		var path = GetPath(location);
+		var dir = Path.GetDirectoryName(path);
+		if (!String.IsNullOrEmpty(dir))
+			Directory.CreateDirectory(dir);
+		return path;
+	}
+
+	private static FileMode MapWriteMode(BlobWriteMode mode, FileMode defaultMode) => mode switch
+	{
+		BlobWriteMode.Default => defaultMode,
+		BlobWriteMode.Create => FileMode.CreateNew,
+		BlobWriteMode.Overwrite => FileMode.Create,
+		BlobWriteMode.Append => FileMode.Append,
+		_ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
+	};
 
 	private class LocalFileInfo: IBlobInfo
 	{
@@ -246,11 +320,11 @@ public class FileStorageService: IBlobStorageService
 
 		public string Path => _fileInfo.FullName;
 
-		public DateTimeOffset? LastModified => _fileInfo.LastWriteTimeUtc;
+		public DateTime? LastModified => _fileInfo.LastWriteTimeUtc;
 
 		public Stream OpenReadStream() => _exists ? new FileStream(_fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.SequentialScan): Stream.Null;
 
-		public Task<Stream> OpenReadStreamAsync() => Task.FromResult(_exists ? new FileStream(_fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.SequentialScan): Stream.Null);
+		public Task<Stream> OpenReadStreamAsync(CancellationToken cancellationToken = default) => Task.FromResult(_exists ? new FileStream(_fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.SequentialScan): Stream.Null);
 	}
 
 	#region IDisposable Support
@@ -269,5 +343,6 @@ public class FileStorageService: IBlobStorageService
 		Dispose(true);
 		GC.SuppressFinalize(this);
 	}
+
 	#endregion
 }

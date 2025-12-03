@@ -13,7 +13,7 @@ public class RndCrypt: IRand
 	private readonly RandomNumberGenerator _generator = RandomNumberGenerator.Create();
 
 	/// <inheritdoc/>
-#if NET6_0_OR_GREATER
+#if NET
 	public void NextBytes(Span<byte> buffer) => _generator.GetBytes(buffer);
 #else
 	public void NextBytes(Span<byte> buffer)
@@ -32,7 +32,7 @@ public class RndCrypt: IRand
 
 	public uint NextUInt32()
 	{
-#if NET6_0_OR_GREATER
+#if NET
 		Span<uint> val = stackalloc uint[1];
 		_generator.GetBytes(MemoryMarshal.AsBytes(val));
 		return val[0];
@@ -47,7 +47,7 @@ public class RndCrypt: IRand
 
 	public ulong NextUInt64()
 	{
-#if NET6_0_OR_GREATER
+#if NET
 		Span<ulong> val = stackalloc ulong[1];
 		_generator.GetBytes(MemoryMarshal.AsBytes(val));
 		return val[0];

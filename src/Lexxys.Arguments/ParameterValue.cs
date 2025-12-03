@@ -1,10 +1,19 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace Lexxys;
 
+/// <summary>
+/// Converts a command-line string value to <typeparamref name="T"/>.
+/// </summary>
+/// <typeparam name="T">The target value type.</typeparam>
+/// <param name="value">The command-line value to convert.</param>
+/// <param name="result">The converted value when the conversion succeeds.</param>
+/// <param name="error">An optional conversion error message. Set this when returning <c>false</c> to provide more detail.</param>
+/// <returns><c>true</c> when the value was converted; otherwise, <c>false</c>.</returns>
 public delegate bool ParameterValueConverter<T>(string value, out T result, ref string? error);
 
 /// <summary>
@@ -12,32 +21,47 @@ public delegate bool ParameterValueConverter<T>(string value, out T result, ref 
 /// </summary>
 public readonly struct ParameterValue: IReadOnlyCollection<string>
 {
+	/// <summary>
+	/// Represents an empty parameter value.
+	/// </summary>
 	public static readonly ParameterValue Empty = new ParameterValue();
+
+	public static readonly ParameterValue EmptyArray = new ParameterValue([]);
 
 	private readonly object? _value;
 
 	/// <summary>
-	/// Creates a new instance of <see cref="ParameterValue"/> with the specified <paramref name="value"/>.
+	/// Returns <c>true</c> when this value represents a switch (an empty array), as produced for valueless options.
 	/// </summary>
-	/// <param name="value">String value</param>
-	public ParameterValue(string? value)
+	/// <remarks>
+	/// This is a structural test and must be used instead of comparing with <see cref="EmptyArray"/> via <c>==</c>:
+	/// <see cref="ParameterValue"/> has no equality operator, so <c>==</c> silently degrades to string-value comparison
+	/// and would also match an explicit empty-string value.
+	/// </remarks>
+	public bool IsSwitch => _value is string[] { Length: 0 };
+
+	/// <summary>
+	/// Creates a new instance of <see cref="ParameterValue"/> from the specified string.
+	/// </summary>
+	/// <param name="value">The parameter value, or <c>null</c> for an empty value.</param>
+	public ParameterValue(string value)
 	{
 		_value = value;
 	}
 
 	/// <summary>
-	/// Creates a new instance of <see cref="ParameterValue"/> with the specified <paramref name="value"/>.
+	/// Creates a new instance of <see cref="ParameterValue"/> from the specified array.
 	/// </summary>
-	/// <param name="value">Array value</param>
-	public ParameterValue(string[]? value)
+	/// <param name="value">The parameter values, or <c>null</c> for an empty value.</param>
+	public ParameterValue(string[] value)
 	{
 		_value = value;
 	}
 
 	/// <summary>
-	/// Creates a new instance of <see cref="ParameterValue"/> with the specified <paramref name="value"/>.
+	/// Creates a new instance of <see cref="ParameterValue"/> from the specified collection.
 	/// </summary>
-	/// <param name="value">Array value</param>
+	/// <param name="value">The parameter values, or <c>null</c> for an empty value.</param>
 	public ParameterValue(IReadOnlyCollection<string>? value)
 	{
 		_value = value switch
@@ -101,9 +125,10 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 	};
 
 	/// <summary>
-	/// Appends the specified <paramref name="value"/> to the current value.
+	/// Appends the specified value to the current value and returns a new <see cref="ParameterValue"/>.
 	/// </summary>
-	/// <param name="value">The value to append</param>
+	/// <param name="value">The value to append.</param>
+	/// <returns>A value containing the current items followed by <paramref name="value"/>.</returns>
 	public ParameterValue Append(string? value)
 	{
 		if (value is null) return this;
@@ -125,9 +150,10 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 	}
 
 	/// <summary>
-	/// Appends the specified collection of values to the current value.
+	/// Appends the specified collection of values to the current value and returns a new <see cref="ParameterValue"/>.
 	/// </summary>
-	/// <param name="value">A collection of values to append</param>
+	/// <param name="value">The values to append.</param>
+	/// <returns>A value containing the current items followed by <paramref name="value"/>.</returns>
 	public ParameterValue Append(IReadOnlyCollection<string>? value)
 	{
 		if (value is null || value.Count == 0) return this;
@@ -174,70 +200,116 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 	}
 
 	/// <summary>
+	/// Appends the specified value to the current value and returns a new <see cref="ParameterValue"/>.
+	/// </summary>
+	/// <param name="value">The value to append.</param>
+	/// <returns>A value containing the current items followed by <paramref name="value"/>.</returns>
+	public ParameterValue Append(ParameterValue value) => value._value is null ? this: _value switch
+	{
+		null => value,
+		string s when value._value is string s2 => new ParameterValue([s, s2]),
+		string s => new ParameterValue([s, .. Unsafe.As<string[]>(value._value)]),
+		_ when value._value is string s2 => new ParameterValue([.. Unsafe.As<string[]>(_value), s2]),
+		_ => new ParameterValue([.. Unsafe.As<string[]>(_value), .. Unsafe.As<string[]>(value._value)]),
+	};
+
+	/// <summary>
 	/// Returns the string representation of the current value.
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>The string value, a comma-separated list for arrays, or an empty string when no value is present.</returns>
 	public override string ToString() => StringValue ?? String.Empty;
 
 	/// <summary>
 	/// Returns the array representation of the current value.
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>An array of values, or an empty array when no value is present.</returns>
 	public string[] ToArray() => ArrayValue ?? [];
 
-	/// <inheritdoc />
-	public IEnumerator<string> GetEnumerator() => new Enumerator(this);
+	public Enumerator GetEnumerator() => new Enumerator(this);
+
+	IEnumerator<string> IEnumerable<string>.GetEnumerator() => GetEnumerator();
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 	/// <summary>
-	/// Implicitly converts the specified <see cref="ParameterValue"/> to a <see cref="String"/>.
+	/// Converts a <see cref="ParameterValue"/> to its string representation.
 	/// </summary>
-	/// <param name="value"></param>
-	/// <returns></returns>
+	/// <param name="value">The value to convert.</param>
+	/// <returns>The string value, a comma-separated list for arrays, or <c>null</c> when no value is present.</returns>
 	public static implicit operator string?(ParameterValue value) => value.StringValue;
 
 	/// <summary>
-	/// Implicitly converts the specified <see cref="ParameterValue"/> to a <see cref="T:String[]"/>.
+	/// Converts a <see cref="ParameterValue"/> to an array of strings.
 	/// </summary>
-	/// <param name="value"></param>
-	/// <returns></returns>
+	/// <param name="value">The value to convert.</param>
+	/// <returns>The value as an array, or <c>null</c> when no value is present.</returns>
 	public static implicit operator string[]?(ParameterValue value) => value.ArrayValue;
 
 	/// <summary>
-	/// Implicitly converts the specified <see cref="String"/> to a <see cref="ParameterValue"/>.
+	/// Converts a string to a <see cref="ParameterValue"/>.
 	/// </summary>
-	/// <param name="value"></param>
-	/// <returns></returns>
-	public static implicit operator ParameterValue(string? value) => new ParameterValue(value);
+	/// <param name="value">The string value.</param>
+	/// <returns>A parameter value containing <paramref name="value"/>.</returns>
+	public static implicit operator ParameterValue(string? value) => new ParameterValue(value!);
 
 	/// <summary>
-	/// Implicitly converts the specified <see cref="T:String[]"/> to a <see cref="ParameterValue"/>.
+	/// Converts an array of strings to a <see cref="ParameterValue"/>.
 	/// </summary>
-	/// <param name="value"></param>
-	/// <returns></returns>
-	public static implicit operator ParameterValue(string[]? value) => new ParameterValue(value);
+	/// <param name="value">The string values.</param>
+	/// <returns>A parameter value containing <paramref name="value"/>.</returns>
+	public static implicit operator ParameterValue(string[]? value) => new ParameterValue(value!);
 
-	public bool TryConvert<T>(string name, [MaybeNullWhen(false)] out T result, bool required = false, ICollection<string>? errors = null)
+	/// <summary>
+	/// Converts this value to a single value of type <typeparamref name="T"/>.
+	/// </summary>
+	/// <typeparam name="T">The target value type.</typeparam>
+	/// <param name="result">The converted value when conversion succeeds.</param>
+	/// <param name="required">If <c>true</c>, an empty value is reported as an error.</param>
+	/// <param name="errors">An optional collection that receives conversion errors.</param>
+	/// <param name="name">The parameter name used in error messages.</param>
+	/// <returns><c>true</c> when conversion succeeds; otherwise, <c>false</c>.</returns>
+	/// <remarks>
+	/// <list type="bullet">
+	/// <item>When the value is an array, it is converted to a comma-separated string before conversion.</item>
+	/// <item>Empty values are considered invalid when <paramref name="required"/> is <c>true</c>.</item>
+	/// <item>When converting to <c>bool</c>, an empty array is treated as <c>true</c>.</item>
+	/// <item>To convert each array item separately, use <see cref="TryConvert{T}(out T[], bool, ICollection{string}?, string?)"/> instead.</item>
+	/// </list>
+	/// </remarks>
+	public bool TryConvert<T>([MaybeNullWhen(false)] out T result, bool required = false, ICollection<string>? errors = null, string? name = null)
 	{
 		if (IsEmpty)
 		{
 			if (required)
-				errors?.Add($"parameter {name} is required");
+				errors?.Add(name is null ? "parameter is required" : $"parameter {name} is required");
 			result = default;
 			return false;
 		}
+		if (typeof(T) == typeof(bool) && IsSwitch)
+		{
+			result = (T)(object)true;
+			return true;
+		}
 
 		var value = StringValue!;
-		return TryConvertValue(name, value, out result, errors);
+		return TryConvertValue(value, out result, errors, name);
 	}
 
-	public bool TryConvert<T>(string name, out T[] result, bool required = false, ICollection<string>? errors = null)
+	/// <summary>
+	/// Converts this value to an array of values of type <typeparamref name="T"/>.
+	/// </summary>
+	/// <typeparam name="T">The target array element type.</typeparam>
+	/// <param name="result">The converted values when conversion succeeds.</param>
+	/// <param name="name">The parameter name used in error messages.</param>
+	/// <param name="required">If <c>true</c>, an empty value is reported as an error.</param>
+	/// <param name="errors">An optional collection that receives conversion errors.</param>
+	/// <returns><c>true</c> when all values convert successfully; otherwise, <c>false</c>.</returns>
+	public bool TryConvert<T>(out T[] result, bool required = false, ICollection<string>? errors = null, string? name = null)
 	{
 		if (IsEmpty)
 		{
 			if (required)
-				errors?.Add($"parameter {name} is required");
+				errors?.Add(name is null ? "parameter is required" : $"parameter {name} is required");
 			result = [];
 			return false;
 		}
@@ -246,7 +318,7 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 
 		if (typeof(T) == typeof(string))
 		{
-			result = Unsafe.As<string[], T[]>(ref value);
+			result = (T[])(object)value;
 			return true;
 		}
 
@@ -259,7 +331,7 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 			var v = value[i++];
 			if (string.IsNullOrWhiteSpace(v))
 				continue;
-			if (TryConvertValue<T>($"{name}.{i}", v, out var r, errors))
+			if (TryConvertValue<T>(v, out var r, errors, name is null ? null : $"{name}.{i}"))
 				rr[j++] = r;
 			else
 				error = true;
@@ -276,9 +348,132 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 		return true;
 	}
 
-	public static void AddConverter<T>(ParameterValueConverter<T> converter)
+	private static bool TryConvertValue<T>(string value, [MaybeNullWhen(false)] out T result, ICollection<string>? errors, string? name)
 	{
-		__converters[typeof(T)] = converter;
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			result = default;
+			errors?.Add(name is null ? "missing value" : $"missing value for parameter {name}");
+			return false;
+		}
+		if (__converters.TryGetValue(typeof(T), out var obj))
+		{
+			var converter = (ParameterValueConverter<T>)obj;
+			string? error = null;
+			try
+			{
+				if (converter(value, out result, ref error))
+					return true;
+			}
+			catch (Exception ex)
+			{
+				result = default;
+				error = ex.Message;
+			}
+			if (error == null)
+				errors?.Add(name is null ? $"invalid value \"{value}\"": $"invalid value \"{value}\" for parameter {name}");
+			else
+				errors?.Add(name is null ? $"invalid value \"{value}\". {error}": $"invalid value \"{value}\" for parameter {name}. {error}");
+			return false;
+		}
+
+		if (Strings.TryGetValue(value, out result))
+			return true;
+
+		if (errors == null)
+			return false;
+
+		string message = name is null ? $"invalid value \"{value}\"" : $"invalid value \"{value}\" for parameter {name}";
+		if (typeof(T).IsEnum)
+		{
+			var names = Enum.GetNames(typeof(T));
+			for (int i = 0; i < names.Length; ++i)
+			{
+				names[i] = names[i].ToLowerInvariant();
+			}
+			message += $". The valid values are: {String.Join(", ", names)}";
+		}
+		errors.Add(message);
+		return false;
+	}
+
+	/// <summary>
+	/// A non-generic converter that converts a string <paramref name="value"/> to the specified <paramref name="type"/>.
+	/// </summary>
+	/// <param name="value">The command-line value to convert.</param>
+	/// <param name="type">The target type.</param>
+	/// <param name="result">The converted value when the conversion succeeds.</param>
+	/// <returns><c>true</c> when the value was converted; otherwise, <c>false</c>.</returns>
+	public delegate bool TryConvertDelegate(string value, Type type, out object? result);
+
+	/// <summary>
+	/// Returns a non-generic converter for the specified <paramref name="type"/>, or <c>null</c> when no converter is registered.
+	/// </summary>
+	/// <param name="type">The target type.</param>
+	/// <remarks>
+	/// The converter is derived from the same registry used by the generic <see cref="TryConvert{T}(out T, bool, ICollection{string}?, string?)"/>,
+	/// so converters added with <see cref="AddConverter{T}"/> are visible here as well.
+	/// </remarks>
+	public static TryConvertDelegate? GetConverter(Type type)
+		=> __converters.ContainsKey(type) ? __delegateCache.GetOrAdd(type, BuildConverterDelegate): null;
+
+	private static readonly ConcurrentDictionary<Type, TryConvertDelegate> __delegateCache = new ConcurrentDictionary<Type, TryConvertDelegate>();
+
+	private static TryConvertDelegate BuildConverterDelegate(Type type)
+	{
+		var method = typeof(ParameterValue)
+			.GetMethod(nameof(InvokeConverter), BindingFlags.NonPublic | BindingFlags.Static)!
+			.MakeGenericMethod(type);
+		return (TryConvertDelegate)method.CreateDelegate(typeof(TryConvertDelegate));
+	}
+
+	private static bool InvokeConverter<T>(string value, Type type, out object? result)
+	{
+		if (TryConvertValue<T>(value, out var r, null, null))
+		{
+			result = r;
+			return true;
+		}
+		result = null;
+		return false;
+	}
+
+	/// <summary>
+	/// Registers or replaces a converter for values of type <typeparamref name="T"/>.
+	/// </summary>
+	/// <typeparam name="T">The target value type handled by the converter.</typeparam>
+	/// <param name="converter">The converter to use for subsequent conversions.</param>
+	/// <exception cref="ArgumentNullException"><paramref name="converter"/> is <c>null</c>.</exception>
+	public static void AddConverter<T>(ParameterValueConverter<T> converter) => __converters[typeof(T)] = converter;
+
+	private static readonly ConcurrentDictionary<Type, object> __converters = new ConcurrentDictionary<Type, object>()
+	{
+		[typeof(Uri)] = (ParameterValueConverter<Uri>)UriConverter,
+		[typeof(FileInfo)] = (ParameterValueConverter<FileInfo>)FileInfoConverter,
+		[typeof(DirectoryInfo)] = (ParameterValueConverter<DirectoryInfo>)DirectoryInfoConverter,
+		[typeof(bool)] = (ParameterValueConverter<bool>)BooleanConverter,
+
+		[typeof(int)] = (ParameterValueConverter<int>)((value, out result, ref error) => int.TryParse(value, out result)),
+		[typeof(long)] = (ParameterValueConverter<long>)((value, out result, ref error) => long.TryParse(value, out result)),
+		[typeof(double)] = (ParameterValueConverter<double>)((value, out result, ref error) => double.TryParse(value, out result)),
+	};
+
+	private static bool BooleanConverter(string value, out bool result, ref string? error)
+	{
+		var v = value.ToUpperInvariant();
+		if (v is "1" or "Y" or "YES" or "TRUE" or "ON")
+		{
+			result = true;
+			return true;
+		}
+		else if (v is "0" or "N" or "NO" or "FALSE" or "OFF")
+		{
+			result = false;
+			return true;
+		}
+		error = $"invalid boolean value \"{value}\". The valid values are: 1, 0, y, n, yes, no, true, false, on, off.";
+		result = false;
+		return false;
 	}
 
 	private static bool FileInfoConverter(string value, out FileInfo result, ref string? error)
@@ -299,52 +494,7 @@ public readonly struct ParameterValue: IReadOnlyCollection<string>
 		return true;
 	}
 
-	private static readonly ConcurrentDictionary<Type, object> __converters = new ConcurrentDictionary<Type, object>()
-	{
-		[typeof(Uri)] = (ParameterValueConverter<Uri>)UriConverter,
-		[typeof(FileInfo)] = (ParameterValueConverter<FileInfo>)FileInfoConverter,
-		[typeof(DirectoryInfo)] = (ParameterValueConverter<DirectoryInfo>)DirectoryInfoConverter,
-	};
-
-	private static bool TryConvertValue<T>(string name, string value, [MaybeNullWhen(false)] out T result, ICollection<string>? errors = null)
-	{
-		if (string.IsNullOrWhiteSpace(value))
-		{
-			result = default;
-			errors?.Add($"missing value for parameter {name}");
-			return false;
-		}
-		if (__converters.TryGetValue(typeof(T), out var obj))
-		{
-			var converter = (ParameterValueConverter<T>)obj;
-			string? error = null;
-			if (converter(value, out result, ref error))
-				return true;
-			if (error == null)
-				errors?.Add($"invalid value for parameter {name}: {value}");
-			else
-				errors?.Add($"invalid value for parameter {name}: {value}. {error}");
-			return false;
-		}
-
-		if (Strings.TryGetValue(value, out result))
-			return true;
-
-		string message = $"invalid value for parameter {name}: {value}";
-		if (typeof(T).IsEnum)
-		{
-			var names = Enum.GetNames(typeof(T));
-			for (int i = 0; i < names.Length; ++i)
-			{
-				names[i] = names[i].ToLowerInvariant();
-			}
-			message += $". The valid values are: {String.Join(", ", names)}";
-		}
-		errors?.Add(message);
-		return false;
-	}
-
-	private struct Enumerator: IEnumerator<string>
+	public struct Enumerator: IEnumerator<string>
 	{
 		private readonly string[]? _array;
 		private string? _current;

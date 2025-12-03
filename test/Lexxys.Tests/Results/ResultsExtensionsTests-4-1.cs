@@ -195,7 +195,7 @@ public class ResultExtensionsTests_4_1
 		Assert.IsTrue(asserted.IsFailure);
 		Assert.AreEqual(error, asserted.Error);
 
-		asserted = result.Assert(x => true, () => new ErrorResult("should not be called"));
+		asserted = result.Assert(x => true, _ => new ErrorResult("should not be called"));
 		Assert.IsTrue(asserted.IsFailure);
 		Assert.AreEqual(error, asserted.Error);
 	}
@@ -204,7 +204,7 @@ public class ResultExtensionsTests_4_1
 	public void Assert_Success_PredicateTrue()
 	{
 		var result = new SuccessResult<int>(10);
-		var asserted = result.Assert(x => x > 0, () => new ErrorResult("fail"));
+		var asserted = result.Assert(x => x > 0, _ => new ErrorResult("fail"));
 		Assert.IsTrue(asserted.IsSuccess);
 		Assert.AreEqual(10, asserted.Value);
 	}
@@ -213,7 +213,7 @@ public class ResultExtensionsTests_4_1
 	public void Assert_Success_PredicateFalse()
 	{
 		var result = new SuccessResult<int>(-10);
-		var asserted = result.Assert(x => x > 0, () => new ErrorResult("fail"));
+		var asserted = result.Assert(x => x > 0, _ => new ErrorResult("fail"));
 		Assert.IsTrue(asserted.IsFailure);
 		Assert.AreEqual("fail", asserted.Error.Message);
 	}
@@ -235,7 +235,7 @@ public class ResultExtensionsTests_4_1
 		Assert.IsTrue(asserted.IsFailure);
 		Assert.AreEqual("fail", asserted.Error.Message);
 		Assert.AreEqual("title", asserted.Error.Title);
-		Assert.AreEqual(123, asserted.Error.StatusCode);
+		Assert.AreEqual(123, asserted.Error.ErrorCode);
 		Assert.AreEqual("v", asserted.Error.Data["k"]);
 	}
 }

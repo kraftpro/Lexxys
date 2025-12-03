@@ -1,11 +1,13 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 
 namespace Lexxys.Testing;
 
 public class RndPcg: IRand
 {
+#if !NET
+	Random _random = new();
+#endif
 	private ulong _state;
 	private ulong _inc;
 
@@ -17,15 +19,14 @@ public class RndPcg: IRand
 	{
 		if (seed == 0 && seq == 0)
 		{
-#if NET6_0_OR_GREATER
+#if NET
 			Span<ulong> uu = stackalloc ulong[2];
-			RandomNumberGenerator.Fill(MemoryMarshal.AsBytes(uu));
+			Random.Shared.NextBytes(MemoryMarshal.AsBytes(uu));
 			seed = uu[0];
 			seq = uu[1];
 #else
-			using var rng = RandomNumberGenerator.Create();
 			var bb = ArrayPool<byte>.Shared.Rent(2 * sizeof(ulong));
-			rng.GetBytes(bb);
+			_random.NextBytes(bb);
 			var uu = MemoryMarshal.Cast<byte, ulong>(bb);
 			seed = uu[0];
 			seq = uu[1];
@@ -66,7 +67,7 @@ public class RndPcg: IRand
 		if (bb.Length == 0) return;
 
 		Span<byte> t = stackalloc byte[sizeof(uint)];
-#if NET6_0_OR_GREATER
+#if NET
 		MemoryMarshal.AsRef<uint>(t) = NextUInt32();
 #else
 		MemoryMarshal.Cast<byte, uint>(t)[0] = NextUInt32();

@@ -16,7 +16,7 @@ public class ResourcesTests
 	public void LoadResourcesTest()
 	{
 		var resources = Resources.GetResources("Resources.json");
-		Assert.IsTrue(resources.Count > 0);
+		Assert.IsNotEmpty(resources);
 	}
 
 	[DeploymentItem("Resources.json")]
@@ -25,6 +25,6 @@ public class ResourcesTests
 	{
 		var x = Resources.AddressUsCityState;
 		Assert.IsFalse(x.IsEmpty);
-		Assert.AreEqual(2, x.Value.State.Length);
+		Assert.AreEqual(2, x.NextValue().State.Length);
 	}
 }

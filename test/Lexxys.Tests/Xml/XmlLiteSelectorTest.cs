@@ -14,8 +14,6 @@ namespace Lexxys.Tests.Xml
 	[TestClass]
 	public class XmlLiteSelectorTest
 	{
-        public TestContext TestContext { get; set; }
-
         [TestMethod]
 		public void XmlLiteNodeSelectTest()
 		{
@@ -26,7 +24,7 @@ namespace Lexxys.Tests.Xml
                 var xml = XmlTools.FromXml(text);
                 var xx = XmlNodeSelector.Select("*", xml.Elements);
                 var aa = xx.ToArray();
-                Assert.AreEqual(1, aa.Length, source);
+                Assert.HasCount(1, aa, source);
 				Assert.AreEqual(xml.Elements[0].ToString(), aa[0].ToString(), source);
                 xx = XmlNodeSelector.Select("*.node1", xml.Elements);
                 aa = xx.ToArray();
@@ -34,14 +32,14 @@ namespace Lexxys.Tests.Xml
                 xx = XmlNodeSelector.Select("**.node1", xml.Elements);
                 var bb = xx.ToArray();
                 Assert.IsTrue(bb.All(o => o.Name == "node1"), source);
-                Assert.IsTrue(aa.Length <= bb.Length);
+                Assert.IsLessThanOrEqualTo(bb.Length, aa.Length);
                 xx = XmlNodeSelector.Select("**.node1.**.node2", xml.Elements);
                 aa = xx.ToArray();
                 Assert.IsTrue(aa.All(o => o.Name == "node2"), source);
             }
             catch
 			{
-				TestContext.WriteLine(source);
+				Console.WriteLine(source);
                 throw;
 			}
 		}

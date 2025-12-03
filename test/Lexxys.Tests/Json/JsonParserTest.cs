@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace Lexxys.Tests.Json
@@ -7,7 +7,18 @@ namespace Lexxys.Tests.Json
 	public class JsonParserTest
 	{
 		[TestMethod]
-		[DataRow(/*lang=json*/"""
+		[DataRow(Json1)]
+		[DataRow(Json2)]
+		public void ParseString(string json)
+		{
+			string expected = Regex.Replace(json, @"\s*([\{\}\[\],:])\s*", "$1", RegexOptions.Singleline);
+			ResultValue<JsonItem> j = JsonParser.Parse(json);
+			Assert.IsTrue(j.IsSuccess, $"Parsing failed: {j.GetErrorOrDefault()?.Message}");
+			var actual = j.GetValueOrDefault()?.ToString();
+			Assert.AreEqual(expected, actual);
+		}
+		private const string Json1 =
+			"""
 			{
 				"tokens": {
 					"true": true,
@@ -35,127 +46,123 @@ namespace Lexxys.Tests.Json
 					"nl": " Line 1\n\tLine 2\r\n . Line 3\n\n "
 				}
 			}
-			""")]
-		[DataRow(/*lang=json,strict*/ """
+			""";
+		private const string Json2 = """
 			{
-				"data": {
-					"type": "User",
-					"id": "423050",
-					"attributes": {
-						"emails": [
-							{
-								"id":423050,
-								"status": 1,
-								"lastactive": 1566925012270,
-								"prevstatus": null,
-								"category": "Primary",
-								"address": "nathan22@abc.com",
-								"version": 40
-							}
-						]
-					},
-					"included": [
-						{
-							"type": "user",
-							"id": "423050",
-							"attributes": {
-								"addresses": [
-									{
-										"address1": "9994 Post Road",
-										"address2": "Suite 1452",
-										"category": "Primary",
-										"city":	"Portland",
-										"contextdata": null,
-										"country": "US",
-										"id": 423050,
-										"postal": "04101",
-										"state": "ME",
-										"version": 41
-									}
-								],
-								"authid": 75521,
-								"contextdata": [
-									{
-										"one": "Contact",
-										"two": "423050"
-									},
-									{
-										"one": "User",
-										"two": "423050"
-									},
-									{
-										"one": "Company",
-										"two": "36094"
-									}
-								],
-								"created": "02/09/2011",
-								"emails": [
-									{
-										"address": "nathan22@abc.com",
-										"category": "Primary",
-										"contextdata": null,
-										"id": 423050,
-										"lastactive": "08/27/2019",
-										"prevstatus": null,
-										"status": 1,
-										"version": 41}],
-										"extid": 2234,
-										"first": "Nathan",
-										"gaid": -1824208785,
-										"last": "Smith.FJFA",
-										"lastactive": "08/27/2019",
-										"middle": null,
-										"organization": null,
-										"phones": [
-											{
-												"category": "Mobile",
-												"contextdata": null,
-												"id": 423050,
-												"lastactive": "08/27/2019",
-												"number": "2032225555",
-												"prevstatus": null,
-												"status": 1,
-												"version": 41
-											}
-										],
-										"prevstatus": null,
-										"salutation": "Mr.",
-										"status": 1,
-										"suffix": null,
-										"title": null,
-										"types": "company",
-										"version": 41
-									}
-								}
-							]
-						},
-						"header": {
-							"action": "update",
-							"origin": "management-1",
-							"millis": 1566925013995,
-							"session": {"id": "0grcqjb090",
-							"userid": 423050,
-							"roleid": 204549,
-							"name": "Nathan Smith.FJFA",
-							"type": ["company"],
-							"adminuserid": 2234,
-							"adminsessionid": "ORrQZwtvgyJW7AbIPR9nmFYn",
-							"agentuserid": null,
-							"agentname": "",
-							"application": "Application 232        ",
-							"applicationid": 36094,
-							"account": 232
-						}
-					}
-				}
-								
-			""")]
-		public void ParseString(string json)
-		{
-			string expected = Regex.Replace(json, @"\s*([\{\}:,])\s*", "$1", RegexOptions.Singleline);
-			var j = JsonParser.Parse(json);
-			string actual = j.ToString();
-			Assert.AreEqual(expected, actual);
-		}
+			  "data": {
+			    "type": "User",
+			    "id": "423050",
+			    "attributes": {
+			      "emails": [
+			        {
+			          "id": 423050,
+			          "status": 1,
+			          "lastactive": 1566925012270,
+			          "prevstatus": null,
+			          "category": "Primary",
+			          "address": "nathan22@abc.com",
+			          "version": 40
+			        }
+			      ]
+			    },
+			    "included": [
+			      {
+			        "type": "user",
+			        "id": "423050",
+			        "attributes": {
+			          "addresses": [
+			            {
+			              "address1": "9994 Post Road",
+			              "address2": "Suite 1452",
+			              "category": "Primary",
+			              "city": "Portland",
+			              "contextdata": null,
+			              "country": "US",
+			              "id": 423050,
+			              "postal": "04101",
+			              "state": "ME",
+			              "version": 41
+			            }
+			          ],
+			          "authid": 75521,
+			          "contextdata": [
+			            {
+			              "one": "Contact",
+			              "two": "423050"
+			            },
+			            {
+			              "one": "User",
+			              "two": "423050"
+			            },
+			            {
+			              "one": "Company",
+			              "two": "36094"
+			            }
+			          ],
+			          "created": "02/09/2011",
+			          "emails": [
+			            {
+			              "address": "nathan22@abc.com",
+			              "category": "Primary",
+			              "contextdata": null,
+			              "id": 423050,
+			              "lastactive": "08/27/2019",
+			              "prevstatus": null,
+			              "status": 1,
+			              "version": 41
+			            }
+			          ],
+			          "extid": 2234,
+			          "first": "Nathan",
+			          "gaid": -1824208785,
+			          "last": "Smith.FJFA",
+			          "lastactive": "08/27/2019",
+			          "middle": null,
+			          "organization": null,
+			          "phones": [
+			            {
+			              "category": "Mobile",
+			              "contextdata": null,
+			              "id": 423050,
+			              "lastactive": "08/27/2019",
+			              "number": "2032225555",
+			              "prevstatus": null,
+			              "status": 1,
+			              "version": 41
+			            }
+			          ],
+			          "prevstatus": null,
+			          "salutation": "Mr.",
+			          "status": 1,
+			          "suffix": null,
+			          "title": null,
+			          "types": "company",
+			          "version": 41
+			        }
+			      }
+			    ],
+			    "header": {
+			      "action": "update",
+			      "origin": "management-1",
+			      "millis": 1566925013995,
+			      "session": {
+			        "id": "0grcqjb090",
+			        "userid": 423050,
+			        "roleid": 204549,
+			        "name": "Nathan Smith.FJFA",
+			        "type": [ "company" ],
+			        "adminuserid": 2234,
+			        "adminsessionid": "ORrQZwtvgyJW7AbIPR9nmFYn",
+			        "agentuserid": null,
+			        "agentname": "",
+			        "application": "Application 232        ",
+			        "applicationid": 36094,
+			        "account": 232
+			      }
+			    }
+			  }
+			}
+			
+			""";
 	}
 }

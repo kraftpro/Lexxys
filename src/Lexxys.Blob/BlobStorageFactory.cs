@@ -3,8 +3,8 @@
 //
 // Copyright (c) 2001-2014, ANN, Kraft Pro Utilities.
 // You may use this code under the terms of the MIT license
-//
-// Re Sharper disable ConditionIsAlwaysTrueOrFalse
+
+using System.Collections.Immutable;
 
 namespace Lexxys;
 
@@ -14,47 +14,43 @@ namespace Lexxys;
 /// </summary>
 public class BlobStorageFactory: IBlobStorageFactory
 {
-	private readonly Dictionary<string, List<IBlobStorageService>> _schemes = [];
-	private readonly List<IBlobStorageService> _providers = [];
+	private ImmutableDictionary<string, IBlobStorageService> _schemes = ImmutableDictionary<string, IBlobStorageService>.Empty;
 
 	/// <summary>
-	/// Get <see cref="IBlobStorageService"/> for the specified <paramref name="location"/>.
+	/// Get <see cref="IBlobStorageService"/> for the specified <paramref name="domain"/>.
 	/// </summary>
-	/// <param name="location">Blob location</param>
-	/// <returns></returns>
+	/// <param name="domain">Name of the domain</param>
+	/// <returns>Blob storage service to access blobs in the specified domain or null if no service is registered for the domain.</returns>
 	/// <exception cref="ArgumentNullException"></exception>
-	public IBlobStorageService? TryGetService(Uri location)
+	public IBlobStorageService? TryGetStorage(string domain)
 	{
-		if (location is null) throw new ArgumentNullException(nameof(location));
+		if (domain is null) throw new ArgumentNullException(nameof(domain));
 
-		lock (_schemes)
-		{
-			if (!_schemes.TryGetValue(location.Scheme, out var providers))
-				providers = _providers;
-
-			return providers.FirstOrDefault(o => o.CanOpen(location));
-		}
+		_schemes.TryGetValue(domain, out var service);
+		return service;
 	}
 
 	/// <summary>
 	/// Registers a blob storage service.
 	/// </summary>
 	/// <param name="service">Blob storage service</param>
+	/// <param name="domain">Name of the domain</param>
 	/// <exception cref="ArgumentNullException"><paramref name="service"/> is null</exception>
-	public void Register(IBlobStorageService service)
+	public IBlobStorageService RegisterStorage(string domain, IBlobStorageService service)
 	{
+		if (domain is null) throw new ArgumentNullException(nameof(domain));
 		if (service == null) throw new ArgumentNullException(nameof(service));
 
-		lock (_schemes)
+		ImmutableDictionary<string, IBlobStorageService> oldSchemes;
+		ImmutableDictionary<string, IBlobStorageService> newSchemes;
+
+		do
 		{
-			foreach (var scheme in service.SupportedSchemes)
-			{
-				if (!_schemes.TryGetValue(scheme, out var list))
-					_schemes.Add(scheme, list = []);
-				list.Add(service);
-			}
-			_providers.Add(service);
-		}
+			oldSchemes = _schemes;
+			newSchemes = oldSchemes.SetItem(domain, service);
+		} while (Interlocked.CompareExchange(ref _schemes, newSchemes, oldSchemes) != oldSchemes);
+
+		return service;
 	}
 }
 

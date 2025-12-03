@@ -11,7 +11,7 @@ using Tokenizer;
 
 public static class JsonParser
 {
-	public static JsonItem Parse(string text)
+	public static ResultValue<JsonItem> Parse(string text)
 	{
 		if (text == null)
 			throw new ArgumentNullException(nameof(text));
@@ -22,7 +22,7 @@ public static class JsonParser
 		return converter.ParseItem(ref stream);
 	}
 
-	public static JsonItem Parse(TextReader text)
+	public static ResultValue<JsonItem> Parse(TextReader text)
 	{
 		if (text == null)
 			throw new ArgumentNullException(nameof(text));
@@ -68,27 +68,30 @@ public static class JsonParser
 
 		// jsonExValue := ['(' args ')'] jsonValue
 
-		public JsonItem ParseItem(ref CharStream stream, bool allowColon = false)
+		public ResultValue<JsonItem> ParseItem(ref CharStream stream, bool allowColon = false)
 		{
 			var token = _back.Value;
 			List<JsonPair>? args = null;
 			// [ '(' args ')' [:] ]
 			if (token.Is(LexicalTokenType.SEQUENCE, PRMBEG))
 			{
-				args = ParseJsonArg(ref stream);
+				var arr = ParseJsonArg(ref stream);
+				if (!arr) return arr.Error;
+				args = arr.Value;
 				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, COLON) && allowColon)
 					Scanner.Next(ref stream);
 				token = _back.Value;
 			}
 
-			if (token.Is(LexicalTokenType.SEQUENCE, OBJBEG))
-				return ParseMap(ref stream, args);
-			if (token.Is(LexicalTokenType.SEQUENCE, ARRBEG))
-				return ParseArray(ref stream, args);
-			return ParseScalar(ref stream, args);
+			return
+				token.Is(LexicalTokenType.SEQUENCE, OBJBEG) ?
+					ParseMap(ref stream, args):
+				token.Is(LexicalTokenType.SEQUENCE, ARRBEG) ?
+					ParseArray(ref stream, args):
+					ParseScalar(ref stream, args);
 		}
 
-		private JsonScalar ParseScalar(ref CharStream stream, List<JsonPair>? args)
+		private ResultValue<JsonItem> ParseScalar(ref CharStream stream, List<JsonPair>? args)
 		{
 			var token = _back.Value;
 			if (token.Is(LexicalTokenType.NUMERIC) || token.Is(LexicalTokenType.STRING))
@@ -106,16 +109,16 @@ public static class JsonParser
 			return args?.Count > 0 ? new JsonScalar(null, args): JsonScalar.Null;
 		}
 
-		private JsonMap ParseMap(ref CharStream stream, List<JsonPair>? args)
+		private ResultValue<JsonItem> ParseMap(ref CharStream stream, List<JsonPair>? args)
 		{
 			var result = new List<JsonPair>();
 
-			for (; ; )
+			for (;;)
 			{
 				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, OBJEND))
 					return new JsonMap(result, args);
 				if (_back.Value.IsEof)
-					throw stream.SyntaxException("Unexpected end of stream found.");
+					return ErrorResult.Problem(stream.FormatSyntaxException("Unexpected end of stream found"));
 
 				// pair :=  (name | string) [':' value]
 				// pair :=  (name | string) '(' args ')' [':'] [value]
@@ -123,7 +126,7 @@ public static class JsonParser
 
 				LexicalToken token = _back.Value;
 				if (!(token.Is(LexicalTokenType.IDENTIFIER) ||token.Is(LexicalTokenType.STRING)))
-					throw stream.SyntaxException("Expected name of the element.");
+					return ErrorResult.Problem(stream.FormatSyntaxException("Expected name of the element"));
 
 				string name = token.GetString(stream);
 				JsonItem? value = null;
@@ -132,18 +135,21 @@ public static class JsonParser
 					bool colon = _back.Value.Is(LexicalTokenType.SEQUENCE, COLON);
 					if (colon)
 						Scanner.Next(ref stream);
-					value = ParseItem(ref stream, !colon);
+					var itemValue = ParseItem(ref stream, !colon);
+					if (!itemValue)
+						return itemValue.Error;
+					value = itemValue.Value;
 				}
 				result.Add(new JsonPair(name, value ?? JsonScalar.True));
 
 				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, OBJEND))
 					return new JsonMap(result, args);
 				if (!_back.Value.Is(LexicalTokenType.SEQUENCE, COMMA))
-					throw stream.SyntaxException("Expected comma.");
+					return ErrorResult.Problem(stream.FormatSyntaxException("Expected comma"));
 			}
 		}
 
-		private List<JsonPair> ParseJsonArg(ref CharStream stream)
+		private ResultValue<List<JsonPair>> ParseJsonArg(ref CharStream stream)
 		{
 			// args :=  '(' [ arg [',' arg]* ] ')'
 			// args :=  '(' [ [arg ',']* arg ] ')'
@@ -151,7 +157,7 @@ public static class JsonParser
 			// eq   :=  ':' | '='
 
 			if (!_back.Value.Is(LexicalTokenType.SEQUENCE, PRMBEG))
-				throw stream.SyntaxException("Expected begin of arguments.");
+				return ErrorResult.Problem(stream.FormatSyntaxException("Expected begin of arguments"));
 
 			var args = new List<JsonPair>();
 			bool comma = false;
@@ -164,21 +170,24 @@ public static class JsonParser
 				if (comma)
 				{
 					if (!token.Is(LexicalTokenType.SEQUENCE, COMMA))
-						throw stream.SyntaxException("Expected end of parameters or comma.");
+						return ErrorResult.Problem(stream.FormatSyntaxException("Expected comma between arguments"));
 					token = Scanner.Next(ref stream);
 				}
 				if (!(token.Is(LexicalTokenType.IDENTIFIER) || token.Is(LexicalTokenType.STRING)))
-					throw stream.SyntaxException("Expected name of parameter.");
+					return ErrorResult.Problem(stream.FormatSyntaxException("Expected name of parameter"));
 				string name = token.GetString(stream);
 				if (!Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, COLON, EQUAL))
-					throw stream.SyntaxException("Expected equal or colon symbol for parameter value.");
+					return ErrorResult.Problem(stream.FormatSyntaxException("Expected equal or colon symbol for parameter value"));
 				Scanner.Next(ref stream);
-				args.Add(new JsonPair(name, ParseScalar(ref stream, null)));
+				var pairValue = ParseItem(ref stream);
+				if (!pairValue)
+					return pairValue.Error;
+				args.Add(new JsonPair(name, pairValue.Value));
 				comma = true;
 			}
 		}
 
-		private JsonArray ParseArray(ref CharStream stream, List<JsonPair>? args)
+		private ResultValue<JsonItem> ParseArray(ref CharStream stream, List<JsonPair>? args)
 		{
 			var result = new List<JsonItem>();
 
@@ -187,7 +196,7 @@ public static class JsonParser
 				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, ARREND))
 					return new JsonArray(result, args);
 				if (_back.Value.IsEof)
-					throw stream.SyntaxException("Unexpected end of stream found.");
+					return ErrorResult.Problem(stream.FormatSyntaxException("Unexpected end of stream found"));
 
 				// item0 := jsonValue
 				// item0 := jsonObject
@@ -196,13 +205,16 @@ public static class JsonParser
 				// item := '(' args ')' item0
 				// [ (2, 'A') { here, there }, 
 
-				JsonItem value = ParseItem(ref stream);
+				var itemValue = ParseItem(ref stream);
+				if (!itemValue)
+					return itemValue.Error;
+				JsonItem value = itemValue.Value;
 				result.Add(value);
 
 				if (Scanner.Next(ref stream).Is(LexicalTokenType.SEQUENCE, ARREND))
 					return new JsonArray(result, args);
 				if (!_back.Value.Is(LexicalTokenType.SEQUENCE, COMMA))
-					throw stream.SyntaxException("Expected comma.");
+					return ErrorResult.Problem(stream.FormatSyntaxException("Expected comma"));
 			}
 		}
 	}

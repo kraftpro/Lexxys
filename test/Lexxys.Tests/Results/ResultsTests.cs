@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using System;
 using System.Collections.Generic;
@@ -24,12 +24,12 @@ public class ResultTests
 	public void Result_Fail_ShouldCreateErrorResult()
 	{
 		// Act
-		var error = Result.Fail("Error message", "Error title", 500, new[] { ("key1", "value1") });
+		var error = Result.Fail("Error message", "Error title", 500, [ ("key1", "value1") ]);
 
 		// Assert
 		Assert.AreEqual("Error message", error.Message);
 		Assert.AreEqual("Error title", error.Title);
-		Assert.AreEqual(500, error.StatusCode);
+		Assert.AreEqual(500, error.ErrorCode);
 		Assert.IsTrue(error.Data.ContainsKey("key1"));
 		Assert.AreEqual("value1", error.Data["key1"]);
 	}
@@ -43,7 +43,7 @@ public class ResultTests
 		// Assert
 		Assert.AreEqual("Bad request", error.Message);
 		Assert.AreEqual("Invalid input", error.Title);
-		Assert.AreEqual(400, error.StatusCode);
+		Assert.AreEqual(400, error.ErrorCode);
 	}
 
 	[TestMethod]
@@ -55,7 +55,7 @@ public class ResultTests
 		// Assert
 		Assert.AreEqual("Not found", error.Message);
 		Assert.AreEqual("Resource not found", error.Title);
-		Assert.AreEqual(404, error.StatusCode);
+		Assert.AreEqual(404, error.ErrorCode);
 	}
 
 	[TestMethod]
@@ -93,7 +93,7 @@ public class ResultTests
 		if (success)
 		{
 			// This should execute
-			Assert.IsTrue(true);
+			// Assert.IsTrue(true);
 		}
 		else
 		{
@@ -122,7 +122,7 @@ public class ResultTests
 		if (!failure)
 		{
 			// This should execute
-			Assert.IsTrue(true);
+			// Assert.IsTrue(true);
 		}
 		else
 		{
@@ -138,8 +138,11 @@ public class ResultTests
 		Result failure = Result.Fail("Error");
 
 		// Act & Assert
-		Assert.IsFalse(!success);
-		Assert.IsTrue(!failure);
+		bool notSuccess = !success;
+		bool notFailure = !failure;
+
+		Assert.IsFalse(notSuccess);
+		Assert.IsTrue(notFailure);
 	}
 
 	[TestMethod]
@@ -206,7 +209,7 @@ public class ResultTests
 		var nullResult = new SuccessResult<string>(null);
 		var stringResult = new SuccessResult<string>("test");
 		var intResult = new SuccessResult<int>(42);
-		var listResult = new SuccessResult<List<int>>(new List<int> { 1, 2, 3 });
+		var listResult = new SuccessResult<List<int>>([1, 2, 3]);
 
 		// Assert
 		Assert.AreEqual("Success: null", nullResult.ToString());
@@ -219,7 +222,7 @@ public class ResultTests
 	public void FailureResult_Properties_ShouldReturnExpectedValues()
 	{
 		// Arrange
-		var error = new ErrorResult("Error message", "Error title", 500);
+		var error = new ErrorResult("Error message", 500, "Error title");
 		var result = new FailureResult<int>(error);
 
 		// Assert

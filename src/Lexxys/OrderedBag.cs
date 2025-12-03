@@ -53,7 +53,7 @@ public class OrderedBag<TKey, TValue>: IDictionary<TKey, TValue>, IReadOnlyDicti
 		if (collection == null)
 			throw new ArgumentNullException(nameof(collection));
 		Comparer = comparer ?? EqualityComparer<TKey>.Default;
-		_list = new List<(TKey, TValue)>(collection);
+		_list = [..collection];
 	}
 
 	/// <summary>

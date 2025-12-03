@@ -45,7 +45,7 @@ public static class ArrayExtensions
 			array.AsSpan(0, position).CopyTo(result);
 		result[position] = value;
 		if (position < array.Length)
-			array.AsSpan(position).CopyTo(result.AsSpan(position + 1));
+			array.AsSpan(position).CopyTo(result.AsSpan(position));
 		return result;
 	}
 
@@ -99,32 +99,15 @@ public static class ArrayExtensions
 		return array;
 	}
 
-	public static T[] RemoveLast<T>(this T[]? array)
-	{
-		if (array is not { Length: >1 })
-			return [];
-		var result = new T[array.Length - 1];
-		array.AsSpan(0, array.Length - 1).CopyTo(result);
-		return result;
-	}
+	public static T[] RemoveLast<T>(this T[]? array) => array is { Length: > 1 } ? array.AsSpan(0, array.Length - 1).ToArray(): [];
 
-	public static T[] RemoveFirst<T>(this T[]? array)
-	{
-		if (array is not { Length: >1 })
-			return [];
-		var result = new T[array.Length - 1];
-		array.AsSpan(1).CopyTo(result);
-		return result;
-	}
+	public static T[] RemoveFirst<T>(this T[]? array) => array is { Length: > 1 } ? array.AsSpan(1).ToArray(): [];
 
 	public static T[] RemoveAt<T>(this T[]? array, int index)
 	{
 		if (array is not { Length: >1 })
 			return index == 0 ? []: throw new ArgumentOutOfRangeException(nameof(index), index, null);
-		var result = new T[array.Length - 1];
-		array.AsSpan(0, index).CopyTo(result);
-		array.AsSpan(index+1).CopyTo(result.AsSpan(index));
-		return result;
+		return [.. array.AsSpan(0, index), .. array.AsSpan(index + 1)];
 	}
 
 	public static T[] Sort<T>(this T[] array)

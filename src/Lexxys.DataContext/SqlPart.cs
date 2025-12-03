@@ -2,7 +2,7 @@
 
 public readonly struct SqlPart
 {
-	public readonly static SqlPart Empty = default;
+	public static readonly SqlPart Empty = default;
 	private readonly string? _value;
 
 	public SqlPart(string? value) => _value = value;

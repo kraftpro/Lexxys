@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace Lexxys.Logging;
 
-public class SystemContext: IDumpJson
+public class SystemContext: IDump
 {
 	private readonly StaticContext _context;
 	private readonly int _threadId;
@@ -73,15 +73,15 @@ public class SystemContext: IDumpJson
 	/// </summary>
 	public DateTime UtcTimestamp => _timestamp;
 
-	public JsonBuilder ToJsonContent(JsonBuilder json)
+	public void DumpContent(IDumpWriter writer)
 	{
-		return json
-			.Item("machine", MachineName)
-			.Item("domain", DomainName)
-			.Item("processId", ProcessId)
-			.Item("threadId", ThreadId)
-			.Item("seqNumber", SequentialNumber)
-			.Item("timestamp", UtcTimestamp);
+		writer
+			.Write("machine", MachineName)
+			.Write("domain", DomainName)
+			.Write("processId", ProcessId)
+			.Write("threadId", ThreadId)
+			.Write("seqNumber", SequentialNumber)
+			.Write("timestamp", UtcTimestamp);
 	}
 }
 

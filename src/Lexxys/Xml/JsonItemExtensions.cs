@@ -1,10 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-
 namespace Lexxys.Xml;
 
 public static class JsonItemExtensions
@@ -40,9 +33,9 @@ public static class JsonItemExtensions
 	{
 		var attribs = item.Attributes.Select(o => new KeyValuePair<string, string>(o.Name, XmlTools.Convert(o.Item.Value) ?? "")).ToList();
 		var properties = new List<IXmlReadOnlyNode>();
-		if (item.Properties.Count > 0)
+		if (item.Count > 0)
 		{
-			foreach (var prop in item.Properties)
+			foreach (var prop in item)
 			{
 				if (prop.IsEmpty)
 					continue;
@@ -70,6 +63,6 @@ public static class JsonItemExtensions
 
 	public static IXmlReadOnlyNode ToXml(this JsonArray array, string name, bool ignoreCase = false, bool attributes = false)
 	{
-		return ToXmlBase(array, name, null, ignoreCase, array.Items.Select(o => (o ?? JsonScalar.Null).ToXml(XmlItemName, ignoreCase, attributes)));
+		return ToXmlBase(array, name, null, ignoreCase, array.Select(o => (o ?? JsonScalar.Null).ToXml(XmlItemName, ignoreCase, attributes)));
 	}
 }

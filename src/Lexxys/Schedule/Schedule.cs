@@ -9,7 +9,7 @@ using System.Text;
 namespace Lexxys;
 
 [Serializable]
-public class Schedule: IDump, IDumpJson, IDumpXml, IEquatable<Schedule>
+public class Schedule: IDump, IEquatable<Schedule>
 {
 	public const string Type = "none";
 
@@ -85,32 +85,12 @@ public class Schedule: IDump, IDumpJson, IDumpXml, IEquatable<Schedule>
 
 	public static bool operator !=(Schedule? left, Schedule? right) => !(left == right);
 
-	public virtual DumpWriter DumpContent(DumpWriter writer)
+	public virtual void DumpContent(IDumpWriter writer)
 	{
 		if (writer is null) throw new ArgumentNullException(nameof(writer));
-		return writer
-			.Item("TypeScheduleType", ScheduleType)
-			.Then("Reminder", Reminder);
-	}
-
-	string IDumpXml.XmlElementName => "schedule";
-
-	public virtual XmlBuilder ToXmlContent(XmlBuilder builder)
-	{
-		if (builder is null) throw new ArgumentNullException(nameof(builder));
-		builder.Item("type", ScheduleType);
-		if (!Reminder.IsEmpty)
-			builder.Element("reminder").Value(Reminder).End();
-		return builder;
-	}
-
-	public virtual JsonBuilder ToJsonContent(JsonBuilder json)
-	{
-		if (json is null) throw new ArgumentNullException(nameof(json));
-		json.Item("type").Val(ScheduleType);
-		if (!Reminder.IsEmpty)
-			json.Item("reminder").Val(Reminder);
-		return json;
+		writer.Write("type", ScheduleType);
+		if (!Reminder.IsEmpty || writer.Level > ObjectDumpLevel.Regular)
+			writer.Write("reminder", Reminder);
 	}
 
 	public static Schedule? FromXml(Xml.IXmlReadOnlyNode? xml)

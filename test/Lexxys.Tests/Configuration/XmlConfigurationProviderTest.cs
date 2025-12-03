@@ -19,8 +19,6 @@ namespace Lexxys.Tests.Configuration
 	[TestClass]
 	public class XmlConfigurationProviderTest
 	{
-		public TestContext TestContext { get; set; }
-
 		/// <summary>
 		///A test for GetValue
 		///</summary>
@@ -86,17 +84,17 @@ namespace Lexxys.Tests.Configuration
 			long x = WatchTimer.Start();
 			for (int i = 0; i < count; ++i)
 			{
-				object obj = provider.GetValue("Setting", typeof(Setting));
+				_ = provider.GetValue("Setting", typeof(Setting));
 			}
 			x = WatchTimer.Stop(x);
 
 			long y = WatchTimer.Start();
 			for (int i = 0; i < count; ++i)
 			{
-				object obj = provider.GetValue("Setting", typeof(Setting2));
+				_ = provider.GetValue("Setting", typeof(Setting2));
 			}
 			y = WatchTimer.Stop(y);
-			TestContext.WriteLine("Reflection: {0}, XmlLiteNode: {1}", WatchTimer.ToString(x, false), WatchTimer.ToString(y, false));
+			Console.WriteLine("Reflection: {0}, XmlLiteNode: {1}", WatchTimer.ToString(x, false), WatchTimer.ToString(y, false));
 		}
 
 		[TestMethod]
@@ -131,7 +129,7 @@ namespace Lexxys.Tests.Configuration
 				""";
 
 			var map = TextConfigurationParser.Parse(GetConfigurationStream()).Select(o => $"{o.Key}={o.Value}").ToArray();
-			Assert.AreEqual(25, map.Length);
+			Assert.HasCount(25, map);
 			Assert.AreEqual(expected, String.Join("\n", map));
 		}
 

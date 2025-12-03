@@ -14,9 +14,9 @@ namespace Lexxys.Tests.Error
 			Assert.AreEqual(c10, c10a);
 			var c1000 = ErrorCode.Create(1000, "Thnd");
 			var c1011 = ErrorCode.Create(1011, "ThndEleven");
-			Assert.AreEqual(c10.Name, "Ten");
-			Assert.AreEqual(c1000.Name, "Thnd");
-			Assert.AreEqual(c1011.Name, "ThndEleven");
+			Assert.AreEqual("Ten", c10.Name);
+			Assert.AreEqual("Thnd", c1000.Name);
+			Assert.AreEqual("ThndEleven", c1011.Name);
 		}
 
 		[TestMethod]

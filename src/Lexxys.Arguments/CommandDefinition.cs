@@ -1,4 +1,4 @@
-﻿namespace Lexxys;
+namespace Lexxys;
 
 /// <summary>
 /// Represents a command line command.
@@ -14,37 +14,21 @@ public class CommandDefinition
 	/// </summary>
 	/// <param name="parent">A parent command</param>
 	/// <param name="name">Name of the command</param>
-	/// <param name="abbreviation">An optional abbreviations for the command.</param>
+	/// <param name="alias">Alternative command names</param>
 	/// <param name="description">Description of the command</param>
 	/// <param name="comparison">A <see cref="StringComparison"/></param>
+	/// <param name="namingStyle">The naming style used for members without explicit CLI names.</param>
 	/// <exception cref="ArgumentNullException"></exception>
-	internal CommandDefinition(CommandDefinition? parent, string name, string[]? abbreviation = null, string? description = null, StringComparison? comparison = null)
+	internal CommandDefinition(CommandDefinition? parent, string name, string[]? alias = null, string? description = null, ArgumentsConfig? config = null)
 	{
 		Parent = parent;
 		Name = name ?? throw new ArgumentNullException(nameof(name));
-		Abbreviation = abbreviation ?? [];
+		Alias = alias ?? [];
 		Description = description;
-		_comparison = comparison ?? StringComparison.Ordinal;
-		_parameters = new ParameterDefinitionCollection(_comparison);
+		Config = config ?? parent?.Config ?? ArgumentsConfig.Default;
+		_comparison = Config.IgnoreCase ? StringComparison.OrdinalIgnoreCase: StringComparison.Ordinal;
+		_parameters = new ParameterDefinitionCollection(this);
 		parent?.Add(this);
-	}
-
-	/// <summary>
-	/// Creates a copy of <see cref="CommandDefinition"/> with the specified <paramref name="comparison"/>.
-	/// </summary>
-	/// <param name="other">An instance of <see cref="CommandDefinition"/> to copy</param>
-	/// <param name="comparison">A <see cref="StringComparison"/> to use for the new instance</param>
-	/// <exception cref="ArgumentNullException"></exception>
-	internal CommandDefinition(CommandDefinition other, StringComparison comparison)
-	{
-		if (other is null) throw new ArgumentNullException(nameof(other));
-		Parent = other.Parent;
-		Name = other.Name;
-		Abbreviation = other.Abbreviation;
-		Description = other.Description;
-		_comparison = comparison;
-		_parameters = new ParameterDefinitionCollection(other._parameters, comparison);
-		_commands = other._commands is null ? null: new CommandDefinitionCollection(other._commands, comparison);
 	}
 
 	/// <summary>
@@ -58,9 +42,9 @@ public class CommandDefinition
 	public string Name { get; }
 
 	/// <summary>
-	/// Abbreviations of the command.
+	/// Alternative names for the command.
 	/// </summary>
-	public string[] Abbreviation { get; }
+	public string[] Alias { get; }
 
 	/// <summary>
 	/// Description of the command.
@@ -77,15 +61,7 @@ public class CommandDefinition
 	/// </summary>
 	public CommandDefinitionCollection? Commands => _commands;
 
-	/// <summary>
-	/// Indicates that the command has subcommands.
-	/// </summary>
-	public bool HasCommands => _commands?.Count > 0;
-
-	/// <summary>
-	/// Indicates that the command has parameters.
-	/// </summary>
-	public bool HasParameters => _parameters.Count > 0;
+	public ArgumentsConfig Config { get; }
 
 	internal StringComparison Comparison => _comparison;
 
@@ -94,7 +70,7 @@ public class CommandDefinition
 	/// </summary>
 	/// <param name="parameter">Parameter to add.</param>
 	/// <exception cref="ArgumentNullException"></exception>
-	public void Add(ParameterDefinition parameter)
+	internal void Add(ParameterDefinition parameter)
 	{
 		if (parameter is null) throw new ArgumentNullException(nameof(parameter));
 		_parameters.Add(parameter);

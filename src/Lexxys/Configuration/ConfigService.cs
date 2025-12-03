@@ -293,7 +293,7 @@ internal class ConfigService: IConfigService, IConfigLogger
 			}
 			catch (Exception flaw)
 			{
-				Config.LogConfigurationError($"{nameof(TryCreateInstance)}, {String.Join(", ", methods)}({DumpWriter.Create().Dump(parameters)})", flaw);
+				Config.LogConfigurationError($"{nameof(TryCreateInstance)}, {String.Join(", ", methods)}({DumpWriter.Dump(parameters)})", flaw);
 			}
 		}
 		return default;

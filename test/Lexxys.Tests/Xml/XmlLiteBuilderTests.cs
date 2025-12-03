@@ -13,7 +13,7 @@
 			xmlt.Begin("data1.1");
 			xmlt.End();
 			xmlt.End();
-			Assert.AreEqual(1, xmlt.GetNodes().Count);
+			Assert.HasCount(1, xmlt.GetNodes());
 			Assert.AreEqual("<data1><data1.1/></data1>", String.Join("", xmlt.GetNodes()));
 
 			xmlt = XmlNodeBuilder.Create<IXmlReadOnlyNode>();
@@ -27,8 +27,8 @@
 				.Begin("item").Attrib("script1", "execute(\"\");").Attrib("script2", "execute(\"\");").Attrib("script2", "'execute(\"\");'").End();
 
 			var x = xmlt.GetNodes();
-			Assert.AreEqual(2, x.Count);
-			Assert.AreEqual(3, x[0].Elements.Count);
+			Assert.HasCount(2, x);
+			Assert.HasCount(3, x[0].Elements);
 			Assert.AreEqual("""
 				<data><node one="1" tho="2">text</node><second><td>2018-05-15</td></second><self name="self"/></data><item script1="execute(&quot;&quot;);" script2="&#39;execute(&quot;&quot;);&#39;"/>
 				""",
@@ -43,7 +43,7 @@
 			xmlt.Begin("data1.1");
 			xmlt.End();
 			xmlt.End();
-			Assert.AreEqual(1, xmlt.GetNodes().Count);
+			Assert.HasCount(1, xmlt.GetNodes());
 			Assert.AreEqual("<data1><data1.1/></data1>", String.Join("", xmlt.GetNodes()));
 
 			xmlt = XmlNodeBuilder.Create<IXmlNode>();
@@ -57,8 +57,8 @@
 				.Begin("item").Attrib("script1", "execute(\"\");").Attrib("script2", "execute(\"\");").Attrib("script2", "'execute(\"\");'").End();
 
 			var x = xmlt.GetNodes();
-			Assert.AreEqual(2, x.Count);
-			Assert.AreEqual(3, x[0].Elements.Count);
+			Assert.HasCount(2, x);
+			Assert.HasCount(3, x[0].Elements);
 			Assert.AreEqual("""
 				<data><node one="1" tho="2">text</node><second><td>2018-05-15</td></second><self name="self"/></data><item script1="execute(&quot;&quot;);" script2="&#39;execute(&quot;&quot;);&#39;"/>
 				""",

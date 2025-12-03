@@ -1,11 +1,4 @@
-﻿using Lexxys;
-
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections;
 
 namespace Lexxys;
 
@@ -17,8 +10,7 @@ public readonly struct ReadOnlyListSegment<T>: IReadOnlyList<T>
 
 	public ReadOnlyListSegment(IReadOnlyList<T> list)
 	{
-		if (list is null) throw new ArgumentNullException(nameof(list));
-		_list = list;
+		_list = list ?? throw new ArgumentNullException(nameof(list));
 		_start = 0;
 		_length = list.Count;
 	}

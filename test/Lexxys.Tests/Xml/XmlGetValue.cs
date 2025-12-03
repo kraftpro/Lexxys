@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 
 namespace Lexxys.Tests.Xml
 {
@@ -69,7 +69,7 @@ namespace Lexxys.Tests.Xml
 				Items = itm;
 			}
 
-			public override string ToString() => DumpWriter.ToString(this);
+			public override string ToString() => DumpWriter.Dump(this).ToString();
 
 			public override bool Equals(object obj)
 			{
@@ -108,7 +108,7 @@ namespace Lexxys.Tests.Xml
 				BigInt = n;
 			}
 
-			public override string ToString() => DumpWriter.ToString(this);
+			public override string ToString() => DumpWriter.Dump(this).ToString();
 		}
 
 		private static IXmlReadOnlyNode X(string value) => TextToXmlConverter.ConvertLite(value).Single();

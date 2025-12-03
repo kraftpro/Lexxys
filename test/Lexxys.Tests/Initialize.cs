@@ -1,11 +1,11 @@
-﻿namespace Lexxys.Tests
-{
-	[TestClass]
-	public class Initialize
-	{
+using System.Runtime.CompilerServices;
 
-		[AssemblyInitialize]
-		public static void AssemblyInitialize(TestContext context)
+namespace Lexxys.Tests
+{
+	internal static class Initialize
+	{
+		[ModuleInitializer]
+		public static void ModuleInitialize()
 		{
 			Statics.AddServices(o => o
 				.AddConfigService());

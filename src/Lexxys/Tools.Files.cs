@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace Lexxys;
+﻿namespace Lexxys;
 
 public static class Files
 {

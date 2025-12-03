@@ -1,4 +1,5 @@
-﻿using Lexxys.Configuration;
+using Lexxys;
+using Lexxys.Configuration;
 using Lexxys.Tokenizer;
 
 using System;
@@ -34,10 +35,13 @@ public class CfgParserTest
 						name Main Building
 			""";
 		var nodes = Lexxys.Configuration.CfgParser.ParseConfig(config);
-		Assert.AreEqual(1, nodes.Count);
-		var node = nodes[0];
+		Assert.IsNull(nodes.Error);
+		Assert.HasCount(1, nodes.Nodes);
+		var node = nodes.Nodes[0];
+		Assert.IsNotNull(node);
 		Assert.AreEqual("school", node.Name);
-		Assert.AreEqual(3, node.Items.Count);
+		Assert.IsNotNull(node.Items);
+		Assert.HasCount(3, node.Items);
 		var name = node.Items.FirstOrDefault(x => x.Name == "name");
 		var address = node.Items.FirstOrDefault(x => x.Name == "address");
 		var buildings = node.Items.FirstOrDefault(x => x.Name == "buildings");
@@ -45,8 +49,10 @@ public class CfgParserTest
 		Assert.IsNotNull(address);
 		Assert.IsNotNull(buildings);
 		Assert.AreEqual("I.K. High School", name.Value);
-		Assert.AreEqual(4, address.Items.Count);
-		Assert.AreEqual(1, buildings.Items.Count);
+		Assert.IsNotNull(address.Items);
+		Assert.HasCount(4, address.Items);
+		Assert.IsNotNull(buildings.Items);
+		Assert.HasCount(1, buildings.Items);
 		Assert.AreEqual("street", address.Items[0].Name);
 		Assert.AreEqual("city", address.Items[1].Name);
 		Assert.AreEqual("state", address.Items[2].Name);
@@ -56,12 +62,16 @@ public class CfgParserTest
 		Assert.AreEqual("NY", address.Items[2].Value);
 		Assert.AreEqual("12345", address.Items[3].Value);
 		var item = buildings.Items[0];
-		Assert.AreEqual(3, item.Items.Count);
+		Assert.IsNotNull(item);
+		Assert.IsNotNull(item.Items);
+		Assert.HasCount(3, item.Items);
 		Assert.AreEqual("address", item.Items[0].Name);
 		Assert.AreEqual("area", item.Items[1].Name);
 		Assert.AreEqual("name", item.Items[2].Name);
 		var address2 = item.Items[0];
-		Assert.AreEqual(4, address2.Items.Count);
+		Assert.IsNotNull(address2);
+		Assert.IsNotNull(address2.Items);
+		Assert.HasCount(4, address2.Items);
 		Assert.AreEqual("street", address2.Items[0].Name);
 		Assert.AreEqual("city", address2.Items[1].Name);
 		Assert.AreEqual("state", address2.Items[2].Name);
@@ -96,11 +106,13 @@ public class CfgParserTest
 						name: Main Building
 			""";
 		var nodes = Lexxys.Configuration.CfgParser.ParseConfig(config);
-		Assert.AreEqual(1, nodes.Count);
-		var node = nodes[0];
+		Assert.IsNull(nodes.Error);
+		Assert.HasCount(1, nodes.Nodes);
+		var node = nodes.Nodes[0];
 
 		Assert.AreEqual("school", node.Name);
-		Assert.AreEqual(3, node.Items.Count);
+		Assert.IsNotNull(node.Items);
+		Assert.HasCount(3, node.Items);
 		var name = node.Items.FirstOrDefault(x => x.Name == "name");
 		var address = node.Items.FirstOrDefault(x => x.Name == "address");
 		var buildings = node.Items.FirstOrDefault(x => x.Name == "buildings");
@@ -108,8 +120,10 @@ public class CfgParserTest
 		Assert.IsNotNull(address);
 		Assert.IsNotNull(buildings);
 		Assert.AreEqual("I.K. High School", name.Value);
-		Assert.AreEqual(4, address.Items.Count);
-		Assert.AreEqual(1, buildings.Items.Count);
+		Assert.IsNotNull(address.Items);
+		Assert.HasCount(4, address.Items);
+		Assert.IsNotNull(buildings.Items);
+		Assert.HasCount(1, buildings.Items);
 		Assert.AreEqual("street", address.Items[0].Name);
 		Assert.AreEqual("city", address.Items[1].Name);
 		Assert.AreEqual("state", address.Items[2].Name);
@@ -119,12 +133,16 @@ public class CfgParserTest
 		Assert.AreEqual("NY", address.Items[2].Value);
 		Assert.AreEqual("12345", address.Items[3].Value);
 		var item = buildings.Items[0];
-		Assert.AreEqual(3, item.Items.Count);
+		Assert.IsNotNull(item);
+		Assert.IsNotNull(item.Items);
+		Assert.HasCount(3, item.Items);
 		Assert.AreEqual("address", item.Items[0].Name);
 		Assert.AreEqual("area", item.Items[1].Name);
 		Assert.AreEqual("name", item.Items[2].Name);
 		var address2 = item.Items[0];
-		Assert.AreEqual(4, address2.Items.Count);
+		Assert.IsNotNull(address2);
+		Assert.IsNotNull(address2.Items);
+		Assert.HasCount(4, address2.Items);
 		Assert.AreEqual("street", address2.Items[0].Name);
 		Assert.AreEqual("city", address2.Items[1].Name);
 		Assert.AreEqual("state", address2.Items[2].Name);
@@ -197,10 +215,13 @@ public class CfgParserTest
 			}
 			""";
 		var obj = System.Text.Json.JsonSerializer.Deserialize<object>(js);
+		Assert.IsNotNull(obj);
 		var expected = System.Text.Json.JsonSerializer.Serialize<object>(obj);
 
-		var json = CfgParser.ParseToJson(config).ToString();
-		Assert.AreEqual(expected.ToString(), json);
+		var (json, error) = CfgParser.ParseToJson(config);
+		Assert.IsNull(error);
+		Assert.IsNotNull(json);
+		Assert.AreEqual(expected.ToString(), json.ToString());
 	}
 
 	[TestMethod]
@@ -226,36 +247,39 @@ public class CfgParserTest
 						name Main Building
 					-	1000.23
 			""";
-		var expected = new JsonStringBuilder()
-			.Obj()
-				.Item("school").Obj()
-					.Item("name", "I.K. High School")
-					.Item("buildings").Arr()
-						.Obj()
-							.Item("address").Obj()
-								.Item("street", "123a Main Street #2")
-								.Item("city", "Anytown plus")
-								.Item("state", "NY 2")
-								.Item("zip", "1234900 ")
-							.End()
-							.Item("area", 1000)
-							.Item("name", "Main Building")
+
+		var expected = new JsonDumpStringWriter()
+			.Begin('{')
+			.Begin("school", '{')
+				.Write("name", "I.K. High School")
+				.Begin("buildings", '[')
+					.Begin('{')
+						.Begin("address")
+							.Write("street", "123a Main Street #2")
+							.Write("city", "Anytown plus")
+							.Write("state", "NY 2")
+							.Write("zip", "1234900 ")
 						.End()
-						.Obj()
-							.Item("address").Obj()
-								.Item("state", "NY")
-								.Item("zip", 1234900)
-							.End()
-							.Item("area", 1000.10m)
-							.Item("name", "Main Building")
-						.End()
-						.Val(1000.23)
+						.Write("area", 1000)
+						.Write("name", "Main Building")
 					.End()
+					.Begin('{')
+						.Begin("address")
+							.Write("state", "NY")
+							.Write("zip", 1234900)
+						.End()
+						.Write("area", 1000.10m)
+						.Write("name", "Main Building")
+					.End()
+					.Write(null, 1000.23m)
 				.End()
+			.End()
 			.End();
 
-		var json = CfgParser.ParseToJson(config).ToString();
-		Assert.AreEqual(expected.ToString(), json);
+		var (json, error) = CfgParser.ParseToJson(config);
+		Assert.IsNull(error);
+		Assert.IsNotNull(json);
+		Assert.AreEqual(expected.ToString(), json.ToString());
 	}
 
 	[TestMethod]
@@ -278,11 +302,11 @@ public class CfgParserTest
 			""";
 		var parser = new CfgParser();
 		var text = new CharStream(source);
-		var nodes = parser.ParseNodeList(ref text);
-		Assert.IsNotNull(nodes);
-		Assert.AreEqual(0, nodes.Count);
-		Assert.AreEqual(6, parser.Options.Variable.Count);
-		string actual;
+		var (nodes, error) = parser.ParseNodeList(ref text);
+		Assert.AreEqual(null, error?.ToString());
+		Assert.IsEmpty(nodes);
+		Assert.HasCount(6, parser.Options.Variable);
+		string? actual;
 		actual = parser.Options.GetVariableText("value1");
 		Assert.AreEqual("123.01", actual);
 		actual = parser.Options.GetVariableText("value2");
@@ -315,26 +339,33 @@ public class CfgParserTest
 			""";
 		var parser = new CfgParser();
 		var text = new CharStream(source);
-		var nodes = parser.ParseNodeList(ref text);
+		var (nodes, error) = parser.ParseNodeList(ref text);
+		Assert.IsNull(error);
 
 		var actual = parser.Options.GetVariableText("root");
 		Assert.AreEqual("https://contoso.com", actual);
 		actual = parser.Options.GetVariableText("api");
 		Assert.AreEqual("${{root}}/api", actual);
-		Assert.AreEqual(1, nodes.Count);
+		Assert.HasCount(1, nodes);
 		var config = nodes[0];
-		Assert.AreEqual(4, config.Items.Count);
-		var api = config.Items[0];
-		Assert.AreEqual("api", api.Name);
-		Assert.AreEqual("${{api}}", api.Value);
+		Assert.IsNotNull(config);
+		Assert.IsNotNull(config.Items);
+		Assert.HasCount(4, config.Items);
 		var count = config.Items[1];
+		Assert.IsNotNull(count);
 		Assert.AreEqual("count", count.Name);
 		Assert.AreEqual("15", count.Value);
 		var items = config.Items[2];
+		Assert.IsNotNull(items);
 		Assert.AreEqual("items", items.Name);
 		Assert.AreEqual("${{items}}", items.Value);
 		var root = config.Items[3];
+		Assert.IsNotNull(root);
 		Assert.AreEqual("root", root.Name);
 		Assert.AreEqual("https://contoso.com", root.Value);
+		var api = config.Items[0];
+		Assert.IsNotNull(api);
+		Assert.AreEqual("api", api.Name);
+		Assert.AreEqual("https://contoso.com/api", api.Value);
 	}
 }

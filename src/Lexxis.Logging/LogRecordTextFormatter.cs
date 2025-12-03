@@ -345,12 +345,10 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			writer.Write(NullValue);
 		else if (value is IDump idump)
 			idump.Dump(new DumpTextWriter(writer, newLine));
-		else if (value is IDumpJson jdump)
-			jdump.ToJson(JsonBuilder.Create(writer));
 		else if (value == DBNull.Value)
 			writer.Write(DbNullValue);
 		else
-			new DumpTextWriter(writer, newLine).Dump(value, true);
+			new DumpTextWriter(writer, newLine).Dump(value);
 	}
 
 	private static unsafe string NormalizeWs(string value)
@@ -519,94 +517,49 @@ public class LogRecordTextFormatter: ILogRecordFormatter
 			{ "INDENT", FormatItemType.Indent },
 		};
 
-	class DumpTextWriter: DumpWriter
+	class DumpTextWriter: DumpWriterCore
 	{
 		private readonly TextWriter _w;
 		private readonly string _nl;
 		private bool _lf;
 
-		public DumpTextWriter(TextWriter writer, string newLine, int maxCapacity = 0, int maxDepth = 0, int stringLimit = 0, int blobLimit = 0, int arrayLimit = 0):
-			base(maxCapacity, maxDepth, stringLimit, blobLimit, arrayLimit)
+		public DumpTextWriter(TextWriter writer, string newLine, DumpWriterOptions? options = null): base(options)
 		{
 			_w = writer ?? throw new ArgumentNullException(nameof(writer));
 			_nl = newLine ?? throw new ArgumentNullException(nameof(newLine));
 		}
 
 		/// <inheritdoc />
-		public override DumpWriter Text(string? text)
+		protected override void Text(ReadOnlySpan<char> text)
 		{
-			if (Left == 0)
-				return this;
-			text ??= NullValue;
-			int length = text.Length;
-			var value = Left < length ? text.AsSpan(0, Left): text.AsSpan();
-			if (value.Length == 0)
-				return this;
+			if (text.Length == 0 || Length >= MaxLength)
+				return;
 
 			var crLf = CrLfFf.AsSpan();
 			int k;
-			while ((k = value.IndexOfAny(crLf)) >= 0)
+			while ((k = text.IndexOfAny(crLf)) >= 0)
 			{
 				if (k > 0)
 				{
 					_lf = false;
-					if (k >= Left)
-					{
-						_w.Write(value.Slice(0, Left));
-						Left = 0;
-						return this;
-					}
-					_w.Write(value.Slice(0, k));
-					Left -= k;
+					_w.Write(text.Slice(0, k));
 				}
-				value = value.Slice(k + 1);
-				while (value.Length > 0 && crLf.IndexOf(value[0]) > 0)
+				text = text.Slice(k + 1);
+				while (text.Length > 0 && crLf.IndexOf(text[0]) > 0)
 				{
-					value = value.Slice(1);
+					text = text.Slice(1);
 				}
 				if (!_lf)
 				{
 					_lf = true;
 					_w.Write(_nl);
-					--Left;
-					if (Left == 0)
-						return this;
 				}
 			}
-			if (value.Length > 0)
-			{
-				_lf = false;
-				if (value.Length > Left)
-				{
-					_w.Write(value.Slice(0, Left));
-					Left = 0;
-				}
-				else
-				{
-					_w.Write(value);
-					Left -= value.Length;
-				}
-			}
-			return this;
-		}
-
-		/// <inheritdoc />
-		public override DumpWriter Text(char text)
-		{
-			if (Left <= 0)
-				return this;
-			if (CrLfFf.IndexOf(text) < 0)
+			if (text.Length > 0)
 			{
 				_lf = false;
 				_w.Write(text);
 			}
-			else if (!_lf)
-			{
-				_lf = true;
-				_w.Write(_nl);
-			}
-			--Left;
-			return this;
 		}
 	}
 

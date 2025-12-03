@@ -1,4 +1,4 @@
-// Lexxys Infrastructural library.
+﻿// Lexxys Infrastructural library.
 // file: XmlLiteNodeTest.cs
 //
 // Copyright (c) 2001-2014, KRAFT Program LLC.
@@ -75,23 +75,23 @@ namespace Lexxys.Tests.Xml
 			var target = XmlTools.FromXml(rdr, ignoreCase: false);
 			Assert.AreEqual("root", target.Name);
 			Assert.AreEqual("\n\tRoot Value1\n\tRoot Value2\n\tRoot Value3", target.Value);
-			Assert.AreEqual(0, target.Attributes.Count);
-			Assert.AreEqual(2, target.Elements.Count);
-			Assert.AreEqual(2, target.Elements[0].Attributes.Count);
+			Assert.IsEmpty(target.Attributes);
+			Assert.HasCount(2, target.Elements);
+			Assert.HasCount(2, target.Elements[0].Attributes);
 
 			Assert.AreEqual("node1", target.Elements[0].Name);
 			Assert.AreEqual("\n\t\tNode1 Value", target.Elements[0].Value);
 			Assert.AreEqual("a1", target.Elements[0]["a"]);
 			Assert.AreEqual("b1", target.Elements[0]["b"]);
-			Assert.AreEqual(0, target.Elements[0].Elements.Count);
+			Assert.IsEmpty(target.Elements[0].Elements);
 
 			Assert.AreEqual("node2", target.Elements[1].Name);
 			Assert.AreEqual("", target.Elements[1].Value);
-			Assert.AreEqual(3, target.Elements[1].Attributes.Count);
+			Assert.HasCount(3, target.Elements[1].Attributes);
 			Assert.AreEqual("c2", target.Elements[1]["c"]);
 			Assert.AreEqual("d2", target.Elements[1]["d"]);
 			Assert.AreEqual("", target.Elements[1]["e"]);
-			Assert.AreEqual(0, target.Elements[1].Elements.Count);
+			Assert.IsEmpty(target.Elements[1].Elements);
 
 			Assert.IsNull(target.Elements[0]["A"]);
 			Assert.IsNull(target.Elements[0]["c"]);

@@ -45,10 +45,9 @@ namespace Lexxys
 			return new Ref<T>(() => boxed.Value, v => Interlocked.Exchange(ref boxed, new Boxed(v)));
 		}
 
-		private class Boxed
+		private class Boxed(T value)
 		{
-			public readonly T Value;
-			public Boxed(T value) => Value = value;
+			public readonly T Value = value;
 		}
 	}
 

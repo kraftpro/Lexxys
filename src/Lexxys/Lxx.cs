@@ -18,20 +18,24 @@ public static class Lxx
 	private static bool _initialized;
 
 	public const string Framework =
-#if NET9_0_OR_GREATER
+#if NET10_0
+		"net10";
+#elif NET9_0
 		"net9";
-#elif NET8_0_OR_GREATER
+#elif NET8_0
 		"net8";
-#elif NET7_0_OR_GREATER
+#elif NET7_0
 		"net7";
-#elif NET6_0_OR_GREATER
+#elif NET6_0
 		"net6";
-#elif NET5_0_OR_GREATER
+#elif NET5_0
 		"net5";
 #elif NETSTANDARD
 		"standard";
 #elif NETFRAMEWORK
 		"framework";
+#elif NET
+		"net";
 #else
 		"unknown";
 #endif

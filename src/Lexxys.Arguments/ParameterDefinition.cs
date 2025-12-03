@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 
 // ReSharper disable VariableHidesOuterVariable
 // ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
@@ -10,6 +10,9 @@ namespace Lexxys;
 /// </summary>
 public class ParameterDefinition
 {
+	/// <summary>
+	/// Prefix character for hidden abbreviations (not displayed in the usage message).
+	/// </summary>
 	public const char HiddenPrefix = '\r';
 
 	/// <summary>
@@ -24,9 +27,8 @@ public class ParameterDefinition
 	/// <param name="required">Indicates that this is a required parameter.</param>
 	/// <param name="collection">Indicates that this is a collection parameter.</param>
 	/// <param name="toggle">Indicates that this is a switch parameter.</param>
-	/// <param name="unknown">Indicates that this is an unknown parameter.</param>
 	/// <exception cref="ArgumentNullException"></exception>
-	public ParameterDefinition(CommandDefinition command, string name, string[]? abbreviation = null, string? valueName = null, string? description = null, bool positional = false, bool required = false, bool collection = false, bool toggle = false, bool unknown = false)
+	internal ParameterDefinition(CommandDefinition command, string name, string[]? abbreviation = null, string? valueName = null, string? description = null, bool positional = false, bool required = false, bool collection = false, bool toggle = false)
 	{
 		if (command is null) throw new ArgumentNullException(nameof(command));
 		if (name is null) throw new ArgumentNullException(nameof(name));
@@ -40,7 +42,6 @@ public class ParameterDefinition
 		IsRequired = required;
 		IsCollection = collection;
 		IsSwitch = toggle;
-		IsUnknown = unknown;
 
 		static string FixName(string name) => name.Trim().Replace(' ', '-');
 	}
@@ -53,7 +54,9 @@ public class ParameterDefinition
 	/// <summary>
 	/// Abbreviations of the parameter.
 	/// </summary>
-	public string[] Abbreviation { get; }
+	public IReadOnlyList<string> GetAbbreviations() => Abbreviation;
+
+	internal string[] Abbreviation { get; }
 
 	/// <summary>
 	/// Tests if the parameter has any abbreviations.
@@ -95,11 +98,6 @@ public class ParameterDefinition
 	/// </summary>
 	public bool IsSwitch { get; }
 
-	/// <summary>
-	/// Indicates that the parameter was not defined but founds in the arguments list.
-	/// </summary>
-	public bool IsUnknown { get; }
-
 	internal StringBuilder GetParameterName(StringBuilder? text = null, char argumentDelimiter = '\0', bool longDash = false, bool excludeAbbreviation = false)
 	{
 		text ??= new StringBuilder();
@@ -126,57 +124,5 @@ public class ParameterDefinition
 		if (IsCollection)
 			text.Append("[,<...>]");
 		return text;
-	}
-
-	internal bool IsSimilar(string value, StringComparison comparison, bool trimDelimiters)
-		=> IsSimilar(value.AsSpan(), Name.AsSpan(), Strings.SplitByCapitals(Name), 0, comparison, trimDelimiters);
-
-	internal bool IsReverseSimilar(string value, StringComparison comparison, bool trimDelimiters)
-		=> IsSimilar(Name.AsSpan(), value.AsSpan(), Strings.SplitByCapitals(value), 0, comparison, trimDelimiters);
-
-	private static bool IsSimilar(ReadOnlySpan<char> value, ReadOnlySpan<char> name, IList<(int Index, int Length)> parts, int maskIndex, StringComparison comparison, bool trimDelimiters)
-	{
-		if (value.Length == 0)
-			return maskIndex == parts.Count;
-
-		bool hasDelimiter = IsDelimiter(value[0]);
-		if (hasDelimiter)
-			value = TrimDelimiters(value);
-
-		var mask = name.Slice(parts[maskIndex].Index, parts[maskIndex].Length);
-		if (IsDelimiters(mask))
-			return (hasDelimiter || trimDelimiters) && IsSimilar(value, name, parts, maskIndex + 1, comparison, trimDelimiters);
-
-		if (maskIndex == parts.Count - 1)
-			return mask.StartsWith(value, comparison);
-
-		for (int i = 1; i <= mask.Length && i <= value.Length; ++i)
-		{
-			if (!mask.StartsWith(value.Slice(0, i), comparison))
-				return false;
-			if (IsSimilar(value.Slice(i), name, parts, maskIndex + 1, comparison, trimDelimiters))
-				return true;
-		}
-		return false;
-
-		static bool IsDelimiters(ReadOnlySpan<char> value)
-		{
-			foreach (var c in value)
-			{
-				if (!IsDelimiter(c))
-					return false;
-			}
-			return true;
-		}
-
-		static ReadOnlySpan<char> TrimDelimiters(ReadOnlySpan<char> value)
-		{
-			while (value.Length > 0 && IsDelimiter(value[0]))
-				value = value.Slice(1);
-			return value;
-		}
-
-		static bool IsDelimiter(char value)
-			=> value is '-' or '_' or ' ';
 	}
 }

@@ -1,11 +1,11 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 
-namespace Lexxys.Arguments.Generator;
+namespace Lexxys.Argument.Generator;
 
 [Generator]
 public class ArgumentCodeGen: IIncrementalGenerator
@@ -14,6 +14,11 @@ public class ArgumentCodeGen: IIncrementalGenerator
 	private const string CliParameters = "CliParameters";
 	private const string CliCommand = "CliCommand";
 	private const string CliOption = "CliOption";
+	public const string ArgumentsType = "Arguments";
+	public const string ParsedArgumentsType = ArgumentsType;
+	public const string ArgumentsInterfaceType = "IArguments";
+
+	public const string IndentString = "\t";
 
 	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
@@ -25,14 +30,6 @@ public class ArgumentCodeGen: IIncrementalGenerator
 
 		context.RegisterSourceOutput(syntaxProvider, Execute);
 	}
-
-	// private static readonly DiagnosticDescriptor CollectedArgumentWarning = new DiagnosticDescriptor(
-	// 	id: "ARG001",
-	// 	title: "Couldn't parse XML file",
-	// 	messageFormat: "Collected attribute: '{0}'",
-	// 	category: "Design",
-	// 	DiagnosticSeverity.Warning,
-	// 	isEnabledByDefault: true);
 
 	public void Execute(SourceProductionContext context, ImmutableArray<AttributeSyntax> attributes)
 	{
@@ -78,14 +75,21 @@ public class ArgumentCodeGen: IIncrementalGenerator
 					--indent;
 					text.Indent(indent).Append("}").AppendLine();
 				}
-				text.AppendLine()
-					.Append("namespace ").Append(lastNamespace).AppendLine()
-					.AppendLine("{");
-				indent = 1;
+				text.AppendLine();
+				if (lastNamespace.Length > 0)
+				{
+					text.Append("namespace ").Append(lastNamespace).AppendLine()
+						.AppendLine("{");
+					indent = 1;
+				}
+				else
+				{
+					indent = 0;
+				}
 			}
 			else
 			{
-				while (!thisName.StartsWith(lastName + "+"))
+				while (lastName.Length > 0 && !thisName.StartsWith(lastName + "+"))
 				{
 					--indent;
 					i = lastName.LastIndexOf('+');
@@ -105,7 +109,7 @@ public class ArgumentCodeGen: IIncrementalGenerator
 			i = name.IndexOf('+');
 			while (i > 0)
 			{
-				text.Indent(indent).Append("partial class ").Append(name, 0, i).AppendLine();
+				text.Indent(indent).Append(model.Accessibility).Append("partial class ").Append(name, 0, i).AppendLine();
 				name = name.Substring(i + 1);
 				i = name.IndexOf('+');
 				++indent;
@@ -126,33 +130,52 @@ public class ArgumentCodeGen: IIncrementalGenerator
 
 	private static void GenerateClass(int indent, StringBuilder text, ArgumentClassModel model)
 	{
-		text.Indent(indent).AppendLine($"partial class {model.Name}: {CliOptionInterface}<{model.Name}>");
+		text.Indent(indent).Append(model.Accessibility).AppendLine($"partial class {model.Name}: {CliOptionInterface}<{model.Name}>");
 		text.Indent(indent).AppendLine("{");
 		++indent;
-		text.Indent(indent).AppendLine($"public static ParsedArguments<{model.Name}> Parse(IReadOnlyCollection<string> args, ArgumentsBuilderSettings settings) => Parse(args, new ArgumentsBuilder(settings));");
-		text.AppendLine();
-		text.Indent(indent).AppendLine($"public static ParsedArguments<{model.Name}> Parse(IReadOnlyCollection<string> args, ArgumentsBuilder? builder = null)");
+		text.Indent(indent).AppendLine($"public static {ParsedArgumentsType}<{model.Name}> Parse(IReadOnlyCollection<string> args)");
 		text.Indent(indent).AppendLine("{");
 		++indent;
-		text.Indent(indent).AppendLine("Arguments arguments = CreateBuilder(builder).Build(args);");
+		text.Indent(indent).AppendLine($"{ArgumentsType} arguments = {ArgumentsType}.Parse(args, CreateBuilder());");
 		text.Indent(indent).AppendLine("var error = new List<string>();");
 		text.Indent(indent).AppendLine("var obj = Parse(arguments, error);");
-		text.Indent(indent).AppendLine($"return new ParsedArguments<{model.Name}>(arguments, obj, error);");
+		text.Indent(indent).AppendLine($"return new {ParsedArgumentsType}<{model.Name}>(arguments, obj, error);");
 		--indent;
 		text.Indent(indent).AppendLine("}");
 		text.AppendLine();
-		text.Indent(indent).AppendLine($"public static {model.Name} Parse(IArgumentCommand cmd, ICollection<string>? error = null)");
+		text.Indent(indent).AppendLine($"public static {model.Name} Parse({ArgumentsInterfaceType} cmd, ICollection<string>? error = null)");
 		text.Indent(indent).AppendLine("{");
 		++indent;
 
 		text.Indent(indent).AppendLine("if (cmd is null) throw new ArgumentNullException(nameof(cmd));").AppendLine();
-
+		CliArgumentsModel? cliArguments = model.Attribute;
 		int k = 0;
 		foreach (var item in model.Properties)
 		{
 			if (item.IsCommand) continue;
-			text.Indent(indent).Append("cmd.Parameters.TryGetValue<").Append(item.Type)
-				.Append(">(\"").AppendArgName(item.Name).Append("\", out var p").Append(++k).AppendLine(", error);");
+			var collectionType = GetCollectionElementType(item.Type);
+			if (collectionType is null)
+			{
+				text.Indent(indent).Append("cmd.TryGetValue<").Append(item.Type)
+					.Append(">(")
+					.AppendArgumentName(item, cliArguments)
+					.Append(", out var p").Append(++k).AppendLine(", errors: error);");
+				//text.Indent(indent).Append("cmd.Parameters.TryGetValue<").Append(item.Type)
+				//	.Append(">(");
+				//AppendArgumentName(text, item, "cmd.Definition.NamingStyle")
+				//	.Append(", out var p").Append(++k).AppendLine(", error);");
+			}
+			else
+			{
+				text.Indent(indent).Append("cmd.TryGetCollection<").Append(collectionType)
+					.Append(">(")
+					.AppendArgumentName(item, cliArguments)
+					.Append(", out var p").Append(++k).AppendLine(", errors: error);");
+				//text.Indent(indent).Append("cmd.Parameters.TryGetCollection<").Append(collectionType)
+				//	.Append(">(");
+				//AppendArgumentName(text, item, "cmd.Definition.NamingStyle")
+				//	.Append(", out var p").Append(++k).AppendLine(", error);");
+			}
 		}
 		text.Indent(indent).Append("return new ").AppendLine(model.Name)
 			.Indent(indent).AppendLine("{");
@@ -162,14 +185,16 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		foreach (var item in model.Properties)
 		{
 			if (item.IsCommand) continue;
-			text.Indent(indent).Append(item.Name).Append(" = p").Append(++k).AppendLine(",");
+			text.Indent(indent).Append(item.MemberName).Append(" = ");
+			AppendCollectionAssignment(text, item.Type, "p" + ++k).AppendLine(",");
 		}
 		foreach (var item in model.Properties)
 		{
 			if (!item.IsCommand) continue;
-			text.Indent(indent).Append(item.Name)
-				.Append(" = cmd.Command?.Name == \"").AppendArgName(item.Name).Append("\" ? ")
-				.Append(item.Type?.TrimEnd('?')).AppendLine(".Parse(cmd.Command, error): null,");
+			text.Indent(indent).Append(item.MemberName)
+				.Append(" = cmd.Command?.Name == ")
+				.AppendArgumentName(item, cliArguments)
+				.Append(" ? ").Append(item.Type?.TrimEnd('?')).AppendLine(".Parse(cmd.Command, error): null,");
 		}
 		--indent;
 		text.Indent(indent).AppendLine("};");
@@ -188,24 +213,67 @@ public class ArgumentCodeGen: IIncrementalGenerator
 			aliases = [.. aliases.Distinct(AliasEqualityComparer.Instance)];
 		}
 
-		text.AppendLine();
-		text.Indent(indent).AppendLine("public static ArgumentsBuilder CreateBuilder(ArgumentsBuilderSettings settings) => CreateBuilder(new ArgumentsBuilder(settings));");
+		//text.AppendLine();
+		//text.Indent(indent).AppendLine("public static ArgumentsBuilder CreateBuilder(ArgumentsConfig config) => CreateBuilder(new ArgumentsBuilder(config));");
 
 		text.AppendLine();
-		text.Indent(indent).Append("public static ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null) => (builder ?? new ArgumentsBuilder())");
+		text.Indent(indent).AppendLine("public static ArgumentsBuilder CreateBuilder(ArgumentsBuilder? builder = null)");
+		text.Indent(indent).AppendLine("{");
+		++indent;
+		text.Indent(indent).Append("builder ??= new ArgumentsBuilder(");
+		AppendSettings(text, model.Attribute).AppendLine(");");
+		text.Indent(indent).Append("return builder");
 		foreach (var item in model.Properties)
 		{
 			if (item.IsCommand) continue;
 			var attrib = item.ParamAttribute;
-			text.AppendLine()
-				.Append('\t', indent + 1).Append(".Parameter(\"").AppendArgName(item.Name).Append('"');
-			if (attrib?.Alias is { Length: > 0 })
-				text.Append(", __aliases[").Append(aliases.FindIndex(o => AliasEqualityComparer.Instance.Equals(o, attrib.Alias))).Append(']');
-			if (attrib?.ValueName is { Length: > 0 })
-				text.Append(", valueName: ").Append(attrib.ValueName);
-			if (attrib?.Description is { Length: > 0 })
-				text.Append(", description: ").Append(attrib.Description);
-			text.Append(')');
+
+			bool positional = IsTrueLiteral(attrib?.Positional);
+			bool required = IsTrueLiteral(attrib?.Required);
+			bool collection = GetCollectionElementType(item.Type) is not null;
+			bool toggle = IsSwitchType(item.Type);
+
+			text.AppendLine().Append('\t', indent + 1);
+			if (positional)
+			{
+				text.Append(".Positional(")
+					.AppendArgumentName(item, cliArguments);
+				if (attrib?.Description is { Length: > 0 })
+					text.Append(", description: ").Append(attrib.Description);
+				if (attrib?.ValueName is { Length: > 0 })
+					text.Append(", valueName: ").Append(attrib.ValueName);
+				if (collection)
+					text.Append(", collection: true");
+				if (required)
+					text.Append(", required: true");
+				text.Append(')');
+			}
+			else if (toggle)
+			{
+				text.Append(".Switch(")
+					.AppendArgumentName(item, cliArguments);
+				if (attrib?.Alias is { Length: > 0 })
+					text.Append(", __aliases[").Append(aliases.FindIndex(o => AliasEqualityComparer.Instance.Equals(o, attrib.Alias))).Append(']');
+				if (attrib?.Description is { Length: > 0 })
+					text.Append(", description: ").Append(attrib.Description);
+				text.Append(')');
+			}
+			else
+			{
+				text.Append(".Parameter(")
+					.AppendArgumentName(item, cliArguments);
+				if (attrib?.Alias is { Length: > 0 })
+					text.Append(", __aliases[").Append(aliases.FindIndex(o => AliasEqualityComparer.Instance.Equals(o, attrib.Alias))).Append(']');
+				if (attrib?.ValueName is { Length: > 0 })
+					text.Append(", valueName: ").Append(attrib.ValueName);
+				if (attrib?.Description is { Length: > 0 })
+					text.Append(", description: ").Append(attrib.Description);
+				if (collection)
+					text.Append(", collection: true");
+				if (required)
+					text.Append(", required: true");
+				text.Append(')');
+			}
 		}
 
 		foreach (var item in model.Properties)
@@ -214,8 +282,8 @@ public class ArgumentCodeGen: IIncrementalGenerator
 			var attrib = item.CommandAttribute;
 			text.AppendLine()
 				.Append('\t', indent + 1)
-				.Append(".Command<").Append(item.Type?.TrimEnd('?')).Append($">(\"")
-				.AppendArgName(item.Name).Append('"');
+				.Append(".Command<").Append(item.Type?.TrimEnd('?')).Append(">(")
+				.AppendArgumentName(item, cliArguments);
 			if (attrib?.Alias is { Length: > 0 })
 				text.Append(", __aliases[").Append(aliases.FindIndex(o => AliasEqualityComparer.Instance.Equals(o, attrib.Alias))).Append(']');
 			if (attrib?.Description is { Length: > 0 })
@@ -223,6 +291,8 @@ public class ArgumentCodeGen: IIncrementalGenerator
 			text.Append(')');
 		}
 		text.AppendLine(";");
+		--indent;
+		text.Indent(indent).AppendLine("}");
 
 		if (aliases.Count > 0)
 		{
@@ -235,6 +305,118 @@ public class ArgumentCodeGen: IIncrementalGenerator
 			}
 			text.AppendLine("]];");
 		}
+
+		static bool IsTrueLiteral(string? value)
+			=> value is not null && String.Equals(value.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+
+		static bool IsSwitchType(string? typeName)
+		{
+			if (String.IsNullOrWhiteSpace(typeName))
+				return false;
+			var type = typeName!.Trim().TrimEnd('?');
+			return type is "bool" or "Boolean" or "System.Boolean";
+		}
+
+		static string? GetCollectionElementType(string? typeName)
+		{
+			if (String.IsNullOrWhiteSpace(typeName))
+				return null;
+
+			var type = typeName!.Trim().TrimEnd('?');
+			if (String.Equals(type, "string", StringComparison.OrdinalIgnoreCase) || String.Equals(type, "System.String", StringComparison.Ordinal))
+				return null;
+
+			if (type.EndsWith("[]", StringComparison.Ordinal))
+				return type.Substring(0, type.Length - 2);
+
+			var i = type.IndexOf('<');
+			if (i < 0 || !type.EndsWith(">", StringComparison.Ordinal))
+				return null;
+
+			var genericName = type.Substring(0, i);
+			var elementType = type.Substring(i + 1, type.Length - i - 2);
+
+			return genericName is "IEnumerable" or "System.Collections.Generic.IEnumerable"
+				or "IReadOnlyCollection" or "System.Collections.Generic.IReadOnlyCollection"
+				or "IReadOnlyList" or "System.Collections.Generic.IReadOnlyList"
+				or "ICollection" or "System.Collections.Generic.ICollection"
+				or "IList" or "System.Collections.Generic.IList"
+				or "List" or "System.Collections.Generic.List"
+				or "HashSet" or "System.Collections.Generic.HashSet"
+				? elementType
+				: null;
+		}
+
+		static StringBuilder AppendCollectionAssignment(StringBuilder text, string? typeName, string variableName)
+		{
+			var elementType = GetCollectionElementType(typeName);
+			if (elementType is null)
+				return text.Append(variableName);
+
+			var type = typeName!.Trim().TrimEnd('?');
+			if (type.EndsWith("[]", StringComparison.Ordinal)
+				|| type.StartsWith("IEnumerable<", StringComparison.Ordinal)
+				|| type.StartsWith("System.Collections.Generic.IEnumerable<", StringComparison.Ordinal)
+				|| type.StartsWith("IReadOnlyCollection<", StringComparison.Ordinal)
+				|| type.StartsWith("System.Collections.Generic.IReadOnlyCollection<", StringComparison.Ordinal)
+				|| type.StartsWith("IReadOnlyList<", StringComparison.Ordinal)
+				|| type.StartsWith("System.Collections.Generic.IReadOnlyList<", StringComparison.Ordinal)
+				|| type.StartsWith("ICollection<", StringComparison.Ordinal)
+				|| type.StartsWith("System.Collections.Generic.ICollection<", StringComparison.Ordinal)
+				|| type.StartsWith("IList<", StringComparison.Ordinal)
+				|| type.StartsWith("System.Collections.Generic.IList<", StringComparison.Ordinal))
+				return text.Append(variableName);
+
+			if (type.StartsWith("HashSet<", StringComparison.Ordinal) || type.StartsWith("System.Collections.Generic.HashSet<", StringComparison.Ordinal))
+				return text.Append("new HashSet<").Append(elementType).Append(">(").Append(variableName).Append(')');
+
+			return text.Append(variableName).Append(".ToList()");
+		}
+
+		static StringBuilder AppendSettings(StringBuilder text, CliArgumentsModel? model)
+		{
+			if (model is null)
+				return text.Append("ArgumentsConfig.Default");
+
+			var values = new (string Name, string? Value)[]
+			{
+				(nameof(CliArgumentsModel.IgnoreCase), model.IgnoreCase),
+				(nameof(CliArgumentsModel.AllowSlash), model.AllowSlash),
+				(nameof(CliArgumentsModel.Strict), model.Strict),
+				(nameof(CliArgumentsModel.AllowUnknown), model.AllowUnknown),
+				(nameof(CliArgumentsModel.ColonSeparator), model.ColonSeparator),
+				(nameof(CliArgumentsModel.EqualSeparator), model.EqualSeparator),
+				(nameof(CliArgumentsModel.BlankSeparator), model.BlankSeparator),
+				(nameof(CliArgumentsModel.NamingStyle), model.NamingStyle),
+				(nameof(CliArgumentsModel.MatchingType), model.MatchingType),
+			};
+			if (values.All(o => String.IsNullOrEmpty(o.Value)))
+				return text.Append("ArgumentsConfig.Default");
+
+			text.Append("new ArgumentsConfig { ");
+			bool first = true;
+			foreach (var (name, value) in values)
+			{
+				if (value is not { Length: > 0 })
+					continue;
+				if (first)
+					first = false;
+				else
+					text.Append(", ");
+				text.Append(name).Append(" = ").Append(value);
+			}
+			return text.Append(" }");
+		}
+
+		//static StringBuilder AppendArgumentName(StringBuilder text, ArgumentPropertyModel item, string namingStyle)
+		//{
+		//	if (item.ExplicitName is not null)
+		//		return text.Append(Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(item.ExplicitName, quote: true));
+
+		//	return text.Append($"{ArgumentsType}.FormatArgumentName(")
+		//		.Append(Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(item.MemberName ?? String.Empty, quote: true))
+		//		.Append(", ").Append(namingStyle).Append(')');
+		//}
 	}
 
 	class ModelsComparer: IComparer<(ArgumentClassModel Model, List<string>)>, IComparer<ArgumentClassModel>
@@ -277,7 +459,7 @@ public class ArgumentCodeGen: IIncrementalGenerator
 			return null;
 		var className = classDeclaration.Identifier.ValueText;
 		var classNameSpace = GetNameSpace(classDeclaration);
-		var classRecord = new ArgumentClassModel(className, classNameSpace, argAttribute);
+		var classRecord = new ArgumentClassModel(className, classNameSpace, GetAccessibility(classDeclaration.Modifiers), argAttribute);
 
 		foreach (var member in classDeclaration.Members)
 		{
@@ -298,9 +480,12 @@ public class ArgumentCodeGen: IIncrementalGenerator
 				if (!CheckModifiers(field.Modifiers))
 					continue;
 				var propertyType = field.Declaration.Type;
-				var propertyName = field.Declaration.ToString();
-				ArgumentPropertyModel arg = new ArgumentPropertyModel(name: propertyName, propertyType.ToString(), paramAttribute, commandAttribute);
-				classRecord.Properties.Add(arg);
+				foreach (var variable in field.Declaration.Variables)
+				{
+					var propertyName = variable.Identifier.ValueText;
+					ArgumentPropertyModel arg = new ArgumentPropertyModel(name: propertyName, propertyType.ToString(), paramAttribute, commandAttribute);
+					classRecord.Properties.Add(arg);
+				}
 			}
 
 			static bool CheckModifiers(SyntaxTokenList modifiers)
@@ -326,11 +511,11 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		AttributeSyntax? attrib = member.AttributeLists.SelectMany(o => o.Attributes).FirstOrDefault(a => a.Name.ToString() is CliCommand or CliCommand + "Attribute");
 		if (attrib == null) return null;
 
-		string[] alias = GetAliasParameter(attrib);
 		IDictionary<string, string> optional = GetFieldsAssignment(attrib);
+		string[] alias = optional.TryGetValue("Alias", out var aliasExpression) ? GetAliasValues(aliasExpression): GetAliasParameter(attrib);
 
 		var pm = new CliCommandModel(
-			Name: optional.GetValueOrDefault("Name"),
+			Name: GetStringValue(optional.GetValueOrDefault("Name")),
 			Alias: alias,
 			Description: optional.GetValueOrDefault("Description"));
 		return pm;
@@ -382,11 +567,11 @@ public class ArgumentCodeGen: IIncrementalGenerator
 		AttributeSyntax? attrib = member.AttributeLists.SelectMany(o => o.Attributes).FirstOrDefault(a => a.Name.ToString() is CliOption or CliOption + "Attribute");
 		if (attrib == null) return null;
 
-		string[] alias = GetAliasParameter(attrib);
 		IDictionary<string, string> optional = GetFieldsAssignment(attrib);
+		string[] alias = optional.TryGetValue("Alias", out var aliasExpression) ? GetAliasValues(aliasExpression): GetAliasParameter(attrib);
 
 		var pm = new CliParamModel(
-			Name: optional.GetValueOrDefault("Name"),
+			Name: GetStringValue(optional.GetValueOrDefault("Name")),
 			Alias: alias,
 			ValueName: optional.GetValueOrDefault("ValueName"),
 			Description: optional.GetValueOrDefault("Description"),
@@ -412,13 +597,60 @@ public class ArgumentCodeGen: IIncrementalGenerator
 			NamespaceDeclarationSyntax ns => ns.Name.ToString(),
 			FileScopedNamespaceDeclarationSyntax fns => fns.Name.ToString(),
 			ClassDeclarationSyntax cls => GetNameSpace(cls) + "+" + cls.Identifier.ValueText,
-			_ => "namespace"
+			_ => String.Empty
 		};
+	}
+
+	private static string GetAccessibility(SyntaxTokenList modifiers)
+	{
+		foreach (var item in modifiers)
+		{
+			if (item.ValueText is "public" or "internal" or "protected" or "private")
+				return item.ValueText + " ";
+		}
+		return String.Empty;
 	}
 
 	private CliArgumentsModel HandleCliArgumentsAttribute(AttributeSyntax attrib)
 	{
-		return new CliArgumentsModel();
+		var optional = GetFieldsAssignment(attrib);
+		return new CliArgumentsModel(
+			IgnoreCase: optional.GetValueOrDefault("IgnoreCase"),
+			AllowSlash: optional.GetValueOrDefault("AllowSlash"),
+			Strict: optional.GetValueOrDefault("Strict"),
+			AllowUnknown: optional.GetValueOrDefault("AllowUnknown"),
+			ColonSeparator: optional.GetValueOrDefault("ColonSeparator"),
+			EqualSeparator: optional.GetValueOrDefault("EqualSeparator"),
+			BlankSeparator: optional.GetValueOrDefault("BlankSeparator"),
+			NamingStyle: optional.GetValueOrDefault("NamingStyle"),
+			MatchingType: optional.GetValueOrDefault("MatchingType"));
+	}
+
+	private static string? GetStringValue(string? expression)
+	{
+		if (expression is not { Length: > 1 })
+			return expression;
+		expression = expression.Trim();
+		return expression.Length > 1 && expression[0] == '"' && expression[expression.Length - 1] == '"'
+			? expression.Substring(1, expression.Length - 2)
+			: expression;
+	}
+
+	private static string[] GetAliasValues(string expression)
+	{
+		expression = expression.Trim();
+		if (expression.Length == 0)
+			return [];
+		if (expression[0] == '[' && expression[expression.Length - 1] == ']')
+			expression = expression.Substring(1, expression.Length - 2);
+		else if (expression.StartsWith("new[]", StringComparison.Ordinal))
+		{
+			var i = expression.IndexOf('{');
+			var j = expression.LastIndexOf('}');
+			expression = i < 0 || j <= i ? String.Empty: expression.Substring(i + 1, j - i - 1);
+		}
+
+		return [.. expression.Split([','], StringSplitOptions.RemoveEmptyEntries).Select(o => o.Trim())];
 	}
 
 	class SyntaxReceiver: ISyntaxReceiver

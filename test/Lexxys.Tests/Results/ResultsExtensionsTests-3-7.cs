@@ -354,7 +354,7 @@ public class ResultExtensionsTests_3_7
 		var result = new SuccessResult<int>(10);
 
 		// Act
-		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("Value should be positive", [], null, 0));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("Value should be positive", 0, null, []));
 
 		// Assert
 		Assert.IsTrue(asserted.IsSuccess);
@@ -368,7 +368,7 @@ public class ResultExtensionsTests_3_7
 		var result = new SuccessResult<int>(-5);
 
 		// Act
-		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("Value should be positive", [], null, 0));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("Value should be positive", 0, null, []));
 
 		// Assert
 		Assert.IsTrue(asserted.IsFailure);
@@ -379,11 +379,11 @@ public class ResultExtensionsTests_3_7
 	public void Assert_WhenFailure_ReturnsOriginalError()
 	{
 		// Arrange
-		var error = new ErrorResult("Original error", [], null, 0);
+		var error = new ErrorResult("Original error", 0, null);
 		var result = new FailureResult<int>(error);
 
 		// Act
-		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("Value should be positive", [], null, 0));
+		var asserted = result.Assert(x => x > 0 ? null: new ErrorResult("Value should be positive", 0, null, []));
 
 		// Assert
 		Assert.IsTrue(asserted.IsFailure);
@@ -397,7 +397,7 @@ public class ResultExtensionsTests_3_7
 		var result = new SuccessResult<int>(10);
 
 		// Act
-		var asserted = result.Assert(x => x > 0, () => new ErrorResult("Value should be positive", [], null, 0));
+		var asserted = result.Assert(x => x > 0, _ => new ErrorResult("Value should be positive", 0, null, []));
 
 		// Assert
 		Assert.IsTrue(asserted.IsSuccess);
@@ -411,7 +411,7 @@ public class ResultExtensionsTests_3_7
 		var result = new SuccessResult<int>(-5);
 
 		// Act
-		var asserted = result.Assert(x => x > 0, () => new ErrorResult("Value should be positive", [], null, 0));
+		var asserted = result.Assert(x => x > 0, _ => new ErrorResult("Value should be positive", 0, null, []));
 
 		// Assert
 		Assert.IsTrue(asserted.IsFailure);
@@ -422,11 +422,11 @@ public class ResultExtensionsTests_3_7
 	public void Assert_WithErrorFunc_WhenFailure_ReturnsOriginalError()
 	{
 		// Arrange
-		var error = new ErrorResult("Original error", [], null, 0);
+		var error = new ErrorResult("Original error", 0, null);
 		var result = new FailureResult<int>(error);
 
 		// Act
-		var asserted = result.Assert(x => x > 0, () => new ErrorResult("Value should be positive", [], null, 0));
+		var asserted = result.Assert(x => x > 0, _ => new ErrorResult("Value should be positive", 0, null, []));
 
 		// Assert
 		Assert.IsTrue(asserted.IsFailure);
@@ -460,7 +460,7 @@ public class ResultExtensionsTests_3_7
 		Assert.IsTrue(asserted.IsFailure);
 		Assert.AreEqual("Value should not be empty", asserted.Error.Message);
 		Assert.AreEqual("Validation Error", asserted.Error.Title);
-		Assert.AreEqual(400, asserted.Error.StatusCode);
+		Assert.AreEqual(400, asserted.Error.ErrorCode);
 		Assert.AreEqual("value", asserted.Error.Data["field"]);
 	}
 
@@ -468,7 +468,7 @@ public class ResultExtensionsTests_3_7
 	public void Assert_WithErrorMessage_WhenFailure_ReturnsOriginalError()
 	{
 		// Arrange
-		var error = new ErrorResult("Original error", [], null, 0);
+		var error = new ErrorResult("Original error", 0, null);
 		var result = new FailureResult<string>(error);
 
 		// Act
@@ -513,7 +513,7 @@ public class ResultExtensionsTests_3_7
 		// Act
 		var finalResult = await result
 			.Then(x => new SuccessResult<int>(x * 2))
-			.Assert(x => x > 15 ? null: new ErrorResult("Value too small", [], null, 0))
+			.Assert(x => x > 15 ? null: new ErrorResult("Value too small", 0, null, []))
 			.Then(async x => {
 				await Task.Delay(1);
 				return Result.Success(x + 1);

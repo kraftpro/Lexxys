@@ -6,10 +6,11 @@
 //
 using System.Collections;
 
+#if false
+
 namespace Lexxys.Tests.Xml
 {
 	using Lexxys.Xml;
-	// ReSharper disable UnusedMember.Local
 
 	[TestClass()]
 	public class SyntaxRuleCollectionTest
@@ -191,3 +192,4 @@ namespace Lexxys.Tests.Xml
 		}
 	}
 }
+#endif

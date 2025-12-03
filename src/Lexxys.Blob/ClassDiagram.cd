@@ -1,0 +1,101 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Lexxys.BlobStorageFactory">
+    <Position X="8.5" Y="6" Width="2" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAAAACAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAIAAA=</HashCode>
+      <FileName>BlobStorageFactory.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Lexxys.PathFormatter">
+    <Position X="7" Y="10.5" Width="2" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <NestedTypes>
+      <Class Name="Lexxys.PathFormatter.Fmt" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>PathFormatter.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAAAQAAIAABCAAAAIAIQAFAAAAAAAAIAABBBAAQEA=</HashCode>
+      <FileName>PathFormatter.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Lexxys.FileStorageService">
+    <Position X="10.25" Y="9.75" Width="2" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <NestedTypes>
+      <Class Name="Lexxys.FileStorageService.LocalFileInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>FileStorageService.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>EAAEAAAAgCAAQQCEACACAAEBAAACAIAAAAEACAAAAAg=</HashCode>
+      <FileName>FileStorageService.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Lexxys.BlobStorageExtensions">
+    <Position X="0.5" Y="6.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAICAAAABAAAAAAAAAAAAABAAAAAAAA=</HashCode>
+      <FileName>BlobStorageExtensions.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="Lexxys.IBlobNameFormatter">
+    <Position X="5.75" Y="0.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>IBlobNameFormatter.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Lexxys.IBlobStorageFactory">
+    <Position X="0.5" Y="0.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAA=</HashCode>
+      <FileName>IBlobStorageFactory.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Lexxys.IBlobInfo">
+    <Position X="0.5" Y="2.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAAAAAAAIAAAAAAABCAAAQAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>IBlobInfo.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Lexxys.IBlobStorageService">
+    <Position X="3" Y="0.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAAQACEACACAAEBAAAAAAAAAAEACAAAAAg=</HashCode>
+      <FileName>IBlobStorageService.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Enum Name="Lexxys.DirectoryGenerationMode">
+    <Position X="2" Y="11" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAAAEAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>DirectoryGenerationMode.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Lexxys.BlobWriteMode" Collapsed="true">
+    <Position X="10" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAACAAAAAIAAAAAAAAUAAAAAAAAAAAAA=</HashCode>
+      <FileName>BlobWriteMode.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

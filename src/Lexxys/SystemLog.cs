@@ -1,6 +1,6 @@
-using System.Collections;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Lexxys;
 #pragma warning disable CA1416 // Validate platform compatibility
@@ -122,23 +122,24 @@ public static class SystemLog
 
 	private static string Format(LogType type, string? source, string? message, IEnumerable<NameValueTuple<string, object?>>? arguments)
 	{
-		var dump = new DumpStringWriter();
-		dump.Text('[').Text(type.ToString().ToUpperInvariant()).Text(']');
+		var dump = new DumpStringWriter(DumpOptions);
+		var text = dump.GetBuffer();
+		text.Append('[').Append(type.ToString().ToUpperInvariant()).Append(']');
 		if (source != null)
 			if (message != null)
-				dump.Text(source).Text(": ").Text(message).Text('\n');
+				text.Append(source).Append(": ").Append(message).Append('\n');
 			else
-				dump.Text(source).Text(":\n");
+				text.Append(source).Append(":\n");
 		else if (message != null)
-			dump.Text(message).Text('\n');
+			text.Append(message).Append('\n');
 		else
-			dump.Text('\n');
+			text.Append('\n');
 
 		if (arguments != null)
 		{
 			foreach (var item in arguments)
 			{
-				dump.Text(item.Name ?? "(null)").Text('=').Dump(item.Value).Text('\n');
+				dump.Write(item.Name, item.Value);
 			}
 		}
 		return dump.ToString();
@@ -146,40 +147,51 @@ public static class SystemLog
 
 	private static string Format(LogType type, string? source, Exception exception, IEnumerable<NameValueTuple<string, object?>>? arguments)
 	{
-		var dump = new DumpStringWriter();
-		dump.Text('[').Text(type.ToString().ToUpperInvariant()).Text(']');
-		Format(dump, source, exception);
+		var dump = new DumpStringWriter(DumpOptions);
+		StringBuilder text = dump.GetBuffer();
+		text.Append('[').Append(type.ToString().ToUpperInvariant()).Append(']');
+		Format(text, source, exception);
 		if (arguments != null)
 		{
 			foreach (var item in arguments)
 			{
-				dump.Text(item.Name ?? "(null)").Text('=').Dump(item.Value).Text('\n');
+				dump.Write(item.Name, item.Value);
 			}
 		}
 		return dump.ToString();
 	}
+	private static readonly DumpWriterOptions DumpOptions = new DumpWriterOptions
+	{
+		MaxLength = 0,
+		MaxDepth = 5,
+		StringMaxLength = 1000,
+		BinaryMaxLength = 256,
+		ArrayMaxLength = 100,
+		Compact = false,
+		FormatIndentation = true,
+	};
 
-	private static void Format(DumpWriter dump, string? source, Exception exception)
+	private static void Format(StringBuilder text, string? source, Exception exception)
 	{
 		source ??= exception.Source;
 		string message = exception.Message;
 		if (source != null)
-			dump.Text(source).Text(": ");
-		dump.Text(message).Text('\n');
+			text.Append(source).Append(": ");
+		text.Append(message).Append('\n');
 		if (exception.StackTrace != null)
 		{
-			dump.Text(exception.StackTrace).Text('\n');
+			text.Append(exception.StackTrace).Append('\n');
 		}
 		if (exception is AggregateException { InnerExceptions.Count: >0 } aggregate)
 		{
 			foreach (var item in aggregate.InnerExceptions)
 			{
-				Format(dump, null, item);
+				Format(text, null, item);
 			}
 		}
 		else if (exception.InnerException != null)
 		{
-			Format(dump, null, exception.InnerException);
+			Format(text, null, exception.InnerException);
 		}
 	}
 }

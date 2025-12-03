@@ -943,13 +943,13 @@ public static partial class Strings
 	{
 		if (value is not { Length: >0 })
 			throw new ArgumentNullException(nameof(value));
-		return TryGetEnum(value, enumType, out object? result) ? result: throw new FormatException(SR.FormatException(value));
+		return TryGetEnum(value, enumType, out object result) ? result: throw new FormatException(SR.FormatException(value));
 	}
 
 	[return: NotNullIfNotNull(nameof(defaultValue))]
 	public static object? GetEnum(string? value, Type enumType, object? defaultValue)
 	{
-		return TryGetEnum(value, enumType, out object? result) ? result: defaultValue;
+		return TryGetEnum(value, enumType, out object result) ? result: defaultValue;
 	}
 
 	public static bool TryGetEnum([NotNullWhen(true)] string? value, Type enumType, out object result)

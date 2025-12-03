@@ -116,7 +116,7 @@ public static class CollectionExtensions
 		{
 			IReadOnlyList<T> irol => irol,
 			IList<T> il => ReadOnly.Wrap(il)!,
-			_ => value.ToList()
+			_ => [.. value]
 		};
 	}
 
@@ -133,7 +133,7 @@ public static class CollectionExtensions
 		{
 			IReadOnlyCollection<T> iroc => iroc,
 			ICollection<T> ic => ReadOnly.Wrap(ic)!,
-			_ => value.ToList()
+			_ => [.. value]
 		};
 	}
 

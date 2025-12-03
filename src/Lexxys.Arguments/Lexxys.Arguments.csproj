@@ -1,23 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net9.0;net8.0;netstandard2.0;net462</TargetFrameworks>
+    <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
     <RootNamespace>Lexxys</RootNamespace>
     <LangVersion>preview</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
+    <ProjectReference Include="..\Lexxys.Arguments.Generator\Lexxys.Arguments.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Lexxys\Lexxys.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.*" PrivateAssets="all" />
-  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName).Tests" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Lexxys\.editorconfig" Link=".editorconfig" />
+    <InternalsVisibleTo Include="$(AssemblyName).Generator.Tests" />
   </ItemGroup>
 
 </Project>
