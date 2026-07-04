@@ -72,7 +72,7 @@ public class XmlDumpWriterBehaviorTests
 			Alias = shared,
 		});
 
-		Assert.AreEqual("<Object><Parent><Child/></Parent><Alias>$ref$:Parent.Child</Alias></Object>", writer.ToString());
+		Assert.AreEqual("<object><Parent><Child/></Parent><Alias>$ref$:Parent.Child</Alias></object>", writer.ToString());
 	}
 
 	private sealed class Person

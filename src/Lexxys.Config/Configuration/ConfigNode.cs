@@ -13,19 +13,46 @@ namespace Lexxys.Configuration;
 /// </remarks>
 public readonly struct ConfigNode: IEquatable<ConfigNode>, IDumpValue
 {
-	public ConfigNode(string? value) => Value = value;
+	public ConfigNode(string? value, ConfigSourceLocation location = default) => (Value, Location) = (value, location);
 
-	public ConfigNode(ConfigNodeCollection collection) => Collection = collection;
+	public ConfigNode(ConfigNodeCollection collection, ConfigSourceLocation location = default) => (Collection, Location) = (collection, location);
 
-	public ConfigNode(string? value, ConfigNodeCollection? collection) => (Value, Collection) = (value, collection);
+	public ConfigNode(string? value, ConfigNodeCollection? collection, ConfigSourceLocation location = default) => (Value, Collection, Location) = (value, collection, location);
 
 	public string? Value { get; }
 
 	public ConfigNodeCollection? Collection { get; }
 
+	public ConfigSourceLocation Location { get; }
+
 	public string? GetValue() => Value ?? (Collection.IsEmpty ? null: Collection[0].GetValue());
 
 	public bool IsEmpty => String.IsNullOrEmpty(Value) && Collection.IsEmpty;
+
+	public ConfigNodeKind Kind
+	{
+		get
+		{
+			if (Value is not null)
+				return Collection.IsEmpty ? ConfigNodeKind.Scalar: ConfigNodeKind.ScalarWithChildren;
+			if (Collection.IsEmpty)
+				return ConfigNodeKind.Empty;
+			return Collection!.GetCollectionType() switch
+			{
+				ConfigNodeCollectionType.Array => ConfigNodeKind.Array,
+				ConfigNodeCollectionType.Map => ConfigNodeKind.Object,
+				_ => ConfigNodeKind.Mixed
+			};
+		}
+	}
+
+	public bool IsScalar => Kind == ConfigNodeKind.Scalar;
+
+	public bool IsArray => Kind == ConfigNodeKind.Array;
+
+	public bool IsObject => Kind == ConfigNodeKind.Object;
+
+	public bool IsMixed => Kind == ConfigNodeKind.Mixed;
 
 	public bool Equals(ConfigNode other)
 	{

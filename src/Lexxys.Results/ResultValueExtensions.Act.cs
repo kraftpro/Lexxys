@@ -67,15 +67,15 @@ public static partial class ResultValueExtensions
 
 		public Task<ResultValue<T>> Act(bool condition, Action<T> action) => condition ? result.Act(action): result;
 		public Task<ResultValue<T>> Act(bool condition, Func<T, Task> action) => condition ? result.Act(action): result;
-        public async Task<ResultValue<T>> Act(Func<T, bool> predicate, Action<T> action)
-        {
+		public async Task<ResultValue<T>> Act(Func<T, bool> predicate, Action<T> action)
+		{
 			var r = await result.ConfigureAwait(false);
 			if (r.IsSuccess && predicate(r.Value))
 				action(r.Value);
 			return r;
-        }
+		}
 
-        public async Task<ResultValue<T>> Act(Func<T, bool> predicate, Func<T, Task> action)
+		public async Task<ResultValue<T>> Act(Func<T, bool> predicate, Func<T, Task> action)
 		{
 			var r = await result.ConfigureAwait(false);
 			if (r.IsSuccess && predicate(r.Value))

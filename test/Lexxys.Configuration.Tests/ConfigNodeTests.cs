@@ -90,4 +90,48 @@ public class ConfigNodeTests
         await Assert.That(node1 == node2).IsTrue();
         await Assert.That(node1 != node2).IsFalse();
     }
+
+	[Test]
+	public async Task Kind_ShouldDescribeIntermediateNodeModel()
+	{
+		var scalar = new ConfigNode("value");
+		await Assert.That(scalar.Kind).IsEqualTo(ConfigNodeKind.Scalar);
+		await Assert.That(scalar.IsScalar).IsTrue();
+
+		var array = new ConfigNode(new ConfigNodeCollection([
+			new ConfigNode("one"),
+			new ConfigNode("two")
+		]));
+		await Assert.That(array.Kind).IsEqualTo(ConfigNodeKind.Array);
+		await Assert.That(array.IsArray).IsTrue();
+
+		var map = new ConfigNode(new ConfigNodeCollection([
+			new KeyValuePair<string?, ConfigNode>("name", new ConfigNode("demo"))
+		]));
+		await Assert.That(map.Kind).IsEqualTo(ConfigNodeKind.Object);
+		await Assert.That(map.IsObject).IsTrue();
+
+		var mixed = new ConfigNode(new ConfigNodeCollection([
+			new KeyValuePair<string?, ConfigNode>(null, new ConfigNode("item")),
+			new KeyValuePair<string?, ConfigNode>("name", new ConfigNode("demo"))
+		]));
+		await Assert.That(mixed.Kind).IsEqualTo(ConfigNodeKind.Mixed);
+		await Assert.That(mixed.IsMixed).IsTrue();
+	}
+
+	[Test]
+	public async Task CollectionShape_ShouldDescribeIntermediateCollectionModel()
+	{
+		var array = new ConfigNodeCollection([
+			new ConfigNode("one")
+		]);
+		await Assert.That(array.GetCollectionType()).IsEqualTo(ConfigNodeCollectionType.Array);
+		await Assert.That(array.IsArray).IsTrue();
+
+		var map = new ConfigNodeCollection([
+			new KeyValuePair<string?, ConfigNode>("name", new ConfigNode("demo"))
+		]);
+		await Assert.That(map.GetCollectionType()).IsEqualTo(ConfigNodeCollectionType.Map);
+		await Assert.That(map.IsMap).IsTrue();
+	}
 }

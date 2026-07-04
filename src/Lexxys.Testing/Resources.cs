@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1724
+#pragma warning disable CA1724
 
 namespace Lexxys.Testing;
 

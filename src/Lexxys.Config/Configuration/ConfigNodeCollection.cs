@@ -23,15 +23,16 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyLi
 	/// <summary>
 	/// Initializes a new, empty instance of the ConfigNodeCollection class.
 	/// </summary>
-	public ConfigNodeCollection() => _nodes = [];
+	public ConfigNodeCollection(ConfigSourceLocation location = default) => (Location, _nodes) = (location, []);
 
 	/// <summary>
 	/// Initializes a new instance of the ConfigNodeCollection class with the specified collection of key-value pairs.
 	/// </summary>
 	/// <param name="nodes">A sequence of tuples, each containing an optional key and a ConfigNode value to include in the collection. Keys may
 	/// be null to indicate unnamed nodes.</param>
-	public ConfigNodeCollection(IEnumerable<KeyValuePair<string?, ConfigNode>> nodes)
+	public ConfigNodeCollection(IEnumerable<KeyValuePair<string?, ConfigNode>> nodes, ConfigSourceLocation location = default)
 	{
+		Location = location;
 		if (nodes is null)
 		{
 			_nodes = [];
@@ -59,15 +60,15 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyLi
 					combined.Add(temp[j].Value);
 					temp.RemoveAt(j);
 				}
-				temp[i] = new KeyValuePair<string?, ConfigNode>(item.Key, new ConfigNode(new ConfigNodeCollection(combined)));
+				temp[i] = new KeyValuePair<string?, ConfigNode>(item.Key, new ConfigNode(new ConfigNodeCollection(combined, item.Value.Location), item.Value.Location));
 			}
 			_hashCode = HashCode.Join(_hashCode, item.Key.GetHashCode());
 		}
 		_nodes = [.. temp];
 	}
 
-	public ConfigNodeCollection(IEnumerable<(string? Key, ConfigNode Value)> nodes)
-		: this(nodes.Select(o => new KeyValuePair<string?, ConfigNode>(o.Key, o.Value)))
+	public ConfigNodeCollection(IEnumerable<(string? Key, ConfigNode Value)> nodes, ConfigSourceLocation location = default)
+		: this(nodes.Select(o => new KeyValuePair<string?, ConfigNode>(o.Key, o.Value)), location)
 	{
 	}
 
@@ -75,10 +76,13 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyLi
 	/// Initializes a new instance of the ConfigNodeCollection class with the specified collection of configuration nodes.
 	/// </summary>
 	/// <param name="nodes">The collection of ConfigNode instances to include in the collection.</param>
-	public ConfigNodeCollection(IEnumerable<ConfigNode> nodes)
+	public ConfigNodeCollection(IEnumerable<ConfigNode> nodes, ConfigSourceLocation location = default)
 	{
+		Location = location;
 		_nodes = nodes == null ? [] : [.. nodes.Select(n => new KeyValuePair<string?, ConfigNode>(null, n))];
 	}
+
+	public ConfigSourceLocation Location { get; }
 
 	/// <summary>
 	/// Gets the ConfigNode at the specified index in the collection.
@@ -110,11 +114,11 @@ public class ConfigNodeCollection: IEquatable<ConfigNodeCollection>, IReadOnlyLi
 
 	public int Count => _nodes.Length;
 
-	//public bool IsArray => _nodes.All(o => o.Key == null);
+	public bool IsArray => GetCollectionType() == ConfigNodeCollectionType.Array;
 
-	//public bool IsMap => _nodes.All(o => o.Key != null);
+	public bool IsMap => GetCollectionType() == ConfigNodeCollectionType.Map;
 
-	//public bool IsMixed => _nodes.Any(o => o.Key == null) && _nodes.Any(o => o.Key != null);
+	public bool IsMixed => GetCollectionType() == ConfigNodeCollectionType.Mixed;
 
 	KeyValuePair<string?, ConfigNode> IReadOnlyList<KeyValuePair<string?, ConfigNode>>.this[int index] => _nodes[index];
 
@@ -409,6 +413,16 @@ public enum ConfigNodeCollectionType
 	Array,
 	Map,
 	Mixed
+}
+
+public enum ConfigNodeKind
+{
+	Empty,
+	Scalar,
+	Array,
+	Object,
+	Mixed,
+	ScalarWithChildren
 }
 
 public static partial class ConfigNodeExtensions

@@ -61,7 +61,10 @@ statechart ElevatorSystem {
 ### YCL
 
 ```config.txt
-%type: StateChart
+
+%separators -> =>     # define '->' and '=>' as separators along with ',' and ';'
+%type: StateChart     # set type of the next node
+
 statechart ElevatorSystem
 
   # initial state Idle
@@ -118,6 +121,60 @@ statechart ElevatorSystem
 
 ```
 
+### JSON
+
+```json
+
+statechart: {
+  name: "ElevatorSystem",
+  state: [
+    {
+      name: "Idle",
+      on: [
+        {
+          event: "CALL_UP",
+          state: "MovingUp"
+        },
+        {
+          event: "CALL_DOWN",
+          state: "MovingDown"
+        }
+      ]
+      ...
+    },
+    {
+      name: "DoorClosing",
+      on: [
+        {
+          event: "DOOR_CLOSED",
+          [
+            if: [
+              {
+                condition: "pending_requests_above",
+                event: MovingUp"
+              },
+              {
+                condition: "pending_requests_below",
+                event: MovingDown"
+              }
+            ],
+            else: {
+              state: "Idle"
+            }
+          ]
+        },
+        {
+          event: "EMERGENCY",
+          state: "Emergency"
+        }
+      ]
+    }
+    ...
+  ]
+}
+
+```
+
 ### Connection String
 
 ```config.txt
@@ -137,58 +194,30 @@ connection
 
 # type definition by the root name "statechart"
 
-#:statechart name
-#:statechart/initial-state name
+# defines types statechart, statechart/state, statechart/state/on ...
+
+#:statechart name initial-state
 #:statechart/state name
 #:statechart/state/on event state
 #:statechart/state/on/if condition state
-#:statechart/state/on/else condition state
+#:statechart/state/on/else state
 
 # use special symbol to reference up level
 
-#:statechart name
-#:./initial-state name
+#:statechart name initial-state
 #:./state name
 #:././on event state
 #:./././if condition state
-#:./././else condition state
-
-#:statechart name
-#:~/initial-state name
-#:~/state name
-#:~/~/on event state
-#:~/~/~/if condition state
-#:~/~/~/else condition state
-
-#:statechart name
-#:.initial-state name
-#:.state name
-#:..on event state
-#:...if condition state
-#:...else condition state
+#:./././else state
 
 ---
 
-# use JSON like style
-#:statechart: [name] {
-  initial-state [name] {
-    state [name] {
-      on [event, state] {
-        if [condition, state]
-        else [condition, state]
-      }
-    }
-  }
-}
-
 # use variable declaration. use braces to combine map and value  
-%$statechart: (name,
-  initial-state: (name,
-    state: (name,
-      on: (event, state,
-        if: (condition, state)
-        else: (condition, state)
-      )
+%$StateChart: (name, initial-state              # root node has positional parameters name and initial-state
+  state: (name,                                 # subnode state - name
+    on: (event, state,                          # subnode state/on - event, state
+      if: (condition, state)                    # subnode state/on/if - event, state
+      else: (state)                             # subnode state/on/else - event
     )
   )
 )

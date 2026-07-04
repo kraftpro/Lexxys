@@ -37,7 +37,7 @@ public class DumpWriterTests
 
 		writer.Begin().Write("Age", 7).Write("Name", "Bob").End();
 
-		Assert.AreEqual("<Object Age=\"7\" Name=\"Bob\"/>", writer.ToString());
+		Assert.AreEqual("<object Age=\"7\" Name=\"Bob\"/>", writer.ToString());
 	}
 
 	[TestMethod]
@@ -58,7 +58,7 @@ public class DumpWriterTests
 			},
 		});
 
-		Assert.AreEqual("<Object><Child/></Object>", writer.ToString());
+		Assert.AreEqual("<object><Child/></object>", writer.ToString());
 	}
 
 	[TestMethod]
@@ -77,7 +77,7 @@ public class DumpWriterTests
 			Alias = shared,
 		});
 
-		Assert.AreEqual("<Object><Parent><Child/></Parent><Alias>$ref$:Parent.Child</Alias></Object>", writer.ToString());
+		Assert.AreEqual("<object><Parent><Child/></Parent><Alias>$ref$:Parent.Child</Alias></object>", writer.ToString());
 	}
 
 	private sealed class BufferingTextWriter: ITextWriter

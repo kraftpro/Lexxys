@@ -1,4 +1,4 @@
-﻿namespace Lexxys.Testing;
+namespace Lexxys.Testing;
 
 public static partial class R
 {

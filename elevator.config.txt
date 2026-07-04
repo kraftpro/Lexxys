@@ -1,0 +1,56 @@
+%!set-separator '->'
+%:transition event -> target -> guard=("true") -> actions
+%transition :transition
+
+lift:
+  name MainLobbyLift
+  initial Idle
+  context:
+    floors [B1, G, 1, 2, 3, 4, 5]
+    current-floor G
+    door-timeout 5s
+    travel-time 3s
+
+  states:
+    -
+      name Idle
+      on:
+        transition call-requested -> Moving -> "queue.hasCalls" -> [plan-route, close-doors]
+        transition door-opened -> DoorsOpen -> "at-requested-floor" -> [start-door-timer]
+
+    -
+      name Moving
+      on:
+        transition floor-arrived -> Leveling -> "targetFloorReached" -> [stop-motor]
+        transition floor-arrived -> Moving -> "hasMoreStops" -> [continue-route]
+        transition emergency-stop -> OutOfService -> "safety.trip" -> [stop-motor, notify-maintenance]
+
+    -
+      name Leveling
+      on:
+        transition leveled -> DoorsOpening -> "door.safeToOpen" -> [unlock-doors]
+
+    -
+      name DoorsOpening
+      on:
+        transition doors-open -> DoorsOpen -> "true" -> [start-door-timer, announce-floor]
+
+    -
+      name DoorsOpen
+      on:
+        transition door-timer-expired -> DoorsClosing -> "noObstruction" -> [close-doors]
+        transition obstruction-detected -> DoorsOpen -> "true" -> [reset-door-timer]
+        transition call-requested -> DoorsOpen -> "sameFloor" -> [reset-door-timer]
+
+    -
+      name DoorsClosing
+      on:
+        transition doors-closed -> Idle -> "queue.empty" -> [standby]
+        transition doors-closed -> Moving -> "queue.hasCalls" -> [plan-route, start-motor]
+        transition obstruction-detected -> DoorsOpening -> "true" -> [open-doors]
+
+    -
+      name OutOfService
+      final true
+      on:
+        transition reset -> Idle -> "maintenance.cleared" -> [clear-alarm, standby]

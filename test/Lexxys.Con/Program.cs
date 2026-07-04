@@ -3,6 +3,7 @@ using Amazon.S3;
 using Lexxys;
 using Lexxys.Con;
 using Lexxys.Con.ArgsCon;
+using Lexxys.Con.Ycl;
 using Lexxys.Configuration;
 using Lexxys.Data;
 
@@ -15,7 +16,7 @@ using System.Runtime.CompilerServices;
 
 
 
-
+TestYclConfig.Run();
 
 
 
@@ -33,7 +34,7 @@ Console.WriteLine(TplStr(tpl2));
 Console.WriteLine(TplStr(tpl));
 Console.WriteLine(TplStr3(tpl3));
 
-cmd ??= "args";
+cmd ??= "ycl";
 
 switch (cmd)
 {
@@ -43,6 +44,10 @@ switch (cmd)
 
 	case "dump":
 		DumpTest.Run(args);
+		return;
+
+	case "ycl":
+		TestYclConfig.Run();
 		return;
 
 	default:

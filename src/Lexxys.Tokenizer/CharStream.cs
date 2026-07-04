@@ -5,7 +5,6 @@
 // You may use this code under the terms of the MIT license
 //
 using System.Buffers;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lexxys.Tokenizer;
@@ -60,7 +59,6 @@ public ref struct CharStream
 		if (stream == null)
 			throw new ArgumentNullException(nameof(stream));
 
-		var buffer = new StringBuilder();
 		_buffer = _start = stream.ReadToEnd().AsSpan();
 		TabSize = tabSize > 0 ? tabSize: DefaultTabSize;
 	}

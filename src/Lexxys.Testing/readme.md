@@ -1,4 +1,4 @@
-﻿ # Lexxys.Testing
+ # Lexxys.Testing
 
  Lightweight test and data‑generation utilities used across the Lexxys suite.
 

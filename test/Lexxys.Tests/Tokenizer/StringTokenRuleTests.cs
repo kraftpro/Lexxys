@@ -110,20 +110,17 @@ public class StringTokenRuleTests
 	}
 
 	[TestMethod]
-	[DataRow("\"unterminated string", typeof(SyntaxException))]
-	[DataRow("\"string with invalid \\escape\"", typeof(SyntaxException))]
-	public void TestParseStringWithErrors(string input, Type expectedException)
+	[DataRow("\"unterminated string")]
+	[DataRow("\"string with invalid \\c1 escape\"")]
+	[DataRow("\"string with invalid \\u12 escape\"")]
+	public void TestParseStringWithErrors(string input)
+	{
+		Assert.ThrowsExactly<SyntaxException>(() => ParseString(input));
+	}
+
+	private static void ParseString(string input)
 	{
 		var stream = new CharStream(input);
-		try
-		{
-			var token = StringTokenRule.ParseString(LexicalTokenType.STRING, ref stream, '\\');
-			Assert.Fail($"result: '{token.GetString(stream)}'");
-		}
-		catch (Exception flaw)
-		{
-			if (flaw is not AssertFailedException)
-				Assert.IsInstanceOfType(flaw, expectedException);
-		}
+		StringTokenRule.ParseString(LexicalTokenType.STRING, ref stream, '\\');
 	}
 }

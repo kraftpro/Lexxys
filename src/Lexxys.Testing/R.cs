@@ -1,4 +1,4 @@
-﻿namespace Lexxys.Testing;
+namespace Lexxys.Testing;
 
 /// <summary>
 /// Provides static factory methods for creating and manipulating random value generators and weighted random item

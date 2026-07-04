@@ -56,7 +56,7 @@ option_definition ::= "%" "!" option
 option            ::= "js-comments"
                     | "js-string"
                     | "include" file_path
-                    | "separators" value ( ',' value }*
+                    | "set-separator" value ( ',' value }*
 
 
 type_name         ::= ":".name
@@ -112,10 +112,12 @@ xml_array_mark    ::= "[" name "]"   # defines a name of node to be repeated (by
 ### Sample
 
 ```
-% school/buildings[] id name area
-% school/buildings[]/location lat long
+# declare school
+%: school name
+%: school/buildings[] id name area
+%: school/buildings[]/location lat long
 
-school
+school St. Patric
   buildings
     - 123 "Meadows Charter School" XY2323
       location: 42.34 80.45
@@ -127,6 +129,8 @@ school
 
 ```
 # Simple config
+
+%! set-separator => # use '=>' as a separator along with comma and semicolon
 
 statecharts
   statechart
@@ -230,12 +234,6 @@ statecharts
         id: 4
         transitions
           transition
-            
-
-        
-
-
-
 ```
 
 #### Sample
@@ -250,22 +248,20 @@ statecharts
 % :building name area address        # declare building type
 
 school
-  %:address                         # use address type for the next node
-  %. :address                       # (the same?) use address type for the next node (and siblings with the same name and level (???))
+  %. :address                       # use address type for the next node (and siblings with the same name and level (???))
   address: "1214 One Way Ave." Mantgomery, ${state} ${zip}
   buildings
     -
       id: 98
-      %:location                    # use location type, `location` is a default node name
+      %. :location                  # use location type, `location` is a default node name
       - 45.48576 56.54875
     -
       id: 99
-      %. lat long                   # folowing object declaration
-      %: lat long                   # (the same; delete?) anonymous declaration
+      %. lat long                   # folowing anonymous object declaration (defines next object parameters)
       location: 45.48576 56.54875
     -
       id: 95
-      %location lat long                   # folowing object declaration
+      %location lat long            # folowing object declaration (defines next object name ond parameters)
       - 45.48576 56.54875
 
 # mapping node to type
@@ -290,23 +286,23 @@ school
 #### Sample 2
 
 ```
-% $state: AL                         # value
-% $zip: 32432                        # value
-% $stateZip: ${state} ${zip}         # list (???)
-% $stateZip: [${state} ${zip}]       # list
-% $sz: (state:${state} zip:${zip})   # object
+%$state AL                         # value
+%$zip 32432                        # value
+%$stateZip ${state} ${zip}         # list (???)
+%$stateZip [${state} ${zip}]       # list
+%$sz (state:${state} zip:${zip})   # object
 
-% $address: street city state zip    # declare address type
-% $location: lat long                # declare location type
-% $building: name area address       # declare building type
+%:address street city state zip    # declare address type
+%:location lat long                # declare location type
+%:building name area address       # declare building type
 
 school
-  %. $address                       # use address type for the next node (and siblings with the same name and level (???))
+  %. :address                       # use address type for the next node (and siblings with the same name and level (???))
   address: "1214 One Way Ave." Mantgomery, ${state} ${zip}
   buildings
     -
       id: 98
-      %. $location                    # use location type, `location` is a default node name
+      %. :location                    # use location type, `location` is a default node name
       - 45.48576 56.54875
     -
       id: 99
@@ -319,8 +315,8 @@ school
       - 45.48576 56.54875
 
 # mapping node to type
-%school/address $address               # node mathes `school/address` has an `address` type
-%school/buildings[]/location $location # node mathes `school/buildings[]/location` has a `location` type
+%school/address :address               # node mathes `school/address` has an `address` type
+%school/buildings[]/location :location # node mathes `school/buildings[]/location` has a `location` type
 
 school
   address: "1214 One Way Ave." Mantgomery, ${stateZip}
@@ -363,15 +359,15 @@ school
       ...
 
   locations
-    - "1212 One Way Ave." Montgomery, AL 32432
-    - "1214 One Way Ave." Montgomery, AL 32432
-    - "1216 One Way Ave." Montgomery, AL 32432
+    - "1212 One Way Ave." ${city}, AL 32432
+    - "1214 One Way Ave." ${city}, AL 32432
+    - "1216 One Way Ave." ${city}, AL 32432
 
   buildings
     -
       address
         street  1214 One Way Ave.
-        city    Montgomery
+        city    ${city}
         state   AL
         zip     32432
       area XY2323
@@ -386,7 +382,7 @@ school
       area XY2323
       name null
 
-%- /school/buildings[] name, area, address
+    %. name, area, address
     - "Light tower" XX4343 { street: "1214 One Way Ave.", city: Montgomery, state: AL, zip: 32432 }
     - name: Light tower
       area: XX4343
@@ -399,7 +395,7 @@ school
 %!js-comments
 %!js-string
 %!include config.js
-%!separators ->; =>
+%!set-separator ->; =>
 
 ```
 

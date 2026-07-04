@@ -1,4 +1,4 @@
-﻿// Lexxys Infrastructural library.
+// Lexxys Infrastructural library.
 // file: Rand.cs
 //
 // Copyright (c) 2001-2014, Kraft Pro Utilities.
